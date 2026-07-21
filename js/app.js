@@ -426,15 +426,21 @@ function populateContent() {
 
   });
 
-  requestAnimationFrame(() => {
+  updateTimelineLine();
+  setTimeout(updateTimelineLine, 300);
+  setTimeout(updateTimelineLine, 1000);
+  window.addEventListener("resize", updateTimelineLine);
+  window.addEventListener("load", updateTimelineLine);
+}
 
-    const last = tl.lastElementChild;
-
-    if (last)
-
-      tl.style.setProperty("--timeline-line-end", `${last.offsetTop + 11}px`);
-
-  });
+function updateTimelineLine() {
+  const tl = document.getElementById("timeline-wrap");
+  if (!tl) return;
+  const last = tl.lastElementChild;
+  if (last) {
+    tl.style.setProperty("--timeline-line-end", `${last.offsetTop + 15}px`);
+  }
+}
 
 
 

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Happy Birthday ❤️</title>
+
+  <!-- Open Graph / WhatsApp Rich Link Preview Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Happy Birthday! 🎉❤️">
+  <meta property="og:description" content="A special interactive birthday surprise created just for you! ✨ Tap the link below to open your wish 🎁">
+  <meta property="og:image" content="assets/photos/og-preview.png">
+
+  <!--
+  ==========================================================================
+  PREMIUM BIRTHDAY WISH — single file, no build tools, works offline.
+  Built by: Arjun's studio ✨
+
+  HOW TO CUSTOMIZE (everything lives in one place):
+    1. Scroll down to `const CONFIG = {...}` near the top of the
+       <script> block at the bottom of this file.
+    2. Change name, messages, timeline, gallery captions, colors,
+       birth date and coupon text there. Nothing else needs to move.
+    3. To use a real audio file instead of the generated piano
+       melody, set CONFIG.music.file to a path like "music.mp3".
+    4. To use real photos, replace the placeholder <div class="polaroid">
+       blocks' background gradients with <img> tags, OR just add
+       `image: "photos/1.jpg"` to a gallery item in CONFIG.gallery.
+
+  RELIABILITY NOTE: GSAP + Lenis are loaded from CDN as progressive
+  enhancement (nicer easing). If a network blocks them, the site
+  detects this and falls back to pure CSS/IntersectionObserver
+  animations automatically — nothing ever breaks or shows a blank
+  screen. Confetti / fireworks / stars / hearts / butterflies are all
+  hand-rolled in vanilla canvas + CSS, so the whole experience works
+  100% offline with zero dependencies if needed.
+  ==========================================================================
+-->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- Custom cursor -->
+  <div id="cursor-ring"></div>
+  <div id="cursor-dot"></div>
+
+  <!-- Persistent living sky background -->
+  <div id="sky-bg" aria-hidden="true">
+    <div class="aurora"></div>
+    <canvas id="stars-canvas"></canvas>
+    <canvas id="particles-canvas"></canvas>
+    <div id="ambient-layer"></div>
+  </div>
+
+  <!-- ==================== LOADING SCREEN ==================== -->
+  <div id="loading-screen">
+    <div class="logo-glow" id="loading-logo-glow">✨ Happy Birthday ✨</div>
+    <div class="loader-track" id="loader-track">
+      <div class="loader-fill" id="loader-fill"></div>
+    </div>
+    <div class="loader-pct" id="loader-pct">Loading memories... 0%</div>
+    <div class="tap-enter" id="tap-enter">Tap anywhere to begin</div>
+
+    <div class="passcode-wrap" id="passcode-wrap">
+      <div class="pc-lock" id="pc-lock">🔒</div>
+      <div class="pc-title">Enter Passcode</div>
+      <div class="passcode-dots" id="passcode-dots">
+        <span class="pc-dot"></span><span class="pc-dot"></span><span class="pc-dot"></span><span class="pc-dot"></span>
+      </div>
+      <div class="keypad" id="keypad">
+        <button class="key" data-num="1">1</button>
+        <button class="key" data-num="2">2</button>
+        <button class="key" data-num="3">3</button>
+        <button class="key" data-num="4">4</button>
+        <button class="key" data-num="5">5</button>
+        <button class="key" data-num="6">6</button>
+        <button class="key" data-num="7">7</button>
+        <button class="key" data-num="8">8</button>
+        <button class="key" data-num="9">9</button>
+        <span></span>
+        <button class="key" data-num="0">0</button>
+        <button class="key key-back" id="pc-back" aria-label="Delete">⌫</button>
+      </div>
+      <div class="pc-hint" id="pc-hint"></div>
+    </div>
+  </div>
+
+  <!-- ==================== INTRO SCENE ==================== -->
+  <div id="intro-scene">
+    <div class="typewriter-line" id="typewriter"></div>
+  </div>
+
+  <!-- ==================== MAIN EXPERIENCE ==================== -->
+  <div id="experience">
+
+    <!-- ENVELOPE -->
+    <section id="envelope-scene">
+      <span class="eyebrow">A little something arrived for you</span>
+      <div class="envelope-wrap">
+        <div class="envelope" id="envelope">
+          <div class="letter-inside">
+            <div class="letter-card"><span id="letter-peek-text" class="letter-peek">For You ❤️</span>
+              <span id="envelope-date-badge" class="date-pill">🗓️ 1st January</span>
+              <div class="letter-rule"></div><small>A little note, sealed with love</small>
+            </div>
+          </div>
+          <div class="env-body"></div>
+          <div class="ribbon"></div>
+          <div class="env-flap"></div>
+          <div class="wax-seal"><span id="seal-initial">A</span></div>
+        </div>
+      </div>
+      <div class="envelope-hint">Tap the seal to open</div>
+    </section>
+
+    <!-- LETTER -->
+    <section id="letter-scene">
+      <div class="letter-paper glass reveal">
+        <h1 class="letter-title">🎂 Happy Birthday<span id="name-slot-1"></span> ❤️</h1>
+        <div class="letter-body" id="letter-body"><!-- typed in by JS --></div>
+      </div>
+    </section>
+
+    <!-- SPECIAL BIRTHDAY DATE SCENE -->
+    <section id="bday-date-scene" style="display:flex;justify-content:center;align-items:center;padding:45px 24px 0;width:100%;">
+      <!-- BIRTHDAY DATE CARD -->
+      <div class="bday-card glass card-glow-border reveal">
+        <div class="bday-card-badge-row">
+          <span class="bday-card-ribbon">✨ SPECIAL BIRTHDAY DATE ✨</span>
+          <span class="bday-zodiac-pill" id="bday-card-zodiac">♑ Capricorn</span>
+        </div>
+
+        <div class="bday-card-body">
+          <div class="bday-date-medallion">
+            <span class="bday-day" id="bday-card-day">01</span>
+            <span class="bday-month" id="bday-card-month">JAN</span>
+          </div>
+          <div class="bday-details">
+            <h3 class="bday-card-title" id="bday-card-title">Celebrating <span class="highlight-gold" id="bday-card-name">Special Someone</span></h3>
+            <p class="bday-card-sub" id="bday-card-sub">Mark your calendar for 1st January 🎉</p>
+            <div class="bday-card-chips">
+              <span class="bday-chip" id="bday-countdown-chip">🎈 Birthday Celebration</span>
+              <span class="bday-chip glow-chip">💖 Annual Milestone</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AGE COUNTER SCENE -->
+    <section id="age-scene">
+      <div class="glass card-glow-border reveal"
+        style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
+        <span class="eyebrow">Life in Numbers</span>
+        <h2 class="section-title">You've Been Amazing For</h2>
+
+        <div class="age-grid">
+          <div class="age-unit">
+            <span class="age-num" id="age-years">00</span>
+            <span class="age-label">Years</span>
+          </div>
+          <div class="age-unit">
+            <span class="age-num" id="age-months">00</span>
+            <span class="age-label">Months</span>
+          </div>
+          <div class="age-unit">
+            <span class="age-num" id="age-days">00</span>
+            <span class="age-label">Days</span>
+          </div>
+          <div class="age-unit">
+            <span class="age-num" id="age-hours">00</span>
+            <span class="age-label">Hours</span>
+          </div>
+          <div class="age-unit">
+            <span class="age-num" id="age-min">00</span>
+            <span class="age-label">Mins</span>
+          </div>
+          <div class="age-unit highlight-unit">
+            <span class="age-num" id="age-sec">00</span>
+            <span class="age-label">Secs</span>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-badge">
+            <span class="stat-icon">☀️</span>
+            <span class="stat-val" id="stat-days">0</span>
+            <span class="stat-name">Days of Sunshine</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-icon">💓</span>
+            <span class="stat-val" id="stat-heartbeats">0M</span>
+            <span class="stat-name">Heartbeats</span>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-icon">🌍</span>
+            <span class="stat-val" id="stat-trips">0</span>
+            <span class="stat-name">Trips Around Sun</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMORY CARD -->
+    <section id="memory-scene">
+      <div class="glass card-glow-border reveal"
+        style="max-width:600px;padding:40px clamp(24px,6vw,48px);text-align:center;">
+        <span class="eyebrow">One memory, out of many</span>
+        <h2 class="section-title">A moment I keep coming back to</h2>
+        <p id="memory-text" style="font-size:1.05rem;line-height:1.85;color:rgba(255,247,251,.9);"></p>
+      </div>
+    </section>
+
+    <!-- REASONS -->
+    <section id="reasons-scene" style="flex-direction:column;gap:34px;">
+      <div style="text-align:center;">
+        <span class="eyebrow">Just a few, out of endless</span>
+        <h2 class="section-title">Reasons you're so special</h2>
+      </div>
+      <div class="card-grid reveal-stagger" id="reasons-grid"></div>
+    </section>
+
+    <!-- WISHES -->
+    <section id="wishes-scene">
+      <div class="wish-quote glass reveal">
+        <p id="wish-quote-text"></p>
+        <button class="btn quote-btn magnetic" id="new-quote-btn">✨ Another wish</button>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery">
+      <div style="text-align:center;">
+        <span class="eyebrow">Frames worth freezing</span>
+        <h2 class="section-title">Little memories, big smiles</h2>
+      </div>
+      <div class="gallery-deck reveal-stagger" id="gallery-deck"></div>
+    </section>
+
+    <!-- TIMELINE -->
+    <section id="timeline">
+      <div style="width:100%;max-width:640px;">
+        <div style="text-align:center;margin-bottom:40px;">
+          <span class="eyebrow">How we got here</span>
+          <h2 class="section-title">A little timeline</h2>
+        </div>
+        <div class="timeline-wrap" id="timeline-wrap"></div>
+      </div>
+    </section>
+
+    <!-- SURPRISE -->
+    <section id="surprise-scene">
+      <span class="eyebrow">One more thing...</span>
+      <h2 class="section-title">There's a surprise waiting</h2>
+      <button class="glow-btn magnetic" id="surprise-btn">🎉 Open Your Surprise</button>
+    </section>
+
+    <!-- GIFT BOX -->
+    <section id="giftbox-scene">
+      <span class="eyebrow">A tiny gift</span>
+      <h2 class="section-title">Go on, unwrap it</h2>
+      <div class="giftbox" id="giftbox">
+        <div class="gift-lid">
+          <div class="gift-ribbon-h"></div>
+          <div class="gift-bow">🎀</div>
+        </div>
+        <div class="gift-base">
+          <div class="gift-ribbon-v"></div>
+        </div>
+      </div>
+      <div class="gift-reveal glass" id="gift-reveal">
+        <h4>A little something extra 🎁</h4>
+        <p id="gift-message"></p>
+        <div class="coupon" id="gift-coupon"></div>
+      </div>
+    </section>
+
+    <!-- PREMIUM INTERACTIVE CAKE -->
+    <section id="cake-scene">
+      <div class="cake-intro reveal">
+        <span class="eyebrow">A sweet little moment</span>
+        <h2 class="section-title">Make a wish</h2>
+        <p class="cake-hint" id="cake-hint">Tap a candle, or use your microphone to blow them out.</p>
+      </div>
+      <div class="cake-stage reveal" id="cake-stage" aria-label="Interactive luxury birthday cake">
+        <div class="cake-glow"></div>
+        <div class="cake-reflection"></div>
+        <div class="cake-stand"></div>
+        <div class="cake-spark sp1">✦</div>
+        <div class="cake-spark sp2">✧</div>
+        <div class="cake-spark sp3">✦</div>
+        <div class="cake-spark sp4">✧</div>
+        <div class="luxury-cake" id="luxury-cake">
+          <div class="cake-tier tier-one"><span class="gold-trim"></span><i class="drip d1"></i><i
+              class="drip d2"></i><i class="drip d3"></i><i class="drip d4"></i></div>
+          <div class="cake-tier tier-two"><span class="gold-trim"></span><i class="drip d1"></i><i
+              class="drip d2"></i><i class="drip d3"></i></div>
+          <div class="cake-tier tier-three"><span class="gold-trim"></span><i class="drip d1"></i><i
+              class="drip d2"></i></div>
+          <i class="rose r1"></i><i class="rose r2"></i><i class="rose r3"></i><i class="rose r4"></i><i
+            class="rose r5"></i>
+          <i class="macaron m1"></i><i class="macaron m2"></i><i class="berry s1"></i><i class="berry s2"></i><i
+            class="berry s3"></i><i class="berry blueberry b1"></i><i class="berry blueberry b2"></i><i
+            class="berry blueberry b3"></i>
+          <i class="pearl p1"></i><i class="pearl p2"></i><i class="pearl p3"></i><i class="pearl p4"></i><i
+            class="choco ch1"></i><i class="choco ch2"></i>
+          <button class="candle c1" aria-label="Extinguish candle"><i class="flame"></i><i
+              class="smoke"></i></button><button class="candle c2" aria-label="Extinguish candle"><i
+              class="flame"></i><i class="smoke"></i></button><button class="candle c3"
+            aria-label="Extinguish candle"><i class="flame"></i><i class="smoke"></i></button><button class="candle c4"
+            aria-label="Extinguish candle"><i class="flame"></i><i class="smoke"></i></button><button class="candle c5"
+            aria-label="Extinguish candle"><i class="flame"></i><i class="smoke"></i></button>
+        </div>
+        <div class="cake-knife" aria-hidden="true"></div>
+      </div>
+      <div class="cake-actions reveal"><button class="btn magnetic" id="blow-candles-btn">🎤 Blow
+          Candles</button><button class="btn cut-btn" id="cut-cake-btn">🍰 Cut the Cake</button><button
+          class="btn save-btn" id="save-memory-btn">📸 Save This Memory</button></div>
+      <div class="cake-wish" id="cake-wish" aria-live="polite"></div>
+    </section>
+
+    <!-- COUNTDOWN -->
+    <section id="countdown-scene">
+      <div class="glass card-glow-border reveal"
+        style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
+        <span class="eyebrow">The Clock Never Stops</span>
+        <h2 class="section-title">Counting Down to Your Next Birthday</h2>
+        <div id="countdown-grid" style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;"></div>
+      </div>
+    </section>
+
+    <!-- SHARE -->
+    <section id="share-scene">
+      <span class="eyebrow">Loved it? Pass it on</span>
+      <h2 class="section-title">Share this page</h2>
+      <div class="share-row">
+        <button class="btn magnetic" id="copy-link-btn">🔗 Copy link</button>
+        <button class="btn btn-ghost magnetic" id="insta-story-btn">📸 Insta Story</button>
+        <button class="btn btn-ghost magnetic" id="native-share-btn">📤 Share</button>
+        <button class="btn btn-ghost magnetic" id="voice-btn">🔊 Hear it out loud</button>
+      </div>
+      <div id="qr-box"><span style="color:#333;font-size:.7rem;padding:8px;text-align:center;">QR needs internet to
+          render</span></div>
+    </section>
+
+    <!-- FINAL SCENE -->
+    <section id="final-scene">
+      <canvas id="final-canvas"></canvas>
+      <div class="final-title">Happy Birthday!</div>
+      <div class="final-sub" id="dynamic-greeting"></div>
+      <div class="signature" id="signature">Made with ❤️ for <span id="name-slot-2">You</span></div>
+    </section>
+
+    <footer>made with love, little memories &amp; birthday magic</footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- FLOATING QUICK CUSTOMIZER FAB -->
+  <button id="customizer-toggle-btn" class="customizer-fab magnetic" title="Customize Wish">✏️ Edit Wish</button>
+
+  <!-- LIVE CUSTOMIZER MODAL -->
+  <div id="customizer-modal" class="customizer-modal-backdrop">
+    <div class="customizer-card glass">
+      <button id="customizer-close-btn" class="modal-close">&times;</button>
+      <h3 class="modal-title">✨ Customize Birthday Wish</h3>
+      <p class="modal-sub">Update recipient details live without editing code!</p>
+      
+      <div class="form-group">
+        <label for="input-name">Recipient Name</label>
+        <input type="text" id="input-name" placeholder="e.g. Arjun">
+      </div>
+
+      <div class="form-group row">
+        <div>
+          <label for="input-year">Birth Year</label>
+          <input type="number" id="input-year" placeholder="2001" min="1950" max="2026">
+        </div>
+        <div>
+          <label for="input-month">Month (1-12)</label>
+          <input type="number" id="input-month" placeholder="1" min="1" max="12">
+        </div>
+        <div>
+          <label for="input-day">Day (1-31)</label>
+          <input type="number" id="input-day" placeholder="1" min="1" max="31">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="input-passcode">Lock Screen Passcode (4 Digits)</label>
+        <input type="text" id="input-passcode" placeholder="1234" maxlength="4">
+      </div>
+
+      <div class="modal-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button id="customizer-save-btn" class="btn" style="flex:1 1 180px;">💾 Save & Apply</button>
+        <button id="customizer-share-link-btn" class="btn btn-ghost" style="flex:1 1 180px;">🔗 Shareable Link</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

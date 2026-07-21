@@ -1,0 +1,4496 @@
+/* Unicode-safe icon repair: keeps emoji/icons working in Live Server and hosting. */
+
+const CP1252_BYTES = {
+
+  0x20ac: 0x80,
+
+  0x201a: 0x82,
+
+  0x0192: 0x83,
+
+  0x201e: 0x84,
+
+  0x2026: 0x85,
+
+  0x2020: 0x86,
+
+  0x2021: 0x87,
+
+  0x02c6: 0x88,
+
+  0x2030: 0x89,
+
+  0x0160: 0x8a,
+
+  0x2039: 0x8b,
+
+  0x0152: 0x8c,
+
+  0x017d: 0x8e,
+
+  0x2018: 0x91,
+
+  0x2019: 0x92,
+
+  0x201c: 0x93,
+
+  0x201d: 0x94,
+
+  0x2022: 0x95,
+
+  0x2013: 0x96,
+
+  0x2014: 0x97,
+
+  0x02dc: 0x98,
+
+  0x2122: 0x99,
+
+  0x0161: 0x9a,
+
+  0x203a: 0x9b,
+
+  0x0153: 0x9c,
+
+  0x017e: 0x9e,
+
+  0x0178: 0x9f,
+
+};
+
+function repairMojibake(value) {
+
+  if (typeof value !== "string" || !/[\u00C2\u00C3\u00E2\u00F0]/.test(value))
+
+    return value;
+
+  let output = value;
+
+  for (
+
+    let pass = 0;
+
+    pass < 3 && /[\u00C2\u00C3\u00E2\u00F0]/.test(output);
+
+    pass++
+
+  ) {
+
+    try {
+
+      const bytes = Uint8Array.from([...output], (char) => {
+
+        const point = char.codePointAt(0);
+
+        return CP1252_BYTES[point] ?? (point <= 255 ? point : 63);
+
+      });
+
+      const decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+
+      if (!decoded || decoded === output) break;
+
+      output = decoded;
+
+    } catch (e) {
+
+      break;
+
+    }
+
+  }
+
+  return output;
+
+}
+
+function repairObjectText(object) {
+
+  if (!object || typeof object !== "object") return;
+
+  Object.keys(object).forEach((key) => {
+
+    if (typeof object[key] === "string")
+
+      object[key] = repairMojibake(object[key]);
+
+    else if (object[key] && typeof object[key] === "object")
+
+      repairObjectText(object[key]);
+
+  });
+
+}
+
+function repairStaticIcons() {
+
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+
+    const node = walker.currentNode;
+
+    const tag = node.parentElement?.tagName;
+
+    if (tag !== "SCRIPT" && tag !== "STYLE") textNodes.push(node);
+
+  }
+
+  textNodes.forEach((node) => {
+
+    node.nodeValue = repairMojibake(node.nodeValue);
+
+  });
+
+}
+
+function observeDynamicIconText() {
+
+  const repairNode = (node) => {
+
+    if (node.nodeType === Node.TEXT_NODE) {
+
+      const repaired = repairMojibake(node.nodeValue);
+
+      if (repaired !== node.nodeValue) node.nodeValue = repaired;
+
+      return;
+
+    }
+
+    if (
+
+      node.nodeType !== Node.ELEMENT_NODE ||
+
+      ["SCRIPT", "STYLE"].includes(node.tagName)
+
+    )
+
+      return;
+
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+
+    const textNodes = [];
+
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    textNodes.forEach((text) => {
+
+      const repaired = repairMojibake(text.nodeValue);
+
+      if (repaired !== text.nodeValue) text.nodeValue = repaired;
+
+    });
+
+  };
+
+  new MutationObserver((records) => {
+
+    records.forEach((record) => {
+
+      if (record.type === "characterData") repairNode(record.target);
+
+      record.addedNodes.forEach(repairNode);
+
+    });
+
+  }).observe(document.body, {
+
+    childList: true,
+
+    subtree: true,
+
+    characterData: true,
+
+  });
+
+}
+
+
+
+/* ==========================================================================
+
+   EASY CONFIGURATION — edit everything below, nothing else
+
+   ========================================================================== */
+
+/* ==========================================================================
+
+   INITIAL POPULATE FROM CONFIG
+
+   ========================================================================== */
+
+function formatName(name) {
+
+  if (!name || typeof name !== "string") return "";
+
+  const trimmed = name.trim();
+
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+
+}
+
+
+
+function populateContent() {
+
+  const nameVal = (CONFIG.name || "").trim();
+
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+
+
+  document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
+
+  const slot1 = document.getElementById("name-slot-1");
+
+  if (slot1) slot1.textContent = displayName ? `, ${displayName}` : "";
+
+  const slot2 = document.getElementById("name-slot-2");
+
+  if (slot2) slot2.textContent = displayName || "You";
+
+
+
+  const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
+
+  if (logoEl) {
+
+    logoEl.textContent = displayName ? `✨ ${displayName}'s Birthday ✨` : "✨ Happy Birthday ✨";
+
+  }
+
+
+
+  const sealEl = document.getElementById("seal-initial");
+
+  if (sealEl) sealEl.textContent = displayName ? displayName.charAt(0).toUpperCase() : "❤️";
+
+
+
+  const peekEl = document.getElementById("letter-peek-text");
+
+  if (peekEl) peekEl.textContent = displayName ? `For ${displayName} ❤️` : "For You ❤️";
+
+
+
+  const hintEl = document.getElementById("pc-hint");
+
+  if (hintEl) {
+
+    if (displayName || (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234")) {
+
+      hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
+
+    } else {
+
+      hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
+
+    }
+
+  }
+
+
+
+  updateBirthdayCard();
+
+
+
+  // Letter body — typed in later, just seed the DOM nodes now
+
+  const letterBody = document.getElementById("letter-body");
+
+  CONFIG.letterLines.forEach(() => {
+
+    const p = document.createElement("p");
+
+    letterBody.appendChild(p);
+
+  });
+
+
+
+  document.getElementById("memory-text").textContent = CONFIG.memory;
+
+
+
+  const reasonsGrid = document.getElementById("reasons-grid");
+
+  CONFIG.reasons.forEach((r, i) => {
+
+    const el = document.createElement("div");
+
+    el.className = "info-card glass reveal";
+
+    el.style.setProperty("--i", i);
+
+    el.innerHTML = `<span class="icon">${r.icon}</span><h3>${r.title}</h3><p>${r.text}</p>`;
+
+    reasonsGrid.appendChild(el);
+
+  });
+
+
+
+  showRandomWish();
+
+
+
+  const deck = document.getElementById("gallery-deck");
+
+  deck.innerHTML = "";
+
+  CONFIG.gallery.forEach((g, i) => {
+
+    const el = document.createElement("div");
+
+    el.className = "polaroid reveal";
+
+    el.style.setProperty("--rot", g.rot + "deg");
+
+    el.style.setProperty("--i", i);
+
+    const bg = `hsl(${(i * 47) % 360} 70% 75%)`;
+
+    
+
+    const frontContent = g.image
+
+      ? `<div class="frame"><img src="${g.image}" alt="${g.cap}"></div><div class="cap">${g.cap}</div>`
+
+      : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+
+
+
+    const backContent = `<div class="polaroid-back"><p>${g.secretNote || "A special memory ❤️"}</p><span class="tap-hint">Tap to flip back</span></div>`;
+
+
+
+    el.innerHTML = `<div class="polaroid-inner"><div class="polaroid-front">${frontContent}</div>${backContent}</div>`;
+
+
+
+    if (g.image) {
+
+      const img = el.querySelector("img");
+
+      if (img) {
+
+        img.addEventListener("error", () => {
+
+          const front = el.querySelector(".polaroid-front");
+
+          if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+
+        });
+
+      }
+
+    }
+
+
+
+    el.addEventListener("click", () => {
+
+      el.classList.toggle("flipped");
+
+      playPaperRustle();
+
+    });
+
+
+
+    deck.appendChild(el);
+
+  });
+
+
+
+  const tl = document.getElementById("timeline-wrap");
+
+  CONFIG.timeline.forEach((t, i) => {
+
+    const el = document.createElement("div");
+
+    el.className = "timeline-item reveal";
+
+    el.dataset.icon = t.icon;
+
+    el.style.setProperty("--i", i);
+
+    el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
+
+    tl.appendChild(el);
+
+  });
+
+  requestAnimationFrame(() => {
+
+    const last = tl.lastElementChild;
+
+    if (last)
+
+      tl.style.setProperty("--timeline-line-end", `${last.offsetTop + 11}px`);
+
+  });
+
+
+
+  document.getElementById("gift-message").textContent = CONFIG.gift.message;
+
+  document.getElementById("gift-coupon").textContent = CONFIG.gift.coupon;
+
+  buildCountdown();
+
+  buildDynamicGreeting();
+
+}
+
+
+
+function showRandomWish() {
+
+  const w = CONFIG.wishes[Math.floor(Math.random() * CONFIG.wishes.length)];
+
+  document.getElementById("wish-quote-text").textContent = w;
+
+}
+
+
+
+function buildCountdown() {
+
+  const grid = document.getElementById("countdown-grid");
+
+  if (!grid) return;
+
+  grid.innerHTML = [
+
+    { label: "Days", id: "cd-days" },
+
+    { label: "Hours", id: "cd-hours" },
+
+    { label: "Mins", id: "cd-min" },
+
+    { label: "Secs", id: "cd-sec", highlight: true },
+
+  ]
+
+    .map(
+
+      (u) => `
+
+      <div class="age-unit ${u.highlight ? "highlight-unit" : ""}" style="flex:1 1 110px;">
+
+        <span class="age-num" id="${u.id}">00</span>
+
+        <span class="age-label">${u.label}</span>
+
+      </div>`,
+
+    )
+
+    .join("");
+
+  updateCountdown();
+
+  updateAgeCounter();
+
+  setInterval(() => {
+
+    updateCountdown();
+
+    updateAgeCounter();
+
+  }, 1000);
+
+}
+
+
+
+const MONTH_NAMES = [
+
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+
+];
+
+
+
+const MONTH_FULL_NAMES = [
+
+  "January", "February", "March", "April", "May", "June",
+
+  "July", "August", "September", "October", "November", "December"
+
+];
+
+
+
+function getZodiacSign(day, month) {
+
+  const zodiacs = [
+
+    { name: "♑ Capricorn", endDay: 19 },
+
+    { name: "♒ Aquarius", endDay: 18 },
+
+    { name: "♓ Pisces", endDay: 20 },
+
+    { name: "♈ Aries", endDay: 19 },
+
+    { name: "♉ Taurus", endDay: 20 },
+
+    { name: "♊ Gemini", endDay: 20 },
+
+    { name: "♋ Cancer", endDay: 22 },
+
+    { name: "♌ Leo", endDay: 22 },
+
+    { name: "♍ Virgo", endDay: 22 },
+
+    { name: "♎ Libra", endDay: 22 },
+
+    { name: "♏ Scorpio", endDay: 21 },
+
+    { name: "♐ Sagittarius", endDay: 21 },
+
+    { name: "♑ Capricorn", endDay: 31 },
+
+  ];
+
+  if (!month || !day) return "✨ Birthday Star";
+
+  const m = parseInt(month);
+
+  const d = parseInt(day);
+
+  if (m < 1 || m > 12) return "✨ Birthday Star";
+
+  return d <= zodiacs[m - 1].endDay ? zodiacs[m - 1].name : zodiacs[m].name;
+
+}
+
+
+
+function getOrdinalDay(d) {
+
+  if (!d) return "";
+
+  const n = parseInt(d);
+
+  if (n >= 11 && n <= 13) return n + "th";
+
+  switch (n % 10) {
+
+    case 1: return n + "st";
+
+    case 2: return n + "nd";
+
+    case 3: return n + "rd";
+
+    default: return n + "th";
+
+  }
+
+}
+
+
+
+function updateBirthdayCard() {
+
+  const d = CONFIG.birthDate?.day || 1;
+
+  const m = CONFIG.birthDate?.month || 1;
+
+  const nameVal = (CONFIG.name || "").trim();
+
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+
+
+  const monthShort = MONTH_NAMES[(m - 1) % 12];
+
+  const monthFull = MONTH_FULL_NAMES[(m - 1) % 12];
+
+  const ordinalDay = getOrdinalDay(d);
+
+  const zodiac = getZodiacSign(d, m);
+
+
+
+  const envBadge = document.getElementById("envelope-date-badge");
+
+  if (envBadge) envBadge.textContent = `🗓️ ${ordinalDay} ${monthFull}`;
+
+
+
+  const dayEl = document.getElementById("bday-card-day");
+
+  if (dayEl) dayEl.textContent = String(d).padStart(2, "0");
+
+
+
+  const monthEl = document.getElementById("bday-card-month");
+
+  if (monthEl) monthEl.textContent = monthShort;
+
+
+
+  const zodiacEl = document.getElementById("bday-card-zodiac");
+
+  if (zodiacEl) zodiacEl.textContent = zodiac;
+
+
+
+  const nameEl = document.getElementById("bday-card-name");
+
+  if (nameEl) nameEl.textContent = displayName || "Special Someone";
+
+
+
+  const subEl = document.getElementById("bday-card-sub");
+
+  if (subEl) subEl.textContent = `Mark your calendar for ${ordinalDay} ${monthFull} 🎉`;
+
+}
+
+
+
+function updateAgeCounter() {
+
+  updateBirthdayCard();
+
+  const birthYear = CONFIG.birthDate?.year || CONFIG.seedYear || 2001;
+
+  const birthMonth = ((CONFIG.birthDate?.month || 1) - 1);
+
+  const birthDay = CONFIG.birthDate?.day || 1;
+
+
+
+  const now = new Date();
+
+  const birthDateObj = new Date(birthYear, birthMonth, birthDay, 0, 0, 0);
+
+
+
+  if (now < birthDateObj) return;
+
+
+
+  let years = now.getFullYear() - birthDateObj.getFullYear();
+
+  let months = now.getMonth() - birthDateObj.getMonth();
+
+  let days = now.getDate() - birthDateObj.getDate();
+
+
+
+  if (days < 0) {
+
+    months--;
+
+    const prevMonthDate = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    days += prevMonthDate.getDate();
+
+  }
+
+  if (months < 0) {
+
+    years--;
+
+    months += 12;
+
+  }
+
+
+
+  const hours = now.getHours();
+
+  const mins = now.getMinutes();
+
+  const secs = now.getSeconds();
+
+
+
+  const totalMs = now - birthDateObj;
+
+  const totalDays = Math.floor(totalMs / (1000 * 60 * 60 * 24));
+
+  const heartbeats = ((totalDays * 24 * 60 * 75) / 1000000).toFixed(1);
+
+
+
+  const setT = (id, v) => {
+
+    const el = document.getElementById(id);
+
+    if (el) el.textContent = String(v).padStart(2, "0");
+
+  };
+
+  setT("age-years", years);
+
+  setT("age-months", months);
+
+  setT("age-days", days);
+
+  setT("age-hours", hours);
+
+  setT("age-min", mins);
+
+  setT("age-sec", secs);
+
+
+
+  const setVal = (id, v) => {
+
+    const el = document.getElementById(id);
+
+    if (el) el.textContent = v;
+
+  };
+
+  setVal("stat-days", totalDays.toLocaleString());
+
+  setVal("stat-heartbeats", heartbeats + "M");
+
+  setVal("stat-trips", years);
+
+}
+
+
+
+function updateCountdown() {
+
+  const now = new Date();
+
+  let next = new Date(
+
+    now.getFullYear(),
+
+    CONFIG.birthDate.month - 1,
+
+    CONFIG.birthDate.day,
+
+    0,
+
+    0,
+
+    0,
+
+  );
+
+  if (next < now)
+
+    next = new Date(
+
+      now.getFullYear() + 1,
+
+      CONFIG.birthDate.month - 1,
+
+      CONFIG.birthDate.day,
+
+    );
+
+  const diff = next - now;
+
+  const d = Math.floor(diff / 86400000);
+
+  const h = Math.floor((diff % 86400000) / 3600000);
+
+  const m = Math.floor((diff % 3600000) / 60000);
+
+  const s = Math.floor((diff % 60000) / 1000);
+
+  const set = (id, v) => {
+
+    const el = document.getElementById(id);
+
+    if (el) el.textContent = String(v).padStart(2, "0");
+
+  };
+
+  set("cd-days", d);
+
+  set("cd-hours", h);
+
+  set("cd-min", m);
+
+  set("cd-sec", s);
+
+}
+
+
+
+function buildDynamicGreeting() {
+
+  const h = new Date().getHours();
+
+  const g =
+
+    h < 5
+
+      ? "Still up this late? Even now, happy birthday 🌙"
+
+      : h < 12
+
+        ? "Good morning — go make today count ☀️"
+
+        : h < 17
+
+          ? "Hope your afternoon is as good as you deserve 🌤️"
+
+          : h < 21
+
+            ? "Good evening — the celebration is just getting started 🌅"
+
+            : "A little late-night birthday magic, just for you 🌌";
+
+  document.getElementById("dynamic-greeting").textContent = g;
+
+}
+
+
+
+/* ==========================================================================
+
+   STARS + AMBIENT PARTICLE LAYERS (pure canvas/CSS, zero deps)
+
+   ========================================================================== */
+
+function initStars() {
+
+  const canvas = document.getElementById("stars-canvas");
+
+  const ctx = canvas.getContext("2d");
+
+  let stars = [];
+
+  function resize() {
+
+    canvas.width = window.innerWidth;
+
+    canvas.height = window.innerHeight;
+
+    const count = Math.floor((canvas.width * canvas.height) / 18000);
+
+    stars = Array.from({ length: Math.min(count, 110) }, () => ({
+
+      x: Math.random() * canvas.width,
+
+      y: Math.random() * canvas.height,
+
+      r: Math.random() * 1.4 + 0.3,
+
+      a: Math.random(),
+
+      speed: Math.random() * 0.015 + 0.003,
+
+    }));
+
+  }
+
+  function draw() {
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    stars.forEach((st) => {
+
+      st.a += st.speed;
+
+      const op = ((Math.sin(st.a) + 1) / 2) * 0.8 + 0.2;
+
+      ctx.beginPath();
+
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+
+      ctx.fillStyle = `rgba(255,255,255,${op})`;
+
+      ctx.fill();
+
+    });
+
+    requestAnimationFrame(draw);
+
+  }
+
+  window.addEventListener("resize", resize);
+
+  resize();
+
+  draw();
+
+}
+
+
+
+/* SFX Synthesizer Engine */
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+let audioCtx = null;
+
+function getAudioCtx() {
+
+  if (!audioCtx) audioCtx = new AudioCtx();
+
+  if (audioCtx.state === "suspended") audioCtx.resume();
+
+  return audioCtx;
+
+}
+
+
+
+function playPopSound() {
+
+  try {
+
+    const ctx = getAudioCtx();
+
+    const osc = ctx.createOscillator();
+
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+
+    osc.frequency.setValueAtTime(450, ctx.currentTime);
+
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+    osc.connect(gain);
+
+    gain.connect(ctx.destination);
+
+    osc.start();
+
+    osc.stop(ctx.currentTime + 0.08);
+
+  } catch (e) {}
+
+}
+
+
+
+function playPaperRustle() {
+
+  try {
+
+    const ctx = getAudioCtx();
+
+    const bufferSize = ctx.sampleRate * 0.12;
+
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+    const noise = ctx.createBufferSource();
+
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+
+    filter.type = "bandpass";
+
+    filter.frequency.value = 1200;
+
+    const gain = ctx.createGain();
+
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+
+    noise.connect(filter);
+
+    filter.connect(gain);
+
+    gain.connect(ctx.destination);
+
+    noise.start();
+
+  } catch (e) {}
+
+}
+
+
+
+function playChimeSound() {
+
+  try {
+
+    const ctx = getAudioCtx();
+
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+
+      const osc = ctx.createOscillator();
+
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.06);
+
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.06 + 0.4);
+
+      osc.connect(gain);
+
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + idx * 0.06);
+
+      osc.stop(ctx.currentTime + idx * 0.06 + 0.4);
+
+    });
+
+  } catch (e) {}
+
+}
+
+
+
+function spawnFloaty(container, emojiList, opts = {}) {
+
+  const el = document.createElement("div");
+
+  el.className = "floaty";
+
+  el.style.pointerEvents = "auto";
+
+  el.style.cursor = "pointer";
+
+  el.textContent = repairMojibake(
+
+    emojiList[Math.floor(Math.random() * emojiList.length)],
+
+  );
+
+  const size = opts.size || 14 + Math.random() * 16;
+
+  el.style.left = Math.random() * 100 + "%";
+
+  el.style.fontSize = size + "px";
+
+  el.style.setProperty("--drift", Math.random() * 140 - 70 + "px");
+
+  const dur = opts.duration || 10 + Math.random() * 8;
+
+  el.style.animationDuration = dur + "s";
+
+
+
+  el.addEventListener("click", (e) => {
+
+    e.stopPropagation();
+
+    playPopSound();
+
+    const rect = el.getBoundingClientRect();
+
+    confettiBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 20);
+
+    el.remove();
+
+  });
+
+
+
+  container.appendChild(el);
+
+  setTimeout(() => el.remove(), dur * 1000 + 200);
+
+}
+
+
+
+function initAmbientLayer() {
+
+  const layer = document.getElementById("ambient-layer");
+
+
+
+  // bokeh
+
+  for (let i = 0; i < 8; i++) {
+
+    const b = document.createElement("div");
+
+    b.className = "bokeh";
+
+    const size = 6 + Math.random() * 18;
+
+    b.style.width = size + "px";
+
+    b.style.height = size + "px";
+
+    b.style.left = Math.random() * 100 + "%";
+
+    b.style.bottom = "-20px";
+
+    b.style.animationDuration = 10 + Math.random() * 14 + "s";
+
+    b.style.animationDelay = Math.random() * 10 + "s";
+
+    layer.appendChild(b);
+
+  }
+
+  // glass blobs
+
+  for (let i = 0; i < 3; i++) {
+
+    const b = document.createElement("div");
+
+    b.className = "blob";
+
+    const size = 120 + Math.random() * 180;
+
+    b.style.width = size + "px";
+
+    b.style.height = size + "px";
+
+    b.style.left = Math.random() * 90 + "%";
+
+    b.style.top = Math.random() * 90 + "%";
+
+    b.style.animationDelay = Math.random() * 6 + "s";
+
+    layer.appendChild(b);
+
+  }
+
+  // fireflies
+
+  for (let i = 0; i < 6; i++) {
+
+    const f = document.createElement("div");
+
+    f.className = "firefly";
+
+    f.style.left = Math.random() * 100 + "%";
+
+    f.style.top = 20 + Math.random() * 70 + "%";
+
+    f.style.animationDelay = Math.random() * 6 + "s";
+
+    layer.appendChild(f);
+
+  }
+
+  // periodic ambient floaties: hearts / butterflies / petals / sparkles
+
+  setInterval(
+
+    () =>
+
+      spawnFloaty(layer, ["💖", "💕", "✨"], {
+
+        duration: 9 + Math.random() * 6,
+
+      }),
+
+    2600,
+
+  );
+
+  setInterval(
+
+    () => spawnFloaty(layer, ["🦋"], { duration: 14, size: 22 }),
+
+    6200,
+
+  );
+
+  setInterval(
+
+    () => spawnFloaty(layer, ["🌸", "🌺"], { duration: 11, size: 16 }),
+
+    4800,
+
+  );
+
+}
+
+
+
+/* ==========================================================================
+
+   CONFETTI / FIREWORKS / BALLOONS (custom canvas physics)
+
+   ========================================================================== */
+
+const burstCanvas = document.createElement("canvas");
+
+burstCanvas.style.cssText =
+
+  "position:fixed;inset:0;z-index:80;pointer-events:none;width:100%;height:100%;";
+
+document.body.appendChild(burstCanvas);
+
+const bctx = burstCanvas.getContext("2d");
+
+function resizeBurst() {
+
+  burstCanvas.width = innerWidth;
+
+  burstCanvas.height = innerHeight;
+
+}
+
+window.addEventListener("resize", resizeBurst);
+
+resizeBurst();
+
+
+
+let burstParticles = [];
+
+function confettiBurst(originX, originY, count = 120) {
+
+  const colors = [
+
+    "#FF5FA2",
+
+    "#FFB6D9",
+
+    "#A855F7",
+
+    "#7C3AED",
+
+    "#FFD700",
+
+    "#FFF7FB",
+
+  ];
+
+  for (let i = 0; i < count; i++) {
+
+    burstParticles.push({
+
+      x: originX,
+
+      y: originY,
+
+      vx: (Math.random() - 0.5) * 10,
+
+      vy: Math.random() * -10 - 4,
+
+      g: 0.28,
+
+      rot: Math.random() * 360,
+
+      vr: (Math.random() - 0.5) * 14,
+
+      size: 5 + Math.random() * 5,
+
+      color: colors[Math.floor(Math.random() * colors.length)],
+
+      life: 1,
+
+      shape: Math.random() > 0.5 ? "rect" : "circle",
+
+    });
+
+  }
+
+}
+
+function fireworkBurst(x, y) {
+
+  const colors = ["#FF5FA2", "#FFD700", "#A855F7", "#FFFFFF", "#FFB6D9"];
+
+  const color = colors[Math.floor(Math.random() * colors.length)];
+
+  for (let i = 0; i < 60; i++) {
+
+    const angle = (Math.PI * 2 * i) / 60;
+
+    const speed = 3 + Math.random() * 3;
+
+    burstParticles.push({
+
+      x,
+
+      y,
+
+      vx: Math.cos(angle) * speed,
+
+      vy: Math.sin(angle) * speed,
+
+      g: 0.05,
+
+      rot: 0,
+
+      vr: 0,
+
+      size: 3,
+
+      color,
+
+      life: 1,
+
+      shape: "circle",
+
+      fade: 0.014,
+
+    });
+
+  }
+
+}
+
+function animateBursts() {
+
+  bctx.clearRect(0, 0, burstCanvas.width, burstCanvas.height);
+
+  burstParticles = burstParticles.filter((p) => p.life > 0);
+
+  burstParticles.forEach((p) => {
+
+    p.vy += p.g;
+
+    p.x += p.vx;
+
+    p.y += p.vy;
+
+    p.rot += p.vr;
+
+    p.life -= p.fade || 0.012;
+
+    bctx.save();
+
+    bctx.globalAlpha = Math.max(p.life, 0);
+
+    bctx.translate(p.x, p.y);
+
+    bctx.rotate((p.rot * Math.PI) / 180);
+
+    bctx.fillStyle = p.color;
+
+    if (p.shape === "rect")
+
+      bctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 1.6);
+
+    else {
+
+      bctx.beginPath();
+
+      bctx.arc(0, 0, p.size, 0, Math.PI * 2);
+
+      bctx.fill();
+
+    }
+
+    bctx.restore();
+
+  });
+
+  requestAnimationFrame(animateBursts);
+
+}
+
+animateBursts();
+
+
+
+function launchFireworksShow(duration = 3200) {
+
+  const end = Date.now() + duration;
+
+  (function tick() {
+
+    fireworkBurst(
+
+      Math.random() * innerWidth,
+
+      innerHeight * 0.2 + Math.random() * innerHeight * 0.35,
+
+    );
+
+    if (Date.now() < end) setTimeout(tick, 420);
+
+  })();
+
+}
+
+function launchBalloons(n = 10) {
+
+  const colors = ["#FF5FA2", "#A855F7", "#FFD700", "#FFB6D9", "#7C3AED"];
+
+  for (let i = 0; i < n; i++) {
+
+    setTimeout(() => {
+
+      const b = document.createElement("div");
+
+      b.className = "balloon";
+
+      b.style.left = Math.random() * 90 + "vw";
+
+      b.style.background = `radial-gradient(circle at 35% 30%, #fff8, ${colors[i % colors.length]})`;
+
+      b.style.setProperty("--sway", Math.random() * 80 - 40 + "px");
+
+      b.style.animationDuration = 7 + Math.random() * 4 + "s";
+
+      const pop = (event) => {
+
+        if (b.classList.contains("popping")) return;
+
+        b.classList.add("popping");
+
+        const x = event?.clientX ?? b.getBoundingClientRect().left + 25;
+
+        const y = event?.clientY ?? b.getBoundingClientRect().top + 32;
+
+        confettiBurst(x, y, 22);
+
+        setTimeout(() => b.remove(), 320);
+
+      };
+
+      b.addEventListener("pointerdown", pop, { once: true });
+
+      document.body.appendChild(b);
+
+      setTimeout(() => b.remove(), 12000);
+
+    }, i * 180);
+
+  }
+
+}
+
+
+
+/* ==========================================================================
+
+   WEB AUDIO — soft original piano melody (no external files)
+
+   ========================================================================== */
+
+const MusicEngine = (() => {
+
+  let ctx,
+
+    gainNode,
+
+    playing = false,
+
+    timer = null,
+
+    audioEl = null;
+
+  const notes = [
+
+    523.25, 587.33, 659.25, 523.25, 659.25, 783.99, 880.0, 783.99, 659.25,
+
+    523.25, 587.33, 659.25, 523.25, 587.33, 440.0, 392.0, 523.25, 587.33,
+
+    659.25, 523.25, 659.25, 783.99, 880.0, 1046.5, 987.77, 880.0, 783.99,
+
+    659.25, 523.25, 587.33, 523.25,
+
+  ];
+
+
+
+  function initCtx() {
+
+    if (!ctx) {
+
+      const AC = window.AudioContext || window.webkitAudioContext;
+
+      ctx = new AC();
+
+      gainNode = ctx.createGain();
+
+      gainNode.gain.value = 0.28;
+
+      gainNode.connect(ctx.destination);
+
+    }
+
+  }
+
+
+
+  function playNote(freq, dur = 0.5) {
+
+    if (!ctx || ctx.state === "suspended") return;
+
+    const osc = ctx.createOscillator();
+
+    const g = ctx.createGain();
+
+
+
+    osc.type = "sine";
+
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+
+
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+
+    g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+
+
+
+    osc.connect(g);
+
+    g.connect(gainNode);
+
+
+
+    osc.start();
+
+    osc.stop(ctx.currentTime + dur);
+
+  }
+
+
+
+  function playSequence() {
+
+    let idx = 0;
+
+    timer = setInterval(() => {
+
+      if (idx >= notes.length) idx = 0;
+
+      playNote(notes[idx], 0.7);
+
+      idx++;
+
+    }, 450);
+
+  }
+
+
+
+  function play() {
+
+    if (playing) return;
+
+    if (CONFIG.music.file) {
+
+      if (!audioEl) {
+
+        audioEl = new Audio(CONFIG.music.file);
+
+        audioEl.loop = true;
+
+        audioEl.volume = 0.5;
+
+        audioEl.addEventListener("error", () => {
+
+          console.warn(
+
+            "Local audio file failed or missing. Falling back to Web Audio melody.",
+
+          );
+
+          CONFIG.music.file = null;
+
+          play();
+
+        });
+
+      }
+
+      audioEl.play().then(() => {
+
+        playing = true;
+
+      }).catch(() => {
+
+        CONFIG.music.file = null;
+
+        play();
+
+      });
+
+      return;
+
+    }
+
+
+
+    initCtx();
+
+    if (ctx.state === "suspended") {
+
+      ctx.resume().then(() => {
+
+        playing = true;
+
+        playSequence();
+
+      });
+
+    } else {
+
+      playing = true;
+
+      playSequence();
+
+    }
+
+  }
+
+
+
+  function pause() {
+
+    playing = false;
+
+    if (audioEl) {
+
+      audioEl.pause();
+
+    }
+
+    if (timer) {
+
+      clearInterval(timer);
+
+      timer = null;
+
+    }
+
+  }
+
+
+
+  function setVolume(val) {
+
+    if (gainNode) gainNode.gain.value = val;
+
+    if (audioEl) audioEl.volume = val;
+
+  }
+
+  return { play, pause, setVolume, isPlaying: () => playing };
+
+})();
+
+
+
+
+
+
+function initCursor() {
+
+  if (window.matchMedia("(hover:none), (pointer:coarse)").matches) return;
+
+  const dot = document.getElementById("cursor-dot");
+
+  const ring = document.getElementById("cursor-ring");
+
+  let mx = innerWidth / 2,
+
+    my = innerHeight / 2,
+
+    rx = mx,
+
+    ry = my;
+
+  window.addEventListener("mousemove", (e) => {
+
+    mx = e.clientX;
+
+    my = e.clientY;
+
+    dot.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
+
+    if (Math.random() < 0.12) {
+
+      const s = document.createElement("div");
+
+      s.className = "sparkle-trail";
+
+      const size = 3 + Math.random() * 4;
+
+      s.style.width = size + "px";
+
+      s.style.height = size + "px";
+
+      s.style.left = mx + "px";
+
+      s.style.top = my + "px";
+
+      document.body.appendChild(s);
+
+      setTimeout(() => s.remove(), 850);
+
+    }
+
+  });
+
+  (function raf() {
+
+    rx += (mx - rx) * 0.48;
+
+    ry += (my - ry) * 0.48;
+
+    ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+
+    requestAnimationFrame(raf);
+
+  })();
+
+  document
+
+    .querySelectorAll("a,button,.tilt-card,.polaroid,.envelope,.giftbox")
+
+    .forEach((el) => {
+
+      el.addEventListener("mouseenter", () =>
+
+        document.body.classList.add("cursor-hover"),
+
+      );
+
+      el.addEventListener("mouseleave", () =>
+
+        document.body.classList.remove("cursor-hover"),
+
+      );
+
+    });
+
+  document.addEventListener("click", (e) => {
+
+    const r = document.createElement("div");
+
+    r.className = "click-ripple";
+
+    r.style.left = e.clientX + "px";
+
+    r.style.top = e.clientY + "px";
+
+    document.body.appendChild(r);
+
+    setTimeout(() => r.remove(), 650);
+
+  });
+
+}
+
+
+
+function initMagnetic() {
+
+  document.querySelectorAll(".magnetic").forEach((btn) => {
+
+    btn.addEventListener("mousemove", (e) => {
+
+      const r = btn.getBoundingClientRect();
+
+      const x = e.clientX - r.left - r.width / 2,
+
+        y = e.clientY - r.top - r.height / 2;
+
+      btn.style.transform = `translate(${x * 0.28}px, ${y * 0.35}px)`;
+
+    });
+
+    btn.addEventListener("mouseleave", () => {
+
+      btn.style.transform = "translate(0,0)";
+
+    });
+
+  });
+
+}
+
+
+
+function initTilt() {
+
+  document
+
+    .querySelectorAll(".info-card, .polaroid, .letter-paper")
+
+    .forEach((card) => {
+
+      card.classList.add("tilt-card");
+
+      card.addEventListener("mousemove", (e) => {
+
+        const r = card.getBoundingClientRect();
+
+        const px = (e.clientX - r.left) / r.width - 0.5,
+
+          py = (e.clientY - r.top) / r.height - 0.5;
+
+        card.style.transform = `perspective(700px) rotateY(${px * 10}deg) rotateX(${-py * 10}deg)`;
+
+      });
+
+      card.addEventListener("mouseleave", () => {
+
+        card.style.transform = "perspective(700px) rotateY(0) rotateX(0)";
+
+      });
+
+    });
+
+}
+
+
+
+function initGyro() {
+
+  if (!window.DeviceOrientationEvent) return;
+
+  function handle(e) {
+
+    const beta = e.beta || 0,
+
+      gamma = e.gamma || 0;
+
+    document.querySelectorAll(".blob").forEach((b, i) => {
+
+      b.style.transform = `translate(${gamma * 0.6}px, ${beta * 0.4}px)`;
+
+    });
+
+  }
+
+  if (typeof DeviceOrientationEvent.requestPermission === "function") {
+
+    document.getElementById("envelope").addEventListener(
+
+      "click",
+
+      () => {
+
+        DeviceOrientationEvent.requestPermission()
+
+          .then((res) => {
+
+            if (res === "granted")
+
+              window.addEventListener("deviceorientation", handle);
+
+          })
+
+          .catch(() => {});
+
+      },
+
+      { once: true },
+
+    );
+
+  } else {
+
+    window.addEventListener("deviceorientation", handle);
+
+  }
+
+}
+
+
+
+/* ==========================================================================
+
+   SCROLL REVEAL (IntersectionObserver — works with or without GSAP)
+
+   ========================================================================== */
+
+function initReveal() {
+
+  const io = new IntersectionObserver(
+
+    (entries) => {
+
+      entries.forEach((en) => {
+
+        if (en.isIntersecting) en.target.classList.add("in-view");
+
+      });
+
+    },
+
+    { threshold: 0.18 },
+
+  );
+
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+
+
+  // final scene trigger
+
+  const finalIO = new IntersectionObserver(
+
+    (entries) => {
+
+      entries.forEach((en) => {
+
+        if (en.isIntersecting) {
+
+          triggerFinalScene();
+
+          finalIO.disconnect();
+
+        }
+
+      });
+
+    },
+
+    { threshold: 0.5 },
+
+  );
+
+  finalIO.observe(document.getElementById("final-scene"));
+
+
+
+  // dawn transition: interpolate sky colors with scroll progress
+
+  window.addEventListener(
+
+    "scroll",
+
+    () => {
+
+      const doc = document.documentElement;
+
+      const progress =
+
+        doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
+
+      const root = document.documentElement.style;
+
+      if (progress > 0.55) {
+
+        const t = Math.min((progress - 0.55) / 0.45, 1);
+
+        root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
+
+        root.setProperty(
+
+          "--sky-mid",
+
+          mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
+
+        );
+
+      }
+
+    },
+
+    { passive: true },
+
+  );
+
+}
+
+function mixColor(a, b, t) {
+
+  const ah = a
+
+    .replace("#", "")
+
+    .match(/.{2}/g)
+
+    .map((x) => parseInt(x, 16));
+
+  const bh = b
+
+    .replace("#", "")
+
+    .match(/.{2}/g)
+
+    .map((x) => parseInt(x, 16));
+
+  const rc = ah.map((v, i) => Math.round(v + (bh[i] - v) * t));
+
+  return `rgb(${rc.join(",")})`;
+
+}
+
+
+
+/* ==========================================================================
+
+   SCENE LOGIC: loading -> intro -> envelope -> open experience
+
+   ========================================================================== */
+
+function runLoadingSequence() {
+
+  const fill = document.getElementById("loader-fill");
+
+  const pct = document.getElementById("loader-pct");
+
+  let p = 0;
+
+  const timer = setInterval(() => {
+
+    p += 12;
+
+    if (p >= 100) {
+
+      p = 100;
+
+      clearInterval(timer);
+
+      onLoadComplete();
+
+    }
+
+    fill.style.width = p + "%";
+
+    pct.textContent = `Loading memories... ${Math.floor(p)}%`;
+
+  }, 140);
+
+}
+
+
+
+function onLoadComplete() {
+
+  document.getElementById("loader-track").style.display = "none";
+
+  document.getElementById("loader-pct").style.display = "none";
+
+  if (CONFIG.passcode.enabled) {
+
+    document.getElementById("passcode-wrap").classList.add("show");
+
+    initPasscode();
+
+  } else {
+
+    document.getElementById("tap-enter").classList.add("show");
+
+    document
+
+      .getElementById("loading-screen")
+
+      .addEventListener("click", enterIntro, { once: true });
+
+  }
+
+}
+
+
+
+function initPasscode() {
+
+  let entered = "";
+
+  const dotsWrap = document.getElementById("passcode-dots");
+
+  const dots = [...dotsWrap.querySelectorAll(".pc-dot")];
+
+  const passWrap = document.getElementById("passcode-wrap");
+
+  const hint = document.getElementById("pc-hint");
+
+
+
+  const nameVal = (CONFIG.name || "").trim();
+
+  const passVal = (CONFIG.passcode?.code || "1234").trim();
+
+  if (nameVal || passVal !== "1234") {
+
+    hint.textContent = "Hint: think of a date that matters 💕";
+
+  } else {
+
+    hint.textContent = "Hint: 1234 💕";
+
+  }
+
+  let locked = false;
+
+
+
+  function updateDots() {
+
+    dots.forEach((d, i) => {
+
+      d.classList.remove("error", "success");
+
+      d.classList.toggle("filled", i < entered.length);
+
+    });
+
+  }
+
+
+
+  function pressDigit(n) {
+
+    if (locked || entered.length >= CONFIG.passcode.code.length) return;
+
+    entered += n;
+
+    updateDots();
+
+    if (entered.length === CONFIG.passcode.code.length) {
+
+      locked = true;
+
+      setTimeout(checkCode, 220);
+
+    }
+
+  }
+
+  function backspace() {
+
+    if (locked) return;
+
+    entered = entered.slice(0, -1);
+
+    updateDots();
+
+  }
+
+  function checkCode() {
+
+    if (entered === CONFIG.passcode.code) {
+
+      dots.forEach((d) => {
+
+        d.classList.add("success");
+
+      });
+
+      confettiBurst(innerWidth / 2, innerHeight * 0.35, 50);
+
+      passWrap.classList.add("unlocked");
+
+      setTimeout(enterIntro, 550);
+
+    } else {
+
+      dots.forEach((d) => d.classList.add("error"));
+
+      passWrap.classList.add("shake");
+
+      setTimeout(() => {
+
+        passWrap.classList.remove("shake");
+
+        entered = "";
+
+        locked = false;
+
+        updateDots();
+
+      }, 500);
+
+    }
+
+  }
+
+
+
+  document.querySelectorAll(".key[data-num]").forEach((btn) => {
+
+    btn.addEventListener("click", () => pressDigit(btn.dataset.num));
+
+  });
+
+  document.getElementById("pc-back").addEventListener("click", backspace);
+
+
+
+  window.addEventListener("keydown", (e) => {
+
+    if (!document.getElementById("passcode-wrap").classList.contains("show"))
+
+      return;
+
+    if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
+
+    if (e.key === "Backspace") backspace();
+
+  });
+
+}
+
+
+
+function enterIntro() {
+
+  const loading = document.getElementById("loading-screen");
+
+  loading.style.opacity = "0";
+
+  loading.style.filter = "blur(12px)";
+
+  setTimeout(() => {
+
+    loading.style.display = "none";
+
+  }, 900);
+
+
+
+  const intro = document.getElementById("intro-scene");
+
+  intro.classList.add("active");
+
+  typeLine(
+
+    document.getElementById("typewriter"),
+
+    "Someone made something\nspecial for you ❤️",
+
+    () => {
+
+      setTimeout(() => {
+
+        const hint = document.createElement("div");
+
+        hint.className = "tap-enter show";
+
+        hint.textContent = "Tap anywhere to continue";
+
+        hint.style.marginTop = "30px";
+
+        intro.appendChild(hint);
+
+        intro.addEventListener("click", enterMain, { once: true });
+
+      }, 400);
+
+    },
+
+  );
+
+}
+
+
+
+function typeLine(el, text, done) {
+
+  let i = 0;
+
+  text = repairMojibake(text);
+
+  el.textContent = "";
+
+  el.classList.remove("done");
+
+  (function step() {
+
+    if (i <= text.length) {
+
+      el.textContent = text.slice(0, i);
+
+      i++;
+
+      setTimeout(step, 42);
+
+    } else {
+
+      el.classList.add("done");
+
+      if (done) done();
+
+    }
+
+  })();
+
+}
+
+
+
+function enterMain() {
+
+  const intro = document.getElementById("intro-scene");
+
+  intro.style.opacity = "0";
+
+  intro.style.filter = "blur(16px)";
+
+  setTimeout(() => {
+
+    intro.style.display = "none";
+
+  }, 900);
+
+  document.getElementById("experience").classList.add("revealed");
+
+  document.getElementById("music-widget").classList.add("show");
+
+  MusicEngine.play();
+
+  updateMusicWidgetUI(true);
+
+  setTimeout(startExperienceEffects, 80);
+
+}
+
+
+
+let experienceEffectsStarted = false;
+
+function startExperienceEffects() {
+
+  if (experienceEffectsStarted) return;
+
+  experienceEffectsStarted = true;
+
+  initStars();
+
+  initAmbientLayer();
+
+  initCursor();
+
+  initMagnetic();
+
+  initTilt();
+
+}
+
+
+
+function initEnvelope() {
+
+  const env = document.getElementById("envelope");
+
+  const letterScene = document.getElementById("letter-scene");
+
+  env.addEventListener("click", () => {
+
+    if (env.classList.contains("open")) return;
+
+    env.classList.add("open");
+
+    confettiBurst(innerWidth / 2, innerHeight * 0.35, 40);
+
+    setTimeout(() => {
+
+      letterScene.classList.add("letter-ready");
+
+    }, 900);
+
+    setTimeout(() => {
+
+      document
+
+        .getElementById("letter-scene")
+
+        .scrollIntoView({ behavior: "smooth" });
+
+      setTimeout(typeLetterBody, 750);
+
+    }, 1900);
+
+  });
+
+}
+
+
+
+function typeLetterBody() {
+
+  const paras = document.querySelectorAll("#letter-body p");
+
+  let i = 0;
+
+  (function next() {
+
+    if (i >= paras.length) return;
+
+    const p = paras[i];
+
+    p.innerHTML = "";
+
+    const caret = document.createElement("span");
+
+    caret.className = "cursor-caret";
+
+    const html = CONFIG.letterLines[i];
+
+    // strip tags for typing speed calc but type raw text safely
+
+    const temp = document.createElement("div");
+
+    temp.innerHTML = html;
+
+    const text = temp.textContent;
+
+    let c = 0;
+
+    (function type() {
+
+      if (c <= text.length) {
+
+        p.textContent = text.slice(0, c);
+
+        c += 2;
+
+        setTimeout(type, 18);
+
+      } else {
+
+        p.innerHTML = html; // restore formatting (highlight spans) once fully typed
+
+        i++;
+
+        setTimeout(next, 260);
+
+      }
+
+    })();
+
+  })();
+
+}
+
+
+
+/* ==========================================================================
+
+   SURPRISE + GIFT BOX + WIDGETS
+
+   ========================================================================== */
+
+function initSurprise() {
+
+  document.getElementById("surprise-btn").addEventListener("click", (e) => {
+
+    launchFireworksShow(3000);
+
+    launchBalloons(12);
+
+    confettiBurst(innerWidth / 2, innerHeight / 2, 160);
+
+    if (!MusicEngine.isPlaying()) {
+
+      MusicEngine.play();
+
+      updateMusicWidgetUI(true);
+
+    }
+
+  });
+
+}
+
+function initGiftbox() {
+
+  const box = document.getElementById("giftbox");
+
+  const reveal = document.getElementById("gift-reveal");
+
+  box.addEventListener("click", () => {
+
+    box.classList.toggle("open");
+
+    if (box.classList.contains("open")) {
+
+      confettiBurst(
+
+        box.getBoundingClientRect().left + 80,
+
+        box.getBoundingClientRect().top,
+
+        60,
+
+      );
+
+      reveal.classList.add("show");
+
+    } else {
+
+      reveal.classList.remove("show");
+
+    }
+
+  });
+
+}
+
+
+
+/* ==================== PREMIUM CAKE INTERACTION ==================== */
+
+function cakeSound(kind) {
+
+  try {
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+
+    const ac = cakeSound.ac || (cakeSound.ac = new AC());
+
+    const now = ac.currentTime,
+
+      osc = ac.createOscillator(),
+
+      gain = ac.createGain();
+
+    osc.connect(gain);
+
+    gain.connect(ac.destination);
+
+    const tones = {
+
+      chime: [880, 0.12],
+
+      whoosh: [150, 0.26],
+
+      pop: [370, 0.1],
+
+      cut: [220, 0.16],
+
+      cheer: [520, 0.34],
+
+    };
+
+    const [freq, dur] = tones[kind] || tones.pop;
+
+    osc.type = kind === "whoosh" ? "sawtooth" : "sine";
+
+    osc.frequency.setValueAtTime(freq, now);
+
+    osc.frequency.exponentialRampToValueAtTime(
+
+      Math.max(50, freq * 0.48),
+
+      now + dur,
+
+    );
+
+    gain.gain.setValueAtTime(0.0001, now);
+
+    gain.gain.exponentialRampToValueAtTime(
+
+      kind === "cheer" ? 0.08 : 0.05,
+
+      now + 0.02,
+
+    );
+
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    osc.start(now);
+
+    osc.stop(now + dur);
+
+  } catch (e) {}
+
+}
+
+function cakeParticles(x, y, emoji, count = 16) {
+
+  const layer = document.getElementById("ambient-layer");
+
+  for (let i = 0; i < count; i++) {
+
+    const p = document.createElement("span");
+
+    p.textContent = repairMojibake(emoji[i % emoji.length]);
+
+    p.style.cssText = `position:fixed;z-index:80;left:${x}px;top:${y}px;font-size:${10 + Math.random() * 12}px;pointer-events:none;transition:transform ${0.65 + Math.random() * 0.6}s ease-out,opacity 1s ease-out`;
+
+    document.body.appendChild(p);
+
+    requestAnimationFrame(() => {
+
+      p.style.transform = `translate(${(Math.random() - 0.5) * 170}px,${-30 - Math.random() * 150}px) rotate(${Math.random() * 480}deg)`;
+
+      p.style.opacity = "0";
+
+    });
+
+    setTimeout(() => p.remove(), 1300);
+
+  }
+
+}
+
+function initCake() {
+
+  const candles = [...document.querySelectorAll(".candle")],
+
+    hint = document.getElementById("cake-hint");
+
+  const blowBtn = document.getElementById("blow-candles-btn"),
+
+    cutBtn = document.getElementById("cut-cake-btn"),
+
+    saveBtn = document.getElementById("save-memory-btn");
+
+  let completed = false,
+
+    stream,
+
+    audioCtx,
+
+    analyser,
+
+    blowingFrames = 0;
+
+  cakeSound("chime");
+
+  function extinguish(candle) {
+
+    if (candle.classList.contains("out")) return;
+
+    candle.classList.add("out");
+
+    cakeSound("pop");
+
+    const r = candle.getBoundingClientRect();
+
+    cakeParticles(r.left + r.width / 2, r.top, ["✦", "·", "♡"], 7);
+
+    if (candles.every((c) => c.classList.contains("out"))) allCandlesOut();
+
+  }
+
+  function allCandlesOut() {
+
+    if (completed) return;
+
+    completed = true;
+
+    stopMic();
+
+    hint.textContent = "Your wish is in the stars...";
+
+    blowBtn.style.display = "none";
+
+    cutBtn.classList.add("show");
+
+    const wish = document.getElementById("cake-wish");
+
+    wish.textContent = "✨ Make a Wish ✨";
+
+    wish.classList.add("show");
+
+    document.body.classList.add("cake-night");
+
+    setTimeout(() => {
+
+      cakeSound("cheer");
+
+      playCakeBirthdayMelody();
+
+      launchFireworksShow(4200);
+
+      confettiBurst(innerWidth / 2, innerHeight * 0.42, 220);
+
+      launchBalloons(12);
+
+      const flash = document.createElement("div");
+
+      flash.style.cssText =
+
+        "position:fixed;inset:0;z-index:90;background:#fff;pointer-events:none;animation:cakeFlash .7s ease-out forwards";
+
+      document.body.appendChild(flash);
+
+      setTimeout(() => flash.remove(), 750);
+
+      const layer = document.getElementById("ambient-layer");
+
+      let n = 0;
+
+      const rain = setInterval(() => {
+
+        spawnFloaty(layer, ["💖", "🦋", "🌸", "✨"], {
+
+          duration: 6,
+
+          size: 18,
+
+        });
+
+        if (++n > 32) clearInterval(rain);
+
+      }, 140);
+
+      wish.textContent = `Happy Birthday, ${CONFIG.name}`;
+
+      wish.classList.add("cinematic");
+
+    }, 1000);
+
+  }
+
+  candles.forEach((c) => c.addEventListener("click", () => extinguish(c)));
+
+  function stopMic() {
+
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+
+    if (audioCtx) audioCtx.close().catch(() => {});
+
+    stream = null;
+
+    audioCtx = null;
+
+  }
+
+  async function requestBlow() {
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+
+      hint.textContent =
+
+        "Microphone is unavailable — tap each candle to make your wish.";
+
+      return;
+
+    }
+
+    try {
+
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      analyser = audioCtx.createAnalyser();
+
+      analyser.fftSize = 512;
+
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
+
+      hint.textContent = "Blow gently toward your microphone...";
+
+      blowBtn.textContent = "Listening for your wish...";
+
+      const data = new Uint8Array(analyser.fftSize);
+
+      (function listen() {
+
+        if (!stream || completed) return;
+
+        analyser.getByteTimeDomainData(data);
+
+        let sum = 0;
+
+        for (const v of data) {
+
+          const d = (v - 128) / 128;
+
+          sum += d * d;
+
+        }
+
+        const volume = Math.sqrt(sum / data.length);
+
+        if (volume > 0.09) {
+
+          blowingFrames++;
+
+          document.getElementById("luxury-cake").style.filter =
+
+            "drop-shadow(0 18px 16px rgba(255,118,36,.7))";
+
+          if (blowingFrames > 7) {
+
+            const on = candles.filter((c) => !c.classList.contains("out"));
+
+            if (on.length) {
+
+              extinguish(on[0]);
+
+              blowingFrames = 0;
+
+              cakeSound("whoosh");
+
+            }
+
+          }
+
+        } else {
+
+          blowingFrames = Math.max(0, blowingFrames - 1);
+
+          document.getElementById("luxury-cake").style.filter = "";
+
+        }
+
+        requestAnimationFrame(listen);
+
+      })();
+
+    } catch (e) {
+
+      hint.textContent =
+
+        "Microphone permission was not granted — tap the candles instead.";
+
+      blowBtn.style.display = "none";
+
+    }
+
+  }
+
+  blowBtn.addEventListener("click", requestBlow);
+
+  cutBtn.addEventListener("click", () => {
+
+    const stage = document.getElementById("cake-stage");
+
+    if (stage.classList.contains("cutting")) return;
+
+    stage.classList.add("cutting");
+
+    cakeSound("cut");
+
+    const r = stage.getBoundingClientRect();
+
+    cakeParticles(
+
+      r.left + r.width * 0.58,
+
+      r.top + r.height * 0.63,
+
+      ["•", "✦", "♡"],
+
+      34,
+
+    );
+
+    hint.textContent = "Here's your first slice ❤️";
+
+    setTimeout(() => {
+
+      cakeParticles(
+
+        innerWidth / 2,
+
+        innerHeight * 0.55,
+
+        ["❤️", "💖", "💕"],
+
+        26,
+
+      );
+
+      document.getElementById("cake-wish").textContent =
+
+        "A slice of happiness, just for you";
+
+      saveBtn.classList.add("show");
+
+    }, 1200);
+
+  });
+
+  saveBtn.addEventListener("click", () => saveCakeMemory());
+
+}
+
+function positionCakeBeforeSurprise() {
+
+  const cake = document.getElementById("cake-scene");
+
+  const surprise = document.getElementById("surprise-scene");
+
+  if (cake && surprise) surprise.parentNode.insertBefore(cake, surprise);
+
+}
+
+function playCakeBirthdayMelody() {
+
+  const notes = [
+
+    261.63, 261.63, 293.66, 261.63, 349.23, 329.63, 261.63, 261.63, 293.66,
+
+    261.63, 392, 349.23,
+
+  ];
+
+  notes.forEach((note, i) =>
+
+    setTimeout(() => {
+
+      try {
+
+        const AC = window.AudioContext || window.webkitAudioContext,
+
+          ac = cakeSound.ac || (cakeSound.ac = new AC()),
+
+          o = ac.createOscillator(),
+
+          g = ac.createGain();
+
+        o.connect(g);
+
+        g.connect(ac.destination);
+
+        o.frequency.value = note;
+
+        g.gain.setValueAtTime(0.0001, ac.currentTime);
+
+        g.gain.exponentialRampToValueAtTime(0.07, ac.currentTime + 0.04);
+
+        g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.32);
+
+        o.start();
+
+        o.stop(ac.currentTime + 0.34);
+
+      } catch (e) {}
+
+    }, i * 340),
+
+  );
+
+}
+
+function saveCakeMemory() {
+
+  showToast("Saving Memory Snapshot... 📸");
+
+  const displayName = formatName(CONFIG.name || "Happy Birthday");
+
+  const c = document.createElement("canvas");
+
+  c.width = 1200;
+
+  c.height = 800;
+
+  const ctx = c.getContext("2d");
+
+
+
+  // 1. Deep Luxury Radial Aurora Background
+
+  const grad = ctx.createRadialGradient(600, 420, 40, 600, 400, 750);
+
+  grad.addColorStop(0, "#320f48");
+
+  grad.addColorStop(0.5, "#17082e");
+
+  grad.addColorStop(1, "#090314");
+
+  ctx.fillStyle = grad;
+
+  ctx.fillRect(0, 0, 1200, 800);
+
+
+
+  // Floating ambient sparkles
+
+  for (let i = 0; i < 50; i++) {
+
+    const sx = Math.random() * 1200;
+
+    const sy = Math.random() * 800;
+
+    const sr = Math.random() * 2.8 + 0.5;
+
+    ctx.fillStyle = `rgba(255, 248, 252, ${Math.random() * 0.7 + 0.3})`;
+
+    ctx.beginPath();
+
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+
+    ctx.fill();
+
+  }
+
+
+
+  // Double Golden Frame
+
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.55)";
+
+  ctx.lineWidth = 3.5;
+
+  ctx.strokeRect(36, 36, 1128, 728);
+
+  ctx.strokeStyle = "rgba(255, 95, 162, 0.35)";
+
+  ctx.lineWidth = 1.5;
+
+  ctx.strokeRect(48, 48, 1104, 704);
+
+
+
+  // Top Title
+
+  ctx.fillStyle = "#FFD700";
+
+  ctx.font = "italic 700 34px 'Playfair Display', Georgia, serif";
+
+  ctx.textAlign = "center";
+
+  ctx.fillText("✦ A BIRTHDAY MEMORY WORTH KEEPING ✦", 600, 100);
+
+
+
+  // Main Greeting Name
+
+  const greetingText = (CONFIG.name && CONFIG.name.trim()) 
+
+    ? `Happy Birthday, ${displayName} ❤️` 
+
+    : "Happy Birthday ❤️";
+
+
+
+  ctx.shadowColor = "rgba(255, 95, 162, 0.8)";
+
+  ctx.shadowBlur = 25;
+
+  ctx.fillStyle = nameGrad;
+
+  ctx.font = "bold 64px 'Dancing Script', 'Great Vibes', cursive, serif";
+
+  ctx.fillText(greetingText, 600, 185);
+
+  ctx.shadowBlur = 0;
+
+
+
+  // Cake Stand & Plate Base
+
+  ctx.fillStyle = "rgba(214, 182, 93, 0.35)";
+
+  ctx.beginPath();
+
+  ctx.ellipse(600, 680, 290, 48, 0, 0, Math.PI * 2);
+
+  ctx.fill();
+
+
+
+  const standGrad = ctx.createLinearGradient(350, 0, 850, 0);
+
+  standGrad.addColorStop(0, "#FFF9E6");
+
+  standGrad.addColorStop(0.5, "#FFFFFF");
+
+  standGrad.addColorStop(1, "#FFE8B3");
+
+
+
+  ctx.fillStyle = standGrad;
+
+  ctx.strokeStyle = "#FFD700";
+
+  ctx.lineWidth = 4;
+
+  ctx.beginPath();
+
+  ctx.ellipse(600, 670, 250, 34, 0, 0, Math.PI * 2);
+
+  ctx.fill();
+
+  ctx.stroke();
+
+
+
+  // Tier 1 (Bottom Cake Layer)
+
+  const cakeGrad1 = ctx.createLinearGradient(430, 0, 770, 0);
+
+  cakeGrad1.addColorStop(0, "#FFF7FB");
+
+  cakeGrad1.addColorStop(0.5, "#FFE8F3");
+
+  cakeGrad1.addColorStop(1, "#FFD6EC");
+
+  ctx.fillStyle = cakeGrad1;
+
+  ctx.strokeStyle = "#E2A4C4";
+
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+
+  ctx.roundRect(430, 550, 340, 115, 20);
+
+  ctx.fill();
+
+  ctx.stroke();
+
+
+
+  // Tier 2 (Middle Cake Layer)
+
+  const cakeGrad2 = ctx.createLinearGradient(470, 0, 730, 0);
+
+  cakeGrad2.addColorStop(0, "#FFFDF5");
+
+  cakeGrad2.addColorStop(0.5, "#FFF5DC");
+
+  cakeGrad2.addColorStop(1, "#FFE7BD");
+
+  ctx.fillStyle = cakeGrad2;
+
+  ctx.strokeStyle = "#D4AF37";
+
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+
+  ctx.roundRect(470, 455, 260, 100, 18);
+
+  ctx.fill();
+
+  ctx.stroke();
+
+
+
+  // Tier 3 (Top Cake Layer)
+
+  const cakeGrad3 = ctx.createLinearGradient(505, 0, 695, 0);
+
+  cakeGrad3.addColorStop(0, "#FFF7FC");
+
+  cakeGrad3.addColorStop(0.5, "#FFDDF0");
+
+  cakeGrad3.addColorStop(1, "#FFB8DE");
+
+  ctx.fillStyle = cakeGrad3;
+
+  ctx.strokeStyle = "#E286B7";
+
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+
+  ctx.roundRect(505, 370, 190, 90, 16);
+
+  ctx.fill();
+
+  ctx.stroke();
+
+
+
+  // Wavy Scalloped Drips for each Tier
+
+  const drawDrips = (x, y, width, dripColor) => {
+
+    ctx.fillStyle = dripColor;
+
+    ctx.beginPath();
+
+    ctx.moveTo(x, y);
+
+    const numDrips = 6;
+
+    const step = width / numDrips;
+
+    for (let i = 0; i < numDrips; i++) {
+
+      const cx1 = x + i * step + step * 0.3;
+
+      const cy1 = y + (i % 2 === 0 ? 22 : 12);
+
+      const cx2 = x + i * step + step * 0.7;
+
+      const cy2 = y + (i % 2 === 0 ? 22 : 12);
+
+      const ex = x + (i + 1) * step;
+
+      ctx.bezierCurveTo(cx1, cy1, cx2, cy2, ex, y);
+
+    }
+
+    ctx.lineTo(x + width, y - 10);
+
+    ctx.lineTo(x, y - 10);
+
+    ctx.closePath();
+
+    ctx.fill();
+
+  };
+
+  drawDrips(430, 560, 340, "#FF4081");
+
+  drawDrips(470, 465, 260, "#A855F7");
+
+  drawDrips(505, 380, 190, "#FF4081");
+
+
+
+  // Gold Pearl Borders at base of each tier
+
+  const drawPearlBorder = (x, y, width) => {
+
+    ctx.fillStyle = "#FFD700";
+
+    const count = Math.floor(width / 14);
+
+    for (let i = 0; i <= count; i++) {
+
+      ctx.beginPath();
+
+      ctx.arc(x + (i * width) / count, y, 4, 0, Math.PI * 2);
+
+      ctx.fill();
+
+    }
+
+  };
+
+  drawPearlBorder(430, 662, 340);
+
+  drawPearlBorder(470, 552, 260);
+
+  drawPearlBorder(505, 457, 190);
+
+
+
+  // Top Tier Fruit Toppings & Roses
+
+  ctx.font = "28px sans-serif";
+
+  ctx.fillText("🍓 🍒 🌹 🍒 🍓", 600, 355);
+
+
+
+  // Glowing Lit Candles
+
+  [550, 600, 650].forEach((cx) => {
+
+    // Candle Body
+
+    const cGrad = ctx.createLinearGradient(cx - 5, 0, cx + 5, 0);
+
+    cGrad.addColorStop(0, "#FFF");
+
+    cGrad.addColorStop(0.5, "#FFB6D9");
+
+    cGrad.addColorStop(1, "#FF80BF");
+
+    ctx.fillStyle = cGrad;
+
+    ctx.beginPath();
+
+    ctx.roundRect(cx - 5, 298, 10, 55, 3);
+
+    ctx.fill();
+
+
+
+    // Candle Wick
+
+    ctx.fillStyle = "#222";
+
+    ctx.fillRect(cx - 1, 290, 2, 8);
+
+
+
+    // Outer Flame Glow
+
+    ctx.shadowColor = "#FF5722";
+
+    ctx.shadowBlur = 22;
+
+    ctx.fillStyle = "#FFD700";
+
+    ctx.beginPath();
+
+    ctx.ellipse(cx, 280, 8, 14, 0, 0, Math.PI * 2);
+
+    ctx.fill();
+
+
+
+    // Inner Flame Core
+
+    ctx.fillStyle = "#FFFFFF";
+
+    ctx.beginPath();
+
+    ctx.ellipse(cx, 282, 3.5, 7, 0, 0, Math.PI * 2);
+
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+  });
+
+
+
+  // Bottom Signature
+
+  ctx.fillStyle = "#FFB6D9";
+
+  ctx.font = "italic 32px 'Dancing Script', cursive, serif";
+
+  ctx.fillText(`Made with love for ${displayName} • ${new Date().toLocaleDateString()}`, 600, 745);
+
+
+
+  const a = document.createElement("a");
+
+  a.download = `birthday-memory-${displayName.toLowerCase()}.png`;
+
+  a.href = c.toDataURL("image/png");
+
+  a.click();
+
+  showToast("Memory Snapshot Saved! 📸");
+
+}
+
+
+
+function updateMusicWidgetUI(playing) {
+
+  const widget = document.getElementById("music-widget");
+
+  widget.classList.toggle("paused", !playing);
+
+  document.getElementById("music-toggle").textContent = playing
+
+    ? "\u23F8"
+
+    : "\u25B6";
+
+}
+
+function initMusicWidget() {
+
+  const html = `<button id="music-toggle">\u25B6</button><div class="eq-bars"><span></span><span></span><span></span><span></span></div><input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">`;
+
+  const widget = document.createElement("div");
+
+  widget.id = "music-widget";
+
+  widget.className = "glass";
+
+  widget.innerHTML = html;
+
+  document.body.appendChild(widget);
+
+  widget.querySelector("#music-toggle").addEventListener("click", () => {
+
+    if (MusicEngine.isPlaying()) {
+
+      MusicEngine.pause();
+
+      updateMusicWidgetUI(false);
+
+    } else {
+
+      MusicEngine.play();
+
+      updateMusicWidgetUI(true);
+
+    }
+
+  });
+
+  widget
+
+    .querySelector("#vol-slider")
+
+    .addEventListener("input", (e) =>
+
+      MusicEngine.setVolume(parseFloat(e.target.value)),
+
+    );
+
+  MusicEngine.setVolume(0.5);
+
+}
+
+
+
+function exportInstaStory() {
+
+  showToast("Generating HD Insta Story... ✨");
+
+  const displayName = formatName(CONFIG.name || "Happy Birthday");
+
+  const c = document.createElement("canvas");
+
+  c.width = 1080;
+
+  c.height = 1920;
+
+  const ctx = c.getContext("2d");
+
+
+
+  // 1. Deep Luxury Aurora Gradient Background
+
+  const grad = ctx.createLinearGradient(0, 0, 1080, 1920);
+
+  grad.addColorStop(0, "#0c061e");
+
+  grad.addColorStop(0.35, "#240a3e");
+
+  grad.addColorStop(0.7, "#17082c");
+
+  grad.addColorStop(1, "#080314");
+
+  ctx.fillStyle = grad;
+
+  ctx.fillRect(0, 0, 1080, 1920);
+
+
+
+  // 2. Glowing Radial Ambient Bokeh Lights
+
+  const addBokeh = (x, y, r, color) => {
+
+    const bg = ctx.createRadialGradient(x, y, 0, x, y, r);
+
+    bg.addColorStop(0, color);
+
+    bg.addColorStop(1, "transparent");
+
+    ctx.fillStyle = bg;
+
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+
+  };
+
+  addBokeh(300, 400, 350, "rgba(255, 95, 162, 0.25)");
+
+  addBokeh(800, 900, 400, "rgba(168, 85, 247, 0.25)");
+
+  addBokeh(540, 1400, 380, "rgba(255, 215, 0, 0.2)");
+
+
+
+  // 3. Floating Stars & Sparkles
+
+  for (let i = 0; i < 40; i++) {
+
+    const sx = Math.random() * 1080;
+
+    const sy = Math.random() * 1920;
+
+    const sr = Math.random() * 3 + 1;
+
+    const sa = Math.random() * 0.7 + 0.3;
+
+    ctx.fillStyle = `rgba(255, 247, 251, ${sa})`;
+
+    ctx.beginPath();
+
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+
+    ctx.fill();
+
+  }
+
+
+
+  // 4. Double Golden & Pink Ornamental Frame
+
+  ctx.lineWidth = 3;
+
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.5)";
+
+  ctx.beginPath();
+
+  ctx.roundRect(50, 50, 980, 1820, 24);
+
+  ctx.stroke();
+
+
+
+  ctx.lineWidth = 1.5;
+
+  ctx.strokeStyle = "rgba(255, 95, 162, 0.4)";
+
+  ctx.beginPath();
+
+  ctx.roundRect(68, 68, 944, 1784, 18);
+
+  ctx.stroke();
+
+
+
+  // Corner Sparkle Diamonds
+
+  const drawCornerSparkle = (cx, cy) => {
+
+    ctx.fillStyle = "#FFD700";
+
+    ctx.font = "24px sans-serif";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText("✦", cx, cy);
+
+  };
+
+  drawCornerSparkle(90, 105);
+
+  drawCornerSparkle(990, 105);
+
+  drawCornerSparkle(90, 1825);
+
+  drawCornerSparkle(990, 1825);
+
+
+
+  // 5. Header: "✦ HAPPY BIRTHDAY ✦"
+
+  ctx.shadowColor = "rgba(255, 215, 0, 0.6)";
+
+  ctx.shadowBlur = 18;
+
+  ctx.fillStyle = "#FFD700";
+
+  ctx.font = "bold 44px sans-serif";
+
+  ctx.textAlign = "center";
+
+  ctx.fillText("✦ HAPPY BIRTHDAY ✦", 540, 260);
+
+  ctx.shadowBlur = 0;
+
+
+
+  // 6. Recipient Name (Calligraphy & Glow)
+
+  ctx.shadowColor = "rgba(255, 95, 162, 0.7)";
+
+  ctx.shadowBlur = 30;
+
+  ctx.fillStyle = "#FFF7FB";
+
+  ctx.font = "700 105px 'Dancing Script', 'Great Vibes', cursive, serif";
+
+  ctx.fillText(displayName, 540, 400);
+
+  ctx.shadowBlur = 0;
+
+
+
+  // 7. Dynamic Text Measurement & Lines Wrapping
+
+  ctx.font = "400 36px 'Outfit', 'Poppins', sans-serif";
+
+  const wrappedLines = [];
+
+  CONFIG.letterLines.forEach((line) => {
+
+    const clean = line.replace(/<[^>]*>/g, "");
+
+    const words = clean.split(" ");
+
+    let currentLine = "";
+
+    words.forEach((w) => {
+
+      const testLine = currentLine + w + " ";
+
+      if (ctx.measureText(testLine).width > 720) {
+
+        wrappedLines.push(currentLine.trim());
+
+        currentLine = w + " ";
+
+      } else {
+
+        currentLine = testLine;
+
+      }
+
+    });
+
+    if (currentLine) wrappedLines.push(currentLine.trim());
+
+  });
+
+
+
+  const lineHeight = 56;
+
+  const textContentHeight = wrappedLines.length * lineHeight;
+
+  const cardPaddingTop = 75;
+
+  const cardPaddingBottom = 55;
+
+  const cardHeight = textContentHeight + cardPaddingTop + cardPaddingBottom;
+
+  const cardY = 480;
+
+
+
+  // Render Middle Glassmorphism Card Box with DYNAMIC Height
+
+  ctx.save();
+
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+
+  ctx.shadowBlur = 35;
+
+  ctx.shadowOffsetY = 15;
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+
+  ctx.strokeStyle = "rgba(255, 214, 236, 0.28)";
+
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+
+  ctx.roundRect(110, cardY, 860, cardHeight, 36);
+
+  ctx.fill();
+
+  ctx.stroke();
+
+  ctx.restore();
+
+
+
+  // Decorative Card Top Flowers
+
+  ctx.fillStyle = "rgba(255, 182, 217, 0.9)";
+
+  ctx.font = "30px sans-serif";
+
+  ctx.fillText("🌸 ✦ 🌸", 540, cardY + 45);
+
+
+
+  // Render Text Lines inside Card
+
+  ctx.fillStyle = "#FFF7FB";
+
+  ctx.font = "400 36px 'Outfit', 'Poppins', sans-serif";
+
+  let curY = cardY + 110;
+
+  wrappedLines.forEach((l) => {
+
+    ctx.fillText(l, 540, curY);
+
+    curY += lineHeight;
+
+  });
+
+
+
+  // Card Bottom Divider Line
+
+  const dividerY = cardY + cardHeight - 25;
+
+  ctx.strokeStyle = "rgba(255, 215, 0, 0.4)";
+
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+
+  ctx.moveTo(340, dividerY);
+
+  ctx.lineTo(740, dividerY);
+
+  ctx.stroke();
+
+
+
+  // 8. Sender Signature
+
+  const sigY = cardY + cardHeight + 85;
+
+  ctx.shadowColor = "rgba(255, 95, 162, 0.5)";
+
+  ctx.shadowBlur = 12;
+
+  ctx.fillStyle = "#FFB6D9";
+
+  ctx.font = "italic 44px 'Dancing Script', cursive, serif";
+
+  ctx.fillText(`With love, ${CONFIG.from}`, 540, sigY);
+
+  ctx.shadowBlur = 0;
+
+
+
+  // 9. Bottom Festive Tag
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+
+  ctx.font = "500 24px sans-serif";
+
+  ctx.fillText("🎂 CELEBRATING ANOTHER BEAUTIFUL YEAR ✨", 540, sigY + 70);
+
+
+
+  const a = document.createElement("a");
+
+  a.download = `insta-story-${displayName.toLowerCase()}.png`;
+
+  a.href = c.toDataURL("image/png");
+
+  a.click();
+
+  showToast("HD Insta Story Saved! 📸");
+
+}
+
+
+
+function parseQueryParams() {
+
+  const params = new URLSearchParams(location.search);
+
+  const nameParam = params.get("name");
+
+  if (nameParam) CONFIG.name = nameParam;
+
+}
+
+
+
+function checkAdminAccess() {
+
+  const params = new URLSearchParams(location.search);
+
+  const isEditParam = params.has("edit") || params.has("admin");
+
+  const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
+
+
+
+  const fab = document.getElementById("customizer-toggle-btn");
+
+  if (!fab) return;
+
+
+
+  if (isEditParam || isStoredAdmin) {
+
+    fab.classList.add("admin-visible");
+
+    localStorage.setItem("is_admin_user", "true");
+
+  }
+
+
+
+  // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
+
+  window.addEventListener("keydown", (e) => {
+
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
+
+      e.preventDefault();
+
+      fab.classList.toggle("admin-visible");
+
+      const active = fab.classList.contains("admin-visible");
+
+      localStorage.setItem("is_admin_user", active ? "true" : "false");
+
+      showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+
+    }
+
+  });
+
+
+
+  // Footer triple-click shortcut
+
+  const footer = document.querySelector("footer");
+
+  if (footer) {
+
+    let clicks = 0;
+
+    let timer = null;
+
+    footer.addEventListener("click", () => {
+
+      clicks++;
+
+      clearTimeout(timer);
+
+      if (clicks >= 3) {
+
+        clicks = 0;
+
+        fab.classList.toggle("admin-visible");
+
+        const active = fab.classList.contains("admin-visible");
+
+        localStorage.setItem("is_admin_user", active ? "true" : "false");
+
+        showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+
+      } else {
+
+        timer = setTimeout(() => { clicks = 0; }, 400);
+
+      }
+
+    });
+
+  }
+
+}
+
+
+
+function initCustomizerModal() {
+
+  parseQueryParams();
+
+  checkAdminAccess();
+
+
+
+  const backdrop = document.getElementById("customizer-modal");
+
+  const toggleBtn = document.getElementById("customizer-toggle-btn");
+
+  const closeBtn = document.getElementById("customizer-close-btn");
+
+  const saveBtn = document.getElementById("customizer-save-btn");
+
+  const shareLinkBtn = document.getElementById("customizer-share-link-btn");
+
+
+
+  if (!backdrop || !toggleBtn) return;
+
+
+
+  const saved = localStorage.getItem("custom_birthday_config");
+
+  if (saved && !new URLSearchParams(location.search).has("name")) {
+
+    try {
+
+      const parsed = JSON.parse(saved);
+
+      if (parsed.name === "Shivam") delete parsed.name;
+
+      Object.assign(CONFIG, parsed);
+
+    } catch (e) {}
+
+  }
+
+
+
+  toggleBtn.addEventListener("click", () => {
+
+    playChimeSound();
+
+    document.getElementById("input-name").value = CONFIG.name || "";
+
+    document.getElementById("input-year").value = "";
+
+    document.getElementById("input-month").value = "";
+
+    document.getElementById("input-day").value = "";
+
+    document.getElementById("input-passcode").value = (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234") ? CONFIG.passcode.code : "";
+
+    backdrop.classList.add("active");
+
+  });
+
+
+
+  closeBtn.addEventListener("click", () => {
+
+    backdrop.classList.remove("active");
+
+  });
+
+
+
+  backdrop.addEventListener("click", (e) => {
+
+    if (e.target === backdrop) backdrop.classList.remove("active");
+
+  });
+
+
+
+  const getCustomValues = () => {
+
+    const rawName = document.getElementById("input-name").value.trim();
+
+    const nameVal = rawName ? formatName(rawName) : "";
+
+    const yVal = parseInt(document.getElementById("input-year").value) || 2001;
+
+    const mVal = parseInt(document.getElementById("input-month").value) || 1;
+
+    const dVal = parseInt(document.getElementById("input-day").value) || 1;
+
+    const passVal = document.getElementById("input-passcode").value.trim() || "1234";
+
+    return { nameVal, yVal, mVal, dVal, passVal };
+
+  };
+
+
+
+  const applyCustomValues = ({ nameVal, yVal, mVal, dVal, passVal }) => {
+
+    CONFIG.name = nameVal;
+
+    CONFIG.birthDate = { year: yVal, month: mVal, day: dVal };
+
+    CONFIG.passcode.code = passVal;
+
+
+
+    const hintEl = document.getElementById("pc-hint");
+
+    if (hintEl) {
+
+      if (nameVal || passVal !== "1234") {
+
+        hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
+
+      } else {
+
+        hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
+
+      }
+
+    }
+
+
+
+    const slot1 = document.getElementById("name-slot-1");
+
+    if (slot1) slot1.textContent = nameVal ? `, ${nameVal}` : "";
+
+
+
+    const slot2 = document.getElementById("name-slot-2");
+
+    if (slot2) slot2.textContent = nameVal || "You";
+
+
+
+    const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
+
+    if (logoEl) logoEl.textContent = nameVal ? `✨ ${nameVal}'s Birthday ✨` : "✨ Happy Birthday ✨";
+
+
+
+    const peekEl = document.getElementById("letter-peek-text");
+
+    if (peekEl) peekEl.textContent = nameVal ? `For ${nameVal} ❤️` : "For You ❤️";
+
+
+
+    const sealEl = document.getElementById("seal-initial");
+
+    if (sealEl) sealEl.textContent = nameVal ? nameVal.charAt(0).toUpperCase() : "❤️";
+
+
+
+    document.title = nameVal ? `Happy Birthday, ${nameVal}! ❤️` : "Happy Birthday! ❤️";
+
+
+
+    updateAgeCounter();
+
+    updateShareSection();
+
+  };
+
+
+
+  saveBtn.addEventListener("click", () => {
+
+    const values = getCustomValues();
+
+    applyCustomValues(values);
+
+
+
+    localStorage.setItem("custom_birthday_config", JSON.stringify({
+
+      name: CONFIG.name,
+
+      birthDate: CONFIG.birthDate,
+
+      passcode: CONFIG.passcode
+
+    }));
+
+
+
+    backdrop.classList.remove("active");
+
+    playChimeSound();
+
+    showToast(CONFIG.name ? `Wish updated for ${CONFIG.name}! ✨` : "Reset to Default Wish ✨");
+
+  });
+
+
+
+  if (shareLinkBtn) {
+
+    shareLinkBtn.addEventListener("click", async () => {
+
+      const { nameVal, yVal, mVal, dVal, passVal } = getCustomValues();
+
+      applyCustomValues({ nameVal, yVal, mVal, dVal, passVal });
+
+      
+
+      const customUrl = buildRecipientShareUrl(nameVal);
+
+      
+
+      try {
+
+        await navigator.clipboard.writeText(customUrl);
+
+        showToast(nameVal ? `Custom link copied for ${nameVal}! 🔗` : "Custom link copied! 🔗");
+
+      } catch(e) {
+
+        showToast(`Link: ${customUrl}`);
+
+      }
+
+      backdrop.classList.remove("active");
+
+    });
+
+  }
+
+}
+
+
+
+function isHostedOnline() {
+
+  return ["http:", "https:"].includes(location.protocol);
+
+}
+
+
+
+function buildRecipientShareUrl(overrideName) {
+
+  const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
+
+  let baseUrl = location.origin + location.pathname;
+
+  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+
+    baseUrl = location.href.split("?")[0];
+
+  }
+
+  if (!nameVal) return baseUrl;
+
+  return `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
+
+}
+
+
+
+function updateShareSection() {
+
+  const shareUrl = buildRecipientShareUrl();
+
+
+
+  const qrBox = document.getElementById("qr-box");
+
+  if (qrBox) {
+
+    const qrImg = new Image();
+
+    qrImg.style.maxWidth = "180px";
+
+    qrImg.style.borderRadius = "14px";
+
+    qrImg.style.border = "3px solid rgba(255, 215, 0, 0.4)";
+
+    qrImg.style.boxShadow = "0 8px 25px rgba(0,0,0,0.5)";
+
+    
+
+    const apiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
+
+    qrImg.onload = () => {
+
+      qrBox.innerHTML = "";
+
+      qrBox.appendChild(qrImg);
+
+    };
+
+    qrImg.onerror = () => {
+
+      qrBox.innerHTML = '<span style="color:#b5809b;font-size:.75rem;padding:8px;text-align:center;">QR Code unavailable offline</span>';
+
+    };
+
+    qrImg.src = apiQrUrl;
+
+  }
+
+}
+
+
+
+function initShare() {
+
+  updateShareSection();
+
+
+
+  const instaBtn = document.getElementById("insta-story-btn");
+
+  if (instaBtn) instaBtn.addEventListener("click", exportInstaStory);
+
+
+
+  // Copy Link Button
+
+  const copyBtn = document.getElementById("copy-link-btn");
+
+  if (copyBtn) {
+
+    copyBtn.addEventListener("click", async () => {
+
+      const shareUrl = buildRecipientShareUrl();
+
+      const nameVal = (CONFIG.name || "").trim();
+
+      const displayName = nameVal ? formatName(nameVal) : "";
+
+
+
+      try {
+
+        await navigator.clipboard.writeText(shareUrl);
+
+        showToast(displayName ? `Wish link copied for ${displayName}! 🔗` : "Wish link copied! 🔗");
+
+      } catch (e) {
+
+        try {
+
+          const ta = document.createElement("textarea");
+
+          ta.value = shareUrl;
+
+          ta.style.position = "fixed";
+
+          ta.style.opacity = "0";
+
+          document.body.appendChild(ta);
+
+          ta.focus();
+
+          ta.select();
+
+          const ok = document.execCommand("copy");
+
+          ta.remove();
+
+          showToast(ok ? "Wish link copied! 🔗" : "Please copy link from address bar");
+
+        } catch (e2) {
+
+          showToast("Copy link failed");
+
+        }
+
+      }
+
+    });
+
+  }
+
+
+
+  // Native Share / WhatsApp Button
+
+  const shareBtn = document.getElementById("native-share-btn");
+
+  if (shareBtn) {
+
+    shareBtn.addEventListener("click", async () => {
+
+      const shareUrl = buildRecipientShareUrl();
+
+      const nameVal = (CONFIG.name || "").trim();
+
+      const displayName = nameVal ? formatName(nameVal) : "";
+
+
+
+      const introText = displayName 
+        ? `🎂 Hey ${displayName}! Someone created a special Birthday Wish just for you! ❤️\nTap the link below to unwrap your wish 🎁:`
+        : `🎂 Hey! Someone created a special Birthday Wish just for you! ❤️\nTap the link below to unwrap your wish 🎁:`;
+
+
+
+      if (navigator.share) {
+
+        try {
+
+          await navigator.share({
+
+            title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Wish!",
+
+            text: introText,
+
+            url: shareUrl,
+
+          });
+
+          return;
+
+        } catch (e) {}
+
+      }
+
+
+
+      // WhatsApp direct fallback
+
+      const fullWaText = `${introText}\n${shareUrl}`;
+
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullWaText)}`;
+
+      window.open(waUrl, "_blank");
+
+    });
+
+  }
+
+
+
+  // Voice Speech Synthesizer
+
+  const voiceBtn = document.getElementById("voice-btn");
+
+  if (voiceBtn) {
+
+    voiceBtn.addEventListener("click", () => {
+
+      if (!("speechSynthesis" in window)) {
+
+        showToast("Voice playback is not supported on this browser");
+
+        return;
+
+      }
+
+      const nameVal = (CONFIG.name || "").trim();
+
+      const displayName = nameVal ? formatName(nameVal) : "";
+
+      const temp = document.createElement("div");
+
+      CONFIG.letterLines.forEach((l) => (temp.innerHTML += l));
+
+      const text = (displayName ? `Happy birthday ${displayName}. ` : "Happy birthday. ") + temp.textContent;
+
+      const utter = new SpeechSynthesisUtterance(text);
+
+      utter.rate = 0.95;
+
+      utter.pitch = 1.05;
+
+      speechSynthesis.cancel();
+
+      speechSynthesis.speak(utter);
+
+    });
+
+  }
+
+}
+
+
+
+function showToast(msg) {
+
+  const t = document.getElementById("toast");
+
+  t.textContent = msg;
+
+  t.classList.add("show");
+
+  setTimeout(() => t.classList.remove("show"), 2200);
+
+}
+
+
+
+/* ==========================================================================
+
+   FINAL SCENE
+
+   ========================================================================== */
+
+let finalTriggered = false;
+
+function triggerFinalScene() {
+
+  if (finalTriggered) return;
+
+  finalTriggered = true;
+
+  launchFireworksShow(4500);
+
+  launchBalloons(16);
+
+  confettiBurst(innerWidth / 2, innerHeight * 0.3, 200);
+
+  setTimeout(
+
+    () => confettiBurst(innerWidth * 0.2, innerHeight * 0.4, 120),
+
+    500,
+
+  );
+
+  setTimeout(
+
+    () => confettiBurst(innerWidth * 0.8, innerHeight * 0.4, 120),
+
+    900,
+
+  );
+
+  const layer = document.getElementById("ambient-layer");
+
+  let n = 0;
+
+  const petalTimer = setInterval(() => {
+
+    spawnFloaty(layer, ["🌸", "🌺", "💮"], { duration: 8, size: 18 });
+
+    spawnFloaty(layer, ["💖", "💕"], { duration: 7, size: 16 });
+
+    n++;
+
+    if (n > 30) clearInterval(petalTimer);
+
+  }, 200);
+
+  setTimeout(
+
+    () => document.getElementById("signature").classList.add("show"),
+
+    800,
+
+  );
+
+}
+
+
+
+
+
+
+(async function boot() {
+
+  parseQueryParams();
+
+  const hasEditParam = new URLSearchParams(location.search).has("edit");
+
+  const saved = localStorage.getItem("custom_birthday_config");
+
+  if (saved && hasEditParam) {
+
+    try {
+
+      const parsed = JSON.parse(saved);
+
+      Object.assign(CONFIG, parsed);
+
+    } catch (e) {}
+
+  }
+
+
+
+  repairStaticIcons();
+
+  observeDynamicIconText();
+
+  repairObjectText(CONFIG);
+
+  positionCakeBeforeSurprise();
+
+  populateContent();
+
+  initEnvelope();
+
+  initSurprise();
+
+  initGiftbox();
+
+  initCake();
+
+  initMusicWidget();
+
+  initShare();
+
+  initCustomizerModal();
+
+  initReveal();
+
+  runLoadingSequence();
+
+  initGyro();
+
+
+
+  // progressive enhancement — never blocks the experience, hard failsafe below
+
+  const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
+
+  await Promise.race([loadEnhancements(), enhancementTimeout]);
+
+
+
+  if (hasGSAP) {
+
+    document.querySelectorAll(".reveal").forEach((el) => {
+
+      gsap.set(el, { clearProps: "transform,opacity,filter" });
+
+    });
+
+  }
+
+})();
+

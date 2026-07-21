@@ -776,10 +776,15 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 .stat-val{ font-weight:700; color:var(--gold); }
 .stat-name{ opacity:.8; }
 
+@media (max-width:680px){
+  .card-grid{ grid-template-columns:1fr !important; gap:18px; width:100%; max-width:380px; margin:0 auto; }
+  .gallery-deck{ flex-direction:column !important; align-items:center !important; gap:26px; width:100%; }
+  .polaroid{ width:min(285px, 88vw) !important; transform:rotate(0deg) !important; margin:0 auto; }
+}
+
 @media (max-width:560px){
   section{ min-height:auto; padding:64px 16px; }
   .age-grid{ grid-template-columns:repeat(3,1fr); gap:10px; }
-  .polaroid{ width:150px; }
   .count-cell{ width:70px; padding:14px 4px; }
   .typewriter-line{font-size:clamp(1.7rem,8vw,2.25rem);max-width:17ch}.share-row{width:100%;gap:10px}.share-row .btn{flex:1 1 150px;padding:13px 18px}.letter-paper{padding:28px 24px}.letter-paper p{font-size:1rem}.cake-stage{max-width:100%;overflow:visible}.cake-actions .btn{font-size:.88rem;padding:11px 16px}#music-widget{left:50%;bottom:14px;transform:translate(-50%,20px);max-width:calc(100vw - 24px)}#music-widget.show{transform:translate(-50%,0)}
 }

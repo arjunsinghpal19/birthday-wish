@@ -2118,16 +2118,16 @@ function initPasscode() {
 
   const nameVal = (CONFIG.name || "").trim();
 
+  if (!nameVal) {
+    CONFIG.passcode.code = "1234";
+  }
+
   const passVal = (CONFIG.passcode?.code || "1234").trim();
 
-  if (nameVal || passVal !== "1234") {
-
-    hint.textContent = "Hint: think of a date that matters 💕";
-
+  if (nameVal && passVal !== "1234") {
+    hint.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
   } else {
-
-    hint.textContent = "Hint: 1234 💕";
-
+    hint.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
   }
 
   let locked = false;
@@ -3903,157 +3903,89 @@ function initCustomizerModal() {
 
 
   toggleBtn.addEventListener("click", () => {
-
     playChimeSound();
-
-    document.getElementById("input-name").value = CONFIG.name || "";
-
+    document.getElementById("input-name").value = "";
     document.getElementById("input-year").value = "";
-
     document.getElementById("input-month").value = "";
-
     document.getElementById("input-day").value = "";
-
-    document.getElementById("input-passcode").value = (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234") ? CONFIG.passcode.code : "";
-
+    document.getElementById("input-passcode").value = "";
     backdrop.classList.add("active");
-
   });
-
-
 
   closeBtn.addEventListener("click", () => {
-
     backdrop.classList.remove("active");
-
   });
-
-
 
   backdrop.addEventListener("click", (e) => {
-
     if (e.target === backdrop) backdrop.classList.remove("active");
-
   });
 
-
-
   const getCustomValues = () => {
-
     const rawName = document.getElementById("input-name").value.trim();
-
     const nameVal = rawName ? formatName(rawName) : "";
-
     const yVal = parseInt(document.getElementById("input-year").value) || 2001;
-
     const mVal = parseInt(document.getElementById("input-month").value) || 1;
-
     const dVal = parseInt(document.getElementById("input-day").value) || 1;
-
-    const passVal = document.getElementById("input-passcode").value.trim() || "1234";
+    const rawPass = document.getElementById("input-passcode").value.trim();
+    
+    // CRITICAL: If no recipient name is specified, passcode MUST default to "1234"!
+    const passVal = nameVal ? (rawPass || "1234") : "1234";
 
     return { nameVal, yVal, mVal, dVal, passVal };
-
   };
 
-
-
   const applyCustomValues = ({ nameVal, yVal, mVal, dVal, passVal }) => {
-
     CONFIG.name = nameVal;
-
     CONFIG.birthDate = { year: yVal, month: mVal, day: dVal };
-
-    CONFIG.passcode.code = passVal;
-
-
+    CONFIG.passcode.code = nameVal ? passVal : "1234";
 
     const hintEl = document.getElementById("pc-hint");
-
     if (hintEl) {
-
-      if (nameVal || passVal !== "1234") {
-
+      if (nameVal && CONFIG.passcode.code !== "1234") {
         hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
-
       } else {
-
         hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
-
       }
-
     }
 
-
-
     const slot1 = document.getElementById("name-slot-1");
-
     if (slot1) slot1.textContent = nameVal ? `, ${nameVal}` : "";
 
-
-
     const slot2 = document.getElementById("name-slot-2");
-
     if (slot2) slot2.textContent = nameVal || "You";
 
-
-
     const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
-
     if (logoEl) logoEl.textContent = nameVal ? `✨ ${nameVal}'s Birthday ✨` : "✨ Happy Birthday ✨";
 
-
-
     const peekEl = document.getElementById("letter-peek-text");
-
     if (peekEl) peekEl.textContent = nameVal ? `For ${nameVal} ❤️` : "For You ❤️";
 
-
-
     const sealEl = document.getElementById("seal-initial");
-
     if (sealEl) sealEl.textContent = nameVal ? nameVal.charAt(0).toUpperCase() : "❤️";
-
-
 
     document.title = nameVal ? `Happy Birthday, ${nameVal}! ❤️` : "Happy Birthday! ❤️";
 
-
-
     updateAgeCounter();
-
     updateShareSection();
-
   };
 
-
-
   saveBtn.addEventListener("click", () => {
-
     const values = getCustomValues();
-
     applyCustomValues(values);
 
-
-
-    localStorage.setItem("custom_birthday_config", JSON.stringify({
-
-      name: CONFIG.name,
-
-      birthDate: CONFIG.birthDate,
-
-      passcode: CONFIG.passcode
-
-    }));
-
-
+    if (CONFIG.name) {
+      localStorage.setItem("custom_birthday_config", JSON.stringify({
+        name: CONFIG.name,
+        birthDate: CONFIG.birthDate,
+        passcode: CONFIG.passcode
+      }));
+    } else {
+      localStorage.removeItem("custom_birthday_config");
+    }
 
     backdrop.classList.remove("active");
-
     playChimeSound();
-
     showToast(CONFIG.name ? `Wish updated for ${CONFIG.name}! ✨` : "Reset to Default Wish ✨");
-
   });
 
 

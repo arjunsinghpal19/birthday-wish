@@ -431,6 +431,11 @@ function populateContent() {
   setTimeout(updateTimelineLine, 1000);
   window.addEventListener("resize", updateTimelineLine);
   window.addEventListener("load", updateTimelineLine);
+
+  document.getElementById("gift-message").textContent = CONFIG.gift.message;
+  document.getElementById("gift-coupon").textContent = CONFIG.gift.coupon;
+  buildCountdown();
+  buildDynamicGreeting();
 }
 
 function updateTimelineLine() {
@@ -440,18 +445,6 @@ function updateTimelineLine() {
   if (last) {
     tl.style.setProperty("--timeline-line-end", `${last.offsetTop + 15}px`);
   }
-}
-
-
-
-  document.getElementById("gift-message").textContent = CONFIG.gift.message;
-
-  document.getElementById("gift-coupon").textContent = CONFIG.gift.coupon;
-
-  buildCountdown();
-
-  buildDynamicGreeting();
-
 }
 
 

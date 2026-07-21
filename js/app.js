@@ -441,10 +441,14 @@ function populateContent() {
 function updateTimelineLine() {
   const tl = document.getElementById("timeline-wrap");
   if (!tl) return;
-  const last = tl.lastElementChild;
-  if (last) {
-    tl.style.setProperty("--timeline-line-end", `${last.offsetTop + 15}px`);
-  }
+  const items = tl.querySelectorAll(".timeline-item");
+  if (items.length === 0) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const firstCenter = first.offsetTop + 15;
+  const lastCenter = last.offsetTop + 15;
+  tl.style.setProperty("--timeline-line-start", `${firstCenter}px`);
+  tl.style.setProperty("--timeline-line-height", `${lastCenter - firstCenter}px`);
 }
 
 

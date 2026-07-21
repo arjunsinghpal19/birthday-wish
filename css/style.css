@@ -776,20 +776,56 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 .stat-val{ font-weight:700; color:var(--gold); }
 .stat-name{ opacity:.8; }
 
-@media (max-width:680px){
-  .card-grid{ grid-template-columns:1fr !important; gap:18px; width:100%; max-width:380px; margin:0 auto; }
-  .gallery-deck{ flex-direction:column !important; align-items:center !important; gap:26px; width:100%; }
-  .polaroid{ width:min(285px, 88vw) !important; transform:rotate(0deg) !important; margin:0 auto; }
+@media (max-width:768px){
+  section{ min-height:auto; padding:56px 16px; }
+  .section-title{ font-size:clamp(2.1rem,7.5vw,2.8rem); margin-bottom:18px; }
+  .eyebrow{ font-size:.78rem; letter-spacing:.25em; }
+  
+  /* Image 1 Fix: Cards Grid 1-by-1 Single Column */
+  .card-grid{ grid-template-columns:1fr !important; gap:20px; width:100%; max-width:100%; margin:0 auto; }
+  .info-card{ padding:26px 22px; width:100%; border-radius:22px; }
+  .info-card .icon{ font-size:2.2rem; margin-bottom:12px; }
+  .info-card h3{ font-size:1.65rem; margin-bottom:8px; }
+  .info-card p{ font-size:1.02rem; line-height:1.65; }
+
+  /* Image 2 Fix: Polaroid Deck 1-by-1 Stack */
+  .gallery-deck{ flex-direction:column !important; align-items:center !important; gap:28px; width:100%; }
+  .polaroid{ width:min(310px, 92vw) !important; padding:14px 14px 16px; transform:rotate(0deg) !important; margin:0 auto; border-radius:12px; }
+  .polaroid .frame{ border-radius:8px; }
+  .polaroid .cap{ font-size:1.4rem; padding-top:12px; padding-bottom:6px; }
+  .polaroid-back p{ font-size:1.25rem; }
+
+  /* Timeline Mobile Optimization */
+  .timeline-wrap{ max-width:100%; padding-left:56px; }
+  .timeline-wrap::before{ left:28px; }
+  .timeline-item, .timeline-item:nth-child(even){ width:100%; margin-left:0; padding:0 0 34px 18px; text-align:left; }
+  .timeline-item::before, .timeline-item:nth-child(even)::before{ left:-38px; right:auto; width:26px; height:26px; font-size:.85rem; }
+  .timeline-item h4{ font-size:1.4rem; }
+  .timeline-item p{ font-size:.98rem; }
+
+  .age-grid{ grid-template-columns:repeat(3,1fr); gap:10px; }
+  .count-cell{ width:76px; padding:14px 4px; }
+  .typewriter-line{ font-size:clamp(1.7rem,8vw,2.25rem); max-width:17ch; }
+  .share-row{ width:100%; gap:10px; }
+  .share-row .btn{ flex:1 1 150px; padding:13px 18px; }
+  .letter-paper{ padding:28px 22px; }
+  .letter-paper p{ font-size:1.05rem; line-height:1.85; }
+  .cake-stage{ max-width:100%; overflow:visible; }
+  .cake-actions .btn{ font-size:.88rem; padding:11px 16px; }
+  #music-widget{ left:50%; bottom:14px; transform:translate(-50%,20px); max-width:calc(100vw - 24px); }
+  #music-widget.show{ transform:translate(-50%,0); }
 }
 
-@media (max-width:560px){
-  section{ min-height:auto; padding:64px 16px; }
-  .age-grid{ grid-template-columns:repeat(3,1fr); gap:10px; }
-  .count-cell{ width:70px; padding:14px 4px; }
-  .typewriter-line{font-size:clamp(1.7rem,8vw,2.25rem);max-width:17ch}.share-row{width:100%;gap:10px}.share-row .btn{flex:1 1 150px;padding:13px 18px}.letter-paper{padding:28px 24px}.letter-paper p{font-size:1rem}.cake-stage{max-width:100%;overflow:visible}.cake-actions .btn{font-size:.88rem;padding:11px 16px}#music-widget{left:50%;bottom:14px;transform:translate(-50%,20px);max-width:calc(100vw - 24px)}#music-widget.show{transform:translate(-50%,0)}
-}
 @media (max-width:380px){
-  section{padding:52px 12px}.keypad{grid-template-columns:repeat(3,54px);gap:11px}.key{width:54px;height:54px}.share-row .btn{flex-basis:100%}.luxury-cake{transform:translateX(-50%) scale(.7)!important}.cake-stage{height:335px}.cake-actions{gap:8px}.cake-actions .btn{padding:10px 12px;font-size:.8rem}.section-title{font-size:clamp(1.8rem,10vw,2.35rem)}
+  section{ padding:48px 12px; }
+  .keypad{ grid-template-columns:repeat(3,54px); gap:11px; }
+  .key{ width:54px; height:54px; }
+  .share-row .btn{ flex-basis:100%; }
+  .luxury-cake{ transform:translateX(-50%) scale(.7)!important; }
+  .cake-stage{ height:335px; }
+  .cake-actions{ gap:8px; }
+  .cake-actions .btn{ padding:10px 12px; font-size:.8rem; }
+  .section-title{ font-size:clamp(1.8rem,10vw,2.35rem); }
 }
 
 /* Encoding-safe decorative icons. CSS escapes remain correct in every editor/server. */

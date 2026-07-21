@@ -608,9 +608,9 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
 .timeline-item:nth-child(even){margin-left:50%;padding:0 0 42px 42px;text-align:left}
 .timeline-item:last-child{padding-bottom:0}
 .timeline-item::before{
-  content:attr(data-icon); position:absolute; right:-15px; top:2px; width:30px; height:30px; border-radius:50%;
-  background:var(--night2); border:2px solid var(--gold); display:flex; align-items:center; justify-content:center;
-  font-size:.95rem; box-shadow:0 0 12px rgba(255,215,0,.5); z-index:2;
+  content:attr(data-icon); position:absolute; right:-15px; top:0px; width:30px; height:30px; border-radius:50%;
+  background:#170b30; border:2px solid var(--gold); display:flex; align-items:center; justify-content:center;
+  font-size:.95rem; box-shadow:0 0 12px rgba(255,215,0,.5); z-index:5;
 }
 .timeline-item:nth-child(even)::before{left:-15px;right:auto}
 @media(max-width:520px){
@@ -796,11 +796,24 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   .polaroid .cap{ font-size:1.4rem; padding-top:12px; padding-bottom:6px; }
   .polaroid-back p{ font-size:1.25rem; }
 
-  /* Timeline Mobile Optimization */
-  .timeline-wrap{ max-width:100%; padding-left:56px; }
-  .timeline-wrap::before{ left:28px; }
+  /* Image 3 Fix: Birthday Celebration & Annual Milestone Badges Centering on Mobile */
+  .bday-card-chips{ justify-content:center !important; }
+  .bday-details{ text-align:center !important; }
+
+  /* Timeline Mobile Alignment & Layering Fix (Images 1 & 2) */
+  .timeline-wrap{ max-width:100%; padding-left:50px !important; box-sizing:border-box; }
+  .timeline-wrap::before{ left:20px !important; top:15px !important; z-index:1 !important; }
   .timeline-item, .timeline-item:nth-child(even){ width:100%; margin-left:0; padding:0 0 34px 18px; text-align:left; }
-  .timeline-item::before, .timeline-item:nth-child(even)::before{ left:-38px; right:auto; width:26px; height:26px; font-size:.85rem; }
+  .timeline-item::before, .timeline-item:nth-child(even)::before{
+    left:-45px !important;
+    right:auto !important;
+    top:0px !important;
+    width:30px !important;
+    height:30px !important;
+    font-size:.95rem !important;
+    background:#170b30 !important;
+    z-index:5 !important;
+  }
   .timeline-item h4{ font-size:1.4rem; }
   .timeline-item p{ font-size:.98rem; }
 

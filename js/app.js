@@ -4208,6 +4208,13 @@ function initCustomizerModal() {
     document.getElementById("input-gift-message").value = CONFIG.gift?.message || "";
     document.getElementById("input-gift-coupon").value = CONFIG.gift?.coupon || "";
 
+    // Music
+    const musicInput = document.getElementById("input-music-url");
+    if (musicInput) {
+      const curFile = CONFIG.music?.file || "";
+      musicInput.value = (curFile && !curFile.includes("assets/music/happy-birthday-song.mpeg")) ? curFile : "";
+    }
+
     // Dynamic sections
     renderLetterInputs();
     renderReasonInputs();
@@ -4230,6 +4237,8 @@ function initCustomizerModal() {
     const memoryVal = document.getElementById("input-memory").value.trim() || CONFIG.memory;
     const giftMsg = document.getElementById("input-gift-message").value.trim() || CONFIG.gift.message;
     const giftCoupon = document.getElementById("input-gift-coupon").value.trim() || CONFIG.gift.coupon;
+    const musicInput = document.getElementById("input-music-url");
+    const musicUrlVal = musicInput ? musicInput.value.trim() : "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4288,7 +4297,7 @@ function initCustomizerModal() {
       });
     });
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, letterLines, reasons, wishes, gallery, timeline };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, letterLines, reasons, wishes, gallery, timeline };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4304,6 +4313,11 @@ function initCustomizerModal() {
     CONFIG.gallery = vals.gallery;
     CONFIG.timeline = vals.timeline;
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
+    if (vals.musicUrlVal) {
+      CONFIG.music = { file: vals.musicUrlVal };
+    } else {
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+    }
 
     // Re-render entire page content
     reRenderPage();

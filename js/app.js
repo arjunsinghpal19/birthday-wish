@@ -3979,16 +3979,19 @@ function initPaywallModal() {
     });
   }
 
-  const brand = document.querySelector(".nav-logo") || document.querySelector(".brand") || document.querySelector("h1");
-  if (brand) {
+  // Double-Tap Gesture for Admin Password Prompt on Edit Wish Button & Titles
+  const gestureElements = document.querySelectorAll("#customizer-toggle-btn, .logo-glow, .letter-title, h1");
+  gestureElements.forEach(el => {
     let tapCount = 0;
     let tapTimer = null;
-    brand.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
       tapCount++;
       clearTimeout(tapTimer);
       if (tapCount >= 2) {
         tapCount = 0;
-        const pwd = prompt("🔑 Admin Quick Access - Enter Password:");
+        e.preventDefault();
+        e.stopPropagation();
+        const pwd = prompt("🔑 Admin Access — Enter Admin Password:");
         if (pwd === ADMIN_PASSWORD) {
           ACTIVE_UNLOCKED_PLAN = "admin";
           localStorage.setItem("unlocked_plan", "admin");
@@ -3998,10 +4001,10 @@ function initPaywallModal() {
           showToast("Incorrect Admin Password ❌");
         }
       } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 400);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 380);
       }
     });
-  }
+  });
 }
 
 function openCustomizerEditor() {

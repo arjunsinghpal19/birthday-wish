@@ -4575,11 +4575,15 @@ function buildRecipientShareUrl(overrideName) {
 
   const token = encodeWishData(nameVal, codeVal, yVal, mVal, dVal);
 
-  if (token) {
-    return `${baseUrl}?name=${encodeURIComponent(nameVal)}&w=${token}`;
+  let shareUrl = `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
+  if (token) shareUrl += `&w=${token}`;
+
+  // If custom audio link or YouTube URL is set, append &music=
+  if (CONFIG.music?.file && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
+    shareUrl += `&music=${encodeURIComponent(CONFIG.music.file)}`;
   }
 
-  return `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
+  return shareUrl;
 }
 
 
@@ -4926,15 +4930,28 @@ function initMusicWidget() {
 
 (async function boot() {
 
-  // Load saved custom config from localStorage if available
-  const savedConfig = localStorage.getItem("custom_birthday_config");
-  if (savedConfig) {
-    try {
-      const parsed = JSON.parse(savedConfig);
-      if (parsed && typeof parsed === "object") {
-        Object.assign(CONFIG, parsed);
-      }
-    } catch(e){}
+  const searchParams = new URLSearchParams(location.search);
+  const hasRecipientParams = searchParams.has("name") || searchParams.has("w");
+
+  if (hasRecipientParams) {
+    if (searchParams.has("music")) {
+      CONFIG.music = { file: searchParams.get("music") };
+    }
+  } else if (!searchParams.has("admin")) {
+    // Normal visit to root URL: start clean with default 1234 & default melody for a new recipient!
+    localStorage.removeItem("custom_birthday_config");
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
+    CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+  } else {
+    // Admin mode (?admin=2001): load saved admin draft
+    const savedConfig = localStorage.getItem("custom_birthday_config");
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed && typeof parsed === "object") Object.assign(CONFIG, parsed);
+      } catch(e){}
+    }
   }
 
 

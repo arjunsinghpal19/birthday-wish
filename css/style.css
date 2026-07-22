@@ -1003,4 +1003,32 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 .letter-card:before,.letter-card:after{content:"\2726"}
 .letter-paper:before,.letter-paper:after{content:"\1F338"}
 .berry:before{content:"\2726"}
+
+/* Admin Customizer FAB Floating Button - Hidden by default for regular visitors */
+.customizer-fab {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  z-index: 250;
+  display: none !important;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: linear-gradient(135deg, var(--gold) 0%, #ff8ea9 100%);
+  color: #1a0826;
+  border: none;
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5), inset 0 1px 1px #fff;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+.customizer-fab.admin-visible {
+  display: inline-flex !important;
+}
+.customizer-fab:hover {
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.7);
+}
 </style>

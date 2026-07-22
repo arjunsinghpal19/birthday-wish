@@ -3845,94 +3845,77 @@ function parseQueryParams() {
 
 
 function checkAdminAccess() {
-
   const params = new URLSearchParams(location.search);
-
   const isEditParam = params.has("edit") || params.has("admin");
-
   const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
 
-
-
   const fab = document.getElementById("customizer-toggle-btn");
-
   if (!fab) return;
 
-
-
   if (isEditParam || isStoredAdmin) {
-
     fab.classList.add("admin-visible");
-
     localStorage.setItem("is_admin_user", "true");
-
+  } else {
+    fab.classList.remove("admin-visible");
   }
-
-
 
   // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
-
   window.addEventListener("keydown", (e) => {
-
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
-
       e.preventDefault();
-
       fab.classList.toggle("admin-visible");
-
       const active = fab.classList.contains("admin-visible");
-
       localStorage.setItem("is_admin_user", active ? "true" : "false");
-
       showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
-
     }
-
   });
 
-
+  // Secret Double-Tap Gesture on Title/Logo -> Admin Password Prompt (2001)
+  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1");
+  logoEls.forEach(el => {
+    let tapCount = 0;
+    let tapTimer = null;
+    el.addEventListener("click", () => {
+      tapCount++;
+      clearTimeout(tapTimer);
+      if (tapCount >= 2) {
+        tapCount = 0;
+        const pwd = prompt("🔑 Enter Admin Password:");
+        if (pwd === "2001") {
+          fab.classList.add("admin-visible");
+          localStorage.setItem("is_admin_user", "true");
+          showToast("👑 Admin Mode Activated!");
+          const modal = document.getElementById("customizer-modal");
+          if (modal) modal.classList.add("open");
+        } else if (pwd !== null) {
+          showToast("Incorrect Admin Password ❌");
+        }
+      } else {
+        tapTimer = setTimeout(() => { tapCount = 0; }, 400);
+      }
+    });
+  });
 
   // Footer triple-click shortcut
-
   const footer = document.querySelector("footer");
-
   if (footer) {
-
     let clicks = 0;
-
     let timer = null;
-
     footer.addEventListener("click", () => {
-
       clicks++;
-
       clearTimeout(timer);
-
       if (clicks >= 3) {
-
         clicks = 0;
-
         fab.classList.toggle("admin-visible");
-
         const active = fab.classList.contains("admin-visible");
-
         localStorage.setItem("is_admin_user", active ? "true" : "false");
-
         showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
-
       } else {
-
         timer = setTimeout(() => { clicks = 0; }, 400);
-
       }
-
     });
-
   }
-
 }
-
-
 
 function initCustomizerModal() {
 

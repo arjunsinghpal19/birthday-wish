@@ -1591,96 +1591,82 @@ const MusicEngine = (() => {
 
 
 
-  function play() {
+  let ytIframe = null;
 
+  function extractYouTubeId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  }
+
+  function play() {
     if (playing) return;
 
-    if (CONFIG.music.file) {
+    const fileOrUrl = CONFIG.music ? CONFIG.music.file : null;
+    const ytId = extractYouTubeId(fileOrUrl);
 
+    if (ytId) {
+      const container = document.getElementById("yt-player-container");
+      if (container) {
+        container.style.display = "block";
+        container.innerHTML = `<iframe id="yt-iframe" width="200" height="200" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}" allow="autoplay"></iframe>`;
+        playing = true;
+        return;
+      }
+    }
+
+    if (fileOrUrl) {
       if (!audioEl) {
-
-        audioEl = new Audio(CONFIG.music.file);
-
+        audioEl = new Audio(fileOrUrl);
         audioEl.loop = true;
-
         audioEl.volume = 0.5;
-
         audioEl.addEventListener("error", () => {
-
-          console.warn(
-
-            "Local audio file failed or missing. Falling back to Web Audio melody.",
-
-          );
-
+          console.warn("Local audio file failed or missing. Falling back to Web Audio melody.");
           CONFIG.music.file = null;
-
+          playing = false;
           play();
-
         });
-
+      } else if (audioEl.src !== fileOrUrl && !audioEl.src.endsWith(fileOrUrl)) {
+        audioEl.src = fileOrUrl;
       }
 
       audioEl.play().then(() => {
-
         playing = true;
-
       }).catch(() => {
-
         CONFIG.music.file = null;
-
+        playing = false;
         play();
-
       });
-
       return;
-
     }
-
-
 
     initCtx();
-
     if (ctx.state === "suspended") {
-
       ctx.resume().then(() => {
-
         playing = true;
-
         playSequence();
-
       });
-
     } else {
-
       playing = true;
-
       playSequence();
-
     }
-
   }
 
-
-
   function pause() {
-
     playing = false;
-
     if (audioEl) {
-
       audioEl.pause();
-
     }
-
+    const container = document.getElementById("yt-player-container");
+    if (container) {
+      container.innerHTML = "";
+      container.style.display = "none";
+    }
     if (timer) {
-
       clearInterval(timer);
-
       timer = null;
-
     }
-
   }
 
 
@@ -4279,6 +4265,29 @@ function initCustomizerModal() {
 
     // Re-render entire page content
     reRenderPage();
+  }
+
+  // MP3 Audio File Upload Listener
+  const musicFileInput = document.getElementById("input-music-file");
+  const musicUploadBox = document.getElementById("audio-upload-box");
+  const musicStatus = document.getElementById("audio-file-status");
+
+  if (musicUploadBox && musicFileInput) {
+    musicUploadBox.addEventListener("click", () => musicFileInput.click());
+    musicFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (musicStatus) musicStatus.textContent = `⏳ Loading ${file.name}...`;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        CONFIG.music = { file: ev.target.result };
+        const urlInput = document.getElementById("input-music-url");
+        if (urlInput) urlInput.value = "";
+        if (musicStatus) musicStatus.textContent = `✅ Selected: ${file.name}`;
+        showToast("Audio uploaded successfully! 🎵");
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // ─── ADD ITEM HANDLERS ───

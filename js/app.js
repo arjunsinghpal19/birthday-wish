@@ -3845,44 +3845,32 @@ function parseQueryParams() {
 
 
 function checkAdminAccess() {
-
-  const params = new URLSearchParams(location.search);
-
-  const isEditParam = params.has("edit") || params.has("admin");
-
-  const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
-
-
-
-  const fab = document.getElementById("customizer-toggle-btn");
-
-  if (!fab) return;
-
-
-
-  if (isEditParam || isStoredAdmin) {
-
-    fab.classList.add("admin-visible");
-
-    localStorage.setItem("is_admin_user", "true");
-
-  }
-
-
-
-  // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
-
-  window.addEventListener("keydown", (e) => {
-
-    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
-
-      e.preventDefault();
   const params = new URLSearchParams(location.search);
   if (params.get("admin") === ADMIN_PASSWORD) {
     ACTIVE_UNLOCKED_PLAN = "admin";
     localStorage.setItem("unlocked_plan", "admin");
     showToast("👑 Admin Mode Activated! Full Free Access");
   }
+
+  const fab = document.getElementById("customizer-toggle-btn");
+  if (!fab) return;
+
+  const isEditParam = params.has("edit") || params.has("admin");
+  const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
+  if (isEditParam || isStoredAdmin) {
+    fab.classList.add("admin-visible");
+    localStorage.setItem("is_admin_user", "true");
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
+      e.preventDefault();
+      fab.classList.toggle("admin-visible");
+      const active = fab.classList.contains("admin-visible");
+      localStorage.setItem("is_admin_user", active ? "true" : "false");
+      showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+    }
+  });
 }
 
 function initPaywallModal() {

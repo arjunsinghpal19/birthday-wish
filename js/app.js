@@ -4346,13 +4346,13 @@ function initCustomizerModal() {
     if (vidStartInput) {
       vidStartInput.value = CONFIG.videoWish?.startTime || "";
     }
-    const vidRemoveBtn = document.getElementById("remove-video-file-btn");
-    if (vidRemoveBtn) {
-      vidRemoveBtn.style.display = CONFIG.videoWish?.file ? "inline-block" : "none";
+    const audText = document.getElementById("audio-upload-text");
+    if (audText) {
+      audText.textContent = (CONFIG.music?.file && CONFIG.music.isBlob) ? `🎙️ Attached: ${CONFIG.music.fileName || 'audio'}` : `🎙️ Select Audio / Voice Note`;
     }
-    const audioRemoveBtn = document.getElementById("remove-audio-file-btn");
-    if (audioRemoveBtn) {
-      audioRemoveBtn.style.display = (CONFIG.music?.file && CONFIG.music.isBlob) ? "inline-block" : "none";
+    const vidText = document.getElementById("video-upload-text");
+    if (vidText) {
+      vidText.textContent = (CONFIG.videoWish?.file) ? `📹 Attached: ${CONFIG.videoWish.fileName || 'video'}` : `📹 Select Video from Device`;
     }
 
     // Dynamic sections
@@ -5278,7 +5278,7 @@ function initMusicWidget() {
   // Audio / Voice Note file input listeners
   const audFileInput = document.getElementById("input-audio-file");
   const audRemoveBtn = document.getElementById("remove-audio-file-btn");
-  const audUploadLabel = document.getElementById("audio-upload-label");
+  const audUploadText = document.getElementById("audio-upload-text");
 
   if (audFileInput) {
     audFileInput.addEventListener("change", async (e) => {
@@ -5291,7 +5291,7 @@ function initMusicWidget() {
       await AudioStorage.saveAudio(f);
 
       if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
-      if (audUploadLabel) audUploadLabel.innerHTML = `🎙️ Attached: ${f.name.substring(0, 18)}`;
+      if (audUploadText) audUploadText.textContent = `🎙️ Attached: ${f.name.substring(0, 18)}`;
       showToast("Audio / Voice note attached! 🎙️");
     });
   }
@@ -5301,7 +5301,7 @@ function initMusicWidget() {
       CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
       await AudioStorage.removeAudio();
       if (audFileInput) audFileInput.value = "";
-      if (audUploadLabel) audUploadLabel.innerHTML = `🎙️ Select Audio / Voice Note`;
+      if (audUploadText) audUploadText.textContent = `🎙️ Select Audio / Voice Note`;
       audRemoveBtn.style.display = "none";
       MusicEngine.pause();
       showToast("Custom audio removed — Default melody restored 🎵");
@@ -5311,7 +5311,7 @@ function initMusicWidget() {
   // Video file input listeners in customizer modal
   const vidFileInput = document.getElementById("input-video-file");
   const vidRemoveBtn = document.getElementById("remove-video-file-btn");
-  const vidUploadLabel = document.getElementById("video-upload-label");
+  const vidUploadText = document.getElementById("video-upload-text");
 
   if (vidFileInput) {
     vidFileInput.addEventListener("change", async (e) => {
@@ -5326,7 +5326,7 @@ function initMusicWidget() {
       await VideoStorage.saveVideo(f);
 
       if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
-      if (vidUploadLabel) vidUploadLabel.innerHTML = `📹 Attached: ${f.name.substring(0, 18)}`;
+      if (vidUploadText) vidUploadText.textContent = `📹 Attached: ${f.name.substring(0, 18)}`;
       renderVideoWishSection();
       showToast("Video attached & saved! 📹");
     });
@@ -5340,7 +5340,7 @@ function initMusicWidget() {
       }
       await VideoStorage.removeVideo();
       if (vidFileInput) vidFileInput.value = "";
-      if (vidUploadLabel) vidUploadLabel.innerHTML = `📹 Select Video from Device`;
+      if (vidUploadText) vidUploadText.textContent = `📹 Select Video from Device`;
       vidRemoveBtn.style.display = "none";
       renderVideoWishSection();
       showToast("Video removed ✨");

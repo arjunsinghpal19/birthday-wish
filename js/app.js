@@ -3758,27 +3758,77 @@ function exportInstaStory() {
 
 
 
+function encodeWishData(name, code, y, m, d) {
+  try {
+    const data = {
+      n: name,
+      c: (code && code !== "1234") ? code : undefined,
+      y: (y && y !== 2001) ? y : undefined,
+      m: (m && m !== 1) ? m : undefined,
+      d: (d && d !== 1) ? d : undefined
+    };
+    const str = JSON.stringify(data);
+    return btoa(encodeURIComponent(str))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+  } catch (e) {
+    return "";
+  }
+}
+
+function decodeWishData(token) {
+  try {
+    let base64 = token.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4) base64 += "=";
+    const str = decodeURIComponent(atob(base64));
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+}
+
 function parseQueryParams() {
   const params = new URLSearchParams(location.search);
   const nameParam = params.get("name");
-  const codeParam = params.get("code");
-  const yParam = params.get("y");
-  const mParam = params.get("m");
-  const dParam = params.get("d");
+  const tokenParam = params.get("w") || params.get("wish");
+  
+  const rawCode = params.get("code");
+  const rawY = params.get("y");
+  const rawM = params.get("m");
+  const rawD = params.get("d");
+
+  if (tokenParam) {
+    const decoded = decodeWishData(tokenParam);
+    if (decoded) {
+      if (decoded.n) CONFIG.name = formatName(decoded.n);
+      if (decoded.c) CONFIG.passcode.code = decoded.c.trim();
+      else CONFIG.passcode.code = "1234";
+
+      if (decoded.y || decoded.m || decoded.d) {
+        CONFIG.birthDate = {
+          year: parseInt(decoded.y) || CONFIG.birthDate.year || 2001,
+          month: parseInt(decoded.m) || CONFIG.birthDate.month || 1,
+          day: parseInt(decoded.d) || CONFIG.birthDate.day || 1
+        };
+      }
+      return;
+    }
+  }
 
   if (nameParam) {
     CONFIG.name = formatName(nameParam);
-    if (codeParam) {
-      CONFIG.passcode.code = codeParam.trim();
+    if (rawCode) {
+      CONFIG.passcode.code = rawCode.trim();
     } else {
       CONFIG.passcode.code = "1234";
     }
 
-    if (yParam || mParam || dParam) {
+    if (rawY || rawM || rawD) {
       CONFIG.birthDate = {
-        year: parseInt(yParam) || CONFIG.birthDate.year || 2001,
-        month: parseInt(mParam) || CONFIG.birthDate.month || 1,
-        day: parseInt(dParam) || CONFIG.birthDate.day || 1
+        year: parseInt(rawY) || CONFIG.birthDate.year || 2001,
+        month: parseInt(rawM) || CONFIG.birthDate.month || 1,
+        day: parseInt(rawD) || CONFIG.birthDate.day || 1
       };
     }
   } else {
@@ -4068,15 +4118,13 @@ function buildRecipientShareUrl(overrideName) {
   const mVal = CONFIG.birthDate?.month || 1;
   const dVal = CONFIG.birthDate?.day || 1;
 
-  let query = `?name=${encodeURIComponent(nameVal)}`;
-  if (codeVal && codeVal !== "1234") {
-    query += `&code=${encodeURIComponent(codeVal)}`;
-  }
-  if (yVal !== 2001 || mVal !== 1 || dVal !== 1) {
-    query += `&y=${yVal}&m=${mVal}&d=${dVal}`;
+  const token = encodeWishData(nameVal, codeVal, yVal, mVal, dVal);
+
+  if (token) {
+    return `${baseUrl}?name=${encodeURIComponent(nameVal)}&w=${token}`;
   }
 
-  return `${baseUrl}${query}`;
+  return `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
 }
 
 

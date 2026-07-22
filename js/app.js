@@ -4053,39 +4053,27 @@ function initCustomizerModal() {
     });
   }
 
-  // ─── RENDER GALLERY INPUTS (with image upload) ───
+  // ─── RENDER GALLERY INPUTS ───
   function renderGalleryInputs() {
     const container = document.getElementById("gallery-inputs-container");
     container.innerHTML = "";
     CONFIG.gallery.forEach((g, i) => {
-      const hasImg = !!(g.image && g.image.startsWith("data:"));
       const group = document.createElement("div");
       group.className = "editor-item-group";
       group.innerHTML = `
         <div class="item-header">
-          <span class="item-label">Photo ${i + 1}</span>
+          <span class="item-label">Photo Tile ${i + 1}</span>
           <button type="button" class="item-delete-btn" data-type="gallery" data-index="${i}" title="Delete">✕</button>
-        </div>
-        <div class="form-group">
-          <label>Upload Photo</label>
-          <small class="field-hint">Photo select karo — ya khali chhodo emoji ke liye</small>
-          <div class="image-upload-area ${hasImg ? "has-image" : ""}" data-gallery-index="${i}">
-            ${hasImg 
-              ? `<img src="${g.image}" alt="Photo ${i+1}"><button type="button" class="remove-image-btn" data-index="${i}">✕</button>` 
-              : `<div class="upload-placeholder"><span>📷</span>Click / Tap to upload photo</div>`
-            }
-            <input type="file" accept="image/*" data-index="${i}" class="gallery-file-input">
-          </div>
         </div>
         <div class="form-group">
           <div class="emoji-text-row">
             <div>
-              <label>Emoji</label>
-              <input type="text" class="emoji-input gallery-emoji" value="${g.emoji}" data-index="${i}" maxlength="4">
+              <label>Emoji Icon</label>
+              <input type="text" class="emoji-input gallery-emoji" value="${g.emoji || '🎈'}" data-index="${i}" maxlength="4">
             </div>
             <div class="text-input">
               <label>Caption</label>
-              <input type="text" class="gallery-cap" value="${g.cap}" data-index="${i}">
+              <input type="text" class="gallery-cap" value="${g.cap || ''}" data-index="${i}">
             </div>
           </div>
         </div>
@@ -4095,36 +4083,6 @@ function initCustomizerModal() {
         </div>
       `;
       container.appendChild(group);
-    });
-
-    // Bind image upload
-    container.querySelectorAll(".image-upload-area").forEach(area => {
-      const fileInput = area.querySelector(".gallery-file-input");
-      const idx = parseInt(area.dataset.galleryIndex);
-      area.addEventListener("click", (e) => {
-        if (e.target.classList.contains("remove-image-btn")) return;
-        fileInput.click();
-      });
-      fileInput.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          CONFIG.gallery[idx].image = ev.target.result;
-          renderGalleryInputs(); // Re-render to show preview
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-
-    // Bind remove image
-    container.querySelectorAll(".remove-image-btn").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const idx = parseInt(btn.dataset.index);
-        CONFIG.gallery[idx].image = null;
-        renderGalleryInputs();
-      });
     });
 
     // Bind delete item
@@ -4885,9 +4843,6 @@ function triggerFinalScene() {
 
 
 
-let globalAudio = null;
-let isAudioPlaying = false;
-
 function initMusicWidget() {
   const widget = document.getElementById("music-widget");
   const toggleBtn = document.getElementById("music-toggle-btn");
@@ -4896,39 +4851,25 @@ function initMusicWidget() {
 
   if (!toggleBtn) return;
 
-  const audioSrc = (CONFIG.music && CONFIG.music.file) ? CONFIG.music.file : "assets/music/happy-birthday-song.mpeg";
-
-  if (!globalAudio) {
-    globalAudio = new Audio();
-    globalAudio.loop = true;
-  } else {
-    globalAudio.pause();
-    isAudioPlaying = false;
-  }
-  globalAudio.src = audioSrc;
-
-  function updateAudioUI(playing) {
-    isAudioPlaying = playing;
-    if (icon) icon.textContent = playing ? "🎶" : "🎵";
-    if (label) label.textContent = playing ? "Playing Music" : "Play Music";
-    if (widget) widget.classList.toggle("playing", playing);
+  function syncMusicUI() {
+    const isPlaying = MusicEngine.isPlaying();
+    if (icon) icon.textContent = isPlaying ? "🎶" : "🎵";
+    if (label) label.textContent = isPlaying ? "Music Playing" : "Play Music";
+    if (widget) widget.classList.toggle("playing", isPlaying);
   }
 
-  toggleBtn.onclick = async () => {
-    if (isAudioPlaying) {
-      globalAudio.pause();
-      updateAudioUI(false);
+  toggleBtn.onclick = () => {
+    if (MusicEngine.isPlaying()) {
+      MusicEngine.pause();
       showToast("Music Paused 🔇");
     } else {
-      try {
-        await globalAudio.play();
-        updateAudioUI(true);
-        showToast("Playing Music 🎶");
-      } catch(e) {
-        showToast("Tap to play music 🎵");
-      }
+      MusicEngine.play();
+      showToast("Playing Music 🎶");
     }
+    syncMusicUI();
   };
+
+  setInterval(syncMusicUI, 600);
 }
 
 (async function boot() {

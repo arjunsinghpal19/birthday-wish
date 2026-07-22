@@ -3948,14 +3948,11 @@ function initCustomizerModal() {
 
   if (!backdrop || !toggleBtn) return;
 
-  // Load saved config from localStorage (for admin editing)
-  const saved = localStorage.getItem("custom_birthday_config");
-  if (saved && !new URLSearchParams(location.search).has("name")) {
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.name === "Shivam") delete parsed.name;
-      Object.assign(CONFIG, parsed);
-    } catch (e) {}
+  // Direct page visits without URL params must always start clean with default 1234!
+  if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
+    localStorage.removeItem("custom_birthday_config");
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
   }
 
   // ─── ACCORDION TOGGLE ───
@@ -4215,12 +4212,12 @@ function initCustomizerModal() {
 
   // ─── POPULATE ALL FIELDS ───
   function populateEditorFields() {
-    // Basic Info
-    document.getElementById("input-name").value = CONFIG.name || "";
-    document.getElementById("input-year").value = CONFIG.birthDate?.year || "";
-    document.getElementById("input-month").value = CONFIG.birthDate?.month || "";
-    document.getElementById("input-day").value = CONFIG.birthDate?.day || "";
-    document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
+    // Basic Info starts completely blank with placeholders
+    document.getElementById("input-name").value = "";
+    document.getElementById("input-year").value = "";
+    document.getElementById("input-month").value = "";
+    document.getElementById("input-day").value = "";
+    document.getElementById("input-passcode").value = "";
 
     // Sender
     document.getElementById("input-from").value = CONFIG.from || "";
@@ -4889,20 +4886,10 @@ function triggerFinalScene() {
 
   parseQueryParams();
 
-  const hasEditParam = new URLSearchParams(location.search).has("edit");
-
-  const saved = localStorage.getItem("custom_birthday_config");
-
-  if (saved && hasEditParam) {
-
-    try {
-
-      const parsed = JSON.parse(saved);
-
-      Object.assign(CONFIG, parsed);
-
-    } catch (e) {}
-
+  if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
+    localStorage.removeItem("custom_birthday_config");
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
   }
 
 

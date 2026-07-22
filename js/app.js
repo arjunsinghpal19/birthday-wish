@@ -2385,17 +2385,17 @@ function initEnvelope() {
   const letterScene = document.getElementById("letter-scene");
 
   env.addEventListener("click", () => {
-
     if (env.classList.contains("open")) return;
-
     env.classList.add("open");
-
     confettiBurst(innerWidth / 2, innerHeight * 0.35, 40);
 
+    // Unlock all subsequent sections now that envelope seal is opened!
+    const exp = document.getElementById("experience");
+    if (exp) exp.classList.add("unlocked-all");
+    if (typeof updateTimelineLine === "function") updateTimelineLine();
+
     setTimeout(() => {
-
       letterScene.classList.add("letter-ready");
-
     }, 900);
 
     setTimeout(() => {

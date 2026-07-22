@@ -266,7 +266,12 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
 @keyframes borderShift{ to{ background-position:300% 0; } }
 
 /* ==================== 5. ENVELOPE SCENE ==================== */
-#envelope-scene{ flex-direction:column; gap:26px; }
+#envelope-scene{ flex-direction:column; gap:26px; min-height:100vh !important; justify-content:center; }
+
+/* Hide all subsequent content sections until user opens the envelope! */
+#experience:not(.unlocked-all) > section:not(#envelope-scene) {
+  display: none !important;
+}
 .envelope-wrap{ perspective:1400px; }
 .envelope{
   width:min(340px,80vw); height:220px; position:relative; cursor:pointer;
@@ -779,6 +784,7 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 
 @media (max-width:768px){
   section{ min-height:auto; padding:56px 16px; }
+  #envelope-scene{ min-height:100vh !important; padding:20px 16px !important; justify-content:center !important; }
   .section-title{ font-size:clamp(2.1rem,7.5vw,2.8rem); margin-bottom:18px; }
   .eyebrow{ font-size:.78rem; letter-spacing:.25em; }
   

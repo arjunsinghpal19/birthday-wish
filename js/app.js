@@ -1478,6 +1478,36 @@ function playBlowSound() {
   } catch(e){}
 }
 
+function parseYouTubeStartSec(url, customStart) {
+  let sec = 0;
+  if (customStart) {
+    const str = String(customStart).trim();
+    if (str.includes(":")) {
+      const parts = str.split(":");
+      sec = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+    } else {
+      sec = parseInt(str) || 0;
+    }
+  }
+  if (!sec && url) {
+    try {
+      const match = url.match(/[?&](?:t|start)=([^&]+)/);
+      if (match && match[1]) {
+        const t = match[1];
+        if (t.includes("m") || t.includes("s")) {
+          const m = t.match(/(?:(\d+)m)?(?:(\d+)s)?/);
+          if (m) {
+            sec = (parseInt(m[1]) || 0) * 60 + (parseInt(m[2]) || 0);
+          }
+        } else {
+          sec = parseInt(t) || 0;
+        }
+      }
+    } catch(e){}
+  }
+  return (sec && sec > 0) ? sec : 0;
+}
+
 function launchBalloons(n = 10) {
 
   const colors = ["#FF5FA2", "#A855F7", "#FFD700", "#FFB6D9", "#7C3AED"];
@@ -1504,17 +1534,11 @@ function launchBalloons(n = 10) {
 
         b.classList.add("popping");
 
-        playPopSound();
-
         const x = event?.clientX ?? b.getBoundingClientRect().left + 25;
 
         const y = event?.clientY ?? b.getBoundingClientRect().top + 32;
 
         confettiBurst(x, y, 22);
-
-        const notesList = ["You are amazing! ✨", "Keep smiling! 💖", "Best day ever! 🎂", "Shine bright! 🌟", "So much love! 💕"];
-        const note = notesList[Math.floor(Math.random() * notesList.length)];
-        showToast(`🎈 Pop! "${note}"`);
 
         setTimeout(() => b.remove(), 320);
 
@@ -1672,10 +1696,12 @@ const MusicEngine = (() => {
           return;
         }
 
-        // New YouTube video: embed iframe
+        // New YouTube video: embed iframe with optional start time parameter
         currentYtId = ytId;
+        const startSec = parseYouTubeStartSec(fileOrUrl, CONFIG.music ? CONFIG.music.startTime : null);
+        const startParam = startSec > 0 ? `&start=${startSec}` : "";
         container.style.display = "block";
-        container.innerHTML = `<iframe id="yt-iframe" width="300" height="200" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}&playsinline=1" allow="autoplay"></iframe>`;
+        container.innerHTML = `<iframe id="yt-iframe" width="300" height="200" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}&playsinline=1${startParam}" allow="autoplay"></iframe>`;
         playing = true;
         return;
       }

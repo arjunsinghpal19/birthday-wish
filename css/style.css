@@ -232,9 +232,9 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   margin-bottom:20px; padding:.12em .14em .2em; overflow:visible;
 }
 
-.reveal{ opacity:0; transform:translateY(40px); filter:blur(6px); transition:opacity .9s ease, transform .9s ease, filter .9s ease; }
-.reveal.in-view{ opacity:1; transform:translateY(0); filter:blur(0); }
-.reveal-stagger > *{ transition-delay:calc(var(--i,0) * .12s); }
+.reveal{ opacity:0; transform:translateY(48px) scale(.94); filter:blur(8px); transition:opacity 1s cubic-bezier(.16,1,.3,1), transform 1s cubic-bezier(.16,1,.3,1), filter 1s cubic-bezier(.16,1,.3,1); will-change:transform, opacity, filter; }
+.reveal.in-view{ opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+.reveal-stagger > *{ transition-delay:calc(var(--i,0) * .14s); }
 
 .btn{
   display:inline-flex; align-items:center; gap:8px; padding:14px 32px; border-radius:999px;
@@ -349,6 +349,24 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   transform: translateY(-4px);
   box-shadow: 0 22px 45px rgba(255, 95, 162, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
+
+/* Inner Staggered Entrance Animations for Special Birthday Date Card */
+.bday-card .bday-card-ribbon,
+.bday-card .bday-zodiac-pill,
+.bday-card .bday-date-medallion,
+.bday-card .bday-details {
+  opacity: 0;
+  transition: opacity 0.85s cubic-bezier(.16,1,.3,1), transform 0.85s cubic-bezier(.16,1,.3,1);
+}
+.bday-card .bday-card-ribbon { transform: translateX(-24px); }
+.bday-card .bday-zodiac-pill { transform: translateX(24px); }
+.bday-card .bday-date-medallion { transform: scale(0.4) rotate(-15deg); }
+.bday-card .bday-details { transform: translateY(20px); }
+
+.bday-card.in-view .bday-card-ribbon { opacity: 1; transform: translateX(0); transition-delay: 0.15s; }
+.bday-card.in-view .bday-zodiac-pill { opacity: 1; transform: translateX(0); transition-delay: 0.25s; }
+.bday-card.in-view .bday-date-medallion { opacity: 1; transform: scale(1) rotate(0deg); transition-delay: 0.35s; }
+.bday-card.in-view .bday-details { opacity: 1; transform: translateY(0); transition-delay: 0.45s; }
 .bday-card-badge-row {
   display: flex;
   align-items: center;
@@ -740,6 +758,9 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   z-index:1 !important;
 }
 .timeline-item{position:relative;width:50%;padding:0 42px 42px 0;text-align:right;z-index:2;}
+.timeline-item.reveal { opacity: 0; transform: translateX(-40px); filter: blur(6px); transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1), filter 0.9s ease; transition-delay: calc(var(--i, 0) * 0.15s); }
+.timeline-item:nth-child(even).reveal { transform: translateX(40px); }
+.timeline-item.reveal.in-view { opacity: 1; transform: translateX(0); filter: blur(0); }
 .timeline-item:nth-child(even){margin-left:50%;padding:0 0 42px 42px;text-align:left}
 .timeline-item:last-child{padding-bottom:0}
 .timeline-item::before{

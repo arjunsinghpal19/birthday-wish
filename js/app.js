@@ -4160,19 +4160,9 @@ function initCustomizerModal() {
 
     // Music
     const musicInput = document.getElementById("input-music-url");
-    const musicStatus = document.getElementById("audio-file-status");
     if (musicInput) {
       const curFile = CONFIG.music?.file || "";
-      if (curFile.startsWith("data:audio")) {
-        musicInput.value = "";
-        if (musicStatus) musicStatus.textContent = "✅ Uploaded Custom MP3 Audio";
-      } else if (!curFile.includes("assets/music/happy-birthday-song.mpeg")) {
-        musicInput.value = curFile;
-        if (musicStatus) musicStatus.textContent = "📁 Tap to select MP3 / Voice Note File";
-      } else {
-        musicInput.value = "";
-        if (musicStatus) musicStatus.textContent = "📁 Tap to select MP3 / Voice Note File";
-      }
+      musicInput.value = (curFile && !curFile.includes("assets/music/happy-birthday-song.mpeg")) ? curFile : "";
     }
 
     // Dynamic sections
@@ -4198,8 +4188,7 @@ function initCustomizerModal() {
     const giftMsg = document.getElementById("input-gift-message").value.trim() || CONFIG.gift.message;
     const giftCoupon = document.getElementById("input-gift-coupon").value.trim() || CONFIG.gift.coupon;
     const musicInput = document.getElementById("input-music-url");
-    const typedMusicUrl = musicInput ? musicInput.value.trim() : "";
-    const musicUrlVal = typedMusicUrl || CONFIG.music?.file || "";
+    const musicUrlVal = musicInput ? musicInput.value.trim() : "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4284,29 +4273,6 @@ function initCustomizerModal() {
     reRenderPage();
   }
 
-  // MP3 Audio File Upload Listener
-  const musicFileInput = document.getElementById("input-music-file");
-  const musicUploadBox = document.getElementById("audio-upload-box");
-  const musicStatus = document.getElementById("audio-file-status");
-
-  if (musicUploadBox && musicFileInput) {
-    musicUploadBox.addEventListener("click", () => musicFileInput.click());
-    musicFileInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      if (musicStatus) musicStatus.textContent = `⏳ Loading ${file.name}...`;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        CONFIG.music = { file: ev.target.result };
-        const urlInput = document.getElementById("input-music-url");
-        if (urlInput) urlInput.value = "";
-        if (musicStatus) musicStatus.textContent = `✅ Selected: ${file.name}`;
-        showToast("Audio uploaded successfully! 🎵");
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
   // Clear Music URL / YouTube Link
   const clearUrlBtn = document.getElementById("clear-music-url-btn");
   if (clearUrlBtn) {
@@ -4315,21 +4281,7 @@ function initCustomizerModal() {
       if (urlInput) urlInput.value = "";
       CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
       MusicEngine.pause();
-      showToast("Music link cleared 🎵");
-    });
-  }
-
-  // Clear Uploaded MP3 File
-  const clearFileBtn = document.getElementById("clear-music-file-btn");
-  if (clearFileBtn) {
-    clearFileBtn.addEventListener("click", () => {
-      const musicFileInput = document.getElementById("input-music-file");
-      const musicStatus = document.getElementById("audio-file-status");
-      if (musicFileInput) musicFileInput.value = "";
-      if (musicStatus) musicStatus.textContent = "📁 Tap to select MP3 / Voice Note File";
-      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
-      MusicEngine.pause();
-      showToast("Audio file cleared 🎵");
+      showToast("YouTube link cleared 🎵");
     });
   }
 

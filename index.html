@@ -543,27 +543,16 @@
         <!-- ═══ SECTION: MUSIC ═══ -->
         <div class="editor-section" data-section="music">
           <button class="editor-section-header" type="button">
-            <span>🎵 Background Music / Voice Note / YouTube Link</span><span class="chevron">▾</span>
+            <span>🎵 Background Music / YouTube Link</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
             <div class="form-group">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <label for="input-music-url" style="margin-bottom:0;">Paste YouTube Link OR Audio MP3 URL</label>
-                <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear</button>
+                <label for="input-music-url" style="margin-bottom:0;">Paste YouTube Link / Song URL</label>
+                <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
               </div>
-              <small class="field-hint">YouTube link (e.g. https://youtu.be/...) ya MP3 URL paste karein</small>
-              <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://domain.com/song.mp3">
-            </div>
-            <div class="form-group" style="margin-top:14px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <label style="margin-bottom:0;">OR Upload MP3 / Voice Note From Device</label>
-                <button type="button" id="clear-music-file-btn" class="clear-input-btn" title="Clear Audio File">✕ Clear File</button>
-              </div>
-              <small class="field-hint">Mobile gallery / storage se MP3 audio select karein</small>
-              <div class="audio-file-upload-box" id="audio-upload-box">
-                <span id="audio-file-status">📁 Tap to select MP3 / Voice Note File</span>
-                <input type="file" id="input-music-file" accept="audio/*" style="display:none;">
-              </div>
+              <small class="field-hint">Apni pasand ka YouTube video link (e.g. https://youtu.be/...) paste karein. Khaali chhodne par default birthday tune bajega.</small>
+              <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
             </div>
           </div>
         </div>

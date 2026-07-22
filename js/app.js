@@ -2428,15 +2428,14 @@ function typeLetterBody() {
 
   (function next() {
 
-    if (i >= paras.length) return;
+    if (i >= paras.length) {
+      window.letterTyped = true;
+      return;
+    }
 
     const p = paras[i];
 
     p.innerHTML = "";
-
-    const caret = document.createElement("span");
-
-    caret.className = "cursor-caret";
 
     const html = CONFIG.letterLines[i];
 
@@ -2465,6 +2464,10 @@ function typeLetterBody() {
         p.innerHTML = html; // restore formatting (highlight spans) once fully typed
 
         i++;
+
+        if (i >= paras.length) {
+          window.letterTyped = true;
+        }
 
         setTimeout(next, 260);
 
@@ -4423,7 +4426,9 @@ function reRenderPage() {
     letterBody.innerHTML = "";
     CONFIG.letterLines.forEach(line => {
       const p = document.createElement("p");
-      p.innerHTML = line;
+      if (window.letterTyped) {
+        p.innerHTML = line;
+      }
       letterBody.appendChild(p);
     });
   }

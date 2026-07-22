@@ -4729,32 +4729,46 @@ function initShare() {
     voiceBtn.addEventListener("click", () => {
 
       if (!("speechSynthesis" in window)) {
-
         showToast("Voice playback is not supported on this browser");
-
         return;
-
       }
 
       const nameVal = (CONFIG.name || "").trim();
-
       const displayName = nameVal ? formatName(nameVal) : "";
 
-      const temp = document.createElement("div");
+      // Build a sweet personalized birthday message
+      const msgParts = [];
+      if (displayName) {
+        msgParts.push(`Happy birthday, ${displayName}!`);
+        msgParts.push(`${displayName}, aaj tumhara special din hai.`);
+        msgParts.push(`Maine tumhare liye ye birthday surprise banaya hai, kyunki tum bahut khaas ho.`);
+        msgParts.push(`Duniya ki saari khushiyan tumhare liye, dil se Happy Birthday ${displayName}!`);
+      } else {
+        msgParts.push(`Happy birthday!`);
+        msgParts.push(`Aaj tumhara special din hai.`);
+        msgParts.push(`Maine tumhare liye ye birthday surprise banaya hai, kyunki tum bahut khaas ho.`);
+        msgParts.push(`Dil se Happy Birthday!`);
+      }
 
-      CONFIG.letterLines.forEach((l) => (temp.innerHTML += l));
-
-      const text = (displayName ? `Happy birthday ${displayName}. ` : "Happy birthday. ") + temp.textContent;
-
+      const text = msgParts.join(" ");
       const utter = new SpeechSynthesisUtterance(text);
 
-      utter.rate = 0.95;
+      // Try to pick a sweet/female English voice
+      const voices = speechSynthesis.getVoices();
+      const preferred = voices.find(v => /female|zira|samantha|karen|fiona|google.*female|moira/i.test(v.name))
+        || voices.find(v => /google.*en/i.test(v.name) && v.lang.startsWith("en"))
+        || voices.find(v => v.lang.startsWith("en") && /female/i.test(v.name))
+        || voices.find(v => v.lang.startsWith("en"))
+        || null;
+      if (preferred) utter.voice = preferred;
 
-      utter.pitch = 1.05;
+      utter.rate = 0.88;
+      utter.pitch = 1.2;
+      utter.volume = 1;
 
       speechSynthesis.cancel();
-
       speechSynthesis.speak(utter);
+      showToast("🎙️ Listening... 💖");
 
     });
 

@@ -261,9 +261,13 @@ function populateContent() {
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
 
   if (logoEl) {
+    logoEl.textContent = displayName ? `✨ Happy Birthday ${displayName} ✨` : "✨ Happy Birthday ✨";
+  }
 
-    logoEl.textContent = displayName ? `✨ ${displayName}'s Birthday ✨` : "✨ Happy Birthday ✨";
+  const pcTitle = document.querySelector(".pc-title");
 
+  if (pcTitle) {
+    pcTitle.textContent = displayName ? `Secret Code for ${displayName}` : "Secret Birthday Code";
   }
 
 
@@ -4867,6 +4871,8 @@ function initMusicWidget() {
 }
 
 (async function boot() {
+
+  parseQueryParams();
 
   const searchParams = new URLSearchParams(location.search);
   const hasRecipientParams = searchParams.has("name") || searchParams.has("w");

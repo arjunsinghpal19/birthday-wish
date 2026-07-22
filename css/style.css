@@ -12,8 +12,8 @@
   --dawn:#2a0f3d;
 
   --font-serif: 'Playfair Display', 'Cinzel', 'Georgia', serif;
-  --font-hand: 'Dancing Script', cursive;
-  --font-elegant: 'Great Vibes', cursive;
+  --font-hand: 'Dancing Script', 'Great Vibes', cursive;
+  --font-elegant: 'Great Vibes', 'Dancing Script', cursive;
   --font-body: 'Outfit', 'Poppins', sans-serif;
 
   --sky-top: var(--night);

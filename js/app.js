@@ -4864,6 +4864,10 @@ function initMusicWidget() {
 
 (async function boot() {
 
+  if (document.fonts && document.fonts.ready) {
+    try { await document.fonts.ready; } catch(e){}
+  }
+
   parseQueryParams();
 
   const searchParams = new URLSearchParams(location.search);

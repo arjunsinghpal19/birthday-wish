@@ -368,42 +368,176 @@
   <!-- FLOATING QUICK CUSTOMIZER FAB -->
   <button id="customizer-toggle-btn" class="customizer-fab magnetic" title="Customize Wish">✏️ Edit Wish</button>
 
-  <!-- LIVE CUSTOMIZER MODAL -->
+  <!-- LIVE CUSTOMIZER MODAL — FULL EDITOR -->
   <div id="customizer-modal" class="customizer-modal-backdrop">
     <div class="customizer-card glass">
-      <button id="customizer-close-btn" class="modal-close">&times;</button>
-      <h3 class="modal-title">✨ Customize Birthday Wish</h3>
-      <p class="modal-sub">Update recipient details live without editing code!</p>
-      
-      <div class="form-group">
-        <label for="input-name">Recipient Name</label>
-        <input type="text" id="input-name" placeholder="e.g. Arjun">
+
+      <!-- HEADER -->
+      <div class="editor-header">
+        <h3 class="modal-title">✨ Customize Birthday Wish</h3>
+        <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
+        <button id="customizer-close-btn" class="modal-close">&times;</button>
       </div>
 
-      <div class="form-group row">
-        <div>
-          <label for="input-year">Birth Year</label>
-          <input type="number" id="input-year" placeholder="2001" min="1950" max="2026">
+      <!-- SCROLLABLE BODY -->
+      <div class="editor-body" id="editor-body">
+
+        <!-- ═══ SECTION: BASIC INFO ═══ -->
+        <div class="editor-section" data-section="basic">
+          <button class="editor-section-header active" type="button">
+            <span>👤 Basic Info</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body open">
+            <div class="form-group">
+              <label for="input-name">Recipient Name</label>
+              <small class="field-hint">Jisko wish karna hai uska naam</small>
+              <input type="text" id="input-name" placeholder="e.g. Arjun">
+            </div>
+            <div class="form-group row">
+              <div>
+                <label for="input-year">Birth Year</label>
+                <input type="number" id="input-year" placeholder="2001" min="1950" max="2026">
+              </div>
+              <div>
+                <label for="input-month">Month (1-12)</label>
+                <input type="number" id="input-month" placeholder="1" min="1" max="12">
+              </div>
+              <div>
+                <label for="input-day">Day (1-31)</label>
+                <input type="number" id="input-day" placeholder="1" min="1" max="31">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="input-passcode">🔑 Secret Birthday Key (4 Digits)</label>
+              <small class="field-hint">Recipient ko yeh code dena padega unlock karne ke liye</small>
+              <input type="text" id="input-passcode" placeholder="1234" maxlength="4">
+            </div>
+          </div>
         </div>
-        <div>
-          <label for="input-month">Month (1-12)</label>
-          <input type="number" id="input-month" placeholder="1" min="1" max="12">
+
+        <!-- ═══ SECTION: SENDER ═══ -->
+        <div class="editor-section" data-section="sender">
+          <button class="editor-section-header" type="button">
+            <span>💌 Sender Info</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div class="form-group">
+              <label for="input-from">From (Sender Name)</label>
+              <small class="field-hint">Footer me "Made with ❤️ for..." ke saath dikhega</small>
+              <input type="text" id="input-from" placeholder="e.g. your best friend">
+            </div>
+          </div>
         </div>
-        <div>
-          <label for="input-day">Day (1-31)</label>
-          <input type="number" id="input-day" placeholder="1" min="1" max="31">
+
+        <!-- ═══ SECTION: LETTER ═══ -->
+        <div class="editor-section" data-section="letter">
+          <button class="editor-section-header" type="button">
+            <span>📝 Birthday Letter</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div id="letter-inputs-container">
+              <!-- JS will render letter line textareas here -->
+            </div>
+          </div>
         </div>
+
+        <!-- ═══ SECTION: MEMORY ═══ -->
+        <div class="editor-section" data-section="memory">
+          <button class="editor-section-header" type="button">
+            <span>💭 Special Memory</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div class="form-group">
+              <label for="input-memory">A Cherished Memory</label>
+              <small class="field-hint">Ek khaas yaad jo "A moment I keep coming back to" section me dikhegi</small>
+              <textarea id="input-memory" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION: REASONS ═══ -->
+        <div class="editor-section" data-section="reasons">
+          <button class="editor-section-header" type="button">
+            <span>⭐ Reasons You're Special</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <small class="field-hint" style="margin-bottom:12px;display:block;">Yeh cards "Reasons you're so special" section me dikhenge</small>
+            <div id="reasons-inputs-container">
+              <!-- JS will render reason input groups here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-reason-btn">+ Add Reason</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION: WISHES ═══ -->
+        <div class="editor-section" data-section="wishes">
+          <button class="editor-section-header" type="button">
+            <span>✨ Birthday Wishes</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <small class="field-hint" style="margin-bottom:12px;display:block;">Yeh quotes "Another wish" button dabane par rotate honge</small>
+            <div id="wishes-inputs-container">
+              <!-- JS will render wish textareas here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-wish-btn">+ Add Wish</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION: GALLERY ═══ -->
+        <div class="editor-section" data-section="gallery">
+          <button class="editor-section-header" type="button">
+            <span>📸 Photo Gallery</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <small class="field-hint" style="margin-bottom:12px;display:block;">Gallery ke polaroid cards — photo upload karo ya emoji rakhdo</small>
+            <div id="gallery-inputs-container">
+              <!-- JS will render gallery input groups with image upload here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-gallery-btn">+ Add Photo</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION: TIMELINE ═══ -->
+        <div class="editor-section" data-section="timeline">
+          <button class="editor-section-header" type="button">
+            <span>🕐 Timeline Milestones</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <small class="field-hint" style="margin-bottom:12px;display:block;">Yeh events "A little timeline" section me dikhenge</small>
+            <div id="timeline-inputs-container">
+              <!-- JS will render timeline input groups here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-timeline-btn">+ Add Milestone</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION: GIFT ═══ -->
+        <div class="editor-section" data-section="gift">
+          <button class="editor-section-header" type="button">
+            <span>🎁 Gift Message</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div class="form-group">
+              <label for="input-gift-message">Gift Box Message</label>
+              <small class="field-hint">Gift box kholne par yeh message dikhega</small>
+              <textarea id="input-gift-message" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="input-gift-coupon">Gift Coupon / Voucher Text</label>
+              <small class="field-hint">Special coupon ya promise likho</small>
+              <textarea id="input-gift-coupon" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="form-group">
-        <label for="input-passcode">Secret Birthday Key (4 Digits)</label>
-        <input type="text" id="input-passcode" placeholder="1234" maxlength="4">
+      <!-- STICKY FOOTER -->
+      <div class="editor-footer">
+        <button id="customizer-save-btn" class="btn">💾 Save & Apply</button>
+        <button id="customizer-share-link-btn" class="btn btn-ghost">🔗 Shareable Link</button>
       </div>
 
-      <div class="modal-actions" style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button id="customizer-save-btn" class="btn" style="flex:1 1 180px;">💾 Save & Apply</button>
-        <button id="customizer-share-link-btn" class="btn btn-ghost" style="flex:1 1 180px;">🔗 Shareable Link</button>
-      </div>
     </div>
   </div>
 

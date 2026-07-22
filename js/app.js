@@ -3936,50 +3936,435 @@ function initCustomizerModal() {
 
   checkAdminAccess();
 
-
-
   const backdrop = document.getElementById("customizer-modal");
-
   const toggleBtn = document.getElementById("customizer-toggle-btn");
-
   const closeBtn = document.getElementById("customizer-close-btn");
-
   const saveBtn = document.getElementById("customizer-save-btn");
-
   const shareLinkBtn = document.getElementById("customizer-share-link-btn");
-
-
 
   if (!backdrop || !toggleBtn) return;
 
-
-
+  // Load saved config from localStorage (for admin editing)
   const saved = localStorage.getItem("custom_birthday_config");
-
   if (saved && !new URLSearchParams(location.search).has("name")) {
-
     try {
-
       const parsed = JSON.parse(saved);
-
       if (parsed.name === "Shivam") delete parsed.name;
-
       Object.assign(CONFIG, parsed);
-
     } catch (e) {}
-
   }
 
+  // ─── ACCORDION TOGGLE ───
+  function initAccordion() {
+    document.querySelectorAll(".editor-section-header").forEach(header => {
+      header.addEventListener("click", () => {
+        const body = header.nextElementSibling;
+        const wasOpen = header.classList.contains("active");
+        // Close all sections
+        document.querySelectorAll(".editor-section-header").forEach(h => {
+          h.classList.remove("active");
+          h.nextElementSibling.classList.remove("open");
+        });
+        // Toggle clicked one
+        if (!wasOpen) {
+          header.classList.add("active");
+          body.classList.add("open");
+        }
+      });
+    });
+  }
 
+  // ─── STRIP HTML TAGS (for CONFIG.letterLines which may contain <span> tags) ───
+  function stripHtml(html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  }
 
+  // ─── RENDER LETTER INPUTS ───
+  function renderLetterInputs() {
+    const container = document.getElementById("letter-inputs-container");
+    container.innerHTML = "";
+    CONFIG.letterLines.forEach((line, i) => {
+      const group = document.createElement("div");
+      group.className = "form-group";
+      group.innerHTML = `
+        <label>Letter Line ${i + 1}</label>
+        <small class="field-hint">Birthday letter ka ${i === 0 ? "pehla" : i === 1 ? "doosra" : i === 2 ? "teesra" : "last"} paragraph</small>
+        <textarea class="letter-line-input" rows="2" data-index="${i}">${stripHtml(line)}</textarea>
+      `;
+      container.appendChild(group);
+    });
+  }
+
+  // ─── RENDER REASON INPUTS ───
+  function renderReasonInputs() {
+    const container = document.getElementById("reasons-inputs-container");
+    container.innerHTML = "";
+    CONFIG.reasons.forEach((r, i) => {
+      const group = document.createElement("div");
+      group.className = "editor-item-group";
+      group.innerHTML = `
+        <div class="item-header">
+          <span class="item-label">Reason Card ${i + 1}</span>
+          <button type="button" class="item-delete-btn" data-type="reason" data-index="${i}" title="Delete">✕</button>
+        </div>
+        <div class="form-group">
+          <div class="emoji-text-row">
+            <div>
+              <label>Icon</label>
+              <input type="text" class="emoji-input reason-icon" value="${r.icon}" data-index="${i}" maxlength="4">
+            </div>
+            <div class="text-input">
+              <label>Title</label>
+              <input type="text" class="reason-title" value="${r.title}" data-index="${i}">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" class="reason-text" value="${r.text}" data-index="${i}">
+        </div>
+      `;
+      container.appendChild(group);
+    });
+    // Bind delete buttons
+    container.querySelectorAll(".item-delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        if (CONFIG.reasons.length > 1) {
+          CONFIG.reasons.splice(idx, 1);
+          renderReasonInputs();
+        } else {
+          showToast("At least 1 reason required ⭐");
+        }
+      });
+    });
+  }
+
+  // ─── RENDER WISH INPUTS ───
+  function renderWishInputs() {
+    const container = document.getElementById("wishes-inputs-container");
+    container.innerHTML = "";
+    CONFIG.wishes.forEach((w, i) => {
+      const group = document.createElement("div");
+      group.className = "editor-item-group";
+      group.innerHTML = `
+        <div class="item-header">
+          <span class="item-label">Wish Quote ${i + 1}</span>
+          <button type="button" class="item-delete-btn" data-type="wish" data-index="${i}" title="Delete">✕</button>
+        </div>
+        <div class="form-group">
+          <textarea class="wish-input" rows="2" data-index="${i}">${w}</textarea>
+        </div>
+      `;
+      container.appendChild(group);
+    });
+    container.querySelectorAll(".item-delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        if (CONFIG.wishes.length > 1) {
+          CONFIG.wishes.splice(idx, 1);
+          renderWishInputs();
+        } else {
+          showToast("At least 1 wish required ✨");
+        }
+      });
+    });
+  }
+
+  // ─── RENDER GALLERY INPUTS (with image upload) ───
+  function renderGalleryInputs() {
+    const container = document.getElementById("gallery-inputs-container");
+    container.innerHTML = "";
+    CONFIG.gallery.forEach((g, i) => {
+      const hasImg = !!(g.image && g.image.startsWith("data:"));
+      const group = document.createElement("div");
+      group.className = "editor-item-group";
+      group.innerHTML = `
+        <div class="item-header">
+          <span class="item-label">Photo ${i + 1}</span>
+          <button type="button" class="item-delete-btn" data-type="gallery" data-index="${i}" title="Delete">✕</button>
+        </div>
+        <div class="form-group">
+          <label>Upload Photo</label>
+          <small class="field-hint">Phone se photo select karo — ya khali chhodo emoji ke liye</small>
+          <div class="image-upload-area ${hasImg ? "has-image" : ""}" data-gallery-index="${i}">
+            ${hasImg 
+              ? `<img src="${g.image}" alt="Photo ${i+1}"><button type="button" class="remove-image-btn" data-index="${i}">✕</button>` 
+              : `<div class="upload-placeholder"><span>📷</span>Tap to upload photo</div>`
+            }
+            <input type="file" accept="image/*" data-index="${i}" class="gallery-file-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="emoji-text-row">
+            <div>
+              <label>Emoji</label>
+              <input type="text" class="emoji-input gallery-emoji" value="${g.emoji}" data-index="${i}" maxlength="4">
+            </div>
+            <div class="text-input">
+              <label>Caption</label>
+              <input type="text" class="gallery-cap" value="${g.cap}" data-index="${i}">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Secret Note (back of card)</label>
+          <input type="text" class="gallery-note" value="${g.secretNote || ""}" data-index="${i}">
+        </div>
+      `;
+      container.appendChild(group);
+    });
+
+    // Bind image upload
+    container.querySelectorAll(".image-upload-area").forEach(area => {
+      const fileInput = area.querySelector(".gallery-file-input");
+      const idx = parseInt(area.dataset.galleryIndex);
+      area.addEventListener("click", (e) => {
+        if (e.target.classList.contains("remove-image-btn")) return;
+        fileInput.click();
+      });
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          CONFIG.gallery[idx].image = ev.target.result;
+          renderGalleryInputs(); // Re-render to show preview
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // Bind remove image
+    container.querySelectorAll(".remove-image-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.index);
+        CONFIG.gallery[idx].image = null;
+        renderGalleryInputs();
+      });
+    });
+
+    // Bind delete item
+    container.querySelectorAll(".item-delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        if (CONFIG.gallery.length > 1) {
+          CONFIG.gallery.splice(idx, 1);
+          renderGalleryInputs();
+        } else {
+          showToast("At least 1 gallery item required 📸");
+        }
+      });
+    });
+  }
+
+  // ─── RENDER TIMELINE INPUTS ───
+  function renderTimelineInputs() {
+    const container = document.getElementById("timeline-inputs-container");
+    container.innerHTML = "";
+    CONFIG.timeline.forEach((t, i) => {
+      const group = document.createElement("div");
+      group.className = "editor-item-group";
+      group.innerHTML = `
+        <div class="item-header">
+          <span class="item-label">Milestone ${i + 1}</span>
+          <button type="button" class="item-delete-btn" data-type="timeline" data-index="${i}" title="Delete">✕</button>
+        </div>
+        <div class="form-group">
+          <div class="emoji-text-row">
+            <div>
+              <label>Icon</label>
+              <input type="text" class="emoji-input timeline-icon" value="${t.icon}" data-index="${i}" maxlength="4">
+            </div>
+            <div class="text-input">
+              <label>Date / Period Label</label>
+              <input type="text" class="timeline-date" value="${t.date}" data-index="${i}">
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" class="timeline-title" value="${t.title}" data-index="${i}">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" class="timeline-text" value="${t.text}" data-index="${i}">
+        </div>
+      `;
+      container.appendChild(group);
+    });
+    container.querySelectorAll(".item-delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        if (CONFIG.timeline.length > 1) {
+          CONFIG.timeline.splice(idx, 1);
+          renderTimelineInputs();
+        } else {
+          showToast("At least 1 milestone required 🕐");
+        }
+      });
+    });
+  }
+
+  // ─── POPULATE ALL FIELDS ───
+  function populateEditorFields() {
+    // Basic Info
+    document.getElementById("input-name").value = CONFIG.name || "";
+    document.getElementById("input-year").value = CONFIG.birthDate?.year || "";
+    document.getElementById("input-month").value = CONFIG.birthDate?.month || "";
+    document.getElementById("input-day").value = CONFIG.birthDate?.day || "";
+    document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
+
+    // Sender
+    document.getElementById("input-from").value = CONFIG.from || "";
+
+    // Memory
+    document.getElementById("input-memory").value = CONFIG.memory || "";
+
+    // Gift
+    document.getElementById("input-gift-message").value = CONFIG.gift?.message || "";
+    document.getElementById("input-gift-coupon").value = CONFIG.gift?.coupon || "";
+
+    // Dynamic sections
+    renderLetterInputs();
+    renderReasonInputs();
+    renderWishInputs();
+    renderGalleryInputs();
+    renderTimelineInputs();
+  }
+
+  // ─── READ ALL VALUES FROM FORM ───
+  function readAllValues() {
+    const rawName = document.getElementById("input-name").value.trim();
+    const nameVal = rawName ? formatName(rawName) : "";
+    const yVal = parseInt(document.getElementById("input-year").value) || 2001;
+    const mVal = parseInt(document.getElementById("input-month").value) || 1;
+    const dVal = parseInt(document.getElementById("input-day").value) || 1;
+    const rawPass = document.getElementById("input-passcode").value.trim();
+    const passVal = nameVal ? (rawPass || "1234") : "1234";
+
+    const fromVal = document.getElementById("input-from").value.trim() || CONFIG.from;
+    const memoryVal = document.getElementById("input-memory").value.trim() || CONFIG.memory;
+    const giftMsg = document.getElementById("input-gift-message").value.trim() || CONFIG.gift.message;
+    const giftCoupon = document.getElementById("input-gift-coupon").value.trim() || CONFIG.gift.coupon;
+
+    // Letter lines
+    const letterInputs = document.querySelectorAll(".letter-line-input");
+    const letterLines = [];
+    letterInputs.forEach((input, i) => {
+      letterLines.push(input.value.trim() || CONFIG.letterLines[i] || "");
+    });
+
+    // Reasons (read from current inputs)
+    const reasonIcons = document.querySelectorAll(".reason-icon");
+    const reasonTitles = document.querySelectorAll(".reason-title");
+    const reasonTexts = document.querySelectorAll(".reason-text");
+    const reasons = [];
+    reasonIcons.forEach((el, i) => {
+      reasons.push({
+        icon: el.value.trim() || CONFIG.reasons[i]?.icon || "💫",
+        title: reasonTitles[i]?.value.trim() || CONFIG.reasons[i]?.title || "Special",
+        text: reasonTexts[i]?.value.trim() || CONFIG.reasons[i]?.text || "",
+      });
+    });
+
+    // Wishes
+    const wishInputs = document.querySelectorAll(".wish-input");
+    const wishes = [];
+    wishInputs.forEach((el, i) => {
+      wishes.push(el.value.trim() || CONFIG.wishes[i] || "");
+    });
+
+    // Gallery (read from current inputs)
+    const galleryEmojis = document.querySelectorAll(".gallery-emoji");
+    const galleryCaps = document.querySelectorAll(".gallery-cap");
+    const galleryNotes = document.querySelectorAll(".gallery-note");
+    const gallery = [];
+    galleryEmojis.forEach((el, i) => {
+      gallery.push({
+        image: CONFIG.gallery[i]?.image || null,
+        emoji: el.value.trim() || CONFIG.gallery[i]?.emoji || "🎈",
+        rot: CONFIG.gallery[i]?.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+        cap: galleryCaps[i]?.value.trim() || CONFIG.gallery[i]?.cap || "Memory",
+        secretNote: galleryNotes[i]?.value.trim() || CONFIG.gallery[i]?.secretNote || "",
+      });
+    });
+
+    // Timeline
+    const tlIcons = document.querySelectorAll(".timeline-icon");
+    const tlDates = document.querySelectorAll(".timeline-date");
+    const tlTitles = document.querySelectorAll(".timeline-title");
+    const tlTexts = document.querySelectorAll(".timeline-text");
+    const timeline = [];
+    tlIcons.forEach((el, i) => {
+      timeline.push({
+        icon: el.value.trim() || CONFIG.timeline[i]?.icon || "🌟",
+        date: tlDates[i]?.value.trim() || CONFIG.timeline[i]?.date || "",
+        title: tlTitles[i]?.value.trim() || CONFIG.timeline[i]?.title || "",
+        text: tlTexts[i]?.value.trim() || CONFIG.timeline[i]?.text || "",
+      });
+    });
+
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, letterLines, reasons, wishes, gallery, timeline };
+  }
+
+  // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
+  function applyAllValues(vals) {
+    CONFIG.name = vals.nameVal;
+    CONFIG.birthDate = { year: vals.yVal, month: vals.mVal, day: vals.dVal };
+    CONFIG.passcode.code = vals.nameVal ? vals.passVal : "1234";
+    CONFIG.from = vals.fromVal;
+    CONFIG.memory = vals.memoryVal;
+    CONFIG.letterLines = vals.letterLines;
+    CONFIG.reasons = vals.reasons;
+    CONFIG.wishes = vals.wishes;
+    CONFIG.gallery = vals.gallery;
+    CONFIG.timeline = vals.timeline;
+    CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
+
+    // Re-render entire page content
+    reRenderPage();
+  }
+
+  // ─── ADD ITEM HANDLERS ───
+  document.getElementById("add-reason-btn").addEventListener("click", () => {
+    CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
+    renderReasonInputs();
+  });
+
+  document.getElementById("add-wish-btn").addEventListener("click", () => {
+    CONFIG.wishes.push("Write a beautiful birthday wish...");
+    renderWishInputs();
+  });
+
+  document.getElementById("add-gallery-btn").addEventListener("click", () => {
+    CONFIG.gallery.push({
+      image: null, emoji: "🎈", rot: Math.floor(Math.random() * 12 - 6),
+      cap: "New Memory", secretNote: "A special moment ❤️"
+    });
+    renderGalleryInputs();
+  });
+
+  document.getElementById("add-timeline-btn").addEventListener("click", () => {
+    CONFIG.timeline.push({ icon: "🌟", date: "Some time", title: "New Milestone", text: "Write about this moment..." });
+    renderTimelineInputs();
+  });
+
+  // ─── OPEN MODAL ───
   toggleBtn.addEventListener("click", () => {
     playChimeSound();
-    document.getElementById("input-name").value = "";
-    document.getElementById("input-year").value = "";
-    document.getElementById("input-month").value = "";
-    document.getElementById("input-day").value = "";
-    document.getElementById("input-passcode").value = "";
+    populateEditorFields();
     backdrop.classList.add("active");
+    // Open first section by default
+    const headers = document.querySelectorAll(".editor-section-header");
+    const bodies = document.querySelectorAll(".editor-section-body");
+    headers.forEach(h => h.classList.remove("active"));
+    bodies.forEach(b => b.classList.remove("open"));
+    if (headers[0]) headers[0].classList.add("active");
+    if (bodies[0]) bodies[0].classList.add("open");
   });
 
   closeBtn.addEventListener("click", () => {
@@ -3990,108 +4375,171 @@ function initCustomizerModal() {
     if (e.target === backdrop) backdrop.classList.remove("active");
   });
 
-  const getCustomValues = () => {
-    const rawName = document.getElementById("input-name").value.trim();
-    const nameVal = rawName ? formatName(rawName) : "";
-    const yVal = parseInt(document.getElementById("input-year").value) || 2001;
-    const mVal = parseInt(document.getElementById("input-month").value) || 1;
-    const dVal = parseInt(document.getElementById("input-day").value) || 1;
-    const rawPass = document.getElementById("input-passcode").value.trim();
-    
-    // CRITICAL: If no recipient name is specified, passcode MUST default to "1234"!
-    const passVal = nameVal ? (rawPass || "1234") : "1234";
-
-    return { nameVal, yVal, mVal, dVal, passVal };
-  };
-
-  const applyCustomValues = ({ nameVal, yVal, mVal, dVal, passVal }) => {
-    CONFIG.name = nameVal;
-    CONFIG.birthDate = { year: yVal, month: mVal, day: dVal };
-    CONFIG.passcode.code = nameVal ? passVal : "1234";
-
-    const hintEl = document.getElementById("pc-hint");
-    if (hintEl) {
-      if (nameVal && CONFIG.passcode.code !== "1234") {
-        hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
-      } else {
-        hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
-      }
-    }
-
-    const slot1 = document.getElementById("name-slot-1");
-    if (slot1) slot1.textContent = nameVal ? `, ${nameVal}` : "";
-
-    const slot2 = document.getElementById("name-slot-2");
-    if (slot2) slot2.textContent = nameVal || "You";
-
-    const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
-    if (logoEl) logoEl.textContent = nameVal ? `✨ ${nameVal}'s Birthday ✨` : "✨ Happy Birthday ✨";
-
-    const peekEl = document.getElementById("letter-peek-text");
-    if (peekEl) peekEl.textContent = nameVal ? `For ${nameVal} ❤️` : "For You ❤️";
-
-    const sealEl = document.getElementById("seal-initial");
-    if (sealEl) sealEl.textContent = nameVal ? nameVal.charAt(0).toUpperCase() : "❤️";
-
-    document.title = nameVal ? `Happy Birthday, ${nameVal}! ❤️` : "Happy Birthday! ❤️";
-
-    updateAgeCounter();
-    updateShareSection();
-  };
-
+  // ─── SAVE ───
   saveBtn.addEventListener("click", () => {
-    const values = getCustomValues();
-    applyCustomValues(values);
+    const values = readAllValues();
+    applyAllValues(values);
 
-    if (CONFIG.name) {
-      localStorage.setItem("custom_birthday_config", JSON.stringify({
-        name: CONFIG.name,
-        birthDate: CONFIG.birthDate,
-        passcode: CONFIG.passcode
-      }));
-    } else {
-      localStorage.removeItem("custom_birthday_config");
-    }
+    // Save to localStorage (excluding large base64 images for URL, but keep for local)
+    const saveData = JSON.parse(JSON.stringify(CONFIG));
+    localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
 
     backdrop.classList.remove("active");
     playChimeSound();
-    showToast(CONFIG.name ? `Wish updated for ${CONFIG.name}! ✨` : "Reset to Default Wish ✨");
+    showToast(CONFIG.name ? `Wish updated for ${CONFIG.name}! ✨` : "Wish updated with defaults ✨");
   });
 
-
-
+  // ─── SHARE LINK ───
   if (shareLinkBtn) {
-
     shareLinkBtn.addEventListener("click", async () => {
+      const values = readAllValues();
+      applyAllValues(values);
 
-      const { nameVal, yVal, mVal, dVal, passVal } = getCustomValues();
-
-      applyCustomValues({ nameVal, yVal, mVal, dVal, passVal });
-
-      
-
-      const customUrl = buildRecipientShareUrl(nameVal);
-
-      
+      const customUrl = buildRecipientShareUrl(values.nameVal);
 
       try {
-
         await navigator.clipboard.writeText(customUrl);
-
-        showToast(nameVal ? `Custom link copied for ${nameVal}! 🔗` : "Custom link copied! 🔗");
-
+        showToast(values.nameVal ? `Custom link copied for ${values.nameVal}! 🔗` : "Custom link copied! 🔗");
       } catch(e) {
-
         showToast(`Link: ${customUrl}`);
-
       }
 
       backdrop.classList.remove("active");
-
     });
-
   }
 
+  // Init accordion toggle
+  initAccordion();
+}
+
+
+// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
+function reRenderPage() {
+  const nameVal = (CONFIG.name || "").trim();
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+  // Title & Name slots
+  document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
+  const slot1 = document.getElementById("name-slot-1");
+  if (slot1) slot1.textContent = displayName ? `, ${displayName}` : "";
+  const slot2 = document.getElementById("name-slot-2");
+  if (slot2) slot2.textContent = displayName || "You";
+
+  // Loading logo
+  const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
+  if (logoEl) logoEl.textContent = displayName ? `✨ ${displayName}'s Birthday ✨` : "✨ Happy Birthday ✨";
+
+  // Envelope
+  const sealEl = document.getElementById("seal-initial");
+  if (sealEl) sealEl.textContent = displayName ? displayName.charAt(0).toUpperCase() : "❤️";
+  const peekEl = document.getElementById("letter-peek-text");
+  if (peekEl) peekEl.textContent = displayName ? `For ${displayName} ❤️` : "For You ❤️";
+
+  // Passcode hint
+  const hintEl = document.getElementById("pc-hint");
+  if (hintEl) {
+    if (displayName || (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234")) {
+      hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
+    } else {
+      hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
+    }
+  }
+
+  // Birthday card
+  updateBirthdayCard();
+
+  // Letter body — re-render
+  const letterBody = document.getElementById("letter-body");
+  if (letterBody) {
+    letterBody.innerHTML = "";
+    CONFIG.letterLines.forEach(line => {
+      const p = document.createElement("p");
+      p.innerHTML = line;
+      letterBody.appendChild(p);
+    });
+  }
+
+  // Memory
+  const memText = document.getElementById("memory-text");
+  if (memText) memText.textContent = CONFIG.memory;
+
+  // Reasons grid — re-render
+  const reasonsGrid = document.getElementById("reasons-grid");
+  if (reasonsGrid) {
+    reasonsGrid.innerHTML = "";
+    CONFIG.reasons.forEach((r, i) => {
+      const el = document.createElement("div");
+      el.className = "info-card glass reveal";
+      el.style.setProperty("--i", i);
+      el.innerHTML = `<span class="icon">${r.icon}</span><h3>${r.title}</h3><p>${r.text}</p>`;
+      reasonsGrid.appendChild(el);
+    });
+  }
+
+  // Wishes
+  showRandomWish();
+
+  // Gallery — re-render
+  const deck = document.getElementById("gallery-deck");
+  if (deck) {
+    deck.innerHTML = "";
+    CONFIG.gallery.forEach((g, i) => {
+      const el = document.createElement("div");
+      el.className = "polaroid reveal";
+      el.style.setProperty("--rot", g.rot + "deg");
+      el.style.setProperty("--i", i);
+      const bg = `hsl(${(i * 47) % 360} 70% 75%)`;
+      const frontContent = g.image
+        ? `<div class="frame"><img src="${g.image}" alt="${g.cap}"></div><div class="cap">${g.cap}</div>`
+        : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+      const backContent = `<div class="polaroid-back"><p>${g.secretNote || "A special memory ❤️"}</p><span class="tap-hint">Tap to flip back</span></div>`;
+      el.innerHTML = `<div class="polaroid-inner"><div class="polaroid-front">${frontContent}</div>${backContent}</div>`;
+      if (g.image) {
+        const img = el.querySelector("img");
+        if (img) {
+          img.addEventListener("error", () => {
+            const front = el.querySelector(".polaroid-front");
+            if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+          });
+        }
+      }
+      el.addEventListener("click", () => {
+        el.classList.toggle("flipped");
+        playPaperRustle();
+      });
+      deck.appendChild(el);
+    });
+  }
+
+  // Timeline — re-render
+  const tl = document.getElementById("timeline-wrap");
+  if (tl) {
+    tl.innerHTML = "";
+    CONFIG.timeline.forEach((t, i) => {
+      const el = document.createElement("div");
+      el.className = "timeline-item reveal";
+      el.dataset.icon = t.icon;
+      el.style.setProperty("--i", i);
+      el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
+      tl.appendChild(el);
+    });
+    updateTimelineLine();
+    setTimeout(updateTimelineLine, 300);
+  }
+
+  // Gift
+  const giftMsg = document.getElementById("gift-message");
+  if (giftMsg) giftMsg.textContent = CONFIG.gift.message;
+  const giftCoupon = document.getElementById("gift-coupon");
+  if (giftCoupon) giftCoupon.textContent = CONFIG.gift.coupon;
+
+  // Age counter & countdown
+  updateAgeCounter();
+  buildDynamicGreeting();
+  updateShareSection();
+
+  // Re-init reveal for new elements
+  initReveal();
 }
 
 

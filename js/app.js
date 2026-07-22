@@ -4885,6 +4885,62 @@ function triggerFinalScene() {
 
 
 
+let globalAudio = null;
+let isAudioPlaying = false;
+
+function initMusicWidget() {
+  const widget = document.getElementById("music-widget");
+  const toggleBtn = document.getElementById("music-toggle-btn");
+  const icon = document.getElementById("music-icon");
+  const label = document.getElementById("music-label");
+
+  if (!toggleBtn) return;
+
+  const audioSrc = (CONFIG.music && CONFIG.music.file) ? CONFIG.music.file : "assets/music/happy-birthday-song.mpeg";
+
+  if (!globalAudio) {
+    globalAudio = new Audio();
+    globalAudio.loop = true;
+  }
+  globalAudio.src = audioSrc;
+
+  function updateAudioUI(playing) {
+    isAudioPlaying = playing;
+    if (icon) icon.textContent = playing ? "🎶" : "🎵";
+    if (label) label.textContent = playing ? "Playing Music" : "Play Music";
+    if (widget) widget.classList.toggle("playing", playing);
+  }
+
+  toggleBtn.addEventListener("click", async () => {
+    if (isAudioPlaying) {
+      globalAudio.pause();
+      updateAudioUI(false);
+      showToast("Music Paused 🔇");
+    } else {
+      try {
+        await globalAudio.play();
+        updateAudioUI(true);
+        showToast("Playing Music 🎶");
+      } catch(e) {
+        showToast("Tap again to play audio 🎵");
+      }
+    }
+  });
+
+  const startAudioOnTouch = async () => {
+    if (!isAudioPlaying && globalAudio) {
+      try {
+        await globalAudio.play();
+        updateAudioUI(true);
+      } catch(e){}
+    }
+    window.removeEventListener("click", startAudioOnTouch);
+    window.removeEventListener("touchstart", startAudioOnTouch);
+  };
+  window.addEventListener("click", startAudioOnTouch, { once: true });
+  window.addEventListener("touchstart", startAudioOnTouch, { once: true });
+}
+
 (async function boot() {
 
   parseQueryParams();

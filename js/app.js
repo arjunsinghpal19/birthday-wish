@@ -4847,91 +4847,81 @@ function triggerFinalScene() {
   }, 200);
 
   setTimeout(
+
     () => document.getElementById("signature").classList.add("show"),
+
     800,
+
   );
+
 }
 
-function runLoadingSequence() {
-  const screen = document.getElementById("loading-screen");
-  const fill = document.getElementById("loader-fill");
-  const pct = document.getElementById("loader-pct");
-  const tapEnter = document.getElementById("tap-enter");
-  const lockWrap = document.getElementById("passcode-wrap");
 
-  if (!screen || !fill || !pct) return;
 
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += Math.floor(Math.random() * 25) + 20;
-    if (progress >= 100) {
-      progress = 100;
-      clearInterval(interval);
-      fill.style.width = "100%";
-      pct.textContent = "Memories loaded! ✨ 100%";
 
-      setTimeout(() => {
-        const hasCustomCode = CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234" && CONFIG.passcode.code.trim() !== "";
-        if (hasCustomCode) {
-          if (lockWrap) lockWrap.classList.add("show");
-          if (tapEnter) tapEnter.style.display = "none";
-        } else {
-          screen.style.opacity = "0";
-          screen.style.transition = "opacity 0.4s ease";
-          setTimeout(() => {
-            screen.style.display = "none";
-          }, 400);
-        }
-      }, 200);
-    } else {
-      fill.style.width = progress + "%";
-      pct.textContent = `Loading memories... ${progress}%`;
-    }
-  }, 25);
-}
 
-function initGyro() {
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener("deviceorientation", (e) => {
-      const tiltX = (e.gamma || 0) / 30;
-      const tiltY = (e.beta || 0) / 30;
-      document.documentElement.style.setProperty("--tilt-x", `${tiltX}deg`);
-      document.documentElement.style.setProperty("--tilt-y", `${tiltY}deg`);
-    });
-  }
-}
 
 (async function boot() {
-  try { parseQueryParams(); } catch(e){}
+
+  parseQueryParams();
 
   if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
-    try { localStorage.removeItem("custom_birthday_config"); } catch(e){}
-    if (typeof CONFIG !== "undefined") {
-      CONFIG.name = "";
-      if (CONFIG.passcode) CONFIG.passcode.code = "1234";
-    }
+    localStorage.removeItem("custom_birthday_config");
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
   }
 
-  try { if (typeof populateContent === "function") populateContent(); } catch(e){}
-  try { if (typeof initEnvelope === "function") initEnvelope(); } catch(e){}
-  try { if (typeof initSurprise === "function") initSurprise(); } catch(e){}
-  try { if (typeof initGiftbox === "function") initGiftbox(); } catch(e){}
-  try { if (typeof initCake === "function") initCake(); } catch(e){}
-  try { if (typeof initMusicWidget === "function") initMusicWidget(); } catch(e){}
-  try { if (typeof initShare === "function") initShare(); } catch(e){}
-  try { if (typeof initCustomizerModal === "function") initCustomizerModal(); } catch(e){}
-  try { if (typeof runLoadingSequence === "function") runLoadingSequence(); } catch(e){}
-  try { if (typeof initGyro === "function") initGyro(); } catch(e){}
 
-  try {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("in-view");
-        }
-      });
-    }, { threshold: 0.1 });
-    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
-  } catch(e){}
+
+  repairStaticIcons();
+
+  observeDynamicIconText();
+
+  repairObjectText(CONFIG);
+
+  positionCakeBeforeSurprise();
+
+  populateContent();
+
+  initEnvelope();
+
+  initSurprise();
+
+  initGiftbox();
+
+  initCake();
+
+  initMusicWidget();
+
+  initShare();
+
+  initCustomizerModal();
+
+  initReveal();
+
+  runLoadingSequence();
+
+  initGyro();
+
+
+
+  // progressive enhancement — never blocks the experience, hard failsafe below
+
+  const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
+
+  await Promise.race([loadEnhancements(), enhancementTimeout]);
+
+
+
+  if (hasGSAP) {
+
+    document.querySelectorAll(".reveal").forEach((el) => {
+
+      gsap.set(el, { clearProps: "transform,opacity,filter" });
+
+    });
+
+  }
+
 })();
 

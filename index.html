@@ -565,18 +565,29 @@
           </div>
         </div>
 
-        <!-- ═══ SECTION: MUSIC ═══ -->
+        <!-- ═══ SECTION: MUSIC & VOICE NOTE ═══ -->
         <div class="editor-section" data-section="music">
           <button class="editor-section-header" type="button">
-            <span>🎵 Background Music / YouTube Link</span><span class="chevron">▾</span>
+            <span>🎵 Background Music / Voice Note</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
             <div class="form-group">
+              <label style="font-size:0.75rem;opacity:0.85;">Option A: Upload Voice Note / Audio Song from Device</label>
+              <div class="audio-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="audio-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                  🎙️ Select Audio / Voice Note
+                  <input type="file" id="input-audio-file" accept="audio/*" style="display:none;">
+                </label>
+                <button type="button" id="remove-audio-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Audio</button>
+              </div>
+              <small class="field-hint">Apni voice recording ya audio song file select karein.</small>
+            </div>
+            <div class="form-group" style="margin-top:14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <label for="input-music-url" style="margin-bottom:0;">Paste YouTube Link / Song URL</label>
+                <label for="input-music-url" style="margin-bottom:0;">Option B: Or Paste YouTube Song Link</label>
                 <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
               </div>
-              <small class="field-hint">Apni pasand ka YouTube video link (e.g. https://youtu.be/...) paste karein. Khaali chhodne par default birthday tune bajega.</small>
+              <small class="field-hint">Apni pasand ka YouTube video link paste karein. Khaali chhodne par default birthday tune bajega.</small>
               <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
             </div>
             <div class="form-group" style="margin-top:12px;">
@@ -585,6 +596,8 @@
               <input type="text" id="input-music-start" placeholder="e.g. 30 or 1:15">
             </div>
           </div>
+        </div>
+
         <!-- ═══ SECTION: PERSONAL VIDEO WISH ═══ -->
         <div class="editor-section" data-section="videowish">
           <button class="editor-section-header" type="button">
@@ -609,6 +622,11 @@
               </div>
               <input type="text" id="input-video-url" placeholder="https://youtu.be/... or Shorts link">
               <small class="field-hint">Agar gallery video nahi hai to YouTube/Shorts ka link paste kar sakte hain.</small>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label for="input-video-start">Video Start Time (Optional, e.g. 30 or 1:15)</label>
+              <small class="field-hint">Video kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
+              <input type="text" id="input-video-start" placeholder="e.g. 30 or 1:15">
             </div>
           </div>
         </div>

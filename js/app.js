@@ -4342,9 +4342,17 @@ function initCustomizerModal() {
     if (vidUrlInput) {
       vidUrlInput.value = CONFIG.videoWish?.url || "";
     }
+    const vidStartInput = document.getElementById("input-video-start");
+    if (vidStartInput) {
+      vidStartInput.value = CONFIG.videoWish?.startTime || "";
+    }
     const vidRemoveBtn = document.getElementById("remove-video-file-btn");
     if (vidRemoveBtn) {
       vidRemoveBtn.style.display = CONFIG.videoWish?.file ? "inline-block" : "none";
+    }
+    const audioRemoveBtn = document.getElementById("remove-audio-file-btn");
+    if (audioRemoveBtn) {
+      audioRemoveBtn.style.display = (CONFIG.music?.file && CONFIG.music.isBlob) ? "inline-block" : "none";
     }
 
     // Dynamic sections
@@ -4376,6 +4384,8 @@ function initCustomizerModal() {
 
     const vidUrlInput = document.getElementById("input-video-url");
     const videoUrlVal = vidUrlInput ? vidUrlInput.value.trim() : "";
+    const vidStartInput = document.getElementById("input-video-start");
+    const videoStartVal = vidStartInput ? vidStartInput.value.trim() : "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4434,7 +4444,7 @@ function initCustomizerModal() {
       });
     });
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, letterLines, reasons, wishes, gallery, timeline };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4460,6 +4470,7 @@ function initCustomizerModal() {
 
     CONFIG.videoWish = CONFIG.videoWish || {};
     CONFIG.videoWish.url = vals.videoUrlVal;
+    CONFIG.videoWish.startTime = vals.videoStartVal;
 
     // Re-render entire page content
     reRenderPage();
@@ -4717,6 +4728,44 @@ function initWishingStar() {
   }
 }
 
+const AudioStorage = {
+  dbName: "BirthdayWishAudioDB",
+  storeName: "audios",
+  async openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(this.storeName);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async saveAudio(file) {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).put(file, "customAudio");
+      return new Promise((res) => { tx.oncomplete = () => res(true); });
+    } catch(e) { return false; }
+  },
+  async getAudio() {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readonly");
+      const req = tx.objectStore(this.storeName).get("customAudio");
+      return new Promise((res) => { req.onsuccess = () => res(req.result); });
+    } catch(e) { return null; }
+  },
+  async removeAudio() {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).delete("customAudio");
+    } catch(e){}
+  }
+};
+
 const VideoStorage = {
   dbName: "BirthdayWishVideoDB",
   storeName: "videos",
@@ -4762,17 +4811,25 @@ function renderVideoWishSection() {
 
   const file = CONFIG.videoWish?.file;
   const url = CONFIG.videoWish?.url;
+  const startSec = parseYouTubeStartSec(url, CONFIG.videoWish?.startTime);
+  const startParam = startSec > 0 ? `&start=${startSec}` : "";
 
   if (file) {
     section.style.display = "flex";
-    container.innerHTML = `<video controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${file}"></video>`;
+    container.innerHTML = `<video id="local-wish-video" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${file}"></video>`;
+    if (startSec > 0) {
+      const vid = document.getElementById("local-wish-video");
+      if (vid) {
+        vid.onloadedmetadata = () => { vid.currentTime = startSec; };
+      }
+    }
   } else if (url) {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     const ytId = (match && match[2].length === 11) ? match[2] : null;
     if (ytId) {
       section.style.display = "flex";
-      container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
+      container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1${startParam}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
     } else {
       section.style.display = "none";
       container.innerHTML = "";
@@ -5197,6 +5254,15 @@ function initMusicWidget() {
   initWishingStar();
   renderVideoWishSection();
 
+  // Restore saved audio/voice note from IndexedDB if available
+  try {
+    const savedAudioBlob = await AudioStorage.getAudio();
+    if (savedAudioBlob) {
+      const blobUrl = URL.createObjectURL(savedAudioBlob);
+      CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
+    }
+  } catch(e){}
+
   // Restore saved video from IndexedDB if available
   try {
     const savedVidBlob = await VideoStorage.getVideo();
@@ -5208,6 +5274,39 @@ function initMusicWidget() {
       renderVideoWishSection();
     }
   } catch(e){}
+
+  // Audio / Voice Note file input listeners
+  const audFileInput = document.getElementById("input-audio-file");
+  const audRemoveBtn = document.getElementById("remove-audio-file-btn");
+  const audUploadLabel = document.getElementById("audio-upload-label");
+
+  if (audFileInput) {
+    audFileInput.addEventListener("change", async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      showToast("Saving audio/voice... ⏳");
+      const blobUrl = URL.createObjectURL(f);
+      CONFIG.music = { file: blobUrl, isBlob: true, fileName: f.name };
+
+      await AudioStorage.saveAudio(f);
+
+      if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
+      if (audUploadLabel) audUploadLabel.innerHTML = `🎙️ Attached: ${f.name.substring(0, 18)}`;
+      showToast("Audio / Voice note attached! 🎙️");
+    });
+  }
+
+  if (audRemoveBtn) {
+    audRemoveBtn.addEventListener("click", async () => {
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+      await AudioStorage.removeAudio();
+      if (audFileInput) audFileInput.value = "";
+      if (audUploadLabel) audUploadLabel.innerHTML = `🎙️ Select Audio / Voice Note`;
+      audRemoveBtn.style.display = "none";
+      MusicEngine.pause();
+      showToast("Custom audio removed — Default melody restored 🎵");
+    });
+  }
 
   // Video file input listeners in customizer modal
   const vidFileInput = document.getElementById("input-video-file");

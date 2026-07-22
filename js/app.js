@@ -3917,11 +3917,13 @@ function initCustomizerModal() {
 
   if (!backdrop || !toggleBtn) return;
 
-  // Direct page visits without URL params must always start clean with default 1234!
-  if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
-    localStorage.removeItem("custom_birthday_config");
-    CONFIG.name = "";
-    CONFIG.passcode.code = "1234";
+  // Load saved config if available
+  const savedMod = localStorage.getItem("custom_birthday_config");
+  if (savedMod) {
+    try {
+      const parsed = JSON.parse(savedMod);
+      if (parsed && typeof parsed === "object") Object.assign(CONFIG, parsed);
+    } catch(e){}
   }
 
   // ─── ACCORDION TOGGLE ───
@@ -4924,12 +4926,15 @@ function initMusicWidget() {
 
 (async function boot() {
 
-  parseQueryParams();
-
-  if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
-    localStorage.removeItem("custom_birthday_config");
-    CONFIG.name = "";
-    CONFIG.passcode.code = "1234";
+  // Load saved custom config from localStorage if available
+  const savedConfig = localStorage.getItem("custom_birthday_config");
+  if (savedConfig) {
+    try {
+      const parsed = JSON.parse(savedConfig);
+      if (parsed && typeof parsed === "object") {
+        Object.assign(CONFIG, parsed);
+      }
+    } catch(e){}
   }
 
 

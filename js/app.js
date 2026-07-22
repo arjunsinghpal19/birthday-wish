@@ -234,13 +234,21 @@ function formatName(name) {
 
 
 
+function isWishCustomized() {
+  const nameVal = (CONFIG.name || "").trim();
+  const codeVal = (CONFIG.passcode?.code || "1234").trim();
+  const yVal = CONFIG.birthDate?.year || 2001;
+  const mVal = CONFIG.birthDate?.month || 1;
+  const dVal = CONFIG.birthDate?.day || 1;
+
+  return !!(nameVal || codeVal !== "1234" || yVal !== 2001 || mVal !== 1 || dVal !== 1);
+}
+
 function populateContent() {
 
   const nameVal = (CONFIG.name || "").trim();
 
   const displayName = nameVal ? formatName(nameVal) : "";
-
-
 
   document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
 
@@ -256,8 +264,6 @@ function populateContent() {
 
   if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
 
-
-
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
 
   if (logoEl) {
@@ -270,34 +276,22 @@ function populateContent() {
     pcTitle.textContent = displayName ? `Secret Code for ${displayName}` : "Secret Birthday Code";
   }
 
-
-
   const sealEl = document.getElementById("seal-initial");
 
   if (sealEl) sealEl.textContent = displayName ? displayName.charAt(0).toUpperCase() : "❤️";
-
-
 
   const peekEl = document.getElementById("letter-peek-text");
 
   if (peekEl) peekEl.textContent = displayName ? `For ${displayName} ❤️` : "For You ❤️";
 
-
-
   const hintEl = document.getElementById("pc-hint");
 
   if (hintEl) {
-
-    if (displayName || (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234")) {
-
+    if (isWishCustomized()) {
       hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
-
     } else {
-
       hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
-
     }
-
   }
 
 
@@ -2133,17 +2127,10 @@ function initPasscode() {
 
 
 
-  const nameVal = (CONFIG.name || "").trim();
-
-  if (!nameVal) {
-    CONFIG.passcode.code = "1234";
-  }
-
-  const passVal = (CONFIG.passcode?.code || "1234").trim();
-
-  if (nameVal && passVal !== "1234") {
+  if (isWishCustomized()) {
     hint.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
   } else {
+    CONFIG.passcode.code = "1234";
     hint.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
   }
 
@@ -4420,7 +4407,7 @@ function reRenderPage() {
   // Passcode hint
   const hintEl = document.getElementById("pc-hint");
   if (hintEl) {
-    if (displayName || (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234")) {
+    if (isWishCustomized()) {
       hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
     } else {
       hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";

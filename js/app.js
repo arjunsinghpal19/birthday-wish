@@ -3759,13 +3759,33 @@ function exportInstaStory() {
 
 
 function parseQueryParams() {
-
   const params = new URLSearchParams(location.search);
-
   const nameParam = params.get("name");
+  const codeParam = params.get("code");
+  const yParam = params.get("y");
+  const mParam = params.get("m");
+  const dParam = params.get("d");
 
-  if (nameParam) CONFIG.name = nameParam;
+  if (nameParam) {
+    CONFIG.name = formatName(nameParam);
+    if (codeParam) {
+      CONFIG.passcode.code = codeParam.trim();
+    } else {
+      CONFIG.passcode.code = "1234";
+    }
 
+    if (yParam || mParam || dParam) {
+      CONFIG.birthDate = {
+        year: parseInt(yParam) || CONFIG.birthDate.year || 2001,
+        month: parseInt(mParam) || CONFIG.birthDate.month || 1,
+        day: parseInt(dParam) || CONFIG.birthDate.day || 1
+      };
+    }
+  } else {
+    // If no name parameter in URL, ensure default passcode is 1234
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
+  }
 }
 
 
@@ -4035,21 +4055,28 @@ function isHostedOnline() {
 
 
 function buildRecipientShareUrl(overrideName) {
-
   const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
-
   let baseUrl = location.origin + location.pathname;
-
   if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
-
     baseUrl = location.href.split("?")[0];
-
   }
 
   if (!nameVal) return baseUrl;
 
-  return `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
+  const codeVal = (CONFIG.passcode?.code || "1234").trim();
+  const yVal = CONFIG.birthDate?.year || 2001;
+  const mVal = CONFIG.birthDate?.month || 1;
+  const dVal = CONFIG.birthDate?.day || 1;
 
+  let query = `?name=${encodeURIComponent(nameVal)}`;
+  if (codeVal && codeVal !== "1234") {
+    query += `&code=${encodeURIComponent(codeVal)}`;
+  }
+  if (yVal !== 2001 || mVal !== 1 || dVal !== 1) {
+    query += `&y=${yVal}&m=${mVal}&d=${dVal}`;
+  }
+
+  return `${baseUrl}${query}`;
 }
 
 

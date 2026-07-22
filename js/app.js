@@ -4337,6 +4337,16 @@ function initCustomizerModal() {
       musicStartInput.value = CONFIG.music?.startTime || "";
     }
 
+    // Video Wish
+    const vidUrlInput = document.getElementById("input-video-url");
+    if (vidUrlInput) {
+      vidUrlInput.value = CONFIG.videoWish?.url || "";
+    }
+    const vidRemoveBtn = document.getElementById("remove-video-file-btn");
+    if (vidRemoveBtn) {
+      vidRemoveBtn.style.display = CONFIG.videoWish?.file ? "inline-block" : "none";
+    }
+
     // Dynamic sections
     renderLetterInputs();
     renderReasonInputs();
@@ -4363,6 +4373,9 @@ function initCustomizerModal() {
     const musicUrlVal = musicInput ? musicInput.value.trim() : "";
     const musicStartInput = document.getElementById("input-music-start");
     const musicStartVal = musicStartInput ? musicStartInput.value.trim() : "";
+
+    const vidUrlInput = document.getElementById("input-video-url");
+    const videoUrlVal = vidUrlInput ? vidUrlInput.value.trim() : "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4421,7 +4434,7 @@ function initCustomizerModal() {
       });
     });
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, letterLines, reasons, wishes, gallery, timeline };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, letterLines, reasons, wishes, gallery, timeline };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4444,6 +4457,9 @@ function initCustomizerModal() {
     } else {
       CONFIG.music.startTime = vals.musicStartVal;
     }
+
+    CONFIG.videoWish = CONFIG.videoWish || {};
+    CONFIG.videoWish.url = vals.videoUrlVal;
 
     // Re-render entire page content
     reRenderPage();
@@ -4670,13 +4686,61 @@ function reRenderPage() {
   const giftCoupon = document.getElementById("gift-coupon");
   if (giftCoupon) giftCoupon.textContent = CONFIG.gift.coupon;
 
-  // Age counter & countdown
+  // Video Wish & Age counter
+  renderVideoWishSection();
   updateAgeCounter();
   buildDynamicGreeting();
   updateShareSection();
 
   // Re-init reveal for new elements
   initReveal();
+}
+
+function initWishingStar() {
+  const btn = document.getElementById("wishing-star-btn");
+  const result = document.getElementById("wishing-star-result");
+  if (btn && result) {
+    btn.onclick = (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX || (rect.left + rect.width / 2);
+      const y = e.clientY || (rect.top + rect.height / 2);
+      confettiBurst(x, y, 40);
+      btn.style.transform = "scale(0) rotate(180deg)";
+      btn.style.opacity = "0";
+      btn.style.transition = "all 0.5s ease";
+      setTimeout(() => {
+        btn.style.display = "none";
+        result.style.display = "block";
+      }, 400);
+      showToast("🌟 Your wish has been sent to the stars! ✨");
+    };
+  }
+}
+
+function renderVideoWishSection() {
+  const section = document.getElementById("video-wish-scene");
+  const container = document.getElementById("video-wish-player-container");
+  if (!section || !container) return;
+
+  const file = CONFIG.videoWish?.file;
+  const url = CONFIG.videoWish?.url;
+
+  if (file) {
+    section.style.display = "flex";
+    container.innerHTML = `<video controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${file}"></video>`;
+  } else if (url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    const ytId = (match && match[2].length === 11) ? match[2] : null;
+    if (ytId) {
+      section.style.display = "flex";
+      container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
+    } else {
+      section.style.display = "none";
+    }
+  } else {
+    section.style.display = "none";
+  }
 }
 
 
@@ -4714,6 +4778,9 @@ function buildRecipientShareUrl(overrideName) {
   }
   if (CONFIG.music?.startTime) {
     shareUrl += `&t=${encodeURIComponent(CONFIG.music.startTime)}`;
+  }
+  if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("data:")) {
+    shareUrl += `&v=${encodeURIComponent(CONFIG.videoWish.url)}`;
   }
 
   return shareUrl;
@@ -5054,6 +5121,10 @@ function initMusicWidget() {
       CONFIG.music = CONFIG.music || {};
       CONFIG.music.startTime = searchParams.get("t");
     }
+    if (searchParams.has("v")) {
+      CONFIG.videoWish = CONFIG.videoWish || {};
+      CONFIG.videoWish.url = searchParams.get("v");
+    }
   } else if (!searchParams.has("admin")) {
     // Normal visit to root URL: start clean with default 1234 & default melody for a new recipient!
     localStorage.removeItem("custom_birthday_config");
@@ -5071,27 +5142,48 @@ function initMusicWidget() {
     }
   }
 
-
-
   repairStaticIcons();
-
   observeDynamicIconText();
-
   repairObjectText(CONFIG);
-
   positionCakeBeforeSurprise();
 
   populateContent();
-
   reRenderPage();
 
   initEnvelope();
-
   initSurprise();
-
   initGiftbox();
-
   initCake();
+  initWishingStar();
+  renderVideoWishSection();
+
+  // Video file input listeners in customizer modal
+  const vidFileInput = document.getElementById("input-video-file");
+  const vidRemoveBtn = document.getElementById("remove-video-file-btn");
+  if (vidFileInput) {
+    vidFileInput.addEventListener("change", (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        CONFIG.videoWish = CONFIG.videoWish || {};
+        CONFIG.videoWish.file = evt.target.result;
+        if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
+        renderVideoWishSection();
+        showToast("Video attached successfully! 📹");
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+  if (vidRemoveBtn) {
+    vidRemoveBtn.addEventListener("click", () => {
+      if (CONFIG.videoWish) CONFIG.videoWish.file = null;
+      if (vidFileInput) vidFileInput.value = "";
+      vidRemoveBtn.style.display = "none";
+      renderVideoWishSection();
+      showToast("Video removed ✨");
+    });
+  }
 
   initMusicWidget();
 

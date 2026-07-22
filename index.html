@@ -283,6 +283,32 @@
       </div>
     </section>
 
+    <!-- MAGICAL WISHING STAR SECTION -->
+    <section id="wishing-star-scene">
+      <div class="glass card-glow-border reveal wishing-star-card" style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
+        <span class="eyebrow">Interactive Wish Drop</span>
+        <h2 class="section-title">Tap The Shooting Star</h2>
+        <p style="font-size:0.9rem;opacity:0.8;margin-bottom:20px;">Touch the glowing star to drop your birthday wish into the galaxy ✨</p>
+        <div id="wishing-star-btn" class="wishing-star-element" title="Tap to Make a Wish">
+          <span class="star-icon">🌟</span>
+        </div>
+        <div id="wishing-star-result" class="wishing-star-result" style="display:none;margin-top:20px;">
+          <h3 style="font-family:var(--font-hand);font-size:2rem;color:var(--gold);">Your Wish Is Sent To The Stars! ✨</h3>
+          <p style="font-size:0.95rem;color:var(--pink-light);margin-top:6px;">May all your dreams, joy & happiness come true today and forever! 💕</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PERSONAL VIDEO WISH SECTION -->
+    <section id="video-wish-scene" style="display:none;">
+      <div class="glass card-glow-border reveal video-wish-card" style="max-width:720px;width:100%;padding:28px clamp(16px,4vw,32px);text-align:center;">
+        <span class="eyebrow">A Special Recording</span>
+        <h2 class="section-title" id="video-wish-title">📹 A Personal Video Wish For You</h2>
+        <div id="video-wish-player-container" style="margin-top:20px;border-radius:16px;overflow:hidden;background:#000;border:1px solid rgba(255,215,0,0.3);box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+        </div>
+      </div>
+    </section>
+
     <!-- PREMIUM INTERACTIVE CAKE -->
     <section id="cake-scene">
       <div class="cake-intro reveal">
@@ -557,6 +583,29 @@
               <label for="input-music-start">YouTube Start Time (Optional, e.g. 30 or 1:15)</label>
               <small class="field-hint">Song kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
               <input type="text" id="input-music-start" placeholder="e.g. 30 or 1:15">
+            </div>
+          </div>
+        <!-- ═══ SECTION: PERSONAL VIDEO WISH ═══ -->
+        <div class="editor-section" data-section="videowish">
+          <button class="editor-section-header" type="button">
+            <span>📹 Personal Video Wish (Upload or YouTube)</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div class="form-group">
+              <label style="font-size:0.75rem;opacity:0.85;">Option A: Select Video File from Device Gallery</label>
+              <div class="video-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="video-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                  📹 Select Video from Device
+                  <input type="file" id="input-video-file" accept="video/*" style="display:none;">
+                </label>
+                <button type="button" id="remove-video-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Video</button>
+              </div>
+              <small class="field-hint">Apne mobile/laptop gallery se recorded video select karein.</small>
+            </div>
+            <div class="form-group" style="margin-top:14px;">
+              <label for="input-video-url">Option B: Or Paste YouTube / Shorts Link</label>
+              <input type="text" id="input-video-url" placeholder="https://youtu.be/... or Shorts link">
+              <small class="field-hint">Agar gallery video nahi hai to YouTube/Shorts ka link paste kar sakte hain.</small>
             </div>
           </div>
         </div>

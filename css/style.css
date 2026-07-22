@@ -1165,3 +1165,44 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   justify-content: center;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
 }
+
+/* Wishing Star & Video Wish Styles */
+#wishing-star-scene, #video-wish-scene {
+  min-height: 40vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(30px, 6vw, 60px) 20px;
+}
+.wishing-star-element {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.25) 0%, transparent 70%);
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.wishing-star-element:hover {
+  transform: scale(1.15) rotate(12deg);
+  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.9));
+}
+.wishing-star-element .star-icon {
+  font-size: 3.5rem;
+  animation: pulseStar 2s ease-in-out infinite;
+}
+@keyframes pulseStar {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255,215,0,0.6)); }
+  50% { transform: scale(1.12); filter: drop-shadow(0 0 25px rgba(255,215,0,1)); }
+}
+.wishing-star-result {
+  animation: fadeInDown 0.6s ease-out forwards;
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

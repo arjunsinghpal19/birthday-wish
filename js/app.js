@@ -3845,194 +3845,108 @@ function parseQueryParams() {
 
 
 function checkAdminAccess() {
-  const params = new URLSearchParams(location.search);
-  if (params.get("admin") === ADMIN_PASSWORD) {
-    ACTIVE_UNLOCKED_PLAN = "admin";
-    localStorage.setItem("unlocked_plan", "admin");
-    showToast("👑 Admin Mode Activated! Full Free Access");
-  }
 
-  const fab = document.getElementById("customizer-toggle-btn");
-  if (!fab) return;
+  const params = new URLSearchParams(location.search);
 
   const isEditParam = params.has("edit") || params.has("admin");
+
   const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
+
+
+
+  const fab = document.getElementById("customizer-toggle-btn");
+
+  if (!fab) return;
+
+
+
   if (isEditParam || isStoredAdmin) {
+
     fab.classList.add("admin-visible");
+
     localStorage.setItem("is_admin_user", "true");
+
   }
+
+
+
+  // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
 
   window.addEventListener("keydown", (e) => {
+
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
+
       e.preventDefault();
+
       fab.classList.toggle("admin-visible");
+
       const active = fab.classList.contains("admin-visible");
+
       localStorage.setItem("is_admin_user", active ? "true" : "false");
+
       showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+
     }
-  });
-}
 
-function initPaywallModal() {
-  const planModal = document.getElementById("plan-modal");
-  const planSelectView = document.getElementById("plan-select-view");
-  const planPayView = document.getElementById("plan-pay-view");
-  const planCloseBtn = document.getElementById("plan-close-btn");
-  const payCloseBtn = document.getElementById("pay-close-btn");
-  const payBackBtn = document.getElementById("pay-back-btn");
-  const adminLoginTrigger = document.getElementById("admin-login-trigger");
-  const copyUpiBtn = document.getElementById("copy-upi-btn");
-  const verifyUtrBtn = document.getElementById("verify-utr-btn");
-  const inputUtr = document.getElementById("input-utr");
-
-  let selectedPlan = "basic";
-
-  if (!planModal) return;
-
-  function closePlanModal() {
-    planModal.classList.remove("open");
-  }
-
-  if (planCloseBtn) planCloseBtn.addEventListener("click", closePlanModal);
-  if (payCloseBtn) payCloseBtn.addEventListener("click", closePlanModal);
-
-  if (payBackBtn) {
-    payBackBtn.addEventListener("click", () => {
-      planPayView.style.display = "none";
-      planSelectView.style.display = "block";
-    });
-  }
-
-  document.querySelectorAll(".select-plan-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      selectedPlan = btn.getAttribute("data-plan");
-      const title = selectedPlan === "premium" ? "Premium Wish 👑" : "Basic Wish 🎈";
-      const price = selectedPlan === "premium" ? "₹199" : "₹99";
-      const priceVal = selectedPlan === "premium" ? "199" : "99";
-
-      document.getElementById("pay-selected-title").innerText = title;
-      document.getElementById("pay-selected-amount").innerText = price;
-      document.getElementById("upi-qr-img").src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=upi://pay?pa=9582409993@pthdfc%26pn=Arjun%20Singh%20Pal%26am=${priceVal}%26cu=INR`;
-
-      const waMsg = encodeURIComponent(`Hi Arjun! I have made the payment of ${price} for the ${title}. Please unlock my customizer.`);
-      document.getElementById("wa-proof-btn").href = `https://wa.me/919582409993?text=${waMsg}`;
-
-      planSelectView.style.display = "none";
-      planPayView.style.display = "block";
-    });
   });
 
-  if (copyUpiBtn) {
-    copyUpiBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText("9582409993@pthdfc");
-      showToast("UPI ID Copied: 9582409993@pthdfc 📋");
-    });
-  }
 
-  function handleUnlock() {
-    const val = (inputUtr.value || "").trim();
-    if (val === ADMIN_PASSWORD) {
-      ACTIVE_UNLOCKED_PLAN = "admin";
-      localStorage.setItem("unlocked_plan", "admin");
-      closePlanModal();
-      showToast("👑 Admin Password Verified! Full Editor Unlocked");
-      openCustomizerEditor();
-      return;
-    }
-    if (val.length >= 4) {
-      ACTIVE_UNLOCKED_PLAN = selectedPlan;
-      localStorage.setItem("unlocked_plan", selectedPlan);
-      closePlanModal();
-      showToast(`🎉 ${selectedPlan.toUpperCase()} Plan Unlocked!`);
-      openCustomizerEditor();
-    } else {
-      showToast("Enter a valid Transaction UTR or Admin Password");
-    }
-  }
 
-  if (verifyUtrBtn) verifyUtrBtn.addEventListener("click", handleUnlock);
+  // Footer triple-click shortcut
 
-  if (adminLoginTrigger) {
-    adminLoginTrigger.addEventListener("click", () => {
-      const pwd = prompt("Enter Admin Password:");
-      if (pwd === ADMIN_PASSWORD) {
-        ACTIVE_UNLOCKED_PLAN = "admin";
-        localStorage.setItem("unlocked_plan", "admin");
-        closePlanModal();
-        showToast("👑 Admin Mode Activated!");
-        openCustomizerEditor();
-      } else if (pwd !== null) {
-        showToast("Incorrect Admin Password ❌");
-      }
-    });
-  }
+  const footer = document.querySelector("footer");
 
-  // Double-Tap Gesture for Admin Password Prompt on Edit Wish Button & Titles
-  const gestureElements = document.querySelectorAll("#customizer-toggle-btn, .logo-glow, .letter-title, h1");
-  gestureElements.forEach(el => {
-    let tapCount = 0;
-    let tapTimer = null;
-    el.addEventListener("click", (e) => {
-      tapCount++;
-      clearTimeout(tapTimer);
-      if (tapCount >= 2) {
-        tapCount = 0;
-        e.preventDefault();
-        e.stopPropagation();
-        const pwd = prompt("🔑 Admin Access — Enter Admin Password:");
-        if (pwd === ADMIN_PASSWORD) {
-          ACTIVE_UNLOCKED_PLAN = "admin";
-          localStorage.setItem("unlocked_plan", "admin");
-          showToast("👑 Admin Mode Unlocked!");
-          openCustomizerEditor();
-        } else if (pwd !== null) {
-          showToast("Incorrect Admin Password ❌");
-        }
+  if (footer) {
+
+    let clicks = 0;
+
+    let timer = null;
+
+    footer.addEventListener("click", () => {
+
+      clicks++;
+
+      clearTimeout(timer);
+
+      if (clicks >= 3) {
+
+        clicks = 0;
+
+        fab.classList.toggle("admin-visible");
+
+        const active = fab.classList.contains("admin-visible");
+
+        localStorage.setItem("is_admin_user", active ? "true" : "false");
+
+        showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+
       } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 380);
+
+        timer = setTimeout(() => { clicks = 0; }, 400);
+
       }
+
     });
-  });
+
+  }
+
 }
 
-function openCustomizerEditor() {
-  const backdrop = document.getElementById("customizer-modal");
-  if (!backdrop) return;
 
-  // Enforce Section Locking for Basic Plan
-  document.querySelectorAll(".editor-section").forEach(sec => {
-    const secType = sec.getAttribute("data-section");
-    if (ACTIVE_UNLOCKED_PLAN === "basic" && secType !== "basic" && secType !== "sender") {
-      sec.classList.add("locked");
-    } else {
-      sec.classList.remove("locked");
-    }
-  });
-
-  backdrop.classList.add("open");
-}
 
 function initCustomizerModal() {
 
   parseQueryParams();
 
   checkAdminAccess();
-  initPaywallModal();
 
   const backdrop = document.getElementById("customizer-modal");
   const toggleBtn = document.getElementById("customizer-toggle-btn");
   const closeBtn = document.getElementById("customizer-close-btn");
-  const planModal = document.getElementById("plan-modal");
+  const saveBtn = document.getElementById("customizer-save-btn");
+  const shareLinkBtn = document.getElementById("customizer-share-link-btn");
 
   if (!backdrop || !toggleBtn) return;
-
-  toggleBtn.addEventListener("click", () => {
-    if (!ACTIVE_UNLOCKED_PLAN) {
-      if (planModal) planModal.classList.add("open");
-    } else {
-      openCustomizerEditor();
-    }
-  });
 
   // Direct page visits without URL params must always start clean with default 1234!
   if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
@@ -4956,90 +4870,79 @@ function triggerFinalScene() {
   setTimeout(
 
     () => document.getElementById("signature").classList.add("show"),
+
     800,
+
   );
+
 }
 
-function runLoadingSequence() {
-  const screen = document.getElementById("loading-screen");
-  const fill = document.getElementById("loader-fill");
-  const pct = document.getElementById("loader-pct");
-  const tapEnter = document.getElementById("tap-enter");
-  const lockWrap = document.getElementById("passcode-wrap");
 
-  if (!screen || !fill || !pct) return;
 
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += Math.floor(Math.random() * 18) + 12;
-    if (progress >= 100) {
-      progress = 100;
-      clearInterval(interval);
-      fill.style.width = "100%";
-      pct.textContent = "Memories loaded! ✨ 100%";
 
-      setTimeout(() => {
-        const hasCustomCode = CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234" && CONFIG.passcode.code.trim() !== "";
-        if (hasCustomCode) {
-          if (lockWrap) lockWrap.classList.add("show");
-          if (tapEnter) tapEnter.style.display = "none";
-        } else {
-          screen.style.opacity = "0";
-          screen.style.transition = "opacity 0.6s ease";
-          setTimeout(() => {
-            screen.style.display = "none";
-          }, 600);
-        }
-      }, 400);
-    } else {
-      fill.style.width = progress + "%";
-      pct.textContent = `Loading memories... ${progress}%`;
-    }
-  }, 70);
-}
 
-function initGyro() {
-  if (window.DeviceOrientationEvent) {
-    window.addEventListener("deviceorientation", (e) => {
-      const tiltX = (e.gamma || 0) / 30;
-      const tiltY = (e.beta || 0) / 30;
-      document.documentElement.style.setProperty("--tilt-x", `${tiltX}deg`);
-      document.documentElement.style.setProperty("--tilt-y", `${tiltY}deg`);
-    });
-  }
-}
 
 (async function boot() {
-  try { parseQueryParams(); } catch(e){}
+
+  parseQueryParams();
 
   if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
-    try { localStorage.removeItem("custom_birthday_config"); } catch(e){}
-    if (typeof CONFIG !== "undefined") {
-      CONFIG.name = "";
-      if (CONFIG.passcode) CONFIG.passcode.code = "1234";
-    }
+    localStorage.removeItem("custom_birthday_config");
+    CONFIG.name = "";
+    CONFIG.passcode.code = "1234";
   }
 
-  try { if (typeof populateContent === "function") populateContent(); } catch(e){}
-  try { if (typeof initEnvelope === "function") initEnvelope(); } catch(e){}
-  try { if (typeof initSurprise === "function") initSurprise(); } catch(e){}
-  try { if (typeof initGiftbox === "function") initGiftbox(); } catch(e){}
-  try { if (typeof initCake === "function") initCake(); } catch(e){}
-  try { if (typeof initMusicWidget === "function") initMusicWidget(); } catch(e){}
-  try { if (typeof initShare === "function") initShare(); } catch(e){}
-  try { if (typeof initCustomizerModal === "function") initCustomizerModal(); } catch(e){}
-  try { if (typeof runLoadingSequence === "function") runLoadingSequence(); } catch(e){}
-  try { if (typeof initGyro === "function") initGyro(); } catch(e){}
 
-  try {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("active");
-        }
-      });
-    }, { threshold: 0.1 });
-    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
-  } catch(e){}
+
+  repairStaticIcons();
+
+  observeDynamicIconText();
+
+  repairObjectText(CONFIG);
+
+  positionCakeBeforeSurprise();
+
+  populateContent();
+
+  initEnvelope();
+
+  initSurprise();
+
+  initGiftbox();
+
+  initCake();
+
+  initMusicWidget();
+
+  initShare();
+
+  initCustomizerModal();
+
+  initReveal();
+
+  runLoadingSequence();
+
+  initGyro();
+
+
+
+  // progressive enhancement — never blocks the experience, hard failsafe below
+
+  const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
+
+  await Promise.race([loadEnhancements(), enhancementTimeout]);
+
+
+
+  if (hasGSAP) {
+
+    document.querySelectorAll(".reveal").forEach((el) => {
+
+      gsap.set(el, { clearProps: "transform,opacity,filter" });
+
+    });
+
+  }
+
 })();
 

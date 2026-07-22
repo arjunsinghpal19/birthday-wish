@@ -5031,66 +5031,36 @@ function initGyro() {
 }
 
 (async function boot() {
-
-  parseQueryParams();
+  try { parseQueryParams(); } catch(e){}
 
   if (!new URLSearchParams(location.search).has("name") && !new URLSearchParams(location.search).has("w")) {
-    localStorage.removeItem("custom_birthday_config");
-    CONFIG.name = "";
-    CONFIG.passcode.code = "1234";
+    try { localStorage.removeItem("custom_birthday_config"); } catch(e){}
+    if (typeof CONFIG !== "undefined") {
+      CONFIG.name = "";
+      if (CONFIG.passcode) CONFIG.passcode.code = "1234";
+    }
   }
 
+  try { if (typeof populateContent === "function") populateContent(); } catch(e){}
+  try { if (typeof initEnvelope === "function") initEnvelope(); } catch(e){}
+  try { if (typeof initSurprise === "function") initSurprise(); } catch(e){}
+  try { if (typeof initGiftbox === "function") initGiftbox(); } catch(e){}
+  try { if (typeof initCake === "function") initCake(); } catch(e){}
+  try { if (typeof initMusicWidget === "function") initMusicWidget(); } catch(e){}
+  try { if (typeof initShare === "function") initShare(); } catch(e){}
+  try { if (typeof initCustomizerModal === "function") initCustomizerModal(); } catch(e){}
+  try { if (typeof runLoadingSequence === "function") runLoadingSequence(); } catch(e){}
+  try { if (typeof initGyro === "function") initGyro(); } catch(e){}
 
-
-  repairStaticIcons();
-
-  observeDynamicIconText();
-
-  repairObjectText(CONFIG);
-
-  positionCakeBeforeSurprise();
-
-  populateContent();
-
-  initEnvelope();
-
-  initSurprise();
-
-  initGiftbox();
-
-  initCake();
-
-  initMusicWidget();
-
-  initShare();
-
-  initCustomizerModal();
-
-  initReveal();
-
-  runLoadingSequence();
-
-  initGyro();
-
-
-
-  // progressive enhancement — never blocks the experience, hard failsafe below
-
-  const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
-
-  await Promise.race([loadEnhancements(), enhancementTimeout]);
-
-
-
-  if (hasGSAP) {
-
-    document.querySelectorAll(".reveal").forEach((el) => {
-
-      gsap.set(el, { clearProps: "transform,opacity,filter" });
-
-    });
-
-  }
-
+  try {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("active");
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+  } catch(e){}
 })();
 

@@ -1609,14 +1609,18 @@ const MusicEngine = (() => {
     if (ytId) {
       const container = document.getElementById("yt-player-container");
       if (container) {
+        if (audioEl) { audioEl.pause(); }
         container.style.display = "block";
-        container.innerHTML = `<iframe id="yt-iframe" width="200" height="200" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}" allow="autoplay"></iframe>`;
+        container.innerHTML = `<iframe id="yt-iframe" width="300" height="200" src="https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1&loop=1&playlist=${ytId}&playsinline=1" allow="autoplay"></iframe>`;
         playing = true;
         return;
       }
     }
 
     if (fileOrUrl) {
+      const container = document.getElementById("yt-player-container");
+      if (container) { container.innerHTML = ""; container.style.display = "none"; }
+
       if (!audioEl) {
         audioEl = new Audio(fileOrUrl);
         audioEl.loop = true;
@@ -4259,7 +4263,7 @@ function initCustomizerModal() {
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
     if (vals.musicUrlVal) {
       CONFIG.music = { file: vals.musicUrlVal };
-    } else {
+    } else if (!CONFIG.music || !CONFIG.music.file) {
       CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
     }
 

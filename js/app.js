@@ -4968,17 +4968,67 @@ function triggerFinalScene() {
   setTimeout(
 
     () => document.getElementById("signature").classList.add("show"),
-
     800,
-
   );
-
 }
 
+function runLoadingSequence() {
+  const screen = document.getElementById("loading-screen");
+  const fill = document.getElementById("loader-fill");
+  const pct = document.getElementById("loader-pct");
+  const tapEnter = document.getElementById("tap-enter");
+  const lockWrap = document.getElementById("passcode-wrap");
 
+  if (!screen || !fill || !pct) return;
 
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.floor(Math.random() * 18) + 12;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(interval);
+      fill.style.width = "100%";
+      pct.textContent = "Memories loaded! ✨ 100%";
 
+      setTimeout(() => {
+        // If recipient passcode is set and custom, show passcode lock; else tap to enter
+        const hasCustomCode = CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234" && CONFIG.passcode.code.trim() !== "";
+        if (hasCustomCode) {
+          if (lockWrap) lockWrap.classList.add("show");
+          if (tapEnter) tapEnter.style.display = "none";
+        } else {
+          if (tapEnter) {
+            tapEnter.classList.add("show");
+            tapEnter.style.display = "block";
+          }
+          screen.style.cursor = "pointer";
+          const startHandler = () => {
+            screen.classList.add("fade-out");
+            setTimeout(() => {
+              screen.style.display = "none";
+            }, 700);
+            screen.removeEventListener("click", startHandler);
+          };
+          screen.addEventListener("click", startHandler);
+        }
+      }, 350);
+    } else {
+      fill.style.width = progress + "%";
+      pct.textContent = `Loading memories... ${progress}%`;
+    }
+  }, 100);
+}
 
+function initGyro() {
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener("deviceorientation", (e) => {
+      const tiltX = (e.gamma || 0) / 30;
+      const tiltY = (e.beta || 0) / 30;
+      document.documentElement.style.setProperty("--tilt-x", `${tiltX}deg`);
+      document.documentElement.style.setProperty("--tilt-y", `${tiltY}deg`);
+    });
+  }
+}
 
 (async function boot() {
 

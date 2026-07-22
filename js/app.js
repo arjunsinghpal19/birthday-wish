@@ -4685,13 +4685,13 @@ function initShare() {
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
 
       if (navigator.share) {
         try {
           await navigator.share({
             title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
-            text: `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:`,
+            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:`,
             url: shareUrl,
           });
           return;
@@ -4712,7 +4712,7 @@ function initShare() {
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const waText = `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
       const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
     });

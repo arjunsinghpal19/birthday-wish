@@ -4901,6 +4901,9 @@ function initMusicWidget() {
   if (!globalAudio) {
     globalAudio = new Audio();
     globalAudio.loop = true;
+  } else {
+    globalAudio.pause();
+    isAudioPlaying = false;
   }
   globalAudio.src = audioSrc;
 
@@ -4911,7 +4914,7 @@ function initMusicWidget() {
     if (widget) widget.classList.toggle("playing", playing);
   }
 
-  toggleBtn.addEventListener("click", async () => {
+  toggleBtn.onclick = async () => {
     if (isAudioPlaying) {
       globalAudio.pause();
       updateAudioUI(false);
@@ -4922,23 +4925,10 @@ function initMusicWidget() {
         updateAudioUI(true);
         showToast("Playing Music 🎶");
       } catch(e) {
-        showToast("Tap again to play audio 🎵");
+        showToast("Tap to play music 🎵");
       }
     }
-  });
-
-  const startAudioOnTouch = async () => {
-    if (!isAudioPlaying && globalAudio) {
-      try {
-        await globalAudio.play();
-        updateAudioUI(true);
-      } catch(e){}
-    }
-    window.removeEventListener("click", startAudioOnTouch);
-    window.removeEventListener("touchstart", startAudioOnTouch);
   };
-  window.addEventListener("click", startAudioOnTouch, { once: true });
-  window.addEventListener("touchstart", startAudioOnTouch, { once: true });
 }
 
 (async function boot() {
@@ -4962,6 +4952,8 @@ function initMusicWidget() {
   positionCakeBeforeSurprise();
 
   populateContent();
+
+  reRenderPage();
 
   initEnvelope();
 

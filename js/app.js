@@ -4058,6 +4058,38 @@ function initCustomizerModal() {
     });
   }
 
+  function compressImageFile(file, maxSide = 600, quality = 0.7) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.width;
+          let h = img.height;
+          if (w > maxSide || h > maxSide) {
+            if (w > h) {
+              h = Math.round((h * maxSide) / w);
+              w = maxSide;
+            } else {
+              w = Math.round((w * maxSide) / h);
+              h = maxSide;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = () => resolve(e.target.result);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
   // ─── RENDER GALLERY INPUTS ───
   function renderGalleryInputs() {
     const container = document.getElementById("gallery-inputs-container");
@@ -4069,6 +4101,22 @@ function initCustomizerModal() {
         <div class="item-header">
           <span class="item-label">Photo Tile ${i + 1}</span>
           <button type="button" class="item-delete-btn" data-type="gallery" data-index="${i}" title="Delete">✕</button>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label style="font-size:0.75rem;opacity:0.85;">Photo Image (Upload real photo or leave empty for Emoji tile)</label>
+          <div class="gallery-photo-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+            ${g.image ? `
+              <div style="position:relative;width:50px;height:50px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,215,0,0.6);flex-shrink:0;">
+                <img src="${g.image}" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <button type="button" class="btn-remove-gallery-photo" data-index="${i}" style="background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Photo</button>
+            ` : `
+              <label style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                📷 Select Photo from Device
+                <input type="file" class="gallery-file-input" accept="image/*" data-index="${i}" style="display:none;">
+              </label>
+            `}
+          </div>
         </div>
         <div class="form-group">
           <div class="emoji-text-row">
@@ -4090,6 +4138,33 @@ function initCustomizerModal() {
       container.appendChild(group);
     });
 
+    // Bind file inputs
+    container.querySelectorAll(".gallery-file-input").forEach(input => {
+      input.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const idx = parseInt(input.dataset.index);
+        const dataUrl = await compressImageFile(file);
+        if (dataUrl) {
+          CONFIG.gallery[idx].image = dataUrl;
+          renderGalleryInputs();
+          reRenderPage();
+          showToast(`Photo added to Tile ${idx + 1}! 📸`);
+        }
+      });
+    });
+
+    // Bind remove photo buttons
+    container.querySelectorAll(".btn-remove-gallery-photo").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        CONFIG.gallery[idx].image = null;
+        renderGalleryInputs();
+        reRenderPage();
+        showToast("Photo removed — Emoji tile restored ✨");
+      });
+    });
+
     // Bind delete item
     container.querySelectorAll(".item-delete-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -4097,6 +4172,7 @@ function initCustomizerModal() {
         if (CONFIG.gallery.length > 1) {
           CONFIG.gallery.splice(idx, 1);
           renderGalleryInputs();
+          reRenderPage();
         } else {
           showToast("At least 1 gallery item required 📸");
         }

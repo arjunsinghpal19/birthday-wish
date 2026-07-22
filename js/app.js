@@ -1591,7 +1591,7 @@ const MusicEngine = (() => {
 
 
 
-  let ytIframe = null;
+  let currentYtId = null;
 
   function extractYouTubeId(url) {
     if (!url) return null;
@@ -1608,16 +1608,30 @@ const MusicEngine = (() => {
 
     if (ytId) {
       const container = document.getElementById("yt-player-container");
+      const existingIframe = document.getElementById("yt-iframe");
       if (container) {
         if (audioEl) { audioEl.pause(); }
+
+        // If iframe for the same video already exists, resume without restarting!
+        if (existingIframe && currentYtId === ytId) {
+          try {
+            existingIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+          } catch(e){}
+          playing = true;
+          return;
+        }
+
+        // New YouTube video: embed iframe
+        currentYtId = ytId;
         container.style.display = "block";
-        container.innerHTML = `<iframe id="yt-iframe" width="300" height="200" src="https://www.youtube.com/embed/${ytId}?autoplay=1&enablejsapi=1&loop=1&playlist=${ytId}&playsinline=1" allow="autoplay"></iframe>`;
+        container.innerHTML = `<iframe id="yt-iframe" width="300" height="200" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&loop=1&playlist=${ytId}&playsinline=1" allow="autoplay"></iframe>`;
         playing = true;
         return;
       }
     }
 
     if (fileOrUrl) {
+      currentYtId = null;
       const container = document.getElementById("yt-player-container");
       if (container) { container.innerHTML = ""; container.style.display = "none"; }
 
@@ -1645,6 +1659,7 @@ const MusicEngine = (() => {
       return;
     }
 
+    currentYtId = null;
     initCtx();
     if (ctx.state === "suspended") {
       ctx.resume().then(() => {
@@ -1662,11 +1677,15 @@ const MusicEngine = (() => {
     if (audioEl) {
       audioEl.pause();
     }
-    const container = document.getElementById("yt-player-container");
-    if (container) {
-      container.innerHTML = "";
-      container.style.display = "none";
+
+    const existingIframe = document.getElementById("yt-iframe");
+    if (existingIframe) {
+      // Pause YouTube player without destroying iframe
+      try {
+        existingIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      } catch(e){}
     }
+
     if (timer) {
       clearInterval(timer);
       timer = null;

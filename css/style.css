@@ -1085,6 +1085,22 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   background: rgba(255, 215, 0, 0.1);
 }
 
+.clear-input-btn {
+  background: rgba(255, 0, 80, 0.2);
+  border: 1px solid rgba(255, 0, 80, 0.4);
+  color: #ff6b9d;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.clear-input-btn:hover {
+  background: rgba(255, 0, 80, 0.4);
+  color: #fff;
+}
+
 /* Image Upload Dropzone / Box in Customizer Modal */
 .image-upload-area {
   position: relative;

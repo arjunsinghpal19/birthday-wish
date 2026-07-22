@@ -4678,52 +4678,28 @@ function initShare() {
 
 
   // Native Share / WhatsApp Button
-
   const shareBtn = document.getElementById("native-share-btn");
-
   if (shareBtn) {
-
     shareBtn.addEventListener("click", async () => {
-
       const shareUrl = buildRecipientShareUrl();
-
       const nameVal = (CONFIG.name || "").trim();
-
       const displayName = nameVal ? formatName(nameVal) : "";
-
-
-
-      const introText = displayName 
-        ? `🎂 Hey ${displayName}! Someone created a special Birthday Wish just for you! ❤️\nTap the link below to unwrap your wish 🎁:`
-        : `🎂 Hey! Someone created a special Birthday Wish just for you! ❤️\nTap the link below to unwrap your wish 🎁:`;
-
-
+      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
+      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:\n${shareUrl}`;
 
       if (navigator.share) {
-
         try {
-
           await navigator.share({
-
-            title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Wish!",
-
-            text: introText,
-
+            title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
+            text: `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:`,
             url: shareUrl,
-
           });
-
           return;
-
         } catch (e) {}
-
       }
 
-
-
       // WhatsApp direct fallback
-      const fullWaText = `${introText}\n${shareUrl}`;
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullWaText)}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
       window.open(waUrl, "_blank");
     });
   }
@@ -4735,9 +4711,8 @@ function initShare() {
       const shareUrl = buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const codeStr = (CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234") ? CONFIG.passcode.code : "";
-      const passInfo = codeStr ? ` (Passcode: ${codeStr})` : "";
-      const waText = `Hey! 🎂 Maine tumhare liye ek special 3D Birthday Wish surprise banaya hai ✨${passInfo}\n\nKhol kar dekho 🎁: ${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
+      const waText = `${greeting}\n\nMaine tumhare liye ek special 3D Birthday Surprise banaya hai! 🎁💖\nIsme ek secret lock bhi hai — lock khol kar dekho tumhare liye kya surprise hai! 🔐✨\n\nKhol kar dekho 🎁:\n${shareUrl}`;
       const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
     });

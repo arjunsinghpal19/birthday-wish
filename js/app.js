@@ -3847,16 +3847,15 @@ function parseQueryParams() {
 function checkAdminAccess() {
   const params = new URLSearchParams(location.search);
   const isEditParam = params.has("edit") || params.has("admin");
-  const isStoredAdmin = localStorage.getItem("is_admin_user") === "true";
 
   const fab = document.getElementById("customizer-toggle-btn");
   if (!fab) return;
 
-  if (isEditParam || isStoredAdmin) {
+  if (isEditParam) {
     fab.classList.add("admin-visible");
-    localStorage.setItem("is_admin_user", "true");
   } else {
     fab.classList.remove("admin-visible");
+    localStorage.removeItem("is_admin_user");
   }
 
   // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
@@ -3865,7 +3864,6 @@ function checkAdminAccess() {
       e.preventDefault();
       fab.classList.toggle("admin-visible");
       const active = fab.classList.contains("admin-visible");
-      localStorage.setItem("is_admin_user", active ? "true" : "false");
       showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
     }
   });
@@ -3883,7 +3881,6 @@ function checkAdminAccess() {
         const pwd = prompt("🔑 Enter Admin Password:");
         if (pwd === "2001") {
           fab.classList.add("admin-visible");
-          localStorage.setItem("is_admin_user", "true");
           showToast("👑 Admin Mode Activated!");
           const modal = document.getElementById("customizer-modal");
           if (modal) modal.classList.add("open");
@@ -3908,7 +3905,6 @@ function checkAdminAccess() {
         clicks = 0;
         fab.classList.toggle("admin-visible");
         const active = fab.classList.contains("admin-visible");
-        localStorage.setItem("is_admin_user", active ? "true" : "false");
         showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
       } else {
         timer = setTimeout(() => { clicks = 0; }, 400);

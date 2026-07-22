@@ -4979,32 +4979,23 @@ function runLoadingSequence() {
       pct.textContent = "Memories loaded! ✨ 100%";
 
       setTimeout(() => {
-        // If recipient passcode is set and custom, show passcode lock; else tap to enter
         const hasCustomCode = CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234" && CONFIG.passcode.code.trim() !== "";
         if (hasCustomCode) {
           if (lockWrap) lockWrap.classList.add("show");
           if (tapEnter) tapEnter.style.display = "none";
         } else {
-          if (tapEnter) {
-            tapEnter.classList.add("show");
-            tapEnter.style.display = "block";
-          }
-          screen.style.cursor = "pointer";
-          const startHandler = () => {
-            screen.classList.add("fade-out");
-            setTimeout(() => {
-              screen.style.display = "none";
-            }, 700);
-            screen.removeEventListener("click", startHandler);
-          };
-          screen.addEventListener("click", startHandler);
+          screen.style.opacity = "0";
+          screen.style.transition = "opacity 0.6s ease";
+          setTimeout(() => {
+            screen.style.display = "none";
+          }, 600);
         }
-      }, 350);
+      }, 400);
     } else {
       fill.style.width = progress + "%";
       pct.textContent = `Loading memories... ${progress}%`;
     }
-  }, 100);
+  }, 70);
 }
 
 function initGyro() {

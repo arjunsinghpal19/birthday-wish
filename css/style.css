@@ -208,8 +208,7 @@ button{ font-family:inherit; border:none; background:none; cursor:pointer; color
 .typewriter-line.done::after{content:none}@keyframes typeCursor{50%{opacity:0}}
 
 /* ==================== 4. LAYOUT / GLASS UI ==================== */
-#experience{ position:relative; z-index:2; opacity:0; }
-#experience.revealed{ opacity:1; }
+#experience{ position:relative; z-index:2; opacity:1; }
 
 section{ position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:80px 20px; }
 

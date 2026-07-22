@@ -1431,6 +1431,53 @@ function launchFireworksShow(duration = 3200) {
 
 }
 
+function playPopSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const sCtx = new AudioCtx();
+    const osc = sCtx.createOscillator();
+    const gain = sCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(480, sCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(140, sCtx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.35, sCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, sCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(sCtx.destination);
+    osc.start();
+    osc.stop(sCtx.currentTime + 0.09);
+  } catch(e){}
+}
+
+function playBlowSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const sCtx = new AudioCtx();
+    const bufferSize = Math.round(sCtx.sampleRate * 0.35);
+    const buffer = sCtx.createBuffer(1, bufferSize, sCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = sCtx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = sCtx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 750;
+    filter.Q.value = 2.5;
+    const gain = sCtx.createGain();
+    gain.gain.setValueAtTime(0.01, sCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, sCtx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, sCtx.currentTime + 0.35);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(sCtx.destination);
+    noise.start();
+  } catch(e){}
+}
+
 function launchBalloons(n = 10) {
 
   const colors = ["#FF5FA2", "#A855F7", "#FFD700", "#FFB6D9", "#7C3AED"];
@@ -1457,11 +1504,17 @@ function launchBalloons(n = 10) {
 
         b.classList.add("popping");
 
+        playPopSound();
+
         const x = event?.clientX ?? b.getBoundingClientRect().left + 25;
 
         const y = event?.clientY ?? b.getBoundingClientRect().top + 32;
 
         confettiBurst(x, y, 22);
+
+        const notesList = ["You are amazing! ✨", "Keep smiling! 💖", "Best day ever! 🎂", "Shine bright! 🌟", "So much love! 💕"];
+        const note = notesList[Math.floor(Math.random() * notesList.length)];
+        showToast(`🎈 Pop! "${note}"`);
 
         setTimeout(() => b.remove(), 320);
 
@@ -4253,6 +4306,10 @@ function initCustomizerModal() {
       const curFile = CONFIG.music?.file || "";
       musicInput.value = (curFile && !curFile.includes("assets/music/happy-birthday-song.mpeg")) ? curFile : "";
     }
+    const musicStartInput = document.getElementById("input-music-start");
+    if (musicStartInput) {
+      musicStartInput.value = CONFIG.music?.startTime || "";
+    }
 
     // Dynamic sections
     renderLetterInputs();
@@ -4278,6 +4335,8 @@ function initCustomizerModal() {
     const giftCoupon = document.getElementById("input-gift-coupon").value.trim() || CONFIG.gift.coupon;
     const musicInput = document.getElementById("input-music-url");
     const musicUrlVal = musicInput ? musicInput.value.trim() : "";
+    const musicStartInput = document.getElementById("input-music-start");
+    const musicStartVal = musicStartInput ? musicStartInput.value.trim() : "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4336,7 +4395,7 @@ function initCustomizerModal() {
       });
     });
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, letterLines, reasons, wishes, gallery, timeline };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, letterLines, reasons, wishes, gallery, timeline };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4353,9 +4412,11 @@ function initCustomizerModal() {
     CONFIG.timeline = vals.timeline;
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
     if (vals.musicUrlVal) {
-      CONFIG.music = { file: vals.musicUrlVal };
+      CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
     } else if (!CONFIG.music || !CONFIG.music.file) {
-      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: vals.musicStartVal };
+    } else {
+      CONFIG.music.startTime = vals.musicStartVal;
     }
 
     // Re-render entire page content
@@ -4625,8 +4686,15 @@ function buildRecipientShareUrl(overrideName) {
   if (CONFIG.music?.file && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
     shareUrl += `&music=${encodeURIComponent(CONFIG.music.file)}`;
   }
+  if (CONFIG.music?.startTime) {
+    shareUrl += `&t=${encodeURIComponent(CONFIG.music.startTime)}`;
+  }
 
   return shareUrl;
+}
+
+function isHostedOnline() {
+  return ["http:", "https:"].includes(location.protocol);
 }
 
 
@@ -4684,8 +4752,10 @@ function initShare() {
 
 
   const instaBtn = document.getElementById("insta-story-btn");
-
   if (instaBtn) instaBtn.addEventListener("click", exportInstaStory);
+
+  const posterBtn = document.getElementById("download-poster-btn");
+  if (posterBtn) posterBtn.addEventListener("click", exportInstaStory);
 
 
 
@@ -4951,7 +5021,12 @@ function initMusicWidget() {
 
   if (hasRecipientParams) {
     if (searchParams.has("music")) {
-      CONFIG.music = { file: searchParams.get("music") };
+      CONFIG.music = CONFIG.music || {};
+      CONFIG.music.file = searchParams.get("music");
+    }
+    if (searchParams.has("t")) {
+      CONFIG.music = CONFIG.music || {};
+      CONFIG.music.startTime = searchParams.get("t");
     }
   } else if (!searchParams.has("admin")) {
     // Normal visit to root URL: start clean with default 1234 & default melody for a new recipient!

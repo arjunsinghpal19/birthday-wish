@@ -4088,11 +4088,11 @@ function initCustomizerModal() {
         </div>
         <div class="form-group">
           <label>Upload Photo</label>
-          <small class="field-hint">Phone se photo select karo — ya khali chhodo emoji ke liye</small>
+          <small class="field-hint">Photo select karo — ya khali chhodo emoji ke liye</small>
           <div class="image-upload-area ${hasImg ? "has-image" : ""}" data-gallery-index="${i}">
             ${hasImg 
               ? `<img src="${g.image}" alt="Photo ${i+1}"><button type="button" class="remove-image-btn" data-index="${i}">✕</button>` 
-              : `<div class="upload-placeholder"><span>📷</span>Tap to upload photo</div>`
+              : `<div class="upload-placeholder"><span>📷</span>Click / Tap to upload photo</div>`
             }
             <input type="file" accept="image/*" data-index="${i}" class="gallery-file-input">
           </div>

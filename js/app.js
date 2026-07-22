@@ -4736,39 +4736,17 @@ function initShare() {
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
 
-      // Build a sweet personalized birthday message
-      const msgParts = [];
-      if (displayName) {
-        msgParts.push(`Happy birthday, ${displayName}!`);
-        msgParts.push(`${displayName}, aaj tumhara special din hai.`);
-        msgParts.push(`Maine tumhare liye ye birthday surprise banaya hai, kyunki tum bahut khaas ho.`);
-        msgParts.push(`Duniya ki saari khushiyan tumhare liye, dil se Happy Birthday ${displayName}!`);
-      } else {
-        msgParts.push(`Happy birthday!`);
-        msgParts.push(`Aaj tumhara special din hai.`);
-        msgParts.push(`Maine tumhare liye ye birthday surprise banaya hai, kyunki tum bahut khaas ho.`);
-        msgParts.push(`Dil se Happy Birthday!`);
-      }
+      const temp = document.createElement("div");
+      CONFIG.letterLines.forEach((l) => (temp.innerHTML += l));
 
-      const text = msgParts.join(" ");
+      const text = (displayName ? `Happy birthday ${displayName}. ` : "Happy birthday. ") + temp.textContent;
+
       const utter = new SpeechSynthesisUtterance(text);
-
-      // Try to pick a sweet/female English voice
-      const voices = speechSynthesis.getVoices();
-      const preferred = voices.find(v => /female|zira|samantha|karen|fiona|google.*female|moira/i.test(v.name))
-        || voices.find(v => /google.*en/i.test(v.name) && v.lang.startsWith("en"))
-        || voices.find(v => v.lang.startsWith("en") && /female/i.test(v.name))
-        || voices.find(v => v.lang.startsWith("en"))
-        || null;
-      if (preferred) utter.voice = preferred;
-
-      utter.rate = 0.88;
-      utter.pitch = 1.2;
-      utter.volume = 1;
+      utter.rate = 0.95;
+      utter.pitch = 1.05;
 
       speechSynthesis.cancel();
       speechSynthesis.speak(utter);
-      showToast("🎙️ Listening... 💖");
 
     });
 

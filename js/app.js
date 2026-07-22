@@ -4717,6 +4717,44 @@ function initWishingStar() {
   }
 }
 
+const VideoStorage = {
+  dbName: "BirthdayWishVideoDB",
+  storeName: "videos",
+  async openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore(this.storeName);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+  async saveVideo(file) {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).put(file, "customVideo");
+      return new Promise((res) => { tx.oncomplete = () => res(true); });
+    } catch(e) { return false; }
+  },
+  async getVideo() {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readonly");
+      const req = tx.objectStore(this.storeName).get("customVideo");
+      return new Promise((res) => { req.onsuccess = () => res(req.result); });
+    } catch(e) { return null; }
+  },
+  async removeVideo() {
+    try {
+      const db = await this.openDB();
+      const tx = db.transaction(this.storeName, "readwrite");
+      tx.objectStore(this.storeName).delete("customVideo");
+    } catch(e){}
+  }
+};
+
 function renderVideoWishSection() {
   const section = document.getElementById("video-wish-scene");
   const container = document.getElementById("video-wish-player-container");
@@ -4737,9 +4775,11 @@ function renderVideoWishSection() {
       container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
     } else {
       section.style.display = "none";
+      container.innerHTML = "";
     }
   } else {
     section.style.display = "none";
+    container.innerHTML = "";
   }
 }
 
@@ -5157,31 +5197,66 @@ function initMusicWidget() {
   initWishingStar();
   renderVideoWishSection();
 
+  // Restore saved video from IndexedDB if available
+  try {
+    const savedVidBlob = await VideoStorage.getVideo();
+    if (savedVidBlob) {
+      const blobUrl = URL.createObjectURL(savedVidBlob);
+      CONFIG.videoWish = CONFIG.videoWish || {};
+      CONFIG.videoWish.file = blobUrl;
+      CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
+      renderVideoWishSection();
+    }
+  } catch(e){}
+
   // Video file input listeners in customizer modal
   const vidFileInput = document.getElementById("input-video-file");
   const vidRemoveBtn = document.getElementById("remove-video-file-btn");
+  const vidUploadLabel = document.getElementById("video-upload-label");
+
   if (vidFileInput) {
-    vidFileInput.addEventListener("change", (e) => {
+    vidFileInput.addEventListener("change", async (e) => {
       const f = e.target.files[0];
       if (!f) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        CONFIG.videoWish = CONFIG.videoWish || {};
-        CONFIG.videoWish.file = evt.target.result;
-        if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
-        renderVideoWishSection();
-        showToast("Video attached successfully! 📹");
-      };
-      reader.readAsDataURL(f);
+      showToast("Saving video... ⏳");
+      const blobUrl = URL.createObjectURL(f);
+      CONFIG.videoWish = CONFIG.videoWish || {};
+      CONFIG.videoWish.file = blobUrl;
+      CONFIG.videoWish.fileName = f.name;
+
+      await VideoStorage.saveVideo(f);
+
+      if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
+      if (vidUploadLabel) vidUploadLabel.innerHTML = `📹 Attached: ${f.name.substring(0, 18)}`;
+      renderVideoWishSection();
+      showToast("Video attached & saved! 📹");
     });
   }
+
   if (vidRemoveBtn) {
-    vidRemoveBtn.addEventListener("click", () => {
-      if (CONFIG.videoWish) CONFIG.videoWish.file = null;
+    vidRemoveBtn.addEventListener("click", async () => {
+      if (CONFIG.videoWish) {
+        CONFIG.videoWish.file = null;
+        CONFIG.videoWish.fileName = null;
+      }
+      await VideoStorage.removeVideo();
       if (vidFileInput) vidFileInput.value = "";
+      if (vidUploadLabel) vidUploadLabel.innerHTML = `📹 Select Video from Device`;
       vidRemoveBtn.style.display = "none";
       renderVideoWishSection();
       showToast("Video removed ✨");
+    });
+  }
+
+  // Clear YouTube Video URL button
+  const clearVidUrlBtn = document.getElementById("clear-video-url-btn");
+  if (clearVidUrlBtn) {
+    clearVidUrlBtn.addEventListener("click", () => {
+      const vidInput = document.getElementById("input-video-url");
+      if (vidInput) vidInput.value = "";
+      if (CONFIG.videoWish) CONFIG.videoWish.url = "";
+      renderVideoWishSection();
+      showToast("Video link cleared ✨");
     });
   }
 

@@ -4737,15 +4737,25 @@ function initShare() {
 
 
       // WhatsApp direct fallback
-
       const fullWaText = `${introText}\n${shareUrl}`;
-
       const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullWaText)}`;
-
       window.open(waUrl, "_blank");
-
     });
+  }
 
+  // Dedicated WhatsApp Share Button
+  const waBtn = document.getElementById("whatsapp-share-btn");
+  if (waBtn) {
+    waBtn.addEventListener("click", () => {
+      const shareUrl = buildRecipientShareUrl();
+      const nameVal = (CONFIG.name || "").trim();
+      const displayName = nameVal ? formatName(nameVal) : "";
+      const codeStr = (CONFIG.passcode && CONFIG.passcode.code && CONFIG.passcode.code !== "1234") ? CONFIG.passcode.code : "";
+      const passInfo = codeStr ? ` (Passcode: ${codeStr})` : "";
+      const waText = `Hey! 🎂 Maine tumhare liye ek special 3D Birthday Wish surprise banaya hai ✨${passInfo}\n\nKhol kar dekho 🎁: ${shareUrl}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+      window.open(waUrl, "_blank");
+    });
   }
 
 

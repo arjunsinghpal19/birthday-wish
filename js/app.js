@@ -252,6 +252,10 @@ function populateContent() {
 
   if (slot2) slot2.textContent = displayName || "You";
 
+  const fromSlot = document.getElementById("from-slot");
+
+  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
+
 
 
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
@@ -4424,6 +4428,9 @@ function reRenderPage() {
   if (slot1) slot1.textContent = displayName ? `, ${displayName}` : "";
   const slot2 = document.getElementById("name-slot-2");
   if (slot2) slot2.textContent = displayName || "You";
+
+  const fromSlot = document.getElementById("from-slot");
+  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
 
   // Loading logo
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");

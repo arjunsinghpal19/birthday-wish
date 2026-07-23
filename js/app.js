@@ -4915,11 +4915,12 @@ function launchRealisticShootingStar() {
       streak.appendChild(head);
       document.body.appendChild(streak);
 
-      // Start from top-left corner of visible viewport
-      const fromX = -80;
-      const fromY = (window.innerHeight * 0.08) + (Math.random() * (window.innerHeight * 0.35));
-      const angle = 26 + (Math.random() * 10 - 5); // shoot diagonally down-right
-      const distance = Math.hypot(window.innerWidth + 200, window.innerHeight + 200);
+      // Start from near top-left corner with dynamic height variation (some higher, some slightly lower)
+      const fromX = -60;
+      const startYPositions = [-30, window.innerHeight * 0.12, -10, window.innerHeight * 0.20, window.innerHeight * 0.05];
+      const fromY = (startYPositions[i % startYPositions.length]) + (Math.random() * 20 - 10);
+      const angle = 21 + (Math.random() * 6 - 3); // shallow elegant angle across upper sky
+      const distance = Math.hypot(window.innerWidth + 200, window.innerHeight + 100);
 
       streak.style.left = `${fromX}px`;
       streak.style.top = `${fromY}px`;

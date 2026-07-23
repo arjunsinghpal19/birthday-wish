@@ -4051,6 +4051,27 @@ function parseQueryParams() {
 
 
 
+function getAdminPassword() {
+  return CONFIG.adminPassword || localStorage.getItem("custom_admin_password") || "2001";
+}
+
+function promptForAdminAccess() {
+  const currentPass = getAdminPassword();
+  const pwd = prompt("🔒 Enter Admin Master Password:");
+  if (pwd === null) return false;
+  if (pwd.trim() === currentPass.trim()) {
+    const fab = document.getElementById("customizer-toggle-btn");
+    if (fab) fab.classList.add("admin-visible");
+    showToast("👑 Admin Mode Activated!");
+    const modal = document.getElementById("customizer-modal");
+    if (modal) modal.classList.add("open");
+    return true;
+  } else {
+    showToast("Incorrect Admin Password ❌");
+    return false;
+  }
+}
+
 function checkAdminAccess() {
   const params = new URLSearchParams(location.search);
   const isEditParam = params.has("edit") || params.has("admin");
@@ -4065,59 +4086,30 @@ function checkAdminAccess() {
     localStorage.removeItem("is_admin_user");
   }
 
-  // Keyboard shortcut: Ctrl + Shift + E toggles admin mode
+  // Keyboard shortcut: Ctrl + Shift + E toggles admin mode with password
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
       e.preventDefault();
-      fab.classList.toggle("admin-visible");
-      const active = fab.classList.contains("admin-visible");
-      showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
+      promptForAdminAccess();
     }
   });
 
-  // Secret Double-Tap Gesture on Title/Logo -> Admin Password Prompt (2001)
-  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1");
+  // Secret Triple-Click Gesture on Title / Logo / Footer -> Admin Password Prompt
+  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1, footer");
   logoEls.forEach(el => {
     let tapCount = 0;
     let tapTimer = null;
     el.addEventListener("click", () => {
       tapCount++;
       clearTimeout(tapTimer);
-      if (tapCount >= 2) {
+      if (tapCount >= 3) {
         tapCount = 0;
-        const pwd = prompt("🔑 Enter Admin Password:");
-        if (pwd === "2001") {
-          fab.classList.add("admin-visible");
-          showToast("👑 Admin Mode Activated!");
-          const modal = document.getElementById("customizer-modal");
-          if (modal) modal.classList.add("open");
-        } else if (pwd !== null) {
-          showToast("Incorrect Admin Password ❌");
-        }
+        promptForAdminAccess();
       } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 400);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 600);
       }
     });
   });
-
-  // Footer triple-click shortcut
-  const footer = document.querySelector("footer");
-  if (footer) {
-    let clicks = 0;
-    let timer = null;
-    footer.addEventListener("click", () => {
-      clicks++;
-      clearTimeout(timer);
-      if (clicks >= 3) {
-        clicks = 0;
-        fab.classList.toggle("admin-visible");
-        const active = fab.classList.contains("admin-visible");
-        showToast(active ? "Admin Edit Mode Enabled ✏️" : "Admin Edit Mode Hidden 🔒");
-      } else {
-        timer = setTimeout(() => { clicks = 0; }, 400);
-      }
-    });
-  }
 }
 
 function initCustomizerModal() {
@@ -4440,6 +4432,8 @@ function initCustomizerModal() {
     document.getElementById("input-month").value = "";
     document.getElementById("input-day").value = "";
     document.getElementById("input-passcode").value = "";
+    const adminPassInput = document.getElementById("input-admin-pass");
+    if (adminPassInput) adminPassInput.value = CONFIG.adminPassword || localStorage.getItem("custom_admin_password") || "2001";
 
     // Sender
     document.getElementById("input-from").value = CONFIG.from || "";
@@ -4504,6 +4498,11 @@ function initCustomizerModal() {
     const dVal = parseInt(document.getElementById("input-day").value) || 1;
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
+
+    const adminPassInput = document.getElementById("input-admin-pass");
+    const adminPassVal = adminPassInput ? (adminPassInput.value.trim() || "2001") : "2001";
+    CONFIG.adminPassword = adminPassVal;
+    localStorage.setItem("custom_admin_password", adminPassVal);
 
     const fromVal = document.getElementById("input-from").value.trim() || CONFIG.from;
     const memoryVal = document.getElementById("input-memory").value.trim() || CONFIG.memory;

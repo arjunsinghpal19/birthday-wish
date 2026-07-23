@@ -208,8 +208,6 @@ function observeDynamicIconText() {
 
 }
 
-
-
 /* ==========================================================================
 
    EASY CONFIGURATION — edit everything below, nothing else
@@ -231,8 +229,6 @@ function formatName(name) {
   return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 
 }
-
-
 
 function isWishCustomized() {
   const nameVal = (CONFIG.name || "").trim();
@@ -294,11 +290,7 @@ function populateContent() {
     }
   }
 
-
-
   updateBirthdayCard();
-
-
 
   // Letter body — typed in later, just seed the DOM nodes now
 
@@ -312,11 +304,7 @@ function populateContent() {
 
   });
 
-
-
   document.getElementById("memory-text").textContent = CONFIG.memory;
-
-
 
   const reasonsGrid = document.getElementById("reasons-grid");
 
@@ -334,11 +322,7 @@ function populateContent() {
 
   });
 
-
-
   showRandomWish();
-
-
 
   const deck = document.getElementById("gallery-deck");
 
@@ -394,13 +378,9 @@ function populateContent() {
       playPaperRustle();
     });
 
-
-
     deck.appendChild(el);
 
   });
-
-
 
   const tl = document.getElementById("timeline-wrap");
 
@@ -445,8 +425,6 @@ function updateTimelineLine() {
   tl.style.setProperty("--timeline-line-height", `${lastCenter - firstCenter}px`);
 }
 
-
-
 function showRandomWish() {
 
   const w = CONFIG.wishes[Math.floor(Math.random() * CONFIG.wishes.length)];
@@ -454,8 +432,6 @@ function showRandomWish() {
   document.getElementById("wish-quote-text").textContent = w;
 
 }
-
-
 
 function buildCountdown() {
 
@@ -505,8 +481,6 @@ function buildCountdown() {
 
 }
 
-
-
 const MONTH_NAMES = [
 
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
@@ -515,8 +489,6 @@ const MONTH_NAMES = [
 
 ];
 
-
-
 const MONTH_FULL_NAMES = [
 
   "January", "February", "March", "April", "May", "June",
@@ -524,8 +496,6 @@ const MONTH_FULL_NAMES = [
   "July", "August", "September", "October", "November", "December"
 
 ];
-
-
 
 function getZodiacSign(day, month) {
 
@@ -571,8 +541,6 @@ function getZodiacSign(day, month) {
 
 }
 
-
-
 function getOrdinalDay(d) {
 
   if (!d) return "";
@@ -595,8 +563,6 @@ function getOrdinalDay(d) {
 
 }
 
-
-
 function updateBirthdayCard() {
 
   const d = CONFIG.birthDate?.day || 1;
@@ -607,8 +573,6 @@ function updateBirthdayCard() {
 
   const displayName = nameVal ? formatName(nameVal) : "";
 
-
-
   const monthShort = MONTH_NAMES[(m - 1) % 12];
 
   const monthFull = MONTH_FULL_NAMES[(m - 1) % 12];
@@ -617,45 +581,31 @@ function updateBirthdayCard() {
 
   const zodiac = getZodiacSign(d, m);
 
-
-
   const envBadge = document.getElementById("envelope-date-badge");
 
   if (envBadge) envBadge.textContent = `🗓️ ${ordinalDay} ${monthFull}`;
-
-
 
   const dayEl = document.getElementById("bday-card-day");
 
   if (dayEl) dayEl.textContent = String(d).padStart(2, "0");
 
-
-
   const monthEl = document.getElementById("bday-card-month");
 
   if (monthEl) monthEl.textContent = monthShort;
-
-
 
   const zodiacEl = document.getElementById("bday-card-zodiac");
 
   if (zodiacEl) zodiacEl.textContent = zodiac;
 
-
-
   const nameEl = document.getElementById("bday-card-name");
 
   if (nameEl) nameEl.textContent = displayName || "Special Someone";
-
-
 
   const subEl = document.getElementById("bday-card-sub");
 
   if (subEl) subEl.textContent = `Mark your calendar for ${ordinalDay} ${monthFull} 🎉`;
 
 }
-
-
 
 function updateAgeCounter() {
 
@@ -667,25 +617,17 @@ function updateAgeCounter() {
 
   const birthDay = CONFIG.birthDate?.day || 1;
 
-
-
   const now = new Date();
 
   const birthDateObj = new Date(birthYear, birthMonth, birthDay, 0, 0, 0);
 
-
-
   if (now < birthDateObj) return;
-
-
 
   let years = now.getFullYear() - birthDateObj.getFullYear();
 
   let months = now.getMonth() - birthDateObj.getMonth();
 
   let days = now.getDate() - birthDateObj.getDate();
-
-
 
   if (days < 0) {
 
@@ -705,23 +647,17 @@ function updateAgeCounter() {
 
   }
 
-
-
   const hours = now.getHours();
 
   const mins = now.getMinutes();
 
   const secs = now.getSeconds();
 
-
-
   const totalMs = now - birthDateObj;
 
   const totalDays = Math.floor(totalMs / (1000 * 60 * 60 * 24));
 
   const heartbeats = ((totalDays * 24 * 60 * 75) / 1000000).toFixed(1);
-
-
 
   const setT = (id, v) => {
 
@@ -743,8 +679,6 @@ function updateAgeCounter() {
 
   setT("age-sec", secs);
 
-
-
   const setVal = (id, v) => {
 
     const el = document.getElementById(id);
@@ -760,8 +694,6 @@ function updateAgeCounter() {
   setVal("stat-trips", years);
 
 }
-
-
 
 function updateCountdown() {
 
@@ -823,8 +755,6 @@ function updateCountdown() {
 
 }
 
-
-
 function buildDynamicGreeting() {
 
   const h = new Date().getHours();
@@ -852,8 +782,6 @@ function buildDynamicGreeting() {
   document.getElementById("dynamic-greeting").textContent = g;
 
 }
-
-
 
 /* ==========================================================================
 
@@ -925,8 +853,6 @@ function initStars() {
 
 }
 
-
-
 /* SFX Synthesizer Engine */
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -942,8 +868,6 @@ function getAudioCtx() {
   return audioCtx;
 
 }
-
-
 
 function playPopSound() {
 
@@ -976,8 +900,6 @@ function playPopSound() {
   } catch (e) {}
 
 }
-
-
 
 function playPaperRustle() {
 
@@ -1021,8 +943,6 @@ function playPaperRustle() {
 
 }
 
-
-
 function playChimeSound() {
 
   try {
@@ -1057,8 +977,6 @@ function playChimeSound() {
 
 }
 
-
-
 function spawnFloaty(container, emojiList, opts = {}) {
 
   const el = document.createElement("div");
@@ -1087,8 +1005,6 @@ function spawnFloaty(container, emojiList, opts = {}) {
 
   el.style.animationDuration = dur + "s";
 
-
-
   el.addEventListener("click", (e) => {
 
     e.stopPropagation();
@@ -1103,21 +1019,15 @@ function spawnFloaty(container, emojiList, opts = {}) {
 
   });
 
-
-
   container.appendChild(el);
 
   setTimeout(() => el.remove(), dur * 1000 + 200);
 
 }
 
-
-
 function initAmbientLayer() {
 
   const layer = document.getElementById("ambient-layer");
-
-
 
   // bokeh
 
@@ -1221,8 +1131,6 @@ function initAmbientLayer() {
 
 }
 
-
-
 /* ==========================================================================
 
    CONFETTI / FIREWORKS / BALLOONS (custom canvas physics)
@@ -1250,8 +1158,6 @@ function resizeBurst() {
 window.addEventListener("resize", resizeBurst);
 
 resizeBurst();
-
-
 
 let burstParticles = [];
 
@@ -1401,8 +1307,6 @@ function animateBursts() {
 
 animateBursts();
 
-
-
 function launchFireworksShow(duration = 3200) {
 
   const end = Date.now() + duration;
@@ -1548,8 +1452,6 @@ function launchBalloons(n = 10) {
 
 }
 
-
-
 /* ==========================================================================
 
    WEB AUDIO — soft original piano melody (no external files)
@@ -1580,8 +1482,6 @@ const MusicEngine = (() => {
 
   ];
 
-
-
   function initCtx() {
 
     if (!ctx) {
@@ -1600,8 +1500,6 @@ const MusicEngine = (() => {
 
   }
 
-
-
   function playNote(freq, dur = 0.5) {
 
     if (!ctx || ctx.state === "suspended") return;
@@ -1610,13 +1508,9 @@ const MusicEngine = (() => {
 
     const g = ctx.createGain();
 
-
-
     osc.type = "sine";
 
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
-
-
 
     g.gain.setValueAtTime(0.0001, ctx.currentTime);
 
@@ -1624,21 +1518,15 @@ const MusicEngine = (() => {
 
     g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
 
-
-
     osc.connect(g);
 
     g.connect(gainNode);
-
-
 
     osc.start();
 
     osc.stop(ctx.currentTime + dur);
 
   }
-
-
 
   function playSequence() {
 
@@ -1655,8 +1543,6 @@ const MusicEngine = (() => {
     }, 450);
 
   }
-
-
 
   let currentYtId = null;
 
@@ -1761,8 +1647,6 @@ const MusicEngine = (() => {
     }
   }
 
-
-
   function setVolume(val) {
 
     if (gainNode) gainNode.gain.value = val;
@@ -1774,11 +1658,6 @@ const MusicEngine = (() => {
   return { play, pause, setVolume, isPlaying: () => playing };
 
 })();
-
-
-
-
-
 
 function initCursor() {
 
@@ -1878,8 +1757,6 @@ function initCursor() {
 
 }
 
-
-
 function initMagnetic() {
 
   document.querySelectorAll(".magnetic").forEach((btn) => {
@@ -1905,8 +1782,6 @@ function initMagnetic() {
   });
 
 }
-
-
 
 function initTilt() {
 
@@ -1939,8 +1814,6 @@ function initTilt() {
     });
 
 }
-
-
 
 function initGyro() {
 
@@ -1994,8 +1867,6 @@ function initGyro() {
 
 }
 
-
-
 /* ==========================================================================
 
    SCROLL REVEAL (IntersectionObserver — works with or without GSAP)
@@ -2022,8 +1893,6 @@ function initReveal() {
 
   document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
 
-
-
   // final scene trigger
 
   const finalIO = new IntersectionObserver(
@@ -2049,8 +1918,6 @@ function initReveal() {
   );
 
   finalIO.observe(document.getElementById("final-scene"));
-
-
 
   // dawn transition: interpolate sky colors with scroll progress
 
@@ -2116,8 +1983,6 @@ function mixColor(a, b, t) {
 
 }
 
-
-
 /* ==========================================================================
 
    SCENE LOGIC: loading -> intro -> envelope -> open experience
@@ -2130,6 +1995,80 @@ function runLoadingSequence() {
 
   const pct = document.getElementById("loader-pct");
 
+  let p = 0;
+  // dawn transition: interpolate sky colors with scroll progress
+
+  window.addEventListener(
+
+    "scroll",
+
+    () => {
+
+      const doc = document.documentElement;
+
+      const progress =
+
+        doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
+
+      const root = document.documentElement.style;
+
+      if (progress > 0.55) {
+
+        const t = Math.min((progress - 0.55) / 0.45, 1);
+
+        root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
+
+        root.setProperty(
+
+          "--sky-mid",
+
+          mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
+
+        );
+
+      }
+
+    },
+
+    { passive: true },
+
+  );
+
+}
+
+function mixColor(a, b, t) {
+
+  const ah = a
+
+    .replace("#", "")
+
+    .match(/.{2}/g)
+
+    .map((x) => parseInt(x, 16));
+
+  const bh = b
+
+    .replace("#", "")
+
+    .match(/.{2}/g)
+
+    .map((x) => parseInt(x, 16));
+
+  const rc = ah.map((v, i) => Math.round(v + (bh[i] - v) * t));
+
+  return `rgb(${rc.join(",")})`;
+
+}
+
+/* ==========================================================================
+
+   SCENE LOGIC: loading -> intro -> envelope -> open experience
+
+   ========================================================================== */
+
+function runLoadingSequence() {
+  const fill = document.getElementById("loader-fill");
+  const pct = document.getElementById("loader-pct");
   let p = 0;
 
   const timer = setInterval(() => {
@@ -2153,8 +2092,6 @@ function runLoadingSequence() {
   }, 140);
 
 }
-
-
 
 function onLoadComplete() {
 
@@ -2182,21 +2119,12 @@ function onLoadComplete() {
 
 }
 
-
-
 function initPasscode() {
-
   let entered = "";
-
   const dotsWrap = document.getElementById("passcode-dots");
-
   const dots = [...dotsWrap.querySelectorAll(".pc-dot")];
-
   const passWrap = document.getElementById("passcode-wrap");
-
   const hint = document.getElementById("pc-hint");
-
-
 
   if (isWishCustomized()) {
     hint.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
@@ -2207,121 +2135,65 @@ function initPasscode() {
 
   let locked = false;
 
-
-
   function updateDots() {
-
     dots.forEach((d, i) => {
-
       d.classList.remove("error", "success");
-
       d.classList.toggle("filled", i < entered.length);
-
     });
-
   }
 
-
-
   function pressDigit(n) {
-
     if (locked || entered.length >= CONFIG.passcode.code.length) return;
-
     entered += n;
-
     updateDots();
-
     if (entered.length === CONFIG.passcode.code.length) {
-
       locked = true;
-
       setTimeout(checkCode, 220);
-
     }
-
   }
 
   function backspace() {
-
     if (locked) return;
-
     entered = entered.slice(0, -1);
-
     updateDots();
-
   }
 
   function checkCode() {
-
     if (entered === CONFIG.passcode.code) {
-
       dots.forEach((d) => {
-
         d.classList.add("success");
-
       });
-
       confettiBurst(innerWidth / 2, innerHeight * 0.35, 50);
-
       passWrap.classList.add("unlocked");
-
       setTimeout(enterIntro, 550);
-
     } else {
-
       dots.forEach((d) => d.classList.add("error"));
-
       passWrap.classList.add("shake");
-
       setTimeout(() => {
-
         passWrap.classList.remove("shake");
-
         entered = "";
-
         locked = false;
-
         updateDots();
-
       }, 500);
-
     }
-
   }
 
-
-
   document.querySelectorAll(".key[data-num]").forEach((btn) => {
-
     btn.addEventListener("click", () => pressDigit(btn.dataset.num));
-
   });
 
   document.getElementById("pc-back").addEventListener("click", backspace);
 
-
-
   window.addEventListener("keydown", (e) => {
-
-    if (!document.getElementById("passcode-wrap").classList.contains("show"))
-
-      return;
-
+    if (!document.getElementById("passcode-wrap").classList.contains("show")) return;
+    if (e.target && ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
     if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
-
     if (e.key === "Backspace") backspace();
-
   });
-
 }
 
-
-
 function enterIntro() {
-
   const loading = document.getElementById("loading-screen");
-
-  loading.style.opacity = "0";
 
   loading.style.filter = "blur(12px)";
 
@@ -2330,8 +2202,6 @@ function enterIntro() {
     loading.style.display = "none";
 
   }, 900);
-
-
 
   const intro = document.getElementById("intro-scene");
 
@@ -2367,8 +2237,6 @@ function enterIntro() {
 
 }
 
-
-
 function typeLine(el, text, done) {
 
   let i = 0;
@@ -2401,8 +2269,6 @@ function typeLine(el, text, done) {
 
 }
 
-
-
 function enterMain() {
 
   const intro = document.getElementById("intro-scene");
@@ -2429,8 +2295,6 @@ function enterMain() {
 
 }
 
-
-
 let experienceEffectsStarted = false;
 
 function startExperienceEffects() {
@@ -2450,8 +2314,6 @@ function startExperienceEffects() {
   initTilt();
 
 }
-
-
 
 function initEnvelope() {
 
@@ -2488,8 +2350,6 @@ function initEnvelope() {
   });
 
 }
-
-
 
 function ensureLineHighlight(line) {
   if (!line) return "";
@@ -2565,8 +2425,6 @@ function typeLetterBody() {
     typeChar();
   })();
 }
-
-
 
 /* ==========================================================================
 
@@ -2761,8 +2619,6 @@ function initGiftbox() {
     }
   });
 }
-
-
 
 /* ==================== PREMIUM CAKE INTERACTION ==================== */
 
@@ -3204,8 +3060,6 @@ function saveCakeMemory() {
 
   const ctx = c.getContext("2d");
 
-
-
   // 1. Deep Luxury Radial Aurora Background
 
   const grad = ctx.createRadialGradient(600, 420, 40, 600, 400, 750);
@@ -3219,8 +3073,6 @@ function saveCakeMemory() {
   ctx.fillStyle = grad;
 
   ctx.fillRect(0, 0, 1200, 800);
-
-
 
   // Floating ambient sparkles
 
@@ -3242,8 +3094,6 @@ function saveCakeMemory() {
 
   }
 
-
-
   // Double Golden Frame
 
   ctx.strokeStyle = "rgba(255, 215, 0, 0.55)";
@@ -3258,8 +3108,6 @@ function saveCakeMemory() {
 
   ctx.strokeRect(48, 48, 1104, 704);
 
-
-
   // Top Title
 
   ctx.fillStyle = "#FFD700";
@@ -3270,8 +3118,6 @@ function saveCakeMemory() {
 
   ctx.fillText("✦ A BIRTHDAY MEMORY WORTH KEEPING ✦", 600, 100);
 
-
-
   // Main Greeting Name
 
   const greetingText = (CONFIG.name && CONFIG.name.trim()) 
@@ -3279,8 +3125,6 @@ function saveCakeMemory() {
     ? `Happy Birthday, ${displayName} ❤️` 
 
     : "Happy Birthday ❤️";
-
-
 
   ctx.shadowColor = "rgba(255, 95, 162, 0.8)";
 
@@ -3294,8 +3138,6 @@ function saveCakeMemory() {
 
   ctx.shadowBlur = 0;
 
-
-
   // Cake Stand & Plate Base
 
   ctx.fillStyle = "rgba(214, 182, 93, 0.35)";
@@ -3306,8 +3148,6 @@ function saveCakeMemory() {
 
   ctx.fill();
 
-
-
   const standGrad = ctx.createLinearGradient(350, 0, 850, 0);
 
   standGrad.addColorStop(0, "#FFF9E6");
@@ -3315,8 +3155,6 @@ function saveCakeMemory() {
   standGrad.addColorStop(0.5, "#FFFFFF");
 
   standGrad.addColorStop(1, "#FFE8B3");
-
-
 
   ctx.fillStyle = standGrad;
 
@@ -3331,8 +3169,6 @@ function saveCakeMemory() {
   ctx.fill();
 
   ctx.stroke();
-
-
 
   // Tier 1 (Bottom Cake Layer)
 
@@ -3358,8 +3194,6 @@ function saveCakeMemory() {
 
   ctx.stroke();
 
-
-
   // Tier 2 (Middle Cake Layer)
 
   const cakeGrad2 = ctx.createLinearGradient(470, 0, 730, 0);
@@ -3384,8 +3218,6 @@ function saveCakeMemory() {
 
   ctx.stroke();
 
-
-
   // Tier 3 (Top Cake Layer)
 
   const cakeGrad3 = ctx.createLinearGradient(505, 0, 695, 0);
@@ -3409,8 +3241,6 @@ function saveCakeMemory() {
   ctx.fill();
 
   ctx.stroke();
-
-
 
   // Wavy Scalloped Drips for each Tier
 
@@ -3458,8 +3288,6 @@ function saveCakeMemory() {
 
   drawDrips(505, 380, 190, "#FF4081");
 
-
-
   // Gold Pearl Borders at base of each tier
 
   const drawPearlBorder = (x, y, width) => {
@@ -3486,15 +3314,11 @@ function saveCakeMemory() {
 
   drawPearlBorder(505, 457, 190);
 
-
-
   // Top Tier Fruit Toppings & Roses
 
   ctx.font = "28px sans-serif";
 
   ctx.fillText("🍓 🍒 🌹 🍒 🍓", 600, 355);
-
-
 
   // Glowing Lit Candles
 
@@ -3518,15 +3342,11 @@ function saveCakeMemory() {
 
     ctx.fill();
 
-
-
     // Candle Wick
 
     ctx.fillStyle = "#222";
 
     ctx.fillRect(cx - 1, 290, 2, 8);
-
-
 
     // Outer Flame Glow
 
@@ -3542,8 +3362,6 @@ function saveCakeMemory() {
 
     ctx.fill();
 
-
-
     // Inner Flame Core
 
     ctx.fillStyle = "#FFFFFF";
@@ -3558,8 +3376,6 @@ function saveCakeMemory() {
 
   });
 
-
-
   // Bottom Signature
 
   ctx.fillStyle = "#FFB6D9";
@@ -3567,8 +3383,6 @@ function saveCakeMemory() {
   ctx.font = "italic 32px 'Dancing Script', cursive, serif";
 
   ctx.fillText(`Made with love for ${displayName} • ${new Date().toLocaleDateString()}`, 600, 745);
-
-
 
   const a = document.createElement("a");
 
@@ -3581,8 +3395,6 @@ function saveCakeMemory() {
   showToast("Memory Snapshot Saved! 📸");
 
 }
-
-
 
 function updateMusicWidgetUI(playing) {
 
@@ -3644,8 +3456,6 @@ function initMusicWidget() {
 
 }
 
-
-
 function exportInstaStory() {
 
   showToast("Generating HD Insta Story... ✨");
@@ -3659,8 +3469,6 @@ function exportInstaStory() {
   c.height = 1920;
 
   const ctx = c.getContext("2d");
-
-
 
   // 1. Deep Luxury Aurora Gradient Background
 
@@ -3677,8 +3485,6 @@ function exportInstaStory() {
   ctx.fillStyle = grad;
 
   ctx.fillRect(0, 0, 1080, 1920);
-
-
 
   // 2. Glowing Radial Ambient Bokeh Lights
 
@@ -3702,8 +3508,6 @@ function exportInstaStory() {
 
   addBokeh(540, 1400, 380, "rgba(255, 215, 0, 0.2)");
 
-
-
   // 3. Floating Stars & Sparkles
 
   for (let i = 0; i < 40; i++) {
@@ -3726,8 +3530,6 @@ function exportInstaStory() {
 
   }
 
-
-
   // 4. Double Golden & Pink Ornamental Frame
 
   ctx.lineWidth = 3;
@@ -3740,8 +3542,6 @@ function exportInstaStory() {
 
   ctx.stroke();
 
-
-
   ctx.lineWidth = 1.5;
 
   ctx.strokeStyle = "rgba(255, 95, 162, 0.4)";
@@ -3751,8 +3551,6 @@ function exportInstaStory() {
   ctx.roundRect(68, 68, 944, 1784, 18);
 
   ctx.stroke();
-
-
 
   // Corner Sparkle Diamonds
 
@@ -3776,8 +3574,6 @@ function exportInstaStory() {
 
   drawCornerSparkle(990, 1825);
 
-
-
   // 5. Header: "✦ HAPPY BIRTHDAY ✦"
 
   ctx.shadowColor = "rgba(255, 215, 0, 0.6)";
@@ -3794,8 +3590,6 @@ function exportInstaStory() {
 
   ctx.shadowBlur = 0;
 
-
-
   // 6. Recipient Name (Calligraphy & Glow)
 
   ctx.shadowColor = "rgba(255, 95, 162, 0.7)";
@@ -3809,8 +3603,6 @@ function exportInstaStory() {
   ctx.fillText(displayName, 540, 400);
 
   ctx.shadowBlur = 0;
-
-
 
   // 7. Dynamic Text Measurement & Lines Wrapping
 
@@ -3848,8 +3640,6 @@ function exportInstaStory() {
 
   });
 
-
-
   const lineHeight = 56;
 
   const textContentHeight = wrappedLines.length * lineHeight;
@@ -3861,8 +3651,6 @@ function exportInstaStory() {
   const cardHeight = textContentHeight + cardPaddingTop + cardPaddingBottom;
 
   const cardY = 480;
-
-
 
   // Render Middle Glassmorphism Card Box with DYNAMIC Height
 
@@ -3890,8 +3678,6 @@ function exportInstaStory() {
 
   ctx.restore();
 
-
-
   // Decorative Card Top Flowers
 
   ctx.fillStyle = "rgba(255, 182, 217, 0.9)";
@@ -3899,8 +3685,6 @@ function exportInstaStory() {
   ctx.font = "30px sans-serif";
 
   ctx.fillText("🌸 ✦ 🌸", 540, cardY + 45);
-
-
 
   // Render Text Lines inside Card
 
@@ -3918,8 +3702,6 @@ function exportInstaStory() {
 
   });
 
-
-
   // Card Bottom Divider Line
 
   const dividerY = cardY + cardHeight - 25;
@@ -3935,8 +3717,6 @@ function exportInstaStory() {
   ctx.lineTo(740, dividerY);
 
   ctx.stroke();
-
-
 
   // 8. Sender Signature
 
@@ -3954,8 +3734,6 @@ function exportInstaStory() {
 
   ctx.shadowBlur = 0;
 
-
-
   // 9. Bottom Festive Tag
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
@@ -3963,8 +3741,6 @@ function exportInstaStory() {
   ctx.font = "500 24px sans-serif";
 
   ctx.fillText("🎂 CELEBRATING ANOTHER BEAUTIFUL YEAR ✨", 540, sigY + 70);
-
-
 
   const a = document.createElement("a");
 
@@ -3977,8 +3753,6 @@ function exportInstaStory() {
   showToast("HD Insta Story Saved! 📸");
 
 }
-
-
 
 function encodeWishData(dataObj) {
   try {
@@ -4106,8 +3880,6 @@ function parseQueryParams() {
     if (rawCode) CONFIG.passcode.code = rawCode.trim();
   }
 }
-
-
 
 function getAdminPassword() {
   return localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
@@ -5101,7 +4873,6 @@ function initDateDropdowns() {
   initAccordion();
 }
 
-
 // ─── PHOTO LIGHTBOX HELPER FUNCTIONS ───
 function openPhotoLightbox(src, caption) {
   const modal = document.getElementById("photo-lightbox");
@@ -5524,15 +5295,11 @@ function renderVideoWishSection() {
   }
 }
 
-
-
 function isHostedOnline() {
 
   return ["http:", "https:"].includes(location.protocol);
 
 }
-
-
 
 function buildRecipientShareUrl(overrideName) {
   const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
@@ -5677,8 +5444,6 @@ function initShare() {
     });
   }
 
-
-
   // Voice Speech Synthesizer
 
   const voiceBtn = document.getElementById("voice-btn");
@@ -5713,8 +5478,6 @@ function initShare() {
 
 }
 
-
-
 function showToast(msg) {
 
   const t = document.getElementById("toast");
@@ -5726,8 +5489,6 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove("show"), 2200);
 
 }
-
-
 
 /* ==========================================================================
 
@@ -5790,11 +5551,6 @@ function triggerFinalScene() {
   );
 
 }
-
-
-
-
-
 
 function initMusicWidget() {
   const widget = document.getElementById("music-widget");
@@ -6010,15 +5766,11 @@ function initMusicWidget() {
 
   initGyro();
 
-
-
   // progressive enhancement — never blocks the experience, hard failsafe below
 
   const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
 
   await Promise.race([loadEnhancements(), enhancementTimeout]);
-
-
 
   if (hasGSAP) {
 

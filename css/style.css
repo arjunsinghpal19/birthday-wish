@@ -515,6 +515,16 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   display: inline-block;
   margin: 0 2px;
 }
+.theme-royalgold .letter-body .highlight,
+.theme-galaxy .letter-body .highlight,
+.theme-rosegold .letter-body .highlight {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-weight: inherit !important;
+  display: inline !important;
+}
 .cursor-caret{ display:inline-block; width:2px; background:#4a3350; margin-left:2px; animation:caretBlink 1s steps(1) infinite; }
 @keyframes caretBlink{ 50%{ opacity:0; } }
 

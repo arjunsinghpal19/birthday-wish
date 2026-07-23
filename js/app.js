@@ -4903,8 +4903,9 @@ function reRenderPage() {
   initReveal();
 }
 
-function launchRealisticShootingStar(startX, startY) {
-  for (let i = 0; i < 3; i++) {
+function launchRealisticShootingStar() {
+  const count = 3;
+  for (let i = 0; i < count; i++) {
     setTimeout(() => {
       const streak = document.createElement("div");
       streak.className = "shooting-star-streak";
@@ -4913,10 +4914,11 @@ function launchRealisticShootingStar(startX, startY) {
       streak.appendChild(head);
       document.body.appendChild(streak);
 
-      const fromX = startX || (window.innerWidth * 0.2);
-      const fromY = startY || (window.innerHeight * 0.3);
-      const angle = -40 + (Math.random() * 20 - 10);
-      const distance = Math.max(window.innerWidth, window.innerHeight) * 0.9;
+      // Start from top-left corner of visible viewport
+      const fromX = -60;
+      const fromY = (window.innerHeight * 0.1) + (i * 45) + (Math.random() * 30 - 15);
+      const angle = 28 + (Math.random() * 8 - 4); // shoot diagonally down-right
+      const distance = Math.hypot(window.innerWidth + 150, window.innerHeight + 150);
 
       streak.style.left = `${fromX}px`;
       streak.style.top = `${fromY}px`;
@@ -4924,20 +4926,20 @@ function launchRealisticShootingStar(startX, startY) {
       streak.style.opacity = "1";
 
       const anim = streak.animate([
-        { transform: `rotate(${angle}deg) translateX(0px)`, opacity: 1, width: "160px" },
-        { transform: `rotate(${angle}deg) translateX(${distance}px)`, opacity: 0, width: "320px" }
+        { transform: `rotate(${angle}deg) translateX(0px)`, opacity: 1, width: "180px" },
+        { transform: `rotate(${angle}deg) translateX(${distance}px)`, opacity: 0, width: "360px" }
       ], {
-        duration: 1100,
+        duration: 1200,
         easing: "cubic-bezier(0.25, 1, 0.5, 1)"
       });
 
-      const particleCount = 28;
+      const particleCount = 32;
       for (let p = 0; p < particleCount; p++) {
         setTimeout(() => {
           const progress = p / particleCount;
           const rad = angle * (Math.PI / 180);
-          const currentX = fromX + Math.cos(rad) * (distance * progress) + (Math.random() * 40 - 20);
-          const currentY = fromY + Math.sin(rad) * (distance * progress) + (Math.random() * 40 - 20);
+          const currentX = fromX + Math.cos(rad) * (distance * progress) + (Math.random() * 50 - 25);
+          const currentY = fromY + Math.sin(rad) * (distance * progress) + (Math.random() * 50 - 25);
 
           const spark = document.createElement("div");
           spark.className = "stardust-particle";
@@ -4949,17 +4951,17 @@ function launchRealisticShootingStar(startX, startY) {
           const colors = ["#ffffff", "#ffd700", "#ff8ea9", "#70d6ff", "#ffae34"];
           const color = colors[Math.floor(Math.random() * colors.length)];
           spark.style.background = color;
-          spark.style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
-          spark.style.setProperty("--dx", `${(Math.random() - 0.5) * 70}px`);
-          spark.style.setProperty("--dy", `${(Math.random() - 0.5) * 70}px`);
+          spark.style.boxShadow = `0 0 12px ${color}, 0 0 24px ${color}`;
+          spark.style.setProperty("--dx", `${(Math.random() - 0.5) * 80}px`);
+          spark.style.setProperty("--dy", `${(Math.random() - 0.5) * 80}px`);
           document.body.appendChild(spark);
 
           setTimeout(() => spark.remove(), 1200);
-        }, p * 32);
+        }, p * 30);
       }
 
       anim.onfinish = () => streak.remove();
-    }, i * 260);
+    }, i * 280);
   }
 }
 
@@ -4972,7 +4974,7 @@ function initWishingStar() {
       const x = e.clientX || (rect.left + rect.width / 2);
       const y = e.clientY || (rect.top + rect.height / 2);
       confettiBurst(x, y, 40);
-      launchRealisticShootingStar(x, y);
+      launchRealisticShootingStar();
       btn.style.transform = "scale(0) rotate(180deg)";
       btn.style.opacity = "0";
       btn.style.transition = "all 0.5s ease";

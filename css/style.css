@@ -493,10 +493,9 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   box-shadow:0 30px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,215,0,.4);
 }
 .letter-paper::before, .letter-paper::after{
-  content:'🌸'; position:absolute; font-size:1.6rem; opacity:.8;
+  display: none !important;
+  content: none !important;
 }
-.letter-paper::before{ top:10px; left:12px; }
-.letter-paper::after{ bottom:10px; right:12px; transform:scaleX(-1); }
 .letter-title{
   font-family:var(--font-hand); font-weight:700; font-size:clamp(2.1rem,6vw,3rem);
   text-align:center; color:var(--pink);

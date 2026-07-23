@@ -4896,11 +4896,7 @@ function reRenderPage() {
   // Corner flowers dynamic update
   const flowers = document.querySelectorAll(".corner-flower");
   if (flowers.length) {
-    let flowerEmoji = "🌸";
-    if (CONFIG.letterTheme === "royalgold") flowerEmoji = "⭐";
-    else if (CONFIG.letterTheme === "galaxy") flowerEmoji = "✨";
-    else if (CONFIG.letterTheme === "rosegold") flowerEmoji = "🌸";
-    flowers.forEach(f => f.textContent = flowerEmoji);
+    flowers.forEach(f => f.textContent = "🌸");
   }
 
   // Cake Theme

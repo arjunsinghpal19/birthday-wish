@@ -2287,44 +2287,13 @@ function initPasscode() {
 
 
 
-  // Secret Admin Buffer: typing *11* on the numpad opens Admin Modal
-  let secretBuffer = "";
-  const SECRET_CODE = "*11*";
-
-  function handleSecretKey(char) {
-    secretBuffer += char;
-    // Keep buffer trimmed to last 4 chars
-    if (secretBuffer.length > SECRET_CODE.length) {
-      secretBuffer = secretBuffer.slice(-SECRET_CODE.length);
-    }
-    if (secretBuffer === SECRET_CODE) {
-      secretBuffer = "";
-      // Open Admin Security Modal
-      if (typeof promptForAdminAccess === "function") {
-        promptForAdminAccess();
-      }
-    }
-  }
-
   document.querySelectorAll(".key[data-num]").forEach((btn) => {
 
-    btn.addEventListener("click", () => {
-      const val = btn.dataset.num;
-      if (val === "*") {
-        // Star key: only feeds into secret buffer, does NOT enter a passcode digit
-        handleSecretKey("*");
-      } else {
-        pressDigit(val);
-        handleSecretKey(val);
-      }
-    });
+    btn.addEventListener("click", () => pressDigit(btn.dataset.num));
 
   });
 
-  document.getElementById("pc-back").addEventListener("click", () => {
-    backspace();
-    secretBuffer = "";
-  });
+  document.getElementById("pc-back").addEventListener("click", backspace);
 
 
 
@@ -2334,17 +2303,9 @@ function initPasscode() {
 
       return;
 
-    if (/^[0-9]$/.test(e.key)) {
-      pressDigit(e.key);
-      handleSecretKey(e.key);
-    }
+    if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
 
-    if (e.key === "*") handleSecretKey("*");
-
-    if (e.key === "Backspace") {
-      backspace();
-      secretBuffer = "";
-    }
+    if (e.key === "Backspace") backspace();
 
   });
 
@@ -2528,6 +2489,10 @@ function initEnvelope() {
 
 function ensureLineHighlight(line) {
   if (!line) return "";
+  if (isWishCustomized()) {
+    // For customized wishes / shared links, strip highlight span so it stays clean plain text
+    return line.replace(/<span class=["']highlight["']>(.*?)<\/span>/gi, "$1");
+  }
   if (line.includes('class="highlight"') || line.includes("class='highlight'")) {
     return line;
   }
@@ -4264,7 +4229,7 @@ function checkAdminAccess() {
     }
   });
 
-  // Secret Triple-Click on Lock Screen "Happy Birthday" only
+  // Secret Double-Click on Lock Screen "✨ Happy Birthday ✨" Logo
   const lockLogo = document.getElementById("loading-logo-glow");
   if (lockLogo) {
     let tapCount = 0;
@@ -4272,14 +4237,31 @@ function checkAdminAccess() {
     lockLogo.addEventListener("click", () => {
       tapCount++;
       clearTimeout(tapTimer);
-      if (tapCount >= 3) {
+      if (tapCount >= 2) {
         tapCount = 0;
         promptForAdminAccess();
       } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 400);
       }
     });
   }
+
+  // Secret Double-Click on Letter Title ("Happy Birthday, [Name]") in Letter Card
+  const letterTitles = document.querySelectorAll(".letter-title, #letter-title");
+  letterTitles.forEach(el => {
+    let tapCount = 0;
+    let tapTimer = null;
+    el.addEventListener("click", () => {
+      tapCount++;
+      clearTimeout(tapTimer);
+      if (tapCount >= 2) {
+        tapCount = 0;
+        promptForAdminAccess();
+      } else {
+        tapTimer = setTimeout(() => { tapCount = 0; }, 400);
+      }
+    });
+  });
 }
 
 function initCustomizerModal() {

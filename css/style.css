@@ -1744,12 +1744,15 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Numpad Star Key — same look as other keys */
-.key-star {
-  font-size: inherit !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+/* Disable yellow highlight box in custom themes */
+.theme-royalgold .letter-body .highlight,
+.theme-galaxy .letter-body .highlight,
+.theme-rosegold .letter-body .highlight {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-weight: inherit !important;
+  display: inline !important;
 }
 

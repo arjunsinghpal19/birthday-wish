@@ -358,48 +358,35 @@ function populateContent() {
 
     
 
+    const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Zoom Photo">🔍</button>` : "";
     const frontContent = g.image
-
-      ? `<div class="frame"><img src="${g.image}" alt="${g.cap}"></div><div class="cap">${g.cap}</div>`
-
+      ? `<div class="frame"><img src="${g.image}" alt="${g.cap}">${zoomBtnHtml}</div><div class="cap">${g.cap}</div>`
       : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
-
-
 
     const backContent = `<div class="polaroid-back"><p>${g.secretNote || "A special memory ❤️"}</p><span class="tap-hint">Tap to flip back</span></div>`;
 
-
-
     el.innerHTML = `<div class="polaroid-inner"><div class="polaroid-front">${frontContent}</div>${backContent}</div>`;
 
-
-
     if (g.image) {
-
       const img = el.querySelector("img");
-
       if (img) {
-
         img.addEventListener("error", () => {
-
           const front = el.querySelector(".polaroid-front");
-
           if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
-
         });
-
       }
-
+      const zoomBtn = el.querySelector(".photo-zoom-btn");
+      if (zoomBtn) {
+        zoomBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openPhotoLightbox(g.image, g.cap);
+        });
+      }
     }
 
-
-
     el.addEventListener("click", () => {
-
       el.classList.toggle("flipped");
-
       playPaperRustle();
-
     });
 
 
@@ -4355,6 +4342,13 @@ function initCustomizerModal() {
       vidText.textContent = (CONFIG.videoWish?.file) ? `📹 Attached: ${CONFIG.videoWish.fileName || 'video'}` : `📹 Select Video from Device`;
     }
 
+    const cakeFlavorSelect = document.getElementById("input-cake-flavor");
+    if (cakeFlavorSelect) cakeFlavorSelect.value = CONFIG.cakeFlavor || "strawberry";
+    const cakeAgeInput = document.getElementById("input-cake-age");
+    if (cakeAgeInput) cakeAgeInput.value = CONFIG.cakeAge || "";
+    const letterFontSelect = document.getElementById("input-letter-font");
+    if (letterFontSelect) letterFontSelect.value = CONFIG.letterFont || "cursive";
+
     // Dynamic sections
     renderLetterInputs();
     renderReasonInputs();
@@ -4444,7 +4438,11 @@ function initCustomizerModal() {
       });
     });
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline };
+    const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "strawberry";
+    const cakeAge = parseInt(document.getElementById("input-cake-age")?.value) || 0;
+    const letterFont = document.getElementById("input-letter-font")?.value || "cursive";
+
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, cakeAge, letterFont };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4460,6 +4458,9 @@ function initCustomizerModal() {
     CONFIG.gallery = vals.gallery;
     CONFIG.timeline = vals.timeline;
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
+    CONFIG.cakeFlavor = vals.cakeFlavor;
+    CONFIG.cakeAge = vals.cakeAge;
+    CONFIG.letterFont = vals.letterFont;
     if (vals.musicUrlVal) {
       CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
     } else if (!CONFIG.music || !CONFIG.music.file) {
@@ -4572,10 +4573,61 @@ function initCustomizerModal() {
 }
 
 
+// ─── PHOTO LIGHTBOX HELPER FUNCTIONS ───
+function openPhotoLightbox(src, caption) {
+  const modal = document.getElementById("photo-lightbox");
+  const img = document.getElementById("photo-lightbox-img");
+  const cap = document.getElementById("photo-lightbox-caption");
+  if (!modal || !img) return;
+  img.src = src;
+  if (cap) cap.textContent = caption || "";
+  modal.classList.add("show");
+}
+
+function initPhotoLightbox() {
+  const modal = document.getElementById("photo-lightbox");
+  const closeBtn = document.getElementById("photo-lightbox-close");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => modal.classList.remove("show"));
+  }
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("show");
+    });
+  }
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   const nameVal = (CONFIG.name || "").trim();
   const displayName = nameVal ? formatName(nameVal) : "";
+
+  // Letter Font Style
+  const exp = document.getElementById("experience");
+  if (exp) {
+    exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-sans");
+    exp.classList.add(`font-style-${CONFIG.letterFont || "cursive"}`);
+  }
+
+  // Cake Theme & Number Candles
+  const cake = document.getElementById("luxury-cake");
+  if (cake) {
+    cake.classList.remove("cake-theme-chocolate", "cake-theme-vanilla", "cake-theme-strawberry");
+    cake.classList.add(`cake-theme-${CONFIG.cakeFlavor || "strawberry"}`);
+
+    let numRow = cake.querySelector(".number-candles-row");
+    if (CONFIG.cakeAge && CONFIG.cakeAge > 0) {
+      if (!numRow) {
+        numRow = document.createElement("div");
+        numRow.className = "number-candles-row";
+        cake.insertBefore(numRow, cake.firstChild);
+      }
+      const digits = String(CONFIG.cakeAge).split("");
+      numRow.innerHTML = digits.map(d => `<span class="number-candle-item" title="Age ${d}">${d}🕯️</span>`).join("");
+    } else if (numRow) {
+      numRow.remove();
+    }
+  }
 
   // Title & Name slots
   document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
@@ -4653,8 +4705,9 @@ function reRenderPage() {
       el.style.setProperty("--rot", g.rot + "deg");
       el.style.setProperty("--i", i);
       const bg = `hsl(${(i * 47) % 360} 70% 75%)`;
+      const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Zoom Photo">🔍</button>` : "";
       const frontContent = g.image
-        ? `<div class="frame"><img src="${g.image}" alt="${g.cap}"></div><div class="cap">${g.cap}</div>`
+        ? `<div class="frame"><img src="${g.image}" alt="${g.cap}">${zoomBtnHtml}</div><div class="cap">${g.cap}</div>`
         : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
       const backContent = `<div class="polaroid-back"><p>${g.secretNote || "A special memory ❤️"}</p><span class="tap-hint">Tap to flip back</span></div>`;
       el.innerHTML = `<div class="polaroid-inner"><div class="polaroid-front">${frontContent}</div>${backContent}</div>`;
@@ -4664,6 +4717,13 @@ function reRenderPage() {
           img.addEventListener("error", () => {
             const front = el.querySelector(".polaroid-front");
             if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+          });
+        }
+        const zoomBtn = el.querySelector(".photo-zoom-btn");
+        if (zoomBtn) {
+          zoomBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openPhotoLightbox(g.image, g.cap);
           });
         }
       }
@@ -5252,6 +5312,7 @@ function initMusicWidget() {
   initGiftbox();
   initCake();
   initWishingStar();
+  initPhotoLightbox();
   renderVideoWishSection();
 
   // Restore saved audio/voice note from IndexedDB if available

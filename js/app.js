@@ -5063,9 +5063,11 @@ function initDateDropdowns() {
     const values = readAllValues();
     applyAllValues(values);
 
-    // Save to localStorage (excluding large base64 images for URL, but keep for local)
+    // Save to localStorage
     const saveData = JSON.parse(JSON.stringify(CONFIG));
     localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
+
+    updateShareSection();
 
     backdrop.classList.remove("active");
     playChimeSound();
@@ -5077,6 +5079,7 @@ function initDateDropdowns() {
     shareLinkBtn.addEventListener("click", async () => {
       const values = readAllValues();
       applyAllValues(values);
+      updateShareSection();
 
       const customUrl = buildRecipientShareUrl(values.nameVal);
 
@@ -5087,7 +5090,7 @@ function initDateDropdowns() {
         showToast(`Link: ${customUrl}`);
       }
 
-      backdrop.classList.remove("active");
+      // Keep editor modal open when copying link so user can continue editing!
     });
   }
 

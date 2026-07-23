@@ -506,11 +506,14 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   font-size:clamp(1rem,2.4vw,1.15rem); line-height:1.9; margin-bottom:14px; color:#4a3350;
 }
 .letter-body .highlight{
-  background: linear-gradient(120deg, rgba(255,215,0,.45) 0%, rgba(255,235,130,.55) 100%);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  box-shadow: 0 0 10px rgba(255,215,0,.2);
+  background: linear-gradient(120deg, #ffe57f 0%, #ffd54f 100%);
+  color: #1a0826 !important;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(255,215,0,.5);
+  display: inline-block;
+  margin: 0 2px;
 }
 .cursor-caret{ display:inline-block; width:2px; background:#4a3350; margin-left:2px; animation:caretBlink 1s steps(1) infinite; }
 @keyframes caretBlink{ 50%{ opacity:0; } }

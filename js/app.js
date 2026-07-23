@@ -2487,24 +2487,33 @@ function initEnvelope() {
 
 
 
+function ensureLineHighlight(line) {
+  if (!line) return "";
+  if (line.includes('class="highlight"') || line.includes("class='highlight'")) {
+    return line;
+  }
+  if (line.includes("everything you are.")) {
+    return line.replace("everything you are.", '<span class="highlight">everything you are.</span>');
+  }
+  if (line.includes("everything you are")) {
+    return line.replace("everything you are", '<span class="highlight">everything you are</span>');
+  }
+  return line;
+}
+
 function typeLetterBody() {
-
   const paras = document.querySelectorAll("#letter-body p");
-
   let i = 0;
 
   (function next() {
-
     if (i >= paras.length) {
       window.letterTyped = true;
       return;
     }
 
     const p = paras[i];
-
     p.innerHTML = "";
-
-    const html = CONFIG.letterLines[i];
+    const html = ensureLineHighlight(CONFIG.letterLines[i]);
 
     // strip tags for typing speed calc but type raw text safely
 
@@ -4949,9 +4958,7 @@ function reRenderPage() {
     letterBody.innerHTML = "";
     CONFIG.letterLines.forEach(line => {
       const p = document.createElement("p");
-      if (window.letterTyped) {
-        p.innerHTML = line;
-      }
+      p.innerHTML = ensureLineHighlight(line);
       letterBody.appendChild(p);
     });
   }

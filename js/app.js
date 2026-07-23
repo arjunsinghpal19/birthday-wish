@@ -4201,21 +4201,20 @@ function checkAdminAccess() {
     }
   });
 
-  // Secret Triple-Click Gesture on Title / Logo -> Admin Password Prompt
-  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1");
-  logoEls.forEach(el => {
-    let tapCount = 0;
-    let tapTimer = null;
-    el.addEventListener("click", () => {
-      tapCount++;
-      clearTimeout(tapTimer);
-      if (tapCount >= 3) {
-        tapCount = 0;
+  // Secret Triple-Click Gesture on Title / Logo -> Admin Password Prompt (Event Delegation)
+  document.addEventListener("click", (e) => {
+    const target = e.target.closest(".logo-glow, .letter-title, .final-title, .section-title, h1, h2, #typewriter, #loading-logo-glow, .eyebrow");
+    if (target) {
+      if (!target._tapCount) target._tapCount = 0;
+      target._tapCount++;
+      clearTimeout(target._tapTimer);
+      if (target._tapCount >= 3) {
+        target._tapCount = 0;
         promptForAdminAccess();
       } else {
-        tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+        target._tapTimer = setTimeout(() => { target._tapCount = 0; }, 600);
       }
-    });
+    }
   });
 }
 

@@ -1698,3 +1698,21 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   border-color: var(--gold, #ffd700);
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
+
+#admin-login-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10005;
+  background: rgba(10, 4, 18, 0.88);
+  backdrop-filter: blur(15px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+#admin-login-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}

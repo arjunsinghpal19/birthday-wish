@@ -1239,11 +1239,16 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   transform: scale(1);
 }
 .photo-lightbox-content img {
-  max-width: 100%;
-  max-height: 75vh;
+  max-width: 90vw;
+  max-height: 82vh;
+  width: auto;
+  height: auto;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 2px rgba(255,215,0,0.4);
+  box-shadow: 0 25px 70px rgba(0,0,0,0.9), 0 0 0 1.5px rgba(255,215,0,0.45);
   object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  transform: translateZ(0);
 }
 .photo-lightbox-caption {
   margin-top: 16px;
@@ -1279,23 +1284,55 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   position: absolute;
   top: 10px;
   right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.55);
-  border: 1px solid rgba(255,215,0,0.5);
-  color: #fff;
-  font-size: 0.85rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(15, 8, 28, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  color: var(--gold);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  transition: transform 0.2s, background 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s, border-color 0.2s;
 }
 .photo-zoom-btn:hover {
-  transform: scale(1.18);
-  background: rgba(255, 95, 162, 0.8);
+  transform: scale(1.15);
+  background: rgba(255, 95, 162, 0.75);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* ==================== SIGNATURE & SENDER BADGES ==================== */
+.signature {
+  font-family: var(--font-hand);
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem) !important;
+  color: var(--pink-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.sender-name-badge, .recipient-name-badge {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 95, 162, 0.28));
+  border: 1.5px solid rgba(255, 215, 0, 0.55);
+  color: var(--gold) !important;
+  padding: 4px 18px;
+  border-radius: 99px;
+  font-weight: 700;
+  font-family: var(--font-hand);
+  font-size: 1.1em;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 18px rgba(255, 95, 162, 0.25), inset 0 0 10px rgba(255, 215, 0, 0.15);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ==================== CAKE FLAVORS & THEMES ==================== */
@@ -1311,31 +1348,11 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 .cake-theme-vanilla .tier-three { background: linear-gradient(180deg, #fff9e6, #ebd886) !important; }
 .cake-theme-vanilla .drip { background: linear-gradient(180deg, #ffd700, #daa520) !important; }
 
-/* Number Candles Styles */
-.number-candles-row {
-  position: absolute;
-  top: -45px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  z-index: 10;
-}
-.number-candle-item {
-  position: relative;
-  font-family: var(--font-hand);
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 0 10px rgba(255,215,0,0.8), 0 0 20px rgba(255,95,162,0.6);
-  background: linear-gradient(180deg, #ffe600, #ff5fa2);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  cursor: pointer;
-}
+/* Strawberry Theme */
+.cake-theme-strawberry .tier-one { background: linear-gradient(180deg, #ff80b3, #d63374) !important; }
+.cake-theme-strawberry .tier-two { background: linear-gradient(180deg, #ff99c2, #e04384) !important; }
+.cake-theme-strawberry .tier-three { background: linear-gradient(180deg, #ffb3d1, #eb5493) !important; }
+.cake-theme-strawberry .drip { background: #b80047 !important; }
 
 /* ==================== LETTER FONT STYLES ==================== */
 .font-style-cursive .letter-title,

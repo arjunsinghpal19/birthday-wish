@@ -358,7 +358,8 @@ function populateContent() {
 
     
 
-    const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Zoom Photo">🔍</button>` : "";
+    const zoomSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+    const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Expand Photo HD">${zoomSvg}</button>` : "";
     const frontContent = g.image
       ? `<div class="frame"><img src="${g.image}" alt="${g.cap}">${zoomBtnHtml}</div><div class="cap">${g.cap}</div>`
       : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
@@ -4343,9 +4344,7 @@ function initCustomizerModal() {
     }
 
     const cakeFlavorSelect = document.getElementById("input-cake-flavor");
-    if (cakeFlavorSelect) cakeFlavorSelect.value = CONFIG.cakeFlavor || "strawberry";
-    const cakeAgeInput = document.getElementById("input-cake-age");
-    if (cakeAgeInput) cakeAgeInput.value = CONFIG.cakeAge || "";
+    if (cakeFlavorSelect) cakeFlavorSelect.value = CONFIG.cakeFlavor || "default";
     const letterFontSelect = document.getElementById("input-letter-font");
     if (letterFontSelect) letterFontSelect.value = CONFIG.letterFont || "cursive";
 
@@ -4438,11 +4437,10 @@ function initCustomizerModal() {
       });
     });
 
-    const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "strawberry";
-    const cakeAge = parseInt(document.getElementById("input-cake-age")?.value) || 0;
+    const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "default";
     const letterFont = document.getElementById("input-letter-font")?.value || "cursive";
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, cakeAge, letterFont };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4459,7 +4457,6 @@ function initCustomizerModal() {
     CONFIG.timeline = vals.timeline;
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
     CONFIG.cakeFlavor = vals.cakeFlavor;
-    CONFIG.cakeAge = vals.cakeAge;
     CONFIG.letterFont = vals.letterFont;
     if (vals.musicUrlVal) {
       CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
@@ -4609,24 +4606,15 @@ function reRenderPage() {
     exp.classList.add(`font-style-${CONFIG.letterFont || "cursive"}`);
   }
 
-  // Cake Theme & Number Candles
+  // Cake Theme
   const cake = document.getElementById("luxury-cake");
   if (cake) {
     cake.classList.remove("cake-theme-chocolate", "cake-theme-vanilla", "cake-theme-strawberry");
-    cake.classList.add(`cake-theme-${CONFIG.cakeFlavor || "strawberry"}`);
-
-    let numRow = cake.querySelector(".number-candles-row");
-    if (CONFIG.cakeAge && CONFIG.cakeAge > 0) {
-      if (!numRow) {
-        numRow = document.createElement("div");
-        numRow.className = "number-candles-row";
-        cake.insertBefore(numRow, cake.firstChild);
-      }
-      const digits = String(CONFIG.cakeAge).split("");
-      numRow.innerHTML = digits.map(d => `<span class="number-candle-item" title="Age ${d}">${d}🕯️</span>`).join("");
-    } else if (numRow) {
-      numRow.remove();
+    if (CONFIG.cakeFlavor && CONFIG.cakeFlavor !== "default") {
+      cake.classList.add(`cake-theme-${CONFIG.cakeFlavor}`);
     }
+    const numRow = cake.querySelector(".number-candles-row");
+    if (numRow) numRow.remove();
   }
 
   // Title & Name slots
@@ -4705,7 +4693,8 @@ function reRenderPage() {
       el.style.setProperty("--rot", g.rot + "deg");
       el.style.setProperty("--i", i);
       const bg = `hsl(${(i * 47) % 360} 70% 75%)`;
-      const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Zoom Photo">🔍</button>` : "";
+      const zoomSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+      const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Expand Photo HD">${zoomSvg}</button>` : "";
       const frontContent = g.image
         ? `<div class="frame"><img src="${g.image}" alt="${g.cap}">${zoomBtnHtml}</div><div class="cap">${g.cap}</div>`
         : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;

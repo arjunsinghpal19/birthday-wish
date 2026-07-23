@@ -383,7 +383,7 @@
       <canvas id="final-canvas"></canvas>
       <div class="final-title">Happy Birthday!</div>
       <div class="final-sub" id="dynamic-greeting"></div>
-      <div class="signature" id="signature">Made with ❤️ by <span id="from-slot">your friends</span> for <span id="name-slot-2">You</span></div>
+      <div class="signature" id="signature">Made with ❤️ by <span class="sender-name-badge" id="from-slot">your friends</span> for <span class="recipient-name-badge" id="name-slot-2">You</span></div>
     </section>
 
     <footer>made with love, little memories &amp; birthday magic</footer>
@@ -446,14 +446,11 @@
               <div>
                 <label for="input-cake-flavor">🎂 Cake Theme / Flavor</label>
                 <select id="input-cake-flavor" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                  <option value="default" style="background:#2a162b;color:#fff;">💖 Classic Pink & Gold (Default)</option>
                   <option value="strawberry" style="background:#2a162b;color:#fff;">🍓 Pink Strawberry Gold</option>
                   <option value="chocolate" style="background:#2a162b;color:#fff;">🍫 Dark Chocolate Velvet</option>
                   <option value="vanilla" style="background:#2a162b;color:#fff;">✨ Royal Golden Vanilla</option>
                 </select>
-              </div>
-              <div>
-                <label for="input-cake-age">🕯️ Age / Candles Count</label>
-                <input type="number" id="input-cake-age" placeholder="e.g. 21" min="1" max="100">
               </div>
             </div>
             <div class="form-group">

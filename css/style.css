@@ -1436,3 +1436,51 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 .font-style-sans #dynamic-greeting {
   font-family: 'Outfit', sans-serif !important;
 }
+
+/* Envelope & Letter Color Themes */
+.theme-royalgold .letter-paper,
+.theme-royalgold .env-front,
+.theme-royalgold .env-back,
+.theme-royalgold .env-top-flap {
+  background: linear-gradient(135deg, #1f1406 0%, #3d290c 100%) !important;
+  border: 2px solid var(--gold, #ffd700) !important;
+  color: #fff8e7 !important;
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.4) !important;
+}
+.theme-royalgold .letter-title {
+  color: var(--gold, #ffd700) !important;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+}
+
+.theme-galaxy .letter-paper,
+.theme-galaxy .env-front,
+.theme-galaxy .env-back,
+.theme-galaxy .env-top-flap {
+  background: linear-gradient(135deg, #0d061f 0%, #1c0836 50%, #2b0038 100%) !important;
+  border: 2px solid #b5179e !important;
+  color: #f0e6ff !important;
+  box-shadow: 0 0 30px rgba(181, 23, 158, 0.5) !important;
+}
+.theme-galaxy .letter-title {
+  color: #f72585 !important;
+  text-shadow: 0 0 12px rgba(247, 37, 133, 0.7) !important;
+}
+
+.theme-rosegold .letter-paper,
+.theme-rosegold .env-front,
+.theme-rosegold .env-back,
+.theme-rosegold .env-top-flap {
+  background: linear-gradient(135deg, #2e1a24 0%, #4a2233 100%) !important;
+  border: 2px solid #ff8ea9 !important;
+  color: #ffe6ee !important;
+  box-shadow: 0 0 25px rgba(255, 142, 169, 0.4) !important;
+}
+.theme-rosegold .letter-title {
+  color: #ff8ea9 !important;
+  text-shadow: 0 0 10px rgba(255, 142, 169, 0.6) !important;
+}
+
+@keyframes bounceSlice {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.08); }
+}

@@ -279,7 +279,13 @@
       <div class="gift-reveal glass" id="gift-reveal">
         <h4>A little something extra 🎁</h4>
         <p id="gift-message"></p>
-        <div class="coupon" id="gift-coupon"></div>
+        <div class="scratch-card-wrapper" id="scratch-card-wrapper" style="position:relative;display:inline-block;margin-top:12px;border-radius:14px;overflow:hidden;">
+          <canvas id="scratch-card-canvas" width="340" height="100" style="position:absolute;top:0;left:0;z-index:10;cursor:grab;border-radius:14px;box-shadow:0 4px 15px rgba(0,0,0,0.4);touch-action:none;"></canvas>
+          <div class="coupon" id="gift-coupon" style="position:relative;z-index:5;"></div>
+        </div>
+        <div id="copy-voucher-wrapper" style="margin-top:14px;display:none;">
+          <button type="button" id="copy-voucher-btn" style="background:linear-gradient(135deg, var(--gold,#ffd700), #ff8ea9);color:#1a0826;border:none;padding:10px 22px;border-radius:25px;font-size:0.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 20px rgba(255,215,0,0.3);transition:transform 0.2s ease;">📋 Copy Voucher Code</button>
+        </div>
       </div>
     </section>
 
@@ -360,6 +366,13 @@
           Candles</button><button class="btn cut-btn" id="cut-cake-btn">🍰 Cut the Cake</button><button
           class="btn save-btn" id="save-memory-btn">📸 Save This Memory</button></div>
       <div class="cake-wish" id="cake-wish" aria-live="polite"></div>
+      <div id="cake-slice-plate-container" style="display:none;margin-top:24px;text-align:center;">
+        <div style="display:inline-block;position:relative;padding:18px 32px;background:linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,95,162,0.18));border:1.5px solid rgba(255,215,0,0.5);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.6);backdrop-filter:blur(10px);">
+          <div style="font-size:3.8rem;filter:drop-shadow(0 6px 15px rgba(255,215,0,0.6));animation:bounceSlice 2s infinite ease-in-out;">🍰</div>
+          <div style="font-family:var(--font-hand);font-size:1.75rem;color:var(--gold,#ffd700);margin-top:6px;">Enjoy Your Birthday Cake Slice! 🎉</div>
+          <p style="font-size:0.88rem;color:var(--pink-light,#ffd6ec);margin-top:4px;">May your year be as sweet and joyful as this slice! 💕</p>
+        </div>
+      </div>
     </section>
 
     <!-- COUNTDOWN -->
@@ -503,6 +516,16 @@
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
               <button type="button" class="reset-section-btn" data-reset="letter" title="Reset Letter & Font to defaults">🔄 Reset Section</button>
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="input-letter-theme">💌 Envelope & Letter Theme</label>
+              <small class="field-hint">Letter aur Envelope ka luxury color theme chuney</small>
+              <select id="input-letter-theme" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Theme (Classic Gold & Parchment)</option>
+                <option value="royalgold" style="background:#2a162b;color:#fff;">👑 Vintage Royal Gold (Antique Gold Foil & Dark Parchment)</option>
+                <option value="galaxy" style="background:#2a162b;color:#fff;">🌌 Midnight Galaxy Glow (Neon Purple & Cosmic Glow)</option>
+                <option value="rosegold" style="background:#2a162b;color:#fff;">🌸 Rose Gold Pastel (Soft Pearl Pink & Rose Gold Accents)</option>
+              </select>
             </div>
             <div class="form-group" style="margin-bottom:14px;">
               <label for="input-letter-font">🖋️ Letter Font Style</label>

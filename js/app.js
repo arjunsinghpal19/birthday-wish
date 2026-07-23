@@ -2576,38 +2576,121 @@ function initSurprise() {
 
 }
 
-function initGiftbox() {
+function initScratchCard() {
+  const canvas = document.getElementById("scratch-card-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
 
-  const box = document.getElementById("giftbox");
+  // Render Metallic Gold & Silver Gradient
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  const grad = ctx.createLinearGradient(0, 0, width, height);
+  grad.addColorStop(0, "#d4af37");
+  grad.addColorStop(0.25, "#fff4d0");
+  grad.addColorStop(0.5, "#aa7c11");
+  grad.addColorStop(0.75, "#ffd700");
+  grad.addColorStop(1, "#8a640f");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
 
-  const reveal = document.getElementById("gift-reveal");
+  ctx.fillStyle = "rgba(255,255,255,0.2)";
+  for (let i = 0; i < 70; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2.5 + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  box.addEventListener("click", () => {
+  ctx.font = "bold 15px sans-serif";
+  ctx.fillStyle = "#1a0826";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🪙 Scratch With Finger to Reveal!", width / 2, height / 2);
+  ctx.restore();
 
-    box.classList.toggle("open");
+  let isScratching = false;
 
-    if (box.classList.contains("open")) {
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (width / rect.width),
+      y: (clientY - rect.top) * (height / rect.height)
+    };
+  }
 
-      confettiBurst(
+  function scratch(e) {
+    if (!isScratching) return;
+    if (e.cancelable) e.preventDefault();
+    const pos = getPos(e);
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
-        box.getBoundingClientRect().left + 80,
+    checkScratchProgress();
+  }
 
-        box.getBoundingClientRect().top,
-
-        60,
-
-      );
-
-      reveal.classList.add("show");
-
-    } else {
-
-      reveal.classList.remove("show");
-
+  function checkScratchProgress() {
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const pixels = imgData.data;
+    let transparent = 0;
+    for (let i = 3; i < pixels.length; i += 4) {
+      if (pixels[i] === 0) transparent++;
     }
+    const ratio = transparent / (width * height);
+    if (ratio > 0.4) {
+      canvas.style.transition = "opacity 0.6s ease";
+      canvas.style.opacity = "0";
+      canvas.style.pointerEvents = "none";
+      const copyWrapper = document.getElementById("copy-voucher-wrapper");
+      if (copyWrapper) copyWrapper.style.display = "block";
+    }
+  }
 
+  canvas.addEventListener("mousedown", (e) => { isScratching = true; scratch(e); });
+  canvas.addEventListener("mousemove", scratch);
+  window.addEventListener("mouseup", () => { isScratching = false; });
+
+  canvas.addEventListener("touchstart", (e) => { isScratching = true; scratch(e); }, { passive: false });
+  canvas.addEventListener("touchmove", scratch, { passive: false });
+  window.addEventListener("touchend", () => { isScratching = false; });
+
+  const copyVoucherBtn = document.getElementById("copy-voucher-btn");
+  if (copyVoucherBtn) {
+    copyVoucherBtn.onclick = async () => {
+      const couponText = CONFIG.gift?.coupon || "";
+      try {
+        await navigator.clipboard.writeText(couponText);
+        showToast("Voucher code copied to clipboard! 📋");
+      } catch(err) {
+        showToast("Voucher code: " + couponText);
+      }
+    };
+  }
+}
+
+function initGiftbox() {
+  const box = document.getElementById("giftbox");
+  const reveal = document.getElementById("gift-reveal");
+  box.addEventListener("click", () => {
+    box.classList.toggle("open");
+    if (box.classList.contains("open")) {
+      confettiBurst(
+        box.getBoundingClientRect().left + 80,
+        box.getBoundingClientRect().top,
+        60,
+      );
+      reveal.classList.add("show");
+      initScratchCard();
+    } else {
+      reveal.classList.remove("show");
+    }
   });
-
 }
 
 
@@ -2931,30 +3014,26 @@ function initCake() {
   blowBtn.addEventListener("click", requestBlow);
 
   cutBtn.addEventListener("click", () => {
-
     const stage = document.getElementById("cake-stage");
-
     if (stage.classList.contains("cutting")) return;
 
     stage.classList.add("cutting");
-
     cakeSound("cut");
-
     const r = stage.getBoundingClientRect();
-
     cakeParticles(
-
       r.left + r.width * 0.58,
-
       r.top + r.height * 0.63,
-
-      ["•", "✦", "♡"],
-
+      ["🍰", "✦", "♡", "✨"],
       34,
-
     );
-
     hint.textContent = "Here's your first slice ❤️";
+
+    const slicePlate = document.getElementById("cake-slice-plate-container");
+    if (slicePlate) {
+      slicePlate.style.display = "block";
+      slicePlate.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    showToast("🍰 Cake slice served on plate! Enjoy! ✨");
 
     setTimeout(() => {
 
@@ -4347,6 +4426,8 @@ function initCustomizerModal() {
     if (cakeFlavorSelect) cakeFlavorSelect.value = CONFIG.cakeFlavor || "default";
     const letterFontSelect = document.getElementById("input-letter-font");
     if (letterFontSelect) letterFontSelect.value = CONFIG.letterFont || "cursive";
+    const letterThemeSelect = document.getElementById("input-letter-theme");
+    if (letterThemeSelect) letterThemeSelect.value = CONFIG.letterTheme || "default";
 
     // Dynamic sections
     renderLetterInputs();
@@ -4439,8 +4520,9 @@ function initCustomizerModal() {
 
     const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "default";
     const letterFont = document.getElementById("input-letter-font")?.value || "cursive";
+    const letterTheme = document.getElementById("input-letter-theme")?.value || "default";
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont, letterTheme };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4458,6 +4540,7 @@ function initCustomizerModal() {
     CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
     CONFIG.cakeFlavor = vals.cakeFlavor;
     CONFIG.letterFont = vals.letterFont;
+    CONFIG.letterTheme = vals.letterTheme;
     if (vals.musicUrlVal) {
       CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
     } else if (!CONFIG.music || !CONFIG.music.file) {
@@ -4524,8 +4607,11 @@ function initCustomizerModal() {
       case "letter":
         CONFIG.letterLines = JSON.parse(JSON.stringify(def.letterLines));
         CONFIG.letterFont = "default";
+        CONFIG.letterTheme = "default";
         const fontSelect = document.getElementById("input-letter-font");
         if (fontSelect) fontSelect.value = "default";
+        const themeSelect = document.getElementById("input-letter-theme");
+        if (themeSelect) themeSelect.value = "default";
         renderLetterInputs();
         showToast("Birthday Letter reset to defaults 📝");
         break;
@@ -4744,12 +4830,17 @@ function reRenderPage() {
   const nameVal = (CONFIG.name || "").trim();
   const displayName = nameVal ? formatName(nameVal) : "";
 
-  // Letter Font Style
+  // Letter Font Style & Theme
   const exp = document.getElementById("experience");
   if (exp) {
     exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-poppins", "font-style-nunito", "font-style-sans");
     if (CONFIG.letterFont && CONFIG.letterFont !== "default") {
       exp.classList.add(`font-style-${CONFIG.letterFont}`);
+    }
+
+    exp.classList.remove("theme-royalgold", "theme-galaxy", "theme-rosegold");
+    if (CONFIG.letterTheme && CONFIG.letterTheme !== "default") {
+      exp.classList.add(`theme-${CONFIG.letterTheme}`);
     }
   }
 

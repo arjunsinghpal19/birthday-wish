@@ -2578,35 +2578,67 @@ function initSurprise() {
 
 function initScratchCard() {
   const canvas = document.getElementById("scratch-card-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const width = canvas.width;
-  const height = canvas.height;
+  const coupon = document.getElementById("gift-coupon");
+  if (!canvas || !coupon) return;
 
-  // Render Metallic Gold & Silver Gradient
+  const couponRect = coupon.getBoundingClientRect();
+  const width = Math.max(280, Math.floor(couponRect.width || 340));
+  const height = Math.max(60, Math.floor(couponRect.height || 90));
+
+  canvas.width = width;
+  canvas.height = height;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  canvas.style.opacity = "1";
+  canvas.style.pointerEvents = "auto";
+
+  const ctx = canvas.getContext("2d");
+
+  // Render Metallic Gold & Silver Texture
   ctx.save();
   ctx.globalCompositeOperation = "source-over";
+
+  // Rich 45deg Metallic Gold Foil Gradient
   const grad = ctx.createLinearGradient(0, 0, width, height);
-  grad.addColorStop(0, "#d4af37");
-  grad.addColorStop(0.25, "#fff4d0");
-  grad.addColorStop(0.5, "#aa7c11");
-  grad.addColorStop(0.75, "#ffd700");
-  grad.addColorStop(1, "#8a640f");
+  grad.addColorStop(0, "#8a640f");
+  grad.addColorStop(0.2, "#d4af37");
+  grad.addColorStop(0.4, "#fff8dc");
+  grad.addColorStop(0.65, "#ffd700");
+  grad.addColorStop(0.85, "#b8860b");
+  grad.addColorStop(1, "#664700");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = "rgba(255,255,255,0.2)";
-  for (let i = 0; i < 70; i++) {
+  // Metallic diagonal sheen highlight line
+  const sheen = ctx.createLinearGradient(0, 0, width * 0.8, height);
+  sheen.addColorStop(0, "rgba(255, 255, 255, 0)");
+  sheen.addColorStop(0.4, "rgba(255, 255, 255, 0.45)");
+  sheen.addColorStop(0.6, "rgba(255, 255, 255, 0.45)");
+  sheen.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(0, 0, width, height);
+
+  // Gold dust sparkle dots
+  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+  for (let i = 0; i < 90; i++) {
     ctx.beginPath();
-    ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2.5 + 1, 0, Math.PI * 2);
+    ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2 + 1, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.font = "bold 15px sans-serif";
+  // Inner metallic border on canvas
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(6, 6, width - 12, height - 12);
+
+  // Gold Foil Stamp Text
+  ctx.font = "bold 13px sans-serif";
   ctx.fillStyle = "#1a0826";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("🪙 Scratch With Finger to Reveal!", width / 2, height / 2);
+  ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
+  ctx.shadowBlur = 4;
+  ctx.fillText("🪙 SCRATCH WITH FINGER TO REVEAL ✨", width / 2, height / 2);
   ctx.restore();
 
   let isScratching = false;
@@ -2643,7 +2675,7 @@ function initScratchCard() {
       if (pixels[i] === 0) transparent++;
     }
     const ratio = transparent / (width * height);
-    if (ratio > 0.4) {
+    if (ratio > 0.38) {
       canvas.style.transition = "opacity 0.6s ease";
       canvas.style.opacity = "0";
       canvas.style.pointerEvents = "none";
@@ -2652,13 +2684,13 @@ function initScratchCard() {
     }
   }
 
-  canvas.addEventListener("mousedown", (e) => { isScratching = true; scratch(e); });
-  canvas.addEventListener("mousemove", scratch);
-  window.addEventListener("mouseup", () => { isScratching = false; });
+  canvas.onmousedown = (e) => { isScratching = true; scratch(e); };
+  canvas.onmousemove = scratch;
+  window.onmouseup = () => { isScratching = false; };
 
-  canvas.addEventListener("touchstart", (e) => { isScratching = true; scratch(e); }, { passive: false });
-  canvas.addEventListener("touchmove", scratch, { passive: false });
-  window.addEventListener("touchend", () => { isScratching = false; });
+  canvas.ontouchstart = (e) => { isScratching = true; scratch(e); };
+  canvas.ontouchmove = scratch;
+  window.ontouchend = () => { isScratching = false; };
 
   const copyVoucherBtn = document.getElementById("copy-voucher-btn");
   if (copyVoucherBtn) {

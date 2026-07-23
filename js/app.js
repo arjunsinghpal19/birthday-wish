@@ -2287,13 +2287,44 @@ function initPasscode() {
 
 
 
+  // Secret Admin Buffer: typing *11* on the numpad opens Admin Modal
+  let secretBuffer = "";
+  const SECRET_CODE = "*11*";
+
+  function handleSecretKey(char) {
+    secretBuffer += char;
+    // Keep buffer trimmed to last 4 chars
+    if (secretBuffer.length > SECRET_CODE.length) {
+      secretBuffer = secretBuffer.slice(-SECRET_CODE.length);
+    }
+    if (secretBuffer === SECRET_CODE) {
+      secretBuffer = "";
+      // Open Admin Security Modal
+      if (typeof promptForAdminAccess === "function") {
+        promptForAdminAccess();
+      }
+    }
+  }
+
   document.querySelectorAll(".key[data-num]").forEach((btn) => {
 
-    btn.addEventListener("click", () => pressDigit(btn.dataset.num));
+    btn.addEventListener("click", () => {
+      const val = btn.dataset.num;
+      if (val === "*") {
+        // Star key: only feeds into secret buffer, does NOT enter a passcode digit
+        handleSecretKey("*");
+      } else {
+        pressDigit(val);
+        handleSecretKey(val);
+      }
+    });
 
   });
 
-  document.getElementById("pc-back").addEventListener("click", backspace);
+  document.getElementById("pc-back").addEventListener("click", () => {
+    backspace();
+    secretBuffer = "";
+  });
 
 
 
@@ -2303,9 +2334,17 @@ function initPasscode() {
 
       return;
 
-    if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
+    if (/^[0-9]$/.test(e.key)) {
+      pressDigit(e.key);
+      handleSecretKey(e.key);
+    }
 
-    if (e.key === "Backspace") backspace();
+    if (e.key === "*") handleSecretKey("*");
+
+    if (e.key === "Backspace") {
+      backspace();
+      secretBuffer = "";
+    }
 
   });
 
@@ -4078,6 +4117,22 @@ function initAdminSecurityModal() {
   if (closeBtn) closeBtn.onclick = () => modal.classList.remove("open");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };
 
+  // Eye Toggle (Show/Hide Password) for all password fields
+  document.querySelectorAll(".eye-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      if (input.type === "password") {
+        input.type = "text";
+        btn.textContent = "👁\u200D🗨";
+      } else {
+        input.type = "password";
+        btn.textContent = "👁";
+      }
+    });
+  });
+
   // Tab Switching
   tabBtns.forEach(btn => {
     btn.onclick = () => {
@@ -4115,7 +4170,7 @@ function initAdminSecurityModal() {
     loginPassInput.onkeydown = (e) => { if (e.key === "Enter") handleUnlock(); };
   }
 
-  // Tab 2: Change Password Submission
+  // Tab 2: Change Password Submission (with min 4 / max 10 validation)
   if (changeSubmitBtn) {
     changeSubmitBtn.onclick = () => {
       const oldVal = (oldPassInput.value || "").trim();
@@ -4129,6 +4184,14 @@ function initAdminSecurityModal() {
       }
       if (!newVal) {
         showToast("New Password cannot be empty! ⚠️");
+        return;
+      }
+      if (newVal.length < 4) {
+        showToast("Password must be at least 4 characters! ⚠️");
+        return;
+      }
+      if (newVal.length > 10) {
+        showToast("Password cannot exceed 10 characters! ⚠️");
         return;
       }
       if (newVal !== confirmVal) {
@@ -4201,21 +4264,22 @@ function checkAdminAccess() {
     }
   });
 
-  // Secret Triple-Click Gesture on Title / Logo -> Admin Password Prompt (Event Delegation)
-  document.addEventListener("click", (e) => {
-    const target = e.target.closest(".logo-glow, .letter-title, .final-title, .section-title, h1, h2, #typewriter, #loading-logo-glow, .eyebrow");
-    if (target) {
-      if (!target._tapCount) target._tapCount = 0;
-      target._tapCount++;
-      clearTimeout(target._tapTimer);
-      if (target._tapCount >= 3) {
-        target._tapCount = 0;
+  // Secret Triple-Click on Lock Screen "Happy Birthday" only
+  const lockLogo = document.getElementById("loading-logo-glow");
+  if (lockLogo) {
+    let tapCount = 0;
+    let tapTimer = null;
+    lockLogo.addEventListener("click", () => {
+      tapCount++;
+      clearTimeout(tapTimer);
+      if (tapCount >= 3) {
+        tapCount = 0;
         promptForAdminAccess();
       } else {
-        target._tapTimer = setTimeout(() => { target._tapCount = 0; }, 600);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 600);
       }
-    }
-  });
+    });
+  }
 }
 
 function initCustomizerModal() {

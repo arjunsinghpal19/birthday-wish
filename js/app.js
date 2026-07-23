@@ -4486,6 +4486,24 @@ function initCustomizerModal() {
     });
   }
 
+  // Restore Default Messages button
+  const resetMsgsBtn = document.getElementById("reset-default-messages-btn");
+  if (resetMsgsBtn) {
+    resetMsgsBtn.addEventListener("click", () => {
+      if (window.DEFAULT_CONFIG_BACKUP) {
+        CONFIG.letterLines = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.letterLines));
+        CONFIG.memory = window.DEFAULT_CONFIG_BACKUP.memory;
+        CONFIG.reasons = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.reasons));
+        CONFIG.wishes = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.wishes));
+        CONFIG.gift = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.gift));
+        CONFIG.timeline = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.timeline));
+        CONFIG.letterFont = "default";
+        populateEditorFields();
+        showToast("Original default messages restored! ✍️");
+      }
+    });
+  }
+
   // ─── ADD ITEM HANDLERS ───
   document.getElementById("add-reason-btn").addEventListener("click", () => {
     CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
@@ -4603,7 +4621,9 @@ function reRenderPage() {
   const exp = document.getElementById("experience");
   if (exp) {
     exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-sans");
-    exp.classList.add(`font-style-${CONFIG.letterFont || "cursive"}`);
+    if (CONFIG.letterFont && CONFIG.letterFont !== "default") {
+      exp.classList.add(`font-style-${CONFIG.letterFont}`);
+    }
   }
 
   // Cake Theme
@@ -5248,6 +5268,7 @@ function initMusicWidget() {
 }
 
 (async function boot() {
+  window.DEFAULT_CONFIG_BACKUP = JSON.parse(JSON.stringify(CONFIG));
 
   if (document.fonts && document.fonts.ready) {
     try { await document.fonts.ready; } catch(e){}

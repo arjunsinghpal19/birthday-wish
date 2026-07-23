@@ -409,8 +409,13 @@
 
       <!-- HEADER -->
       <div class="editor-header">
-        <h3 class="modal-title">✨ Customize Birthday Wish</h3>
-        <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding-right:24px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 class="modal-title">✨ Customize Birthday Wish</h3>
+            <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
+          </div>
+          <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
+        </div>
         <button id="customizer-close-btn" class="modal-close">&times;</button>
       </div>
 
@@ -485,6 +490,7 @@
               <label for="input-letter-font">🖋️ Letter Font Style</label>
               <small class="field-hint">Birthday Letter aur Wishes ka font mood ke hisab se chuney</small>
               <select id="input-letter-font" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Font (Sacramento Cursive)</option>
                 <option value="cursive" style="background:#2a162b;color:#fff;">✍️ Romantic Cursive (Sacramento)</option>
                 <option value="serif" style="background:#2a162b;color:#fff;">📜 Classic Royal Serif (Playfair / Cinzel)</option>
                 <option value="script" style="background:#2a162b;color:#fff;">🎨 Playful Script (Caveat)</option>

@@ -1319,17 +1319,17 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   margin-top: 24px;
 }
 .sender-name-badge, .recipient-name-badge {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 95, 162, 0.28));
-  border: 1.5px solid rgba(255, 215, 0, 0.55);
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.45);
   color: var(--gold) !important;
   padding: 4px 18px;
   border-radius: 99px;
   font-weight: 700;
   font-family: var(--font-hand);
-  font-size: 1.1em;
-  letter-spacing: 0.03em;
-  box-shadow: 0 4px 18px rgba(255, 95, 162, 0.25), inset 0 0 10px rgba(255, 215, 0, 0.15);
-  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  font-size: 1.05em;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
   display: inline-flex;
   align-items: center;
   justify-content: center;

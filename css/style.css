@@ -1746,6 +1746,10 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 
 /* Numpad Star Key — same look as other keys */
 .key-star {
-  font-size: 1.2rem !important;
+  font-size: inherit !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 

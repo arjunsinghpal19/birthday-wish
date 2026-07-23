@@ -2579,118 +2579,118 @@ function initSurprise() {
 function initScratchCard() {
   const canvas = document.getElementById("scratch-card-canvas");
   const coupon = document.getElementById("gift-coupon");
-  if (!canvas || !coupon) return;
+  const wrapper = document.getElementById("scratch-card-wrapper");
+  if (!canvas || !coupon || !wrapper) return;
 
-  const couponRect = coupon.getBoundingClientRect();
-  const width = Math.max(280, Math.floor(couponRect.width || 340));
-  const height = Math.max(60, Math.floor(couponRect.height || 90));
+  requestAnimationFrame(() => {
+    const width = wrapper.offsetWidth || coupon.offsetWidth || 340;
+    const height = wrapper.offsetHeight || coupon.offsetHeight || 80;
 
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
-  canvas.style.opacity = "1";
-  canvas.style.pointerEvents = "auto";
+    canvas.width = width;
+    canvas.height = height;
+    canvas.style.opacity = "1";
+    canvas.style.pointerEvents = "auto";
 
-  const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
 
-  // Render Metallic Gold & Silver Texture
-  ctx.save();
-  ctx.globalCompositeOperation = "source-over";
-
-  // Rich 45deg Metallic Gold Foil Gradient
-  const grad = ctx.createLinearGradient(0, 0, width, height);
-  grad.addColorStop(0, "#8a640f");
-  grad.addColorStop(0.2, "#d4af37");
-  grad.addColorStop(0.4, "#fff8dc");
-  grad.addColorStop(0.65, "#ffd700");
-  grad.addColorStop(0.85, "#b8860b");
-  grad.addColorStop(1, "#664700");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, width, height);
-
-  // Metallic diagonal sheen highlight line
-  const sheen = ctx.createLinearGradient(0, 0, width * 0.8, height);
-  sheen.addColorStop(0, "rgba(255, 255, 255, 0)");
-  sheen.addColorStop(0.4, "rgba(255, 255, 255, 0.45)");
-  sheen.addColorStop(0.6, "rgba(255, 255, 255, 0.45)");
-  sheen.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = sheen;
-  ctx.fillRect(0, 0, width, height);
-
-  // Gold dust sparkle dots
-  ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-  for (let i = 0; i < 90; i++) {
-    ctx.beginPath();
-    ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2 + 1, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Inner metallic border on canvas
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(6, 6, width - 12, height - 12);
-
-  // Gold Foil Stamp Text
-  ctx.font = "bold 13px sans-serif";
-  ctx.fillStyle = "#1a0826";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
-  ctx.shadowBlur = 4;
-  ctx.fillText("🪙 SCRATCH WITH FINGER TO REVEAL ✨", width / 2, height / 2);
-  ctx.restore();
-
-  let isScratching = false;
-
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - rect.left) * (width / rect.width),
-      y: (clientY - rect.top) * (height / rect.height)
-    };
-  }
-
-  function scratch(e) {
-    if (!isScratching) return;
-    if (e.cancelable) e.preventDefault();
-    const pos = getPos(e);
+    // Render Metallic Gold & Silver Texture
     ctx.save();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    // Rich 45deg Metallic Gold Foil Gradient
+    const grad = ctx.createLinearGradient(0, 0, width, height);
+    grad.addColorStop(0, "#8a640f");
+    grad.addColorStop(0.2, "#d4af37");
+    grad.addColorStop(0.4, "#fff8dc");
+    grad.addColorStop(0.65, "#ffd700");
+    grad.addColorStop(0.85, "#b8860b");
+    grad.addColorStop(1, "#664700");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Metallic diagonal sheen highlight line
+    const sheen = ctx.createLinearGradient(0, 0, width * 0.8, height);
+    sheen.addColorStop(0, "rgba(255, 255, 255, 0)");
+    sheen.addColorStop(0.4, "rgba(255, 255, 255, 0.45)");
+    sheen.addColorStop(0.6, "rgba(255, 255, 255, 0.45)");
+    sheen.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = sheen;
+    ctx.fillRect(0, 0, width, height);
+
+    // Gold dust sparkle dots
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    for (let i = 0; i < 90; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 2 + 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Inner metallic border on canvas
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(6, 6, width - 12, height - 12);
+
+    // Gold Foil Stamp Text
+    ctx.font = "bold 13px sans-serif";
+    ctx.fillStyle = "#1a0826";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "rgba(255, 255, 255, 0.6)";
+    ctx.shadowBlur = 4;
+    ctx.fillText("🪙 SCRATCH WITH FINGER TO REVEAL ✨", width / 2, height / 2);
     ctx.restore();
 
-    checkScratchProgress();
-  }
+    let isScratching = false;
 
-  function checkScratchProgress() {
-    const imgData = ctx.getImageData(0, 0, width, height);
-    const pixels = imgData.data;
-    let transparent = 0;
-    for (let i = 3; i < pixels.length; i += 4) {
-      if (pixels[i] === 0) transparent++;
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: (clientX - rect.left) * (width / rect.width),
+        y: (clientY - rect.top) * (height / rect.height)
+      };
     }
-    const ratio = transparent / (width * height);
-    if (ratio > 0.38) {
-      canvas.style.transition = "opacity 0.6s ease";
-      canvas.style.opacity = "0";
-      canvas.style.pointerEvents = "none";
-      const copyWrapper = document.getElementById("copy-voucher-wrapper");
-      if (copyWrapper) copyWrapper.style.display = "block";
+
+    function scratch(e) {
+      if (!isScratching) return;
+      if (e.cancelable) e.preventDefault();
+      const pos = getPos(e);
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      checkScratchProgress();
     }
-  }
 
-  canvas.onmousedown = (e) => { isScratching = true; scratch(e); };
-  canvas.onmousemove = scratch;
-  window.onmouseup = () => { isScratching = false; };
+    function checkScratchProgress() {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const pixels = imgData.data;
+      let transparent = 0;
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] === 0) transparent++;
+      }
+      const ratio = transparent / (width * height);
+      if (ratio > 0.38) {
+        canvas.style.transition = "opacity 0.6s ease";
+        canvas.style.opacity = "0";
+        canvas.style.pointerEvents = "none";
+        const copyWrapper = document.getElementById("copy-voucher-wrapper");
+        if (copyWrapper) copyWrapper.style.display = "block";
+      }
+    }
 
-  canvas.ontouchstart = (e) => { isScratching = true; scratch(e); };
-  canvas.ontouchmove = scratch;
-  window.ontouchend = () => { isScratching = false; };
+    canvas.onmousedown = (e) => { isScratching = true; scratch(e); };
+    canvas.onmousemove = scratch;
+    window.onmouseup = () => { isScratching = false; };
+
+    canvas.ontouchstart = (e) => { isScratching = true; scratch(e); };
+    canvas.ontouchmove = scratch;
+    window.ontouchend = () => { isScratching = false; };
+  });
 
   const copyVoucherBtn = document.getElementById("copy-voucher-btn");
   if (copyVoucherBtn) {

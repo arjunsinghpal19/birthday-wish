@@ -908,9 +908,25 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  box-sizing: border-box;
+}
+
+#scratch-card-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 10;
+  cursor: grab;
+  border-radius: 16px;
+  touch-action: none;
+  box-sizing: border-box;
 }
 
 .coupon {
+  position: relative;
+  z-index: 5;
   padding: 16px 22px;
   border: 2px dashed var(--gold);
   border-radius: 16px;
@@ -921,10 +937,11 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   background: rgba(20, 8, 30, 0.7);
   box-sizing: border-box;
   width: 100%;
-  min-height: 70px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 /* ==================== 11. COUNTDOWN ==================== */

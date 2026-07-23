@@ -4904,8 +4904,9 @@ function reRenderPage() {
 }
 
 function launchRealisticShootingStar() {
-  const count = 3;
+  const count = 5; // 5 shooting stars
   for (let i = 0; i < count; i++) {
+    // 2.2 seconds stagger delay gap between each shooting star!
     setTimeout(() => {
       const streak = document.createElement("div");
       streak.className = "shooting-star-streak";
@@ -4915,25 +4916,26 @@ function launchRealisticShootingStar() {
       document.body.appendChild(streak);
 
       // Start from top-left corner of visible viewport
-      const fromX = -60;
-      const fromY = (window.innerHeight * 0.1) + (i * 45) + (Math.random() * 30 - 15);
-      const angle = 28 + (Math.random() * 8 - 4); // shoot diagonally down-right
-      const distance = Math.hypot(window.innerWidth + 150, window.innerHeight + 150);
+      const fromX = -80;
+      const fromY = (window.innerHeight * 0.08) + (Math.random() * (window.innerHeight * 0.35));
+      const angle = 26 + (Math.random() * 10 - 5); // shoot diagonally down-right
+      const distance = Math.hypot(window.innerWidth + 200, window.innerHeight + 200);
 
       streak.style.left = `${fromX}px`;
       streak.style.top = `${fromY}px`;
       streak.style.transform = `rotate(${angle}deg)`;
       streak.style.opacity = "1";
 
+      // 2000ms (2.0s) duration for smooth & majestic slow movement
       const anim = streak.animate([
         { transform: `rotate(${angle}deg) translateX(0px)`, opacity: 1, width: "180px" },
-        { transform: `rotate(${angle}deg) translateX(${distance}px)`, opacity: 0, width: "360px" }
+        { transform: `rotate(${angle}deg) translateX(${distance}px)`, opacity: 0, width: "400px" }
       ], {
-        duration: 1200,
-        easing: "cubic-bezier(0.25, 1, 0.5, 1)"
+        duration: 2000,
+        easing: "cubic-bezier(0.2, 0.8, 0.4, 1)"
       });
 
-      const particleCount = 32;
+      const particleCount = 36;
       for (let p = 0; p < particleCount; p++) {
         setTimeout(() => {
           const progress = p / particleCount;
@@ -4956,18 +4958,20 @@ function launchRealisticShootingStar() {
           spark.style.setProperty("--dy", `${(Math.random() - 0.5) * 80}px`);
           document.body.appendChild(spark);
 
-          setTimeout(() => spark.remove(), 1200);
-        }, p * 30);
+          setTimeout(() => spark.remove(), 1400);
+        }, p * 50);
       }
 
       anim.onfinish = () => streak.remove();
-    }, i * 280);
+    }, i * 2200);
   }
 }
 
 function initWishingStar() {
   const btn = document.getElementById("wishing-star-btn");
   const result = document.getElementById("wishing-star-result");
+  const replayBtn = document.getElementById("replay-wishing-star-btn");
+
   if (btn && result) {
     btn.onclick = (e) => {
       const rect = btn.getBoundingClientRect();
@@ -4982,7 +4986,18 @@ function initWishingStar() {
         btn.style.display = "none";
         result.style.display = "block";
       }, 400);
-      showToast("🌟 Your wish has been sent to the stars! ✨");
+      showToast("🌟 Shooting stars filling the sky! Make a wish ✨");
+    };
+  }
+
+  if (replayBtn) {
+    replayBtn.onclick = (e) => {
+      const rect = replayBtn.getBoundingClientRect();
+      const x = e.clientX || (rect.left + rect.width / 2);
+      const y = e.clientY || (rect.top + rect.height / 2);
+      confettiBurst(x, y, 40);
+      launchRealisticShootingStar();
+      showToast("✨ A new meteor shower is passing across the sky! 🌠");
     };
   }
 }

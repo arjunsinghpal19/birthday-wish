@@ -4488,21 +4488,146 @@ function initCustomizerModal() {
     });
   }
 
-  // Restore Default Messages button
+  // ─── SECTION RESET LOGIC ───
+  function resetSection(sec) {
+    if (!window.DEFAULT_CONFIG_BACKUP) return;
+    const def = window.DEFAULT_CONFIG_BACKUP;
+
+    switch (sec) {
+      case "basic":
+        CONFIG.name = "";
+        CONFIG.birthDate = { year: 2001, month: 1, day: 1 };
+        CONFIG.cakeFlavor = "default";
+        CONFIG.passcode.code = "1234";
+        const nInput = document.getElementById("input-name");
+        if (nInput) nInput.value = "";
+        const yInput = document.getElementById("input-year");
+        if (yInput) yInput.value = "2001";
+        const mInput = document.getElementById("input-month");
+        if (mInput) mInput.value = "1";
+        const dInput = document.getElementById("input-day");
+        if (dInput) dInput.value = "1";
+        const cakeSelect = document.getElementById("input-cake-flavor");
+        if (cakeSelect) cakeSelect.value = "default";
+        const passInput = document.getElementById("input-passcode");
+        if (passInput) passInput.value = "1234";
+        showToast("Basic Info reset to defaults 👤");
+        break;
+
+      case "sender":
+        CONFIG.from = "your friends who adore you";
+        const sInput = document.getElementById("input-from");
+        if (sInput) sInput.value = "your friends who adore you";
+        showToast("Sender Info reset to default 💌");
+        break;
+
+      case "letter":
+        CONFIG.letterLines = JSON.parse(JSON.stringify(def.letterLines));
+        CONFIG.letterFont = "default";
+        const fontSelect = document.getElementById("input-letter-font");
+        if (fontSelect) fontSelect.value = "default";
+        renderLetterInputs();
+        showToast("Birthday Letter reset to defaults 📝");
+        break;
+
+      case "memory":
+        CONFIG.memory = def.memory;
+        const memInput = document.getElementById("input-memory");
+        if (memInput) memInput.value = def.memory;
+        showToast("Special Memory reset to default 💭");
+        break;
+
+      case "reasons":
+        CONFIG.reasons = JSON.parse(JSON.stringify(def.reasons));
+        renderReasonInputs();
+        showToast("Reasons reset to defaults ⭐");
+        break;
+
+      case "wishes":
+        CONFIG.wishes = JSON.parse(JSON.stringify(def.wishes));
+        renderWishInputs();
+        showToast("Birthday Wishes reset to defaults ✨");
+        break;
+
+      case "gallery":
+        CONFIG.gallery = JSON.parse(JSON.stringify(def.gallery));
+        renderGalleryInputs();
+        showToast("Photo Gallery reset to default emojis 📸");
+        break;
+
+      case "timeline":
+        CONFIG.timeline = JSON.parse(JSON.stringify(def.timeline));
+        renderTimelineInputs();
+        showToast("Timeline reset to defaults 🕐");
+        break;
+
+      case "gift":
+        CONFIG.gift = JSON.parse(JSON.stringify(def.gift));
+        const gMsg = document.getElementById("input-gift-message");
+        if (gMsg) gMsg.value = def.gift.message;
+        const gCpn = document.getElementById("input-gift-coupon");
+        if (gCpn) gCpn.value = def.gift.coupon;
+        showToast("Gift Message reset to defaults 🎁");
+        break;
+
+      case "music":
+        CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
+        AudioStorage.removeAudio();
+        const musUrl = document.getElementById("input-music-url");
+        if (musUrl) musUrl.value = "";
+        const musStart = document.getElementById("input-music-start");
+        if (musStart) musStart.value = "";
+        const audFile = document.getElementById("input-audio-file");
+        if (audFile) audFile.value = "";
+        const audTxt = document.getElementById("audio-upload-text");
+        if (audTxt) audTxt.textContent = `🎙️ Select Audio / Voice Note`;
+        const audRem = document.getElementById("remove-audio-file-btn");
+        if (audRem) audRem.style.display = "none";
+        MusicEngine.pause();
+        showToast("Music reset to default melody 🎵");
+        break;
+
+      case "videowish":
+        if (CONFIG.videoWish) {
+          CONFIG.videoWish.url = "";
+          CONFIG.videoWish.startTime = "";
+          CONFIG.videoWish.file = null;
+          CONFIG.videoWish.fileName = null;
+        }
+        VideoStorage.removeVideo();
+        const vidUrl = document.getElementById("input-video-url");
+        if (vidUrl) vidUrl.value = "";
+        const vidStart = document.getElementById("input-video-start");
+        if (vidStart) vidStart.value = "";
+        const vidFile = document.getElementById("input-video-file");
+        if (vidFile) vidFile.value = "";
+        const vidTxt = document.getElementById("video-upload-text");
+        if (vidTxt) vidTxt.textContent = `📹 Select Video from Device`;
+        const vidRem = document.getElementById("remove-video-file-btn");
+        if (vidRem) vidRem.style.display = "none";
+        renderVideoWishSection();
+        showToast("Video Wish reset 📹");
+        break;
+    }
+  }
+
+  // Attach individual section reset button listeners
+  const sectionResetBtns = document.querySelectorAll(".reset-section-btn");
+  sectionResetBtns.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevents accordion expand/collapse toggle
+      const sec = btn.dataset.reset;
+      if (sec) resetSection(sec);
+    });
+  });
+
+  // Restore All Default Messages button in header
   const resetMsgsBtn = document.getElementById("reset-default-messages-btn");
   if (resetMsgsBtn) {
     resetMsgsBtn.addEventListener("click", () => {
-      if (window.DEFAULT_CONFIG_BACKUP) {
-        CONFIG.letterLines = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.letterLines));
-        CONFIG.memory = window.DEFAULT_CONFIG_BACKUP.memory;
-        CONFIG.reasons = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.reasons));
-        CONFIG.wishes = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.wishes));
-        CONFIG.gift = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.gift));
-        CONFIG.timeline = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP.timeline));
-        CONFIG.letterFont = "default";
-        populateEditorFields();
-        showToast("Original default messages restored! ✍️");
-      }
+      const allSections = ["basic", "sender", "letter", "memory", "reasons", "wishes", "gallery", "timeline", "gift", "music", "videowish"];
+      allSections.forEach(s => resetSection(s));
+      showToast("Entire Wish reset to defaults! ✨");
     });
   }
 

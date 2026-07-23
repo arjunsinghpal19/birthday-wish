@@ -1101,6 +1101,29 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   color: #fff;
 }
 
+.reset-section-btn {
+  margin-left: auto;
+  margin-right: 10px;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: var(--gold, #ffd700);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+.reset-section-btn:hover {
+  background: rgba(255, 215, 0, 0.25);
+  border-color: var(--gold, #ffd700);
+  transform: scale(1.05);
+}
+
 /* Image Upload Dropzone / Box in Customizer Modal */
 .image-upload-area {
   position: relative;

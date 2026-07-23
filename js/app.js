@@ -2582,10 +2582,7 @@ function initScratchCard() {
   const wrapper = document.getElementById("scratch-card-wrapper");
   if (!canvas || !coupon || !wrapper) return;
 
-  requestAnimationFrame(() => {
-    const width = wrapper.offsetWidth || coupon.offsetWidth || 340;
-    const height = wrapper.offsetHeight || coupon.offsetHeight || 80;
-
+  function renderFoilTexture(width, height) {
     canvas.width = width;
     canvas.height = height;
     canvas.style.opacity = "1";
@@ -2593,7 +2590,6 @@ function initScratchCard() {
 
     const ctx = canvas.getContext("2d");
 
-    // Render Metallic Gold & Silver Texture
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
 
@@ -2639,7 +2635,14 @@ function initScratchCard() {
     ctx.shadowBlur = 4;
     ctx.fillText("🪙 SCRATCH WITH FINGER TO REVEAL ✨", width / 2, height / 2);
     ctx.restore();
+  }
 
+  requestAnimationFrame(() => {
+    const width = wrapper.offsetWidth || coupon.offsetWidth || 340;
+    const height = wrapper.offsetHeight || coupon.offsetHeight || 80;
+    renderFoilTexture(width, height);
+
+    const ctx = canvas.getContext("2d");
     let isScratching = false;
 
     function getPos(e) {
@@ -2647,8 +2650,8 @@ function initScratchCard() {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       return {
-        x: (clientX - rect.left) * (width / rect.width),
-        y: (clientY - rect.top) * (height / rect.height)
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
       };
     }
 
@@ -2667,13 +2670,13 @@ function initScratchCard() {
     }
 
     function checkScratchProgress() {
-      const imgData = ctx.getImageData(0, 0, width, height);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imgData.data;
       let transparent = 0;
       for (let i = 3; i < pixels.length; i += 4) {
         if (pixels[i] === 0) transparent++;
       }
-      const ratio = transparent / (width * height);
+      const ratio = transparent / (canvas.width * canvas.height);
       if (ratio > 0.38) {
         canvas.style.transition = "opacity 0.6s ease";
         canvas.style.opacity = "0";
@@ -2690,6 +2693,20 @@ function initScratchCard() {
     canvas.ontouchstart = (e) => { isScratching = true; scratch(e); };
     canvas.ontouchmove = scratch;
     window.ontouchend = () => { isScratching = false; };
+
+    // Auto-adjust canvas whenever coupon text / window size changes!
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => {
+        if (canvas.style.opacity !== "0") {
+          const w = wrapper.offsetWidth || coupon.offsetWidth || 340;
+          const h = wrapper.offsetHeight || coupon.offsetHeight || 80;
+          if (Math.abs(canvas.width - w) > 2 || Math.abs(canvas.height - h) > 2) {
+            renderFoilTexture(w, h);
+          }
+        }
+      });
+      ro.observe(coupon);
+    }
   });
 
   const copyVoucherBtn = document.getElementById("copy-voucher-btn");

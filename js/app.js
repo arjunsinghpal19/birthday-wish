@@ -3997,10 +3997,10 @@ function encodeWishData(dataObj) {
       if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
 
       if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
-        const customGallery = CONFIG.gallery.filter(item => (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:")) || (item.secretNote));
+        const customGallery = CONFIG.gallery.filter(item => (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:") && !item.image.includes("assets/images/polaroid-")) || (item.secretNote && !item.secretNote.includes("You make the world better")));
         if (customGallery.length > 0) {
           payload.g = customGallery.map(item => ({
-            img: (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:")) ? item.image : null,
+            img: (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:") && !item.image.includes("assets/images/polaroid-")) ? item.image : null,
             e: item.emoji || "🎈",
             c: item.cap || "",
             n: item.secretNote || ""

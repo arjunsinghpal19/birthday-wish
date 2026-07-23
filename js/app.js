@@ -4622,7 +4622,7 @@ function reRenderPage() {
   // Letter Font Style
   const exp = document.getElementById("experience");
   if (exp) {
-    exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-sans");
+    exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-poppins", "font-style-nunito", "font-style-sans");
     if (CONFIG.letterFont && CONFIG.letterFont !== "default") {
       exp.classList.add(`font-style-${CONFIG.letterFont}`);
     }

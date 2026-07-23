@@ -4064,13 +4064,16 @@ function parseQueryParams() {
       if (decoded.gft) CONFIG.gift = decoded.gft;
 
       if (decoded.g && Array.isArray(decoded.g)) {
-        CONFIG.gallery = decoded.g.map((item, i) => ({
-          image: item.img || null,
-          emoji: item.e || "🎈",
-          rot: ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
-          cap: item.c || "Memory",
-          secretNote: item.n || ""
-        }));
+        CONFIG.gallery = decoded.g.map((item, i) => {
+          const defaultCard = (window.DEFAULT_CONFIG_BACKUP && window.DEFAULT_CONFIG_BACKUP.gallery && window.DEFAULT_CONFIG_BACKUP.gallery[i]) || (CONFIG.gallery && CONFIG.gallery[i]) || {};
+          return {
+            image: item.img || defaultCard.image || `assets/images/polaroid-${(i % 6) + 1}.jpg`,
+            emoji: item.e || defaultCard.emoji || "🎈",
+            rot: ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+            cap: item.c || defaultCard.cap || "Memory",
+            secretNote: item.n || defaultCard.secretNote || ""
+          };
+        });
       }
 
       if (decoded.v) {

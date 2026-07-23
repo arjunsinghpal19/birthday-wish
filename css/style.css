@@ -1228,6 +1228,51 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Realistic Shooting Star (Toota Taara) Animation */
+.shooting-star-streak {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  width: 160px;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 1) 0%, rgba(255, 215, 0, 0.95) 30%, rgba(255, 120, 180, 0.5) 70%, transparent 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 15px #ffffff, 0 0 30px #ffd700, 0 0 45px #ff78b4;
+  opacity: 0;
+  transform-origin: left center;
+}
+
+.shooting-star-head {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px 6px #ffffff, 0 0 40px 12px #ffd700, 0 0 60px 18px #ff78b4;
+}
+
+.stardust-particle {
+  position: fixed;
+  z-index: 9998;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: stardustFade 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes stardustFade {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2) translate(var(--dx), var(--dy));
+  }
+}
+
 /* ==================== PHOTO LIGHTBOX (ZOOM VIEW) ==================== */
 .photo-lightbox-modal {
   position: fixed;

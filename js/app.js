@@ -3984,28 +3984,36 @@ function encodeWishData(dataObj) {
   try {
     let payload = {};
     if (typeof dataObj === "object" && dataObj !== null) {
-      payload = {
-        n: dataObj.name || CONFIG.name,
-        c: (dataObj.passcode?.code && dataObj.passcode.code !== "1234") ? dataObj.passcode.code : (CONFIG.passcode?.code !== "1234" ? CONFIG.passcode.code : undefined),
-        y: (dataObj.birthDate?.year && dataObj.birthDate.year !== 2001) ? dataObj.birthDate.year : (CONFIG.birthDate?.year !== 2001 ? CONFIG.birthDate.year : undefined),
-        m: (dataObj.birthDate?.month && dataObj.birthDate.month !== 1) ? dataObj.birthDate.month : (CONFIG.birthDate?.month !== 1 ? CONFIG.birthDate.month : undefined),
-        d: (dataObj.birthDate?.day && dataObj.birthDate.day !== 1) ? dataObj.birthDate.day : (CONFIG.birthDate?.day !== 1 ? CONFIG.birthDate.day : undefined),
-        f: (CONFIG.from && CONFIG.from !== "your friends who adore you") ? CONFIG.from : undefined,
-        mem: CONFIG.memory || undefined,
-        cf: (CONFIG.cakeFlavor && CONFIG.cakeFlavor !== "default") ? CONFIG.cakeFlavor : undefined,
-        lf: (CONFIG.letterFont && CONFIG.letterFont !== "default") ? CONFIG.letterFont : undefined,
-        lt: (CONFIG.letterTheme && CONFIG.letterTheme !== "default") ? CONFIG.letterTheme : undefined,
-        gft: CONFIG.gift || undefined,
-        v: (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:")) ? { u: CONFIG.videoWish.url, t: CONFIG.videoWish.startTime || "" } : undefined,
-        g: (CONFIG.gallery && Array.isArray(CONFIG.gallery)) ? CONFIG.gallery.map(item => ({
-          img: (item.image && !item.image.startsWith("blob:")) ? item.image : null,
-          e: item.emoji || "🎈",
-          c: item.cap || "",
-          n: item.secretNote || ""
-        })) : undefined
-      };
+      if (CONFIG.name) payload.n = CONFIG.name;
+      if (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234") payload.c = CONFIG.passcode.code;
+      if (CONFIG.birthDate?.year && CONFIG.birthDate.year !== 2001) payload.y = CONFIG.birthDate.year;
+      if (CONFIG.birthDate?.month && CONFIG.birthDate.month !== 1) payload.m = CONFIG.birthDate.month;
+      if (CONFIG.birthDate?.day && CONFIG.birthDate.day !== 1) payload.d = CONFIG.birthDate.day;
+      if (CONFIG.from && CONFIG.from !== "your friends who adore you") payload.f = CONFIG.from;
+      if (CONFIG.memory && !CONFIG.memory.includes("That one late night we didn't plan anything")) payload.mem = CONFIG.memory;
+      if (CONFIG.cakeFlavor && CONFIG.cakeFlavor !== "default") payload.cf = CONFIG.cakeFlavor;
+      if (CONFIG.letterFont && CONFIG.letterFont !== "default") payload.lf = CONFIG.letterFont;
+      if (CONFIG.letterTheme && CONFIG.letterTheme !== "default") payload.lt = CONFIG.letterTheme;
+      if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
+
+      if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
+        const customGallery = CONFIG.gallery.filter(item => (item.image && !item.image.startsWith("blob:")) || (item.secretNote));
+        if (customGallery.length > 0) {
+          payload.g = customGallery.map(item => ({
+            img: (item.image && !item.image.startsWith("blob:")) ? item.image : null,
+            e: item.emoji || "🎈",
+            c: item.cap || "",
+            n: item.secretNote || ""
+          }));
+        }
+      }
     } else {
       payload = { n: dataObj };
+    }
+
+    const keys = Object.keys(payload);
+    if (keys.length === 0 || (keys.length === 1 && keys[0] === "n")) {
+      return "";
     }
 
     const str = JSON.stringify(payload);
@@ -4619,16 +4627,53 @@ function initCustomizerModal() {
     });
   }
 
+function initDateDropdowns() {
+  const daySelect = document.getElementById("input-day");
+  const monthSelect = document.getElementById("input-month");
+  const yearSelect = document.getElementById("input-year");
+  if (!daySelect || !monthSelect || !yearSelect) return;
+
+  daySelect.innerHTML = "";
+  for (let d = 1; d <= 31; d++) {
+    const opt = document.createElement("option");
+    opt.value = d;
+    opt.textContent = String(d).padStart(2, "0");
+    opt.style.background = "#2a162b"; opt.style.color = "#fff";
+    daySelect.appendChild(opt);
+  }
+
+  const months = ["Jan (01)", "Feb (02)", "Mar (03)", "Apr (04)", "May (05)", "Jun (06)", "Jul (07)", "Aug (08)", "Sep (09)", "Oct (10)", "Nov (11)", "Dec (12)"];
+  monthSelect.innerHTML = "";
+  months.forEach((m, idx) => {
+    const opt = document.createElement("option");
+    opt.value = idx + 1;
+    opt.textContent = m;
+    opt.style.background = "#2a162b"; opt.style.color = "#fff";
+    monthSelect.appendChild(opt);
+  });
+
+  const curYr = new Date().getFullYear();
+  const maxYr = curYr + 10;
+  yearSelect.innerHTML = "";
+  for (let y = maxYr; y >= 1950; y--) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    opt.style.background = "#2a162b"; opt.style.color = "#fff";
+    yearSelect.appendChild(opt);
+  }
+}
+
   // ─── POPULATE ALL FIELDS ───
   function populateEditorFields() {
-    // Basic Info: populate date input from CONFIG
-    const dateInput = document.getElementById("input-birthdate");
-    if (dateInput) {
-      const y = String(CONFIG.birthDate?.year || 2001).padStart(4, "0");
-      const m = String(CONFIG.birthDate?.month || 1).padStart(2, "0");
-      const d = String(CONFIG.birthDate?.day || 1).padStart(2, "0");
-      dateInput.value = `${y}-${m}-${d}`;
-    }
+    initDateDropdowns();
+    const daySelect = document.getElementById("input-day");
+    const monthSelect = document.getElementById("input-month");
+    const yearSelect = document.getElementById("input-year");
+    if (daySelect) daySelect.value = CONFIG.birthDate?.day || 1;
+    if (monthSelect) monthSelect.value = CONFIG.birthDate?.month || 1;
+    if (yearSelect) yearSelect.value = CONFIG.birthDate?.year || 2001;
+
     document.getElementById("input-name").value = CONFIG.name || "";
     document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
 
@@ -4691,18 +4736,9 @@ function initCustomizerModal() {
     const rawName = document.getElementById("input-name").value.trim();
     const nameVal = rawName ? formatName(rawName) : "";
 
-    const dateInput = document.getElementById("input-birthdate");
-    let yVal = CONFIG.birthDate?.year || 2001;
-    let mVal = CONFIG.birthDate?.month || 1;
-    let dVal = CONFIG.birthDate?.day || 1;
-    if (dateInput && dateInput.value) {
-      const parts = dateInput.value.split("-");
-      if (parts.length === 3) {
-        yVal = parseInt(parts[0]) || yVal;
-        mVal = parseInt(parts[1]) || mVal;
-        dVal = parseInt(parts[2]) || dVal;
-      }
-    }
+    const dVal = parseInt(document.getElementById("input-day")?.value) || CONFIG.birthDate?.day || 1;
+    const mVal = parseInt(document.getElementById("input-month")?.value) || CONFIG.birthDate?.month || 1;
+    const yVal = parseInt(document.getElementById("input-year")?.value) || CONFIG.birthDate?.year || 2001;
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
 
@@ -5501,13 +5537,12 @@ function buildRecipientShareUrl(overrideName) {
 
   const token = encodeWishData(CONFIG);
 
-  let shareUrl = baseUrl;
-  if (token) {
-    shareUrl += `?w=${token}`;
-    if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
-  } else if (nameVal) {
-    shareUrl += `?name=${encodeURIComponent(nameVal)}`;
+  if (!token) {
+    return nameVal ? `${baseUrl}?name=${encodeURIComponent(nameVal)}` : baseUrl;
   }
+
+  let shareUrl = `${baseUrl}?w=${token}`;
+  if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
 
   // Filter out any blob: URLs from music & video params so blob: URLs NEVER get appended to shareable links!
   if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
@@ -5656,14 +5691,14 @@ function initShare() {
       const shareUrl = buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}!\uD83C\uDF82\u2728` : `Hey!\uD83C\uDF82\u2728`;
-      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
+      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
 
       if (navigator.share) {
         try {
           await navigator.share({
             title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
-            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:`,
+            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:`,
             url: shareUrl,
           });
           return;
@@ -5683,8 +5718,8 @@ function initShare() {
       const shareUrl = buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}!\uD83C\uDF82\u2728` : `Hey!\uD83C\uDF82\u2728`;
-      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
+      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
     });

@@ -461,9 +461,22 @@
               <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
-              <label for="input-birthdate">📅 Birth Date (Select from Calendar)</label>
-              <small class="field-hint">Calendar icon 📅 par click karke birthday date chuney</small>
-              <input type="date" id="input-birthdate" class="form-control" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);color-scheme:dark;">
+              <label>📅 Birth Date (Day / Month / Year)</label>
+              <small class="field-hint">Day, Month aur Year 1-click select karein</small>
+              <div class="form-group row" style="gap:8px;margin-top:6px;">
+                <div style="flex:1;">
+                  <label for="input-day" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Day</label>
+                  <select id="input-day" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                </div>
+                <div style="flex:1.4;">
+                  <label for="input-month" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Month</label>
+                  <select id="input-month" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                </div>
+                <div style="flex:1.2;">
+                  <label for="input-year" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Year</label>
+                  <select id="input-year" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                </div>
+              </div>
             </div>
             <div class="form-group row">
               <div>

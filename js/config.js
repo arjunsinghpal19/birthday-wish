@@ -4,6 +4,7 @@ const CONFIG = {
   from: "your friends who adore you", // Your name / sender name
   birthDate: { year: 2001, month: 1, day: 1 }, // year, month (1-12), day — used for age counter & countdown
   seedYear: 2001, // optional: used only to show "turning N" if you want, else ignored
+  adminPassword: "2001", // Owner Master Secret Password for Admin Editor Access
 
   passcode: {
     enabled: true, // set to false to skip the lock screen entirely

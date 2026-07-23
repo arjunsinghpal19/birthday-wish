@@ -4094,8 +4094,8 @@ function checkAdminAccess() {
     }
   });
 
-  // Secret Triple-Click Gesture on Title / Logo / Footer -> Admin Password Prompt
-  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1, footer");
+  // Secret Triple-Click Gesture on Title / Logo -> Admin Password Prompt
+  const logoEls = document.querySelectorAll(".logo-glow, .letter-title, h1");
   logoEls.forEach(el => {
     let tapCount = 0;
     let tapTimer = null;
@@ -4432,8 +4432,6 @@ function initCustomizerModal() {
     document.getElementById("input-month").value = "";
     document.getElementById("input-day").value = "";
     document.getElementById("input-passcode").value = "";
-    const adminPassInput = document.getElementById("input-admin-pass");
-    if (adminPassInput) adminPassInput.value = CONFIG.adminPassword || localStorage.getItem("custom_admin_password") || "2001";
 
     // Sender
     document.getElementById("input-from").value = CONFIG.from || "";
@@ -4498,11 +4496,6 @@ function initCustomizerModal() {
     const dVal = parseInt(document.getElementById("input-day").value) || 1;
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
-
-    const adminPassInput = document.getElementById("input-admin-pass");
-    const adminPassVal = adminPassInput ? (adminPassInput.value.trim() || "2001") : "2001";
-    CONFIG.adminPassword = adminPassVal;
-    localStorage.setItem("custom_admin_password", adminPassVal);
 
     const fromVal = document.getElementById("input-from").value.trim() || CONFIG.from;
     const memoryVal = document.getElementById("input-memory").value.trim() || CONFIG.memory;

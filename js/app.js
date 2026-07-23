@@ -2506,6 +2506,9 @@ function ensureLineHighlight(line) {
 }
 
 function typeLetterBody() {
+  if (window.letterTyped || window.letterTyping) return;
+  window.letterTyping = true;
+
   const paras = document.querySelectorAll("#letter-body p");
   let i = 0;
 
@@ -3973,16 +3976,35 @@ function exportInstaStory() {
 
 
 
-function encodeWishData(name, code, y, m, d) {
+function encodeWishData(dataObj) {
   try {
-    const data = {
-      n: name,
-      c: (code && code !== "1234") ? code : undefined,
-      y: (y && y !== 2001) ? y : undefined,
-      m: (m && m !== 1) ? m : undefined,
-      d: (d && d !== 1) ? d : undefined
-    };
-    const str = JSON.stringify(data);
+    let payload = {};
+    if (typeof dataObj === "object" && dataObj !== null) {
+      payload = {
+        n: dataObj.name || CONFIG.name,
+        c: (dataObj.passcode?.code && dataObj.passcode.code !== "1234") ? dataObj.passcode.code : (CONFIG.passcode?.code !== "1234" ? CONFIG.passcode.code : undefined),
+        y: (dataObj.birthDate?.year && dataObj.birthDate.year !== 2001) ? dataObj.birthDate.year : (CONFIG.birthDate?.year !== 2001 ? CONFIG.birthDate.year : undefined),
+        m: (dataObj.birthDate?.month && dataObj.birthDate.month !== 1) ? dataObj.birthDate.month : (CONFIG.birthDate?.month !== 1 ? CONFIG.birthDate.month : undefined),
+        d: (dataObj.birthDate?.day && dataObj.birthDate.day !== 1) ? dataObj.birthDate.day : (CONFIG.birthDate?.day !== 1 ? CONFIG.birthDate.day : undefined),
+        f: (CONFIG.from && CONFIG.from !== "your friends who adore you") ? CONFIG.from : undefined,
+        mem: CONFIG.memory || undefined,
+        cf: (CONFIG.cakeFlavor && CONFIG.cakeFlavor !== "default") ? CONFIG.cakeFlavor : undefined,
+        lf: (CONFIG.letterFont && CONFIG.letterFont !== "default") ? CONFIG.letterFont : undefined,
+        lt: (CONFIG.letterTheme && CONFIG.letterTheme !== "default") ? CONFIG.letterTheme : undefined,
+        gft: CONFIG.gift || undefined,
+        v: (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:")) ? { u: CONFIG.videoWish.url, t: CONFIG.videoWish.startTime || "" } : undefined,
+        g: (CONFIG.gallery && Array.isArray(CONFIG.gallery)) ? CONFIG.gallery.map(item => ({
+          img: (item.image && !item.image.startsWith("blob:")) ? item.image : null,
+          e: item.emoji || "🎈",
+          c: item.cap || "",
+          n: item.secretNote || ""
+        })) : undefined
+      };
+    } else {
+      payload = { n: dataObj };
+    }
+
+    const str = JSON.stringify(payload);
     return btoa(encodeURIComponent(str))
       .replace(/\+/g, "-")
       .replace(/\//g, "_")
@@ -4007,11 +4029,6 @@ function parseQueryParams() {
   const params = new URLSearchParams(location.search);
   const nameParam = params.get("name");
   const tokenParam = params.get("w") || params.get("wish");
-  
-  const rawCode = params.get("code");
-  const rawY = params.get("y");
-  const rawM = params.get("m");
-  const rawD = params.get("d");
 
   if (tokenParam) {
     const decoded = decodeWishData(tokenParam);
@@ -4027,29 +4044,51 @@ function parseQueryParams() {
           day: parseInt(decoded.d) || CONFIG.birthDate.day || 1
         };
       }
-      return;
+      if (decoded.f) CONFIG.from = decoded.f;
+      if (decoded.mem) CONFIG.memory = decoded.mem;
+      if (decoded.cf) CONFIG.cakeFlavor = decoded.cf;
+      if (decoded.lf) CONFIG.letterFont = decoded.lf;
+      if (decoded.lt) CONFIG.letterTheme = decoded.lt;
+      if (decoded.gft) CONFIG.gift = decoded.gft;
+
+      if (decoded.g && Array.isArray(decoded.g)) {
+        CONFIG.gallery = decoded.g.map((item, i) => ({
+          image: item.img || null,
+          emoji: item.e || "🎈",
+          rot: ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+          cap: item.c || "Memory",
+          secretNote: item.n || ""
+        }));
+      }
+
+      if (decoded.v) {
+        CONFIG.videoWish = CONFIG.videoWish || {};
+        CONFIG.videoWish.url = decoded.v.u || "";
+        CONFIG.videoWish.startTime = decoded.v.t || "";
+      }
+
+      if (decoded.msc) {
+        CONFIG.music = { file: decoded.msc.f, startTime: decoded.msc.t || "" };
+      }
     }
   }
 
-  if (nameParam) {
-    CONFIG.name = formatName(nameParam);
-    if (rawCode) {
-      CONFIG.passcode.code = rawCode.trim();
-    } else {
-      CONFIG.passcode.code = "1234";
-    }
+  // Also check direct URL params for video (&v=) or music (&music=)
+  const musicParam = params.get("music");
+  if (musicParam && !musicParam.startsWith("blob:")) {
+    CONFIG.music = CONFIG.music || {};
+    CONFIG.music.file = musicParam;
+  }
+  const videoParam = params.get("v");
+  if (videoParam && !videoParam.startsWith("blob:")) {
+    CONFIG.videoWish = CONFIG.videoWish || {};
+    CONFIG.videoWish.url = videoParam;
+  }
 
-    if (rawY || rawM || rawD) {
-      CONFIG.birthDate = {
-        year: parseInt(rawY) || CONFIG.birthDate.year || 2001,
-        month: parseInt(rawM) || CONFIG.birthDate.month || 1,
-        day: parseInt(rawD) || CONFIG.birthDate.day || 1
-      };
-    }
-  } else {
-    // If no name parameter in URL, ensure default passcode is 1234
-    CONFIG.name = "";
-    CONFIG.passcode.code = "1234";
+  if (!tokenParam && nameParam) {
+    CONFIG.name = formatName(nameParam);
+    const rawCode = params.get("code");
+    if (rawCode) CONFIG.passcode.code = rawCode.trim();
   }
 }
 
@@ -5437,24 +5476,19 @@ function buildRecipientShareUrl(overrideName) {
 
   if (!nameVal) return baseUrl;
 
-  const codeVal = (CONFIG.passcode?.code || "1234").trim();
-  const yVal = CONFIG.birthDate?.year || 2001;
-  const mVal = CONFIG.birthDate?.month || 1;
-  const dVal = CONFIG.birthDate?.day || 1;
-
-  const token = encodeWishData(nameVal, codeVal, yVal, mVal, dVal);
+  const token = encodeWishData(CONFIG);
 
   let shareUrl = `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
   if (token) shareUrl += `&w=${token}`;
 
-  // If custom audio link or YouTube URL is set, append &music=
-  if (CONFIG.music?.file && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
+  // Filter out any blob: URLs from music & video params so blob: URLs NEVER get appended to shareable links!
+  if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
     shareUrl += `&music=${encodeURIComponent(CONFIG.music.file)}`;
   }
   if (CONFIG.music?.startTime) {
     shareUrl += `&t=${encodeURIComponent(CONFIG.music.startTime)}`;
   }
-  if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("data:")) {
+  if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:") && !CONFIG.videoWish.url.startsWith("data:")) {
     shareUrl += `&v=${encodeURIComponent(CONFIG.videoWish.url)}`;
   }
 

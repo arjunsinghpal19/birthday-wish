@@ -375,6 +375,10 @@ function populateContent() {
           const front = el.querySelector(".polaroid-front");
           if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
         });
+        img.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openPhotoLightbox(g.image, g.cap);
+        });
       }
       const zoomBtn = el.querySelector(".photo-zoom-btn");
       if (zoomBtn) {
@@ -2489,10 +2493,6 @@ function initEnvelope() {
 
 function ensureLineHighlight(line) {
   if (!line) return "";
-  if (isWishCustomized()) {
-    // For customized wishes / shared links, strip highlight span so it stays clean plain text
-    return line.replace(/<span class=["']highlight["']>(.*?)<\/span>/gi, "$1");
-  }
   if (line.includes('class="highlight"') || line.includes("class='highlight'")) {
     return line;
   }
@@ -2519,47 +2519,23 @@ function typeLetterBody() {
     }
 
     const p = paras[i];
-    p.innerHTML = "";
     const html = ensureLineHighlight(CONFIG.letterLines[i]);
+    p.innerHTML = html;
+    p.style.opacity = "0";
+    p.style.transform = "translateY(8px)";
+    p.style.transition = "opacity 0.6s ease, transform 0.6s ease";
 
-    // strip tags for typing speed calc but type raw text safely
+    requestAnimationFrame(() => {
+      p.style.opacity = "1";
+      p.style.transform = "translateY(0)";
+    });
 
-    const temp = document.createElement("div");
-
-    temp.innerHTML = html;
-
-    const text = temp.textContent;
-
-    let c = 0;
-
-    (function type() {
-
-      if (c <= text.length) {
-
-        p.textContent = text.slice(0, c);
-
-        c += 2;
-
-        setTimeout(type, 18);
-
-      } else {
-
-        p.innerHTML = html; // restore formatting (highlight spans) once fully typed
-
-        i++;
-
-        if (i >= paras.length) {
-          window.letterTyped = true;
-        }
-
-        setTimeout(next, 260);
-
-      }
-
-    })();
-
+    i++;
+    if (i >= paras.length) {
+      window.letterTyped = true;
+    }
+    setTimeout(next, 450);
   })();
-
 }
 
 
@@ -5190,6 +5166,10 @@ function reRenderPage() {
             const front = el.querySelector(".polaroid-front");
             if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
           });
+          img.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openPhotoLightbox(g.image, g.cap);
+          });
         }
         const zoomBtn = el.querySelector(".photo-zoom-btn");
         if (zoomBtn) {
@@ -5643,7 +5623,7 @@ function initShare() {
       }
 
       // WhatsApp direct fallback
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
       window.open(waUrl, "_blank");
     });
   }
@@ -5657,7 +5637,7 @@ function initShare() {
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
       const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
     });
   }

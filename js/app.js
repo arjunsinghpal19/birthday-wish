@@ -4970,6 +4970,7 @@ function launchRealisticShootingStar() {
 
 function initWishingStar() {
   const btn = document.getElementById("wishing-star-btn");
+  const promptContainer = document.getElementById("wishing-star-prompt");
   const result = document.getElementById("wishing-star-result");
   const replayBtn = document.getElementById("replay-wishing-star-btn");
 
@@ -4982,9 +4983,14 @@ function initWishingStar() {
       launchRealisticShootingStar();
       btn.style.transform = "scale(0) rotate(180deg)";
       btn.style.opacity = "0";
-      btn.style.transition = "all 0.5s ease";
+      btn.style.transition = "all 0.4s ease";
+      if (promptContainer) {
+        promptContainer.style.transition = "all 0.4s ease";
+        promptContainer.style.opacity = "0";
+        promptContainer.style.transform = "scale(0.95)";
+      }
       setTimeout(() => {
-        btn.style.display = "none";
+        if (promptContainer) promptContainer.style.display = "none";
         result.style.display = "block";
       }, 400);
       showToast("🌟 Shooting stars filling the sky! Make a wish ✨");

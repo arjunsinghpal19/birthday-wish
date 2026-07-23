@@ -4621,12 +4621,16 @@ function initCustomizerModal() {
 
   // ─── POPULATE ALL FIELDS ───
   function populateEditorFields() {
-    // Basic Info starts completely blank with placeholders
-    document.getElementById("input-name").value = "";
-    document.getElementById("input-year").value = "";
-    document.getElementById("input-month").value = "";
-    document.getElementById("input-day").value = "";
-    document.getElementById("input-passcode").value = "";
+    // Basic Info: populate date input from CONFIG
+    const dateInput = document.getElementById("input-birthdate");
+    if (dateInput) {
+      const y = String(CONFIG.birthDate?.year || 2001).padStart(4, "0");
+      const m = String(CONFIG.birthDate?.month || 1).padStart(2, "0");
+      const d = String(CONFIG.birthDate?.day || 1).padStart(2, "0");
+      dateInput.value = `${y}-${m}-${d}`;
+    }
+    document.getElementById("input-name").value = CONFIG.name || "";
+    document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
 
     // Sender
     document.getElementById("input-from").value = CONFIG.from || "";
@@ -4687,25 +4691,18 @@ function initCustomizerModal() {
     const rawName = document.getElementById("input-name").value.trim();
     const nameVal = rawName ? formatName(rawName) : "";
 
-    const currentYear = new Date().getFullYear();
-    const maxYearAllowed = currentYear + 10;
-
-    let yVal = parseInt(document.getElementById("input-year").value) || 2001;
-    let mVal = parseInt(document.getElementById("input-month").value) || 1;
-    let dVal = parseInt(document.getElementById("input-day").value) || 1;
-
-    // Dynamic year validation (1900 to currentYear + 10)
-    if (yVal < 1900) yVal = 1900;
-    if (yVal > maxYearAllowed) yVal = maxYearAllowed;
-
-    // Month validation (1 to 12)
-    if (mVal < 1) mVal = 1;
-    if (mVal > 12) mVal = 12;
-
-    // Day validation (1 to max days in month)
-    const daysInMonth = new Date(yVal, mVal, 0).getDate() || 31;
-    if (dVal < 1) dVal = 1;
-    if (dVal > daysInMonth) dVal = daysInMonth;
+    const dateInput = document.getElementById("input-birthdate");
+    let yVal = CONFIG.birthDate?.year || 2001;
+    let mVal = CONFIG.birthDate?.month || 1;
+    let dVal = CONFIG.birthDate?.day || 1;
+    if (dateInput && dateInput.value) {
+      const parts = dateInput.value.split("-");
+      if (parts.length === 3) {
+        yVal = parseInt(parts[0]) || yVal;
+        mVal = parseInt(parts[1]) || mVal;
+        dVal = parseInt(parts[2]) || dVal;
+      }
+    }
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
 
@@ -5276,9 +5273,12 @@ function launchRealisticShootingStar() {
       streak.appendChild(head);
       document.body.appendChild(streak);
 
-      // Start from near top-left corner with dynamic height variation (some higher, some slightly lower)
+      // Start from near top-left corner with dynamic height variation (slightly lower on mobile)
       const fromX = -60;
-      const startYPositions = [-30, window.innerHeight * 0.12, -10, window.innerHeight * 0.20, window.innerHeight * 0.05];
+      const isMobile = window.innerWidth < 600;
+      const startYPositions = isMobile 
+        ? [window.innerHeight * 0.18, window.innerHeight * 0.25, window.innerHeight * 0.20, window.innerHeight * 0.30, window.innerHeight * 0.22]
+        : [-30, window.innerHeight * 0.12, -10, window.innerHeight * 0.20, window.innerHeight * 0.05];
       const fromY = (startYPositions[i % startYPositions.length]) + (Math.random() * 20 - 10);
       const angle = 21 + (Math.random() * 6 - 3); // shallow elegant angle across upper sky
       const distance = Math.hypot(window.innerWidth + 200, window.innerHeight + 100);
@@ -5656,14 +5656,14 @@ function initShare() {
       const shareUrl = buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}!\uD83C\uDF82\u2728` : `Hey!\uD83C\uDF82\u2728`;
+      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:\n${shareUrl}`;
 
       if (navigator.share) {
         try {
           await navigator.share({
             title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
-            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:`,
+            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:`,
             url: shareUrl,
           });
           return;
@@ -5683,8 +5683,8 @@ function initShare() {
       const shareUrl = buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}!\uD83C\uDF82\u2728` : `Hey!\uD83C\uDF82\u2728`;
+      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! \uD83C\uDF81\uD83D\uDC96\n\nKhol kar dekho \uD83C\uDF81:\n${shareUrl}`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
     });

@@ -503,7 +503,7 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   margin-bottom:22px;
 }
 .letter-body p{
-  font-family: var(--font-cursive), cursive; font-size:clamp(1.05rem,2.5vw,1.25rem); line-height:1.9; margin-bottom:14px; color:#4a3350;
+  font-family: var(--font-sans), sans-serif; font-size:clamp(1.02rem,2.4vw,1.18rem); line-height:1.9; margin-bottom:14px; color:#4a3350;
 }
 .letter-body .highlight{
   background: linear-gradient(120deg, #ffe57f 0%, #ffd54f 100%);

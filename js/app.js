@@ -2512,7 +2512,7 @@ function typeLetterBody() {
   const paras = document.querySelectorAll("#letter-body p");
   let i = 0;
 
-  (function next() {
+  (function nextLine() {
     if (i >= paras.length) {
       window.letterTyped = true;
       return;
@@ -2521,20 +2521,48 @@ function typeLetterBody() {
     const p = paras[i];
     const html = ensureLineHighlight(CONFIG.letterLines[i]);
     p.innerHTML = html;
-    p.style.opacity = "0";
-    p.style.transform = "translateY(8px)";
-    p.style.transition = "opacity 0.6s ease, transform 0.6s ease";
 
-    requestAnimationFrame(() => {
-      p.style.opacity = "1";
-      p.style.transform = "translateY(0)";
-    });
+    const textNodes = [];
+    const getLeafNodes = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent) textNodes.push(node);
+      } else {
+        node.childNodes.forEach(getLeafNodes);
+      }
+    };
+    getLeafNodes(p);
 
-    i++;
-    if (i >= paras.length) {
-      window.letterTyped = true;
+    const fullString = textNodes.map(n => n.textContent).join("");
+    textNodes.forEach(n => { n.originalText = n.textContent; n.textContent = ""; });
+
+    let charIdx = 0;
+    function typeChar() {
+      if (charIdx <= fullString.length) {
+        let currentCount = 0;
+        for (let tn of textNodes) {
+          const len = tn.originalText.length;
+          if (charIdx <= currentCount) {
+            tn.textContent = "";
+          } else if (charIdx >= currentCount + len) {
+            tn.textContent = tn.originalText;
+          } else {
+            tn.textContent = tn.originalText.slice(0, charIdx - currentCount);
+          }
+          currentCount += len;
+        }
+        charIdx += 2;
+        setTimeout(typeChar, 20);
+      } else {
+        p.innerHTML = html;
+        i++;
+        if (i >= paras.length) {
+          window.letterTyped = true;
+        }
+        setTimeout(nextLine, 300);
+      }
     }
-    setTimeout(next, 450);
+
+    typeChar();
   })();
 }
 
@@ -4614,7 +4642,7 @@ function initCustomizerModal() {
     const musicInput = document.getElementById("input-music-url");
     if (musicInput) {
       const curFile = CONFIG.music?.file || "";
-      musicInput.value = (curFile && !curFile.includes("assets/music/happy-birthday-song.mpeg")) ? curFile : "";
+      musicInput.value = (curFile && !curFile.startsWith("blob:") && !curFile.includes("assets/music/happy-birthday-song.mpeg")) ? curFile : "";
     }
     const musicStartInput = document.getElementById("input-music-start");
     if (musicStartInput) {
@@ -4658,9 +4686,26 @@ function initCustomizerModal() {
   function readAllValues() {
     const rawName = document.getElementById("input-name").value.trim();
     const nameVal = rawName ? formatName(rawName) : "";
-    const yVal = parseInt(document.getElementById("input-year").value) || 2001;
-    const mVal = parseInt(document.getElementById("input-month").value) || 1;
-    const dVal = parseInt(document.getElementById("input-day").value) || 1;
+
+    const currentYear = new Date().getFullYear();
+    const maxYearAllowed = currentYear + 10;
+
+    let yVal = parseInt(document.getElementById("input-year").value) || 2001;
+    let mVal = parseInt(document.getElementById("input-month").value) || 1;
+    let dVal = parseInt(document.getElementById("input-day").value) || 1;
+
+    // Dynamic year validation (1900 to currentYear + 10)
+    if (yVal < 1900) yVal = 1900;
+    if (yVal > maxYearAllowed) yVal = maxYearAllowed;
+
+    // Month validation (1 to 12)
+    if (mVal < 1) mVal = 1;
+    if (mVal > 12) mVal = 12;
+
+    // Day validation (1 to max days in month)
+    const daysInMonth = new Date(yVal, mVal, 0).getDate() || 31;
+    if (dVal < 1) dVal = 1;
+    if (dVal > daysInMonth) dVal = daysInMonth;
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
 
@@ -5454,12 +5499,15 @@ function buildRecipientShareUrl(overrideName) {
     baseUrl = location.href.split("?")[0];
   }
 
-  if (!nameVal) return baseUrl;
-
   const token = encodeWishData(CONFIG);
 
-  let shareUrl = `${baseUrl}?name=${encodeURIComponent(nameVal)}`;
-  if (token) shareUrl += `&w=${token}`;
+  let shareUrl = baseUrl;
+  if (token) {
+    shareUrl += `?w=${token}`;
+    if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
+  } else if (nameVal) {
+    shareUrl += `?name=${encodeURIComponent(nameVal)}`;
+  }
 
   // Filter out any blob: URLs from music & video params so blob: URLs NEVER get appended to shareable links!
   if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {

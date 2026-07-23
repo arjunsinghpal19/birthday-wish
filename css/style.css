@@ -1572,47 +1572,101 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   font-family: 'Outfit', sans-serif !important;
 }
 
+.corner-flower {
+  position: absolute;
+  font-size: 1.8rem;
+  z-index: 10;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 8px rgba(255, 95, 162, 0.4));
+  transition: all 0.4s ease;
+}
+.flower-tl {
+  top: 14px;
+  left: 18px;
+}
+.flower-br {
+  bottom: 14px;
+  right: 18px;
+}
+
 /* Envelope & Letter Color Themes */
+.letter-paper,
+.env-front,
+.env-back,
+.env-top-flap {
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
+}
+
+/* 👑 Vintage Royal Gold */
 .theme-royalgold .letter-paper,
 .theme-royalgold .env-front,
 .theme-royalgold .env-back,
 .theme-royalgold .env-top-flap {
-  background: linear-gradient(135deg, #1f1406 0%, #3d290c 100%) !important;
-  border: 2px solid var(--gold, #ffd700) !important;
+  background: linear-gradient(135deg, #1c1103 0%, #362408 100%) !important;
+  border: 2px solid #ffd700 !important;
   color: #fff8e7 !important;
-  box-shadow: 0 0 25px rgba(255, 215, 0, 0.4) !important;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.45) !important;
 }
 .theme-royalgold .letter-title {
-  color: var(--gold, #ffd700) !important;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+  color: #ffe600 !important;
+  text-shadow: 0 0 16px rgba(255, 230, 0, 0.85), 0 0 30px rgba(255, 215, 0, 0.5) !important;
+}
+.theme-royalgold .letter-body,
+.theme-royalgold .letter-body p {
+  color: #fffdf5 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  opacity: 1 !important;
+}
+.theme-royalgold .corner-flower {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9));
 }
 
+/* 🌌 Midnight Galaxy Glow */
 .theme-galaxy .letter-paper,
 .theme-galaxy .env-front,
 .theme-galaxy .env-back,
 .theme-galaxy .env-top-flap {
-  background: linear-gradient(135deg, #0d061f 0%, #1c0836 50%, #2b0038 100%) !important;
-  border: 2px solid #b5179e !important;
-  color: #f0e6ff !important;
-  box-shadow: 0 0 30px rgba(181, 23, 158, 0.5) !important;
+  background: linear-gradient(135deg, #090317 0%, #15062d 50%, #220030 100%) !important;
+  border: 2px solid #f72585 !important;
+  color: #f0f8ff !important;
+  box-shadow: 0 0 40px rgba(247, 37, 133, 0.6) !important;
 }
 .theme-galaxy .letter-title {
-  color: #f72585 !important;
-  text-shadow: 0 0 12px rgba(247, 37, 133, 0.7) !important;
+  color: #ff2a85 !important;
+  text-shadow: 0 0 18px rgba(255, 42, 133, 0.95), 0 0 32px rgba(181, 23, 158, 0.7) !important;
+}
+.theme-galaxy .letter-body,
+.theme-galaxy .letter-body p {
+  color: #e0f7fa !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+  opacity: 1 !important;
+}
+.theme-galaxy .corner-flower {
+  filter: drop-shadow(0 0 12px rgba(247, 37, 133, 0.95)) drop-shadow(0 0 18px rgba(114, 9, 183, 0.8));
 }
 
+/* 🌸 Rose Gold Pastel */
 .theme-rosegold .letter-paper,
 .theme-rosegold .env-front,
 .theme-rosegold .env-back,
 .theme-rosegold .env-top-flap {
-  background: linear-gradient(135deg, #2e1a24 0%, #4a2233 100%) !important;
+  background: linear-gradient(135deg, #24131b 0%, #3d1b2a 100%) !important;
   border: 2px solid #ff8ea9 !important;
-  color: #ffe6ee !important;
-  box-shadow: 0 0 25px rgba(255, 142, 169, 0.4) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 35px rgba(255, 142, 169, 0.5) !important;
 }
 .theme-rosegold .letter-title {
   color: #ff8ea9 !important;
-  text-shadow: 0 0 10px rgba(255, 142, 169, 0.6) !important;
+  text-shadow: 0 0 16px rgba(255, 142, 169, 0.85), 0 0 28px rgba(255, 182, 193, 0.55) !important;
+}
+.theme-rosegold .letter-body,
+.theme-rosegold .letter-body p {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  opacity: 1 !important;
+}
+.theme-rosegold .corner-flower {
+  filter: drop-shadow(0 0 10px rgba(255, 142, 169, 0.85));
 }
 
 @keyframes bounceSlice {

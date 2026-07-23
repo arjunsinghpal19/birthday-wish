@@ -5561,16 +5561,18 @@ function buildRecipientShareUrl(overrideName) {
   return shareUrl;
 }
 
-function isHostedOnline() {
-  return ["http:", "https:"].includes(location.protocol);
-}
-
-
-
 function updateShareSection() {
-  const shareUrl = buildRecipientShareUrl();
-  const qrBox = document.getElementById("qr-box");
+  const fullShareUrl = buildRecipientShareUrl();
+  const nameVal = (CONFIG.name || "").trim();
+  let qrTargetUrl = fullShareUrl;
 
+  // If token URL is long, use clean URL for QR code so QR image is 100% crisp & scannable!
+  if (fullShareUrl.length > 350) {
+    const baseUrl = location.origin + location.pathname;
+    qrTargetUrl = nameVal ? `${baseUrl}?name=${encodeURIComponent(nameVal)}` : baseUrl;
+  }
+
+  const qrBox = document.getElementById("qr-box");
   if (qrBox) {
     const qrImg = new Image();
     qrImg.style.maxWidth = "180px";
@@ -5578,31 +5580,21 @@ function updateShareSection() {
     qrImg.style.border = "3px solid rgba(255, 215, 0, 0.4)";
     qrImg.style.boxShadow = "0 8px 25px rgba(0,0,0,0.5)";
 
-    const primaryUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
-    const fallbackUrl = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(shareUrl)}`;
+    const apiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrTargetUrl)}`;
 
     qrImg.onload = () => {
       qrBox.innerHTML = "";
       qrBox.appendChild(qrImg);
     };
     qrImg.onerror = () => {
-      if (qrImg.src !== fallbackUrl) {
-        qrImg.src = fallbackUrl;
-      } else {
-        qrBox.innerHTML = '<span style="color:#b5809b;font-size:.75rem;padding:8px;text-align:center;">QR Code unavailable offline</span>';
-      }
+      qrBox.innerHTML = '<span style="color:#b5809b;font-size:.75rem;padding:8px;text-align:center;">QR Code unavailable offline</span>';
     };
-    qrImg.src = primaryUrl;
+    qrImg.src = apiQrUrl;
   }
 }
 
-
-
 function initShare() {
-
   updateShareSection();
-
-
 
   const instaBtn = document.getElementById("insta-story-btn");
   if (instaBtn) instaBtn.addEventListener("click", exportInstaStory);
@@ -5610,67 +5602,35 @@ function initShare() {
   const posterBtn = document.getElementById("download-poster-btn");
   if (posterBtn) posterBtn.addEventListener("click", exportInstaStory);
 
-
-
   // Copy Link Button
-
   const copyBtn = document.getElementById("copy-link-btn");
-
   if (copyBtn) {
-
     copyBtn.addEventListener("click", async () => {
-
       const shareUrl = buildRecipientShareUrl();
-
       const nameVal = (CONFIG.name || "").trim();
-
       const displayName = nameVal ? formatName(nameVal) : "";
 
-
-
       try {
-
         await navigator.clipboard.writeText(shareUrl);
-
         showToast(displayName ? `Wish link copied for ${displayName}! 🔗` : "Wish link copied! 🔗");
-
       } catch (e) {
-
         try {
-
           const ta = document.createElement("textarea");
-
           ta.value = shareUrl;
-
           ta.style.position = "fixed";
-
           ta.style.opacity = "0";
-
           document.body.appendChild(ta);
-
           ta.focus();
-
           ta.select();
-
           const ok = document.execCommand("copy");
-
           ta.remove();
-
           showToast(ok ? "Wish link copied! 🔗" : "Please copy link from address bar");
-
         } catch (e2) {
-
           showToast("Copy link failed");
-
         }
-
       }
-
     });
-
   }
-
-
 
   // Native Share / WhatsApp Button
   const shareBtn = document.getElementById("native-share-btn");
@@ -5694,9 +5654,8 @@ function initShare() {
       }
 
       // WhatsApp direct fallback
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
-      const win = window.open(waUrl, "_blank");
-      if (!win) location.href = waUrl;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
+      window.open(waUrl, "_blank");
     });
   }
 

@@ -4480,9 +4480,11 @@ function initCustomizerModal() {
     clearUrlBtn.addEventListener("click", () => {
       const urlInput = document.getElementById("input-music-url");
       if (urlInput) urlInput.value = "";
-      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+      const startInput = document.getElementById("input-music-start");
+      if (startInput) startInput.value = "";
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
       MusicEngine.pause();
-      showToast("YouTube link cleared 🎵");
+      showToast("YouTube link & start time cleared 🎵");
     });
   }
 
@@ -5369,10 +5371,12 @@ function initMusicWidget() {
 
   if (audRemoveBtn) {
     audRemoveBtn.addEventListener("click", async () => {
-      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
       await AudioStorage.removeAudio();
       if (audFileInput) audFileInput.value = "";
       if (audUploadText) audUploadText.textContent = `🎙️ Select Audio / Voice Note`;
+      const musicStartInput = document.getElementById("input-music-start");
+      if (musicStartInput) musicStartInput.value = "";
       audRemoveBtn.style.display = "none";
       MusicEngine.pause();
       showToast("Custom audio removed — Default melody restored 🎵");
@@ -5408,10 +5412,13 @@ function initMusicWidget() {
       if (CONFIG.videoWish) {
         CONFIG.videoWish.file = null;
         CONFIG.videoWish.fileName = null;
+        CONFIG.videoWish.startTime = "";
       }
       await VideoStorage.removeVideo();
       if (vidFileInput) vidFileInput.value = "";
       if (vidUploadText) vidUploadText.textContent = `📹 Select Video from Device`;
+      const vidStartInput = document.getElementById("input-video-start");
+      if (vidStartInput) vidStartInput.value = "";
       vidRemoveBtn.style.display = "none";
       renderVideoWishSection();
       showToast("Video removed ✨");
@@ -5424,9 +5431,14 @@ function initMusicWidget() {
     clearVidUrlBtn.addEventListener("click", () => {
       const vidInput = document.getElementById("input-video-url");
       if (vidInput) vidInput.value = "";
-      if (CONFIG.videoWish) CONFIG.videoWish.url = "";
+      const vidStartInput = document.getElementById("input-video-start");
+      if (vidStartInput) vidStartInput.value = "";
+      if (CONFIG.videoWish) {
+        CONFIG.videoWish.url = "";
+        CONFIG.videoWish.startTime = "";
+      }
       renderVideoWishSection();
-      showToast("Video link cleared ✨");
+      showToast("Video link & start time cleared ✨");
     });
   }
 

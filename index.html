@@ -738,12 +738,58 @@
     </div>
   </div>
 
-  <!-- FULLSCREEN PHOTO LIGHTBOX -->
-  <div id="photo-lightbox" class="photo-lightbox-modal">
-    <button id="photo-lightbox-close" class="photo-lightbox-close" type="button">&times;</button>
-    <div class="photo-lightbox-content">
-      <img id="photo-lightbox-img" src="" alt="Zoomed Memory Photo">
-      <div id="photo-lightbox-caption" class="photo-lightbox-caption"></div>
+  <!-- ==================== ADMIN SECURITY MODAL ==================== -->
+  <div id="admin-login-modal" class="modal-backdrop">
+    <div class="modal-content glass card-glow-border" style="max-width:440px;width:90%;padding:28px 24px;border-radius:20px;text-align:left;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <h3 style="font-family:var(--font-hand);font-size:1.6rem;color:var(--gold);margin:0;">🔒 Admin Security Access</h3>
+        <button id="admin-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;" type="button">✕</button>
+      </div>
+
+      <!-- Admin Tabs -->
+      <div class="admin-tab-nav" style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;flex-wrap:wrap;">
+        <button class="admin-tab-btn active" data-tab="login" type="button">Unlock Editor</button>
+        <button class="admin-tab-btn" data-tab="change" type="button">🔑 Change Password</button>
+        <button class="admin-tab-btn" data-tab="forgot" type="button">❓ Forgot Password</button>
+      </div>
+
+      <!-- TAB 1: UNLOCK EDITOR -->
+      <div id="admin-tab-login" class="admin-tab-content active">
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="admin-login-pass">Enter Admin Password</label>
+          <input type="password" id="admin-login-pass" class="form-control" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+        </div>
+        <button id="admin-login-submit-btn" class="btn primary-btn" style="width:100%;" type="button">👑 Unlock Editor</button>
+      </div>
+
+      <!-- TAB 2: CHANGE PASSWORD -->
+      <div id="admin-tab-change" class="admin-tab-content" style="display:none;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="admin-old-pass">Current / Old Password</label>
+          <input type="password" id="admin-old-pass" class="form-control" placeholder="Current Password" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="admin-new-pass">New Password</label>
+          <input type="password" id="admin-new-pass" class="form-control" placeholder="New Password" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="admin-confirm-pass">Confirm New Password</label>
+          <input type="password" id="admin-confirm-pass" class="form-control" placeholder="Confirm New Password" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+        </div>
+        <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update Password</button>
+      </div>
+
+      <!-- TAB 3: FORGOT PASSWORD -->
+      <div id="admin-tab-forgot" class="admin-tab-content" style="display:none;">
+        <p style="font-size:0.9rem;color:rgba(255,255,255,0.8);margin-bottom:14px;line-height:1.5;">
+          Password reset karne ke liye Secret Birthday Key (Default: <code>1234</code>) enter karein:
+        </p>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="admin-recovery-key">Master Recovery Passcode</label>
+          <input type="text" id="admin-recovery-key" class="form-control" placeholder="e.g. 1234" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+        </div>
+        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔄 Reset Password to Default (2001)</button>
+      </div>
     </div>
   </div>
 

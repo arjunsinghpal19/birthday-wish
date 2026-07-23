@@ -1675,3 +1675,26 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-8px) scale(1.08); }
 }
+
+/* Admin Security Modal Styling */
+.admin-tab-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.admin-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 215, 0, 0.15);
+}
+.admin-tab-btn.active {
+  background: linear-gradient(135deg, var(--gold, #ffd700), var(--pink, #ff5fa2));
+  color: #1a0826 !important;
+  font-weight: 700;
+  border-color: var(--gold, #ffd700);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}

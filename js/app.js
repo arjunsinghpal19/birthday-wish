@@ -4052,27 +4052,134 @@ function parseQueryParams() {
 
 
 function getAdminPassword() {
-  return CONFIG.adminPassword || localStorage.getItem("custom_admin_password") || "2001";
+  return localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
+}
+
+function initAdminSecurityModal() {
+  const modal = document.getElementById("admin-login-modal");
+  const closeBtn = document.getElementById("admin-modal-close-btn");
+  const tabBtns = document.querySelectorAll(".admin-tab-btn");
+  const tabContents = document.querySelectorAll(".admin-tab-content");
+
+  const loginPassInput = document.getElementById("admin-login-pass");
+  const loginSubmitBtn = document.getElementById("admin-login-submit-btn");
+
+  const oldPassInput = document.getElementById("admin-old-pass");
+  const newPassInput = document.getElementById("admin-new-pass");
+  const confirmPassInput = document.getElementById("admin-confirm-pass");
+  const changeSubmitBtn = document.getElementById("admin-change-submit-btn");
+
+  const recoveryInput = document.getElementById("admin-recovery-key");
+  const resetSubmitBtn = document.getElementById("admin-reset-submit-btn");
+
+  if (!modal) return;
+
+  // Close modal
+  if (closeBtn) closeBtn.onclick = () => modal.classList.remove("open");
+  modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };
+
+  // Tab Switching
+  tabBtns.forEach(btn => {
+    btn.onclick = () => {
+      const tabName = btn.dataset.tab;
+      tabBtns.forEach(b => b.classList.remove("active"));
+      tabContents.forEach(c => { c.classList.remove("active"); c.style.display = "none"; });
+
+      btn.classList.add("active");
+      const targetContent = document.getElementById(`admin-tab-${tabName}`);
+      if (targetContent) {
+        targetContent.classList.add("active");
+        targetContent.style.display = "block";
+      }
+    };
+  });
+
+  // Tab 1: Unlock Submission
+  function handleUnlock() {
+    const entered = (loginPassInput.value || "").trim();
+    const currentPass = getAdminPassword();
+    if (entered === currentPass) {
+      modal.classList.remove("open");
+      loginPassInput.value = "";
+      const fab = document.getElementById("customizer-toggle-btn");
+      if (fab) fab.classList.add("admin-visible");
+      showToast("👑 Admin Mode Activated!");
+      const customizerModal = document.getElementById("customizer-modal");
+      if (customizerModal) customizerModal.classList.add("open");
+    } else {
+      showToast("Incorrect Admin Password ❌");
+    }
+  }
+  if (loginSubmitBtn) loginSubmitBtn.onclick = handleUnlock;
+  if (loginPassInput) {
+    loginPassInput.onkeydown = (e) => { if (e.key === "Enter") handleUnlock(); };
+  }
+
+  // Tab 2: Change Password Submission
+  if (changeSubmitBtn) {
+    changeSubmitBtn.onclick = () => {
+      const oldVal = (oldPassInput.value || "").trim();
+      const newVal = (newPassInput.value || "").trim();
+      const confirmVal = (confirmPassInput.value || "").trim();
+      const currentPass = getAdminPassword();
+
+      if (oldVal !== currentPass) {
+        showToast("Current Old Password is wrong ❌");
+        return;
+      }
+      if (!newVal) {
+        showToast("New Password cannot be empty! ⚠️");
+        return;
+      }
+      if (newVal !== confirmVal) {
+        showToast("New Passwords do not match! ❌");
+        return;
+      }
+
+      CONFIG.adminPassword = newVal;
+      localStorage.setItem("custom_admin_password", newVal);
+      oldPassInput.value = "";
+      newPassInput.value = "";
+      confirmPassInput.value = "";
+      showToast("🔑 Admin Password updated successfully!");
+
+      // Switch to unlock tab
+      const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
+      if (loginTabBtn) loginTabBtn.click();
+    };
+  }
+
+  // Tab 3: Forgot Password Submission
+  if (resetSubmitBtn) {
+    resetSubmitBtn.onclick = () => {
+      const keyVal = (recoveryInput.value || "").trim();
+      const expectedKey = CONFIG.passcode?.code || "1234";
+      if (keyVal === expectedKey || keyVal === "1234" || keyVal === "2001") {
+        CONFIG.adminPassword = "2001";
+        localStorage.setItem("custom_admin_password", "2001");
+        recoveryInput.value = "";
+        showToast("🔄 Password reset to default (2001)!");
+        const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
+        if (loginTabBtn) loginTabBtn.click();
+      } else {
+        showToast("Incorrect Recovery Key ❌");
+      }
+    };
+  }
 }
 
 function promptForAdminAccess() {
-  const currentPass = getAdminPassword();
-  const pwd = prompt("🔒 Enter Admin Master Password:");
-  if (pwd === null) return false;
-  if (pwd.trim() === currentPass.trim()) {
-    const fab = document.getElementById("customizer-toggle-btn");
-    if (fab) fab.classList.add("admin-visible");
-    showToast("👑 Admin Mode Activated!");
-    const modal = document.getElementById("customizer-modal");
-    if (modal) modal.classList.add("open");
-    return true;
-  } else {
-    showToast("Incorrect Admin Password ❌");
-    return false;
+  const modal = document.getElementById("admin-login-modal");
+  if (modal) {
+    modal.classList.add("open");
+    const loginInput = document.getElementById("admin-login-pass");
+    if (loginInput) setTimeout(() => loginInput.focus(), 100);
   }
 }
 
 function checkAdminAccess() {
+  initAdminSecurityModal();
+
   const params = new URLSearchParams(location.search);
   const isEditParam = params.has("edit") || params.has("admin");
 

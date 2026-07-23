@@ -503,7 +503,7 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   margin-bottom:22px;
 }
 .letter-body p{
-  font-family: var(--font-cursive), 'Sacramento', 'Dancing Script', cursive; font-size:clamp(1.15rem,2.8vw,1.4rem); line-height:1.95; margin-bottom:16px; color:#4a3350;
+  font-family: var(--font-sans), sans-serif; font-size:clamp(0.95rem,2.2vw,1.08rem); line-height:1.85; font-weight:400; margin-bottom:14px; color:#4a3350;
 }
 .letter-body .highlight{
   background: linear-gradient(120deg, #ffe57f 0%, #ffd54f 100%);

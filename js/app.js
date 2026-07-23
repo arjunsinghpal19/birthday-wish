@@ -5568,47 +5568,32 @@ function isHostedOnline() {
 
 
 function updateShareSection() {
-
   const shareUrl = buildRecipientShareUrl();
-
-
-
   const qrBox = document.getElementById("qr-box");
 
   if (qrBox) {
-
     const qrImg = new Image();
-
     qrImg.style.maxWidth = "180px";
-
     qrImg.style.borderRadius = "14px";
-
     qrImg.style.border = "3px solid rgba(255, 215, 0, 0.4)";
-
     qrImg.style.boxShadow = "0 8px 25px rgba(0,0,0,0.5)";
 
-    
-
-    const apiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
+    const primaryUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`;
+    const fallbackUrl = `https://quickchart.io/qr?size=220&text=${encodeURIComponent(shareUrl)}`;
 
     qrImg.onload = () => {
-
       qrBox.innerHTML = "";
-
       qrBox.appendChild(qrImg);
-
     };
-
     qrImg.onerror = () => {
-
-      qrBox.innerHTML = '<span style="color:#b5809b;font-size:.75rem;padding:8px;text-align:center;">QR Code unavailable offline</span>';
-
+      if (qrImg.src !== fallbackUrl) {
+        qrImg.src = fallbackUrl;
+      } else {
+        qrBox.innerHTML = '<span style="color:#b5809b;font-size:.75rem;padding:8px;text-align:center;">QR Code unavailable offline</span>';
+      }
     };
-
-    qrImg.src = apiQrUrl;
-
+    qrImg.src = primaryUrl;
   }
-
 }
 
 
@@ -5710,7 +5695,8 @@ function initShare() {
 
       // WhatsApp direct fallback
       const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
-      window.open(waUrl, "_blank");
+      const win = window.open(waUrl, "_blank");
+      if (!win) location.href = waUrl;
     });
   }
 
@@ -5724,7 +5710,8 @@ function initShare() {
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
       const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
-      window.open(waUrl, "_blank");
+      const win = window.open(waUrl, "_blank");
+      if (!win) location.href = waUrl;
     });
   }
 

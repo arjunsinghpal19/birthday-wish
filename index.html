@@ -9,7 +9,8 @@
   <!-- Open Graph / WhatsApp Rich Link Preview Meta Tags -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Happy Birthday! 🎉❤️">
-  <meta property="og:description" content="A special interactive birthday surprise created just for you! ✨ Tap the link below to open your wish 🎁">
+  <meta property="og:description"
+    content="A special interactive birthday surprise created just for you! ✨ Tap the link below to open your wish 🎁">
   <meta property="og:image" content="assets/photos/og-preview.png">
 
   <!--
@@ -40,8 +41,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Nunito+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=block">
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Nunito+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=block" rel="stylesheet">
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Nunito+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=block">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Nunito+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=block"
+    rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -132,7 +136,8 @@
     </section>
 
     <!-- SPECIAL BIRTHDAY DATE SCENE -->
-    <section id="bday-date-scene" style="display:flex;justify-content:center;align-items:center;padding:45px 24px 0;width:100%;">
+    <section id="bday-date-scene"
+      style="display:flex;justify-content:center;align-items:center;padding:45px 24px 0;width:100%;">
       <!-- BIRTHDAY DATE CARD -->
       <div class="bday-card glass card-glow-border reveal">
         <div class="bday-card-badge-row">
@@ -146,7 +151,8 @@
             <span class="bday-month" id="bday-card-month">JAN</span>
           </div>
           <div class="bday-details">
-            <h3 class="bday-card-title" id="bday-card-title">Celebrating <span class="highlight-gold" id="bday-card-name">Special Someone</span></h3>
+            <h3 class="bday-card-title" id="bday-card-title">Celebrating <span class="highlight-gold"
+                id="bday-card-name">Special Someone</span></h3>
             <p class="bday-card-sub" id="bday-card-sub">Mark your calendar for 1st January 🎉</p>
             <div class="bday-card-chips">
               <span class="bday-chip" id="bday-countdown-chip">🎈 Birthday Celebration</span>
@@ -286,42 +292,58 @@
           <div class="coupon" id="gift-coupon"></div>
         </div>
         <div id="copy-voucher-wrapper" style="margin-top:14px;display:none;">
-          <button type="button" id="copy-voucher-btn" style="background:linear-gradient(135deg, var(--gold,#ffd700), #ff8ea9);color:#1a0826;border:none;padding:10px 22px;border-radius:25px;font-size:0.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 20px rgba(255,215,0,0.3);transition:transform 0.2s ease;">📋 Copy Voucher Code</button>
+          <button type="button" id="copy-voucher-btn"
+            style="background:linear-gradient(135deg, var(--gold,#ffd700), #ff8ea9);color:#1a0826;border:none;padding:10px 22px;border-radius:25px;font-size:0.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 6px 20px rgba(255,215,0,0.3);transition:transform 0.2s ease;">📋
+            Copy Voucher Code</button>
         </div>
       </div>
     </section>
 
     <!-- MAGICAL WISHING STAR SECTION -->
     <section id="wishing-star-scene">
-      <div class="glass card-glow-border reveal wishing-star-card" style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
+      <div class="glass card-glow-border reveal wishing-star-card"
+        style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
         <div id="wishing-star-prompt">
           <span class="eyebrow">Interactive Wish Drop</span>
           <h2 class="section-title">Tap The Shooting Star</h2>
-          <p style="font-size:0.9rem;opacity:0.8;margin-bottom:20px;">Touch the glowing star to drop your birthday wish into the galaxy ✨</p>
+          <p style="font-size:0.9rem;opacity:0.8;margin-bottom:20px;">Touch the glowing star to drop your birthday wish
+            into the galaxy ✨</p>
           <div id="wishing-star-btn" class="wishing-star-element" title="Tap to Make a Wish">
             <span class="star-icon">🌟</span>
           </div>
         </div>
         <div id="wishing-star-result" class="wishing-star-result" style="display:none;">
           <span class="eyebrow">Wish Sent</span>
-          <h3 style="font-family:var(--font-hand);font-size:2.2rem;color:var(--gold);">Your Wish Is Sent To The Stars! ✨</h3>
-          <p style="font-size:0.95rem;color:var(--pink-light);margin-top:6px;margin-bottom:18px;">May all your dreams, joy & happiness come true today and forever! 💕</p>
-          <button type="button" id="replay-wishing-star-btn" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:8px 18px;border-radius:20px;font-size:0.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 0 15px rgba(255,215,0,0.2);transition:all 0.3s ease;">💫 Make Another Wish</button>
+          <h3 style="font-family:var(--font-hand);font-size:2.2rem;color:var(--gold);">Your Wish Is Sent To The Stars! ✨
+          </h3>
+          <p style="font-size:0.95rem;color:var(--pink-light);margin-top:6px;margin-bottom:18px;">May all your dreams,
+            joy & happiness come true today and forever! 💕</p>
+          <button type="button" id="replay-wishing-star-btn"
+            style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:8px 18px;border-radius:20px;font-size:0.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 0 15px rgba(255,215,0,0.2);transition:all 0.3s ease;">💫
+            Make Another Wish</button>
         </div>
       </div>
     </section>
 
     <!-- PERSONAL VIDEO WISH SECTION -->
     <section id="video-wish-scene" style="display:none;">
-      <div class="glass card-glow-border reveal video-wish-card" style="max-width:720px;width:100%;padding:28px clamp(16px,4vw,32px);text-align:center;">
+      <div class="glass card-glow-border reveal video-wish-card"
+        style="max-width:720px;width:100%;padding:28px clamp(16px,4vw,32px);text-align:center;">
         <span class="eyebrow">A Special Recording</span>
-        <h2 class="section-title" id="video-wish-title" style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
-          <span class="video-header-badge" style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,95,162,0.25));border:1.5px solid rgba(255,215,0,0.5);color:var(--gold,#ffd700);box-shadow:0 0 20px rgba(255,215,0,0.3);">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+        <h2 class="section-title" id="video-wish-title"
+          style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+          <span class="video-header-badge"
+            style="display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,95,162,0.25));border:1.5px solid rgba(255,215,0,0.5);color:var(--gold,#ffd700);box-shadow:0 0 20px rgba(255,215,0,0.3);">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m22 8-6 4 6 4V8Z" />
+              <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
+            </svg>
           </span>
           <span>A Personal Video Wish For You</span>
         </h2>
-        <div id="video-wish-player-container" style="margin-top:20px;border-radius:16px;overflow:hidden;background:#000;border:1px solid rgba(255,215,0,0.3);box-shadow:0 10px 30px rgba(0,0,0,0.6);">
+        <div id="video-wish-player-container"
+          style="margin-top:20px;border-radius:16px;overflow:hidden;background:#000;border:1px solid rgba(255,215,0,0.3);box-shadow:0 10px 30px rgba(0,0,0,0.6);">
         </div>
       </div>
     </section>
@@ -369,10 +391,15 @@
           class="btn save-btn" id="save-memory-btn">📸 Save This Memory</button></div>
       <div class="cake-wish" id="cake-wish" aria-live="polite"></div>
       <div id="cake-slice-plate-container" style="display:none;margin-top:24px;text-align:center;">
-        <div style="display:inline-block;position:relative;padding:18px 32px;background:linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,95,162,0.18));border:1.5px solid rgba(255,215,0,0.5);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.6);backdrop-filter:blur(10px);">
-          <div style="font-size:3.8rem;filter:drop-shadow(0 6px 15px rgba(255,215,0,0.6));animation:bounceSlice 2s infinite ease-in-out;">🍰</div>
-          <div style="font-family:var(--font-hand);font-size:1.75rem;color:var(--gold,#ffd700);margin-top:6px;">Enjoy Your Birthday Cake Slice! 🎉</div>
-          <p style="font-size:0.88rem;color:var(--pink-light,#ffd6ec);margin-top:4px;">May your year be as sweet and joyful as this slice! 💕</p>
+        <div
+          style="display:inline-block;position:relative;padding:18px 32px;background:linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,95,162,0.18));border:1.5px solid rgba(255,215,0,0.5);border-radius:24px;box-shadow:0 10px 30px rgba(0,0,0,0.6);backdrop-filter:blur(10px);">
+          <div
+            style="font-size:3.8rem;filter:drop-shadow(0 6px 15px rgba(255,215,0,0.6));animation:bounceSlice 2s infinite ease-in-out;">
+            🍰</div>
+          <div style="font-family:var(--font-hand);font-size:1.75rem;color:var(--gold,#ffd700);margin-top:6px;">Enjoy
+            Your Birthday Cake Slice! 🎉</div>
+          <p style="font-size:0.88rem;color:var(--pink-light,#ffd6ec);margin-top:4px;">May your year be as sweet and
+            joyful as this slice! 💕</p>
         </div>
       </div>
     </section>
@@ -383,7 +410,8 @@
         style="max-width:680px;width:100%;padding:36px clamp(20px,5vw,40px);text-align:center;">
         <span class="eyebrow">The Clock Never Stops</span>
         <h2 class="section-title">Counting Down to Your Next Birthday</h2>
-        <div id="countdown-grid" style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;"></div>
+        <div id="countdown-grid" style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
+        </div>
       </div>
     </section>
 
@@ -407,7 +435,8 @@
       <canvas id="final-canvas"></canvas>
       <div class="final-title">Happy Birthday!</div>
       <div class="final-sub" id="dynamic-greeting"></div>
-      <div class="signature" id="signature">Made with ❤️ by <span class="highlight-name" id="from-slot">your friends</span> for <span class="highlight-name" id="name-slot-2">You</span></div>
+      <div class="signature" id="signature">Made with ❤️ by <span class="highlight-name" id="from-slot">your
+          friends</span> for <span class="highlight-name" id="name-slot-2">You</span></div>
     </section>
 
     <footer>made with love, little memories &amp; birthday magic</footer>
@@ -422,7 +451,8 @@
       <span id="music-label">Birthday Music</span>
     </button>
   </div>
-  <div id="yt-player-container" style="display:none;position:fixed;bottom:-999px;left:-999px;opacity:0;pointer-events:none;"></div>
+  <div id="yt-player-container"
+    style="display:none;position:fixed;bottom:-999px;left:-999px;opacity:0;pointer-events:none;"></div>
 
   <!-- FLOATING QUICK CUSTOMIZER FAB -->
   <button id="customizer-toggle-btn" class="customizer-fab magnetic" title="Customize Wish">✏️ Edit Wish</button>
@@ -433,12 +463,21 @@
 
       <!-- HEADER -->
       <div class="editor-header">
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding-right:24px;flex-wrap:wrap;gap:8px;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;width:100%;padding-right:24px;flex-wrap:wrap;gap:8px;">
           <div>
             <h3 class="modal-title">✨ Customize Birthday Wish</h3>
             <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
           </div>
-          <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button type="button" id="exit-admin-mode-btn" title="Exit Admin Mode and Lock Editor"
+              style="background:rgba(255,0,80,0.15);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-weight:600;">🔒
+              Exit Admin Mode</button>
+            <button type="button" id="reset-default-messages-btn"
+              title="Reset all edited text back to original default messages"
+              style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄
+              Restore Default Messages</button>
+          </div>
         </div>
         <button id="customizer-close-btn" class="modal-close">&times;</button>
       </div>
@@ -453,7 +492,8 @@
           </button>
           <div class="editor-section-body open">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="basic" title="Reset Basic Info to defaults">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="basic" title="Reset Basic Info to defaults">🔄
+                Reset Section</button>
             </div>
             <div class="form-group">
               <label for="input-name">Recipient Name</label>
@@ -461,28 +501,44 @@
               <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
-              <label>📅 Birth Date (Day / Month / Year)</label>
-              <small class="field-hint">Day, Month aur Year 1-click select karein</small>
-              <div class="form-group row" style="gap:8px;margin-top:6px;">
+              <label for="input-date">📅 Birth Date Calendar</label>
+              <small class="field-hint">Calendar icon par click karke date chuno ya day/month/year select karein</small>
+              <div class="calendar-picker-wrap" style="position:relative;margin-top:6px;margin-bottom:10px;">
+                <!-- Styled visible display area -->
+                <div id="calendar-display"
+                  style="width:100%;padding:10px 42px 10px 14px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-family:inherit;font-size:0.95rem;min-height:42px;display:flex;align-items:center;pointer-events:none;">
+                  <span id="calendar-display-text" style="opacity:0.6;">Select birth date…</span>
+                </div>
+                <!-- Real date input: invisible but covers entire area for click -->
+                <input type="date" id="input-date" class="form-control calendar-date-input"
+                  style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;border:none;background:transparent;">
+                <!-- Custom calendar icon (pointer-events none so click passes to input) -->
+                <span id="open-calendar-btn"
+                  style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--gold,#ffd700);font-size:1.3rem;pointer-events:none;z-index:1;"
+                  title="Open Calendar">📅</span>
+              </div>
+              <!-- <div class="form-group row" style="gap:8px;">
                 <div style="flex:1;">
                   <label for="input-day" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Day</label>
-                  <select id="input-day" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                  <select id="input-day" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:#2a162b;color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
                 </div>
                 <div style="flex:1.4;">
                   <label for="input-month" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Month</label>
-                  <select id="input-month" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                  <select id="input-month" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:#2a162b;color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
                 </div>
                 <div style="flex:1.2;">
                   <label for="input-year" style="font-size:0.75rem;opacity:0.8;margin-bottom:4px;display:block;">Year</label>
-                  <select id="input-year" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
+                  <select id="input-year" class="form-control" style="width:100%;padding:9px;border-radius:8px;background:#2a162b;color:#fff;border:1px solid rgba(255,255,255,0.2);"></select>
                 </div>
-              </div>
+              </div> -->
             </div>
             <div class="form-group row">
               <div>
                 <label for="input-cake-flavor">🎂 Cake Theme / Flavor</label>
-                <select id="input-cake-flavor" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
-                  <option value="default" style="background:#2a162b;color:#fff;">💖 Classic Pink & Gold (Default)</option>
+                <select id="input-cake-flavor"
+                  style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                  <option value="default" style="background:#2a162b;color:#fff;">💖 Classic Pink & Gold (Default)
+                  </option>
                   <option value="strawberry" style="background:#2a162b;color:#fff;">🍓 Pink Strawberry Gold</option>
                   <option value="chocolate" style="background:#2a162b;color:#fff;">🍫 Dark Chocolate Velvet</option>
                   <option value="vanilla" style="background:#2a162b;color:#fff;">✨ Royal Golden Vanilla</option>
@@ -504,11 +560,13 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="sender" title="Reset Sender Info to default">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="sender"
+                title="Reset Sender Info to default">🔄 Reset Section</button>
             </div>
             <div class="form-group">
               <label for="input-from">From (Sender Name)</label>
-              <small class="field-hint">Page ke sabse last signature ("Made with ❤️ by...") aur Insta Story Image me dikhega</small>
+              <small class="field-hint">Page ke sabse last signature ("Made with ❤️ by...") aur Insta Story Image me
+                dikhega</small>
               <input type="text" id="input-from" placeholder="e.g. your best friend">
             </div>
           </div>
@@ -521,25 +579,34 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="letter" title="Reset Letter & Font to defaults">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="letter"
+                title="Reset Letter & Font to defaults">🔄 Reset Section</button>
             </div>
             <div class="form-group" style="margin-bottom:14px;">
               <label for="input-letter-theme">💌 Envelope & Letter Theme</label>
               <small class="field-hint">Letter aur Envelope ka luxury color theme chuney</small>
-              <select id="input-letter-theme" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
-                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Theme (Classic Gold & Parchment)</option>
-                <option value="royalgold" style="background:#2a162b;color:#fff;">👑 Vintage Royal Gold (Antique Gold Foil & Dark Parchment)</option>
-                <option value="galaxy" style="background:#2a162b;color:#fff;">🌌 Midnight Galaxy Glow (Neon Purple & Cosmic Glow)</option>
-                <option value="rosegold" style="background:#2a162b;color:#fff;">🌸 Rose Gold Pastel (Soft Pearl Pink & Rose Gold Accents)</option>
+              <select id="input-letter-theme"
+                style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Theme (Classic Gold &
+                  Parchment)</option>
+                <option value="royalgold" style="background:#2a162b;color:#fff;">👑 Vintage Royal Gold (Antique Gold
+                  Foil & Dark Parchment)</option>
+                <option value="galaxy" style="background:#2a162b;color:#fff;">🌌 Midnight Galaxy Glow (Neon Purple &
+                  Cosmic Glow)</option>
+                <option value="rosegold" style="background:#2a162b;color:#fff;">🌸 Rose Gold Pastel (Soft Pearl Pink &
+                  Rose Gold Accents)</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:14px;">
               <label for="input-letter-font">🖋️ Letter Font Style</label>
               <small class="field-hint">Birthday Letter aur Wishes ka font mood ke hisab se chuney</small>
-              <select id="input-letter-font" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
-                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Font (Sacramento Cursive)</option>
+              <select id="input-letter-font"
+                style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Font (Sacramento
+                  Cursive)</option>
                 <option value="cursive" style="background:#2a162b;color:#fff;">✍️ Romantic Cursive (Sacramento)</option>
-                <option value="serif" style="background:#2a162b;color:#fff;">📜 Classic Royal Serif (Playfair / Cinzel)</option>
+                <option value="serif" style="background:#2a162b;color:#fff;">📜 Classic Royal Serif (Playfair / Cinzel)
+                </option>
                 <option value="script" style="background:#2a162b;color:#fff;">🎨 Playful Script (Caveat)</option>
                 <option value="poppins" style="background:#2a162b;color:#fff;">✨ Clean & Modern (Poppins)</option>
                 <option value="nunito" style="background:#2a162b;color:#fff;">🌸 Soft & Friendly (Nunito Sans)</option>
@@ -559,7 +626,8 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="memory" title="Reset Memory to default">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="memory" title="Reset Memory to default">🔄
+                Reset Section</button>
             </div>
             <div class="form-group">
               <label for="input-memory">A Cherished Memory</label>
@@ -575,9 +643,12 @@
             <span>⭐ Reasons You're Special</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-              <small class="field-hint" style="margin-bottom:0;">Yeh cards "Reasons you're so special" section me dikhenge</small>
-              <button type="button" class="reset-section-btn" data-reset="reasons" title="Reset Reasons to defaults">🔄 Reset Section</button>
+            <div
+              style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh cards "Reasons you're so special" section me
+                dikhenge</small>
+              <button type="button" class="reset-section-btn" data-reset="reasons" title="Reset Reasons to defaults">🔄
+                Reset Section</button>
             </div>
             <div id="reasons-inputs-container">
               <!-- JS will render reason input groups here -->
@@ -592,9 +663,12 @@
             <span>✨ Birthday Wishes</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-              <small class="field-hint" style="margin-bottom:0;">Yeh quotes "Another wish" button dabane par rotate honge</small>
-              <button type="button" class="reset-section-btn" data-reset="wishes" title="Reset Wishes to defaults">🔄 Reset Section</button>
+            <div
+              style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh quotes "Another wish" button dabane par rotate
+                honge</small>
+              <button type="button" class="reset-section-btn" data-reset="wishes" title="Reset Wishes to defaults">🔄
+                Reset Section</button>
             </div>
             <div id="wishes-inputs-container">
               <!-- JS will render wish textareas here -->
@@ -609,9 +683,12 @@
             <span>📸 Photo Gallery</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-              <small class="field-hint" style="margin-bottom:0;">Gallery ke polaroid cards — photo upload karo ya emoji rakhdo</small>
-              <button type="button" class="reset-section-btn" data-reset="gallery" title="Reset Photo Gallery to defaults">🔄 Reset Section</button>
+            <div
+              style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Gallery ke polaroid cards — photo upload karo ya emoji
+                rakhdo</small>
+              <button type="button" class="reset-section-btn" data-reset="gallery"
+                title="Reset Photo Gallery to defaults">🔄 Reset Section</button>
             </div>
             <div id="gallery-inputs-container">
               <!-- JS will render gallery input groups with image upload here -->
@@ -626,9 +703,12 @@
             <span>🕐 Timeline Milestones</span><span class="chevron">▾</span>
           </button>
           <div class="editor-section-body">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-              <small class="field-hint" style="margin-bottom:0;">Yeh events "A little timeline" section me dikhenge</small>
-              <button type="button" class="reset-section-btn" data-reset="timeline" title="Reset Timeline to defaults">🔄 Reset Section</button>
+            <div
+              style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh events "A little timeline" section me
+                dikhenge</small>
+              <button type="button" class="reset-section-btn" data-reset="timeline"
+                title="Reset Timeline to defaults">🔄 Reset Section</button>
             </div>
             <div id="timeline-inputs-container">
               <!-- JS will render timeline input groups here -->
@@ -644,7 +724,8 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="gift" title="Reset Gift Message to defaults">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="gift"
+                title="Reset Gift Message to defaults">🔄 Reset Section</button>
             </div>
             <div class="form-group">
               <label for="input-gift-message">Gift Box Message</label>
@@ -666,26 +747,35 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="music" title="Reset Music to default melody">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="music"
+                title="Reset Music to default melody">🔄 Reset Section</button>
             </div>
             <div class="form-group">
-              <label style="font-size:0.75rem;opacity:0.85;">Option A: Upload Voice Note / Audio Song from Device</label>
-              <div class="audio-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
-                <label id="audio-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <label style="font-size:0.75rem;opacity:0.85;">Option A: Upload Voice Note / Audio Song from
+                Device</label>
+              <div class="audio-upload-row"
+                style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="audio-upload-label"
+                  style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                   <span id="audio-upload-text">🎙️ Select Audio / Voice Note</span>
                   <input type="file" id="input-audio-file" accept="audio/*" style="display:none;">
                 </label>
-                <button type="button" id="remove-audio-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Audio</button>
+                <button type="button" id="remove-audio-file-btn"
+                  style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕
+                  Remove Audio</button>
               </div>
               <small class="field-hint">Apni voice recording ya audio song file select karein.</small>
             </div>
             <div class="form-group" style="margin-top:14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label for="input-music-url" style="margin-bottom:0;">Option B: Or Paste YouTube Song Link</label>
-                <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
+                <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear
+                  Link</button>
               </div>
-              <small class="field-hint">Apni pasand ka YouTube video link paste karein. Khaali chhodne par default birthday tune bajega.</small>
-              <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
+              <small class="field-hint">Apni pasand ka YouTube video link paste karein. Khaali chhodne par default
+                birthday tune bajega.</small>
+              <input type="text" id="input-music-url"
+                placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
             </div>
             <div class="form-group" style="margin-top:12px;">
               <label for="input-music-start">YouTube Start Time (Optional, e.g. 30 or 1:15)</label>
@@ -702,26 +792,33 @@
           </button>
           <div class="editor-section-body">
             <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-              <button type="button" class="reset-section-btn" data-reset="videowish" title="Reset Video Wish">🔄 Reset Section</button>
+              <button type="button" class="reset-section-btn" data-reset="videowish" title="Reset Video Wish">🔄 Reset
+                Section</button>
             </div>
             <div class="form-group">
               <label style="font-size:0.75rem;opacity:0.85;">Option A: Select Video File from Device Gallery</label>
-              <div class="video-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
-                <label id="video-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <div class="video-upload-row"
+                style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="video-upload-label"
+                  style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                   <span id="video-upload-text">📹 Select Video from Device</span>
                   <input type="file" id="input-video-file" accept="video/*" style="display:none;">
                 </label>
-                <button type="button" id="remove-video-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Video</button>
+                <button type="button" id="remove-video-file-btn"
+                  style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕
+                  Remove Video</button>
               </div>
               <small class="field-hint">Apne mobile/laptop gallery se recorded video select karein.</small>
             </div>
             <div class="form-group" style="margin-top:14px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label for="input-video-url" style="margin-bottom:0;">Option B: Or Paste YouTube / Shorts Link</label>
-                <button type="button" id="clear-video-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
+                <button type="button" id="clear-video-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear
+                  Link</button>
               </div>
               <input type="text" id="input-video-url" placeholder="https://youtu.be/... or Shorts link">
-              <small class="field-hint">Agar gallery video nahi hai to YouTube/Shorts ka link paste kar sakte hain.</small>
+              <small class="field-hint">Agar gallery video nahi hai to YouTube/Shorts ka link paste kar sakte
+                hain.</small>
             </div>
             <div class="form-group" style="margin-top:12px;">
               <label for="input-video-start">Video Start Time (Optional, e.g. 30 or 1:15)</label>
@@ -744,14 +841,19 @@
 
   <!-- ==================== ADMIN SECURITY MODAL ==================== -->
   <div id="admin-login-modal" class="modal-backdrop">
-    <div class="modal-content glass card-glow-border" style="max-width:440px;width:90%;padding:28px 24px;border-radius:20px;text-align:left;position:relative;">
+    <div class="modal-content glass card-glow-border"
+      style="max-width:440px;width:90%;padding:28px 24px;border-radius:20px;text-align:left;position:relative;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-        <h3 style="font-family:var(--font-hand);font-size:1.6rem;color:var(--gold);margin:0;">🔒 Admin Security Access</h3>
-        <button id="admin-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;" type="button">✕</button>
+        <h3 style="font-family:var(--font-hand);font-size:1.6rem;color:var(--gold);margin:0;">🔒 Admin Security Access
+        </h3>
+        <button id="admin-modal-close-btn"
+          style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;"
+          type="button">✕</button>
       </div>
 
       <!-- Admin Tabs -->
-      <div class="admin-tab-nav" style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;flex-wrap:wrap;">
+      <div class="admin-tab-nav"
+        style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;flex-wrap:wrap;">
         <button class="admin-tab-btn active" data-tab="login" type="button">Unlock Editor</button>
         <button class="admin-tab-btn" data-tab="change" type="button">🔑 Change Password</button>
         <button class="admin-tab-btn" data-tab="forgot" type="button">❓ Forgot Password</button>
@@ -762,11 +864,18 @@
         <div class="form-group" style="margin-bottom:16px;">
           <label for="admin-login-pass">Enter Admin Password</label>
           <div class="pass-input-wrap">
-            <input type="password" id="admin-login-pass" class="form-control" placeholder="••••••••" autocomplete="current-password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-login-pass" aria-label="Toggle password visibility">👁</button>
+            <input type="password" id="admin-login-pass" class="form-control" placeholder="••••••••"
+              autocomplete="current-password" maxlength="10"
+              style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+            <button type="button" class="eye-toggle" data-target="admin-login-pass"
+              aria-label="Toggle password visibility">👁</button>
+          </div>
+          <div id="admin-login-error" class="admin-error-msg" style="display:none;">
+            <span>❌ Incorrect Password! Please try again.</span>
           </div>
         </div>
-        <button id="admin-login-submit-btn" class="btn primary-btn" style="width:100%;" type="button">👑 Unlock Editor</button>
+        <button id="admin-login-submit-btn" class="btn primary-btn" style="width:100%;" type="button">👑 Unlock
+          Editor</button>
       </div>
 
       <!-- TAB 2: CHANGE PASSWORD -->
@@ -774,25 +883,37 @@
         <div class="form-group" style="margin-bottom:12px;">
           <label for="admin-old-pass">Current / Old Password</label>
           <div class="pass-input-wrap">
-            <input type="password" id="admin-old-pass" class="form-control" placeholder="Current Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-old-pass" aria-label="Toggle password visibility">👁</button>
+            <input type="password" id="admin-old-pass" class="form-control" placeholder="Current Password"
+              maxlength="10"
+              style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+            <button type="button" class="eye-toggle" data-target="admin-old-pass"
+              aria-label="Toggle password visibility">👁</button>
           </div>
         </div>
         <div class="form-group" style="margin-bottom:12px;">
           <label for="admin-new-pass">New Password</label>
           <div class="pass-input-wrap">
-            <input type="password" id="admin-new-pass" class="form-control" placeholder="New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-new-pass" aria-label="Toggle password visibility">👁</button>
+            <input type="password" id="admin-new-pass" class="form-control" placeholder="New Password" maxlength="10"
+              style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+            <button type="button" class="eye-toggle" data-target="admin-new-pass"
+              aria-label="Toggle password visibility">👁</button>
           </div>
         </div>
         <div class="form-group" style="margin-bottom:16px;">
           <label for="admin-confirm-pass">Confirm New Password</label>
           <div class="pass-input-wrap">
-            <input type="password" id="admin-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-confirm-pass" aria-label="Toggle password visibility">👁</button>
+            <input type="password" id="admin-confirm-pass" class="form-control" placeholder="Confirm New Password"
+              maxlength="10"
+              style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+            <button type="button" class="eye-toggle" data-target="admin-confirm-pass"
+              aria-label="Toggle password visibility">👁</button>
           </div>
         </div>
-        <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update Password</button>
+        <div id="admin-change-error" class="admin-error-msg" style="display:none;margin-bottom:12px;">
+          <span>❌ Error updating password</span>
+        </div>
+        <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update
+          Password</button>
       </div>
 
       <!-- TAB 3: FORGOT PASSWORD -->
@@ -802,9 +923,14 @@
         </p>
         <div class="form-group" style="margin-bottom:16px;">
           <label for="admin-recovery-key">Master Recovery Passcode</label>
-          <input type="text" id="admin-recovery-key" class="form-control" placeholder="e.g. 1234" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+          <input type="text" id="admin-recovery-key" class="form-control" placeholder="e.g. 1234" maxlength="6"
+            style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
         </div>
-        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔄 Reset Password to Default (2001)</button>
+        <div id="admin-forgot-error" class="admin-error-msg" style="display:none;margin-bottom:12px;">
+          <span>❌ Incorrect Recovery Key</span>
+        </div>
+        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔄 Reset Password
+          to Default (2001)</button>
       </div>
     </div>
   </div>

@@ -296,13 +296,19 @@ function populateContent() {
 
   const letterBody = document.getElementById("letter-body");
 
-  CONFIG.letterLines.forEach(() => {
+  if (letterBody) {
 
-    const p = document.createElement("p");
+    letterBody.innerHTML = "";
 
-    letterBody.appendChild(p);
+    (CONFIG.letterLines || []).forEach(() => {
 
-  });
+      const p = document.createElement("p");
+
+      letterBody.appendChild(p);
+
+    });
+
+  }
 
   document.getElementById("memory-text").textContent = CONFIG.memory;
 
@@ -427,11 +433,23 @@ function updateTimelineLine() {
 
 function showRandomWish() {
 
-  const w = CONFIG.wishes[Math.floor(Math.random() * CONFIG.wishes.length)];
+  const wishes = CONFIG.wishes || [];
 
-  document.getElementById("wish-quote-text").textContent = w;
+  if (wishes.length === 0) return;
+
+  const w = wishes[Math.floor(Math.random() * wishes.length)];
+
+  const quoteEl = document.getElementById("wish-quote-text");
+
+  if (quoteEl) quoteEl.textContent = w;
 
 }
+
+// Bind new quote button listener
+document.addEventListener("DOMContentLoaded", () => {
+  const quoteBtn = document.getElementById("new-quote-btn");
+  if (quoteBtn) quoteBtn.addEventListener("click", showRandomWish);
+});
 
 function buildCountdown() {
 
@@ -699,13 +717,17 @@ function updateCountdown() {
 
   const now = new Date();
 
+  const birthMonth = ((CONFIG.birthDate?.month || 1) - 1);
+
+  const birthDay = CONFIG.birthDate?.day || 1;
+
   let next = new Date(
 
     now.getFullYear(),
 
-    CONFIG.birthDate.month - 1,
+    birthMonth,
 
-    CONFIG.birthDate.day,
+    birthDay,
 
     0,
 
@@ -721,9 +743,15 @@ function updateCountdown() {
 
       now.getFullYear() + 1,
 
-      CONFIG.birthDate.month - 1,
+      birthMonth,
 
-      CONFIG.birthDate.day,
+      birthDay,
+
+      0,
+
+      0,
+
+      0,
 
     );
 
@@ -855,15 +883,23 @@ function initStars() {
 
 /* SFX Synthesizer Engine */
 
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-
 let audioCtx = null;
 
 function getAudioCtx() {
 
-  if (!audioCtx) audioCtx = new AudioCtx();
+  if (!audioCtx) {
 
-  if (audioCtx.state === "suspended") audioCtx.resume();
+    const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+
+    if (AudioCtxClass) audioCtx = new AudioCtxClass();
+
+  }
+
+  if (audioCtx && audioCtx.state === "suspended") {
+
+    audioCtx.resume().catch(() => {});
+
+  }
 
   return audioCtx;
 
@@ -1327,30 +1363,12 @@ function launchFireworksShow(duration = 3200) {
 
 }
 
-function playPopSound() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const sCtx = new AudioCtx();
-    const osc = sCtx.createOscillator();
-    const gain = sCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(480, sCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(140, sCtx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.35, sCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, sCtx.currentTime + 0.08);
-    osc.connect(gain);
-    gain.connect(sCtx.destination);
-    osc.start();
-    osc.stop(sCtx.currentTime + 0.09);
-  } catch(e){}
-}
+
 
 function playBlowSound() {
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const sCtx = new AudioCtx();
+    const sCtx = getAudioCtx();
+    if (!sCtx) return;
     const bufferSize = Math.round(sCtx.sampleRate * 0.35);
     const buffer = sCtx.createBuffer(1, bufferSize, sCtx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -1488,13 +1506,23 @@ const MusicEngine = (() => {
 
       const AC = window.AudioContext || window.webkitAudioContext;
 
-      ctx = new AC();
+      if (AC) ctx = new AC();
 
-      gainNode = ctx.createGain();
+      if (ctx) {
 
-      gainNode.gain.value = 0.28;
+        gainNode = ctx.createGain();
 
-      gainNode.connect(ctx.destination);
+        gainNode.gain.value = 0.28;
+
+        gainNode.connect(ctx.destination);
+
+      }
+
+    }
+
+    if (ctx && ctx.state === "suspended") {
+
+      ctx.resume().catch(() => {});
 
     }
 
@@ -1983,88 +2011,42 @@ function mixColor(a, b, t) {
 
 }
 
-/* ==========================================================================
+// Dawn transition sky scroll listener
+window.addEventListener(
 
-   SCENE LOGIC: loading -> intro -> envelope -> open experience
+  "scroll",
 
-   ========================================================================== */
+  () => {
 
-function runLoadingSequence() {
+    const doc = document.documentElement;
 
-  const fill = document.getElementById("loader-fill");
+    const progress =
 
-  const pct = document.getElementById("loader-pct");
+      doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
 
-  let p = 0;
-  // dawn transition: interpolate sky colors with scroll progress
+    const root = document.documentElement.style;
 
-  window.addEventListener(
+    if (progress > 0.55) {
 
-    "scroll",
+      const t = Math.min((progress - 0.55) / 0.45, 1);
 
-    () => {
+      root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
 
-      const doc = document.documentElement;
+      root.setProperty(
 
-      const progress =
+        "--sky-mid",
 
-        doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
+        mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
 
-      const root = document.documentElement.style;
+      );
 
-      if (progress > 0.55) {
+    }
 
-        const t = Math.min((progress - 0.55) / 0.45, 1);
+  },
 
-        root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
+  { passive: true },
 
-        root.setProperty(
-
-          "--sky-mid",
-
-          mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
-
-        );
-
-      }
-
-    },
-
-    { passive: true },
-
-  );
-
-}
-
-function mixColor(a, b, t) {
-
-  const ah = a
-
-    .replace("#", "")
-
-    .match(/.{2}/g)
-
-    .map((x) => parseInt(x, 16));
-
-  const bh = b
-
-    .replace("#", "")
-
-    .match(/.{2}/g)
-
-    .map((x) => parseInt(x, 16));
-
-  const rc = ah.map((v, i) => Math.round(v + (bh[i] - v) * t));
-
-  return `rgb(${rc.join(",")})`;
-
-}
-
-/* ==========================================================================
-
-   SCENE LOGIC: loading -> intro -> envelope -> open experience
-
-   ========================================================================== */
+);
 
 function runLoadingSequence() {
   const fill = document.getElementById("loader-fill");
@@ -2369,60 +2351,99 @@ function typeLetterBody() {
   if (window.letterTyped || window.letterTyping) return;
   window.letterTyping = true;
 
-  const paras = document.querySelectorAll("#letter-body p");
+  const letterBody = document.getElementById("letter-body");
+  if (!letterBody) return;
+
+  const paras = letterBody.querySelectorAll("p");
+  if (paras.length === 0) return;
+
+  // Ensure card is completely blank before typing starts
+  paras.forEach(p => { p.innerHTML = ""; });
+
   let i = 0;
+
+  function tokenizeHtml(html) {
+    const tokens = [];
+    let idx = 0;
+    while (idx < html.length) {
+      if (html[idx] === '<') {
+        let tag = '';
+        while (idx < html.length && html[idx] !== '>') {
+          tag += html[idx];
+          idx++;
+        }
+        if (idx < html.length && html[idx] === '>') {
+          tag += '>';
+          idx++;
+        }
+        const isClosing = tag.startsWith('</');
+        tokens.push({ type: 'tag', value: tag, isClosing: isClosing });
+      } else {
+        tokens.push({ type: 'char', value: html[idx] });
+        idx++;
+      }
+    }
+    return tokens;
+  }
+
+  function getPartialHtml(tokens, count) {
+    let result = '';
+    const openTags = [];
+    for (let k = 0; k < count && k < tokens.length; k++) {
+      const tok = tokens[k];
+      if (tok.type === 'tag') {
+        result += tok.value;
+        if (tok.isClosing) {
+          openTags.pop();
+        } else {
+          openTags.push('</span>');
+        }
+      } else {
+        result += tok.value;
+      }
+    }
+    for (let j = openTags.length - 1; j >= 0; j--) {
+      result += openTags[j];
+    }
+    return result;
+  }
 
   (function nextLine() {
     if (i >= paras.length) {
       window.letterTyped = true;
+      window.letterTyping = false;
       return;
     }
 
     const p = paras[i];
-    const html = ensureLineHighlight(CONFIG.letterLines[i]);
-    p.innerHTML = html;
+    const fullHtml = ensureLineHighlight(CONFIG.letterLines[i] || "");
+    const tokens = tokenizeHtml(fullHtml);
+    let tokenIndex = 0;
 
-    const textNodes = [];
-    const getLeafNodes = (node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        if (node.textContent) textNodes.push(node);
-      } else {
-        node.childNodes.forEach(getLeafNodes);
-      }
-    };
-    getLeafNodes(p);
+    p.innerHTML = "";
 
-    const fullString = textNodes.map(n => n.textContent).join("");
-    textNodes.forEach(n => { n.originalText = n.textContent; n.textContent = ""; });
-
-    let charIdx = 0;
-    function typeChar() {
-      if (charIdx <= fullString.length) {
-        let currentCount = 0;
-        for (let tn of textNodes) {
-          const len = tn.originalText.length;
-          if (charIdx <= currentCount) {
-            tn.textContent = "";
-          } else if (charIdx >= currentCount + len) {
-            tn.textContent = tn.originalText;
-          } else {
-            tn.textContent = tn.originalText.slice(0, charIdx - currentCount);
-          }
-          currentCount += len;
+    function step() {
+      if (tokenIndex < tokens.length) {
+        // Skip tags immediately without delay
+        while (tokenIndex < tokens.length && tokens[tokenIndex].type === 'tag') {
+          tokenIndex++;
         }
-        charIdx += 2;
-        setTimeout(typeChar, 20);
+        tokenIndex++;
+
+        p.innerHTML = getPartialHtml(tokens, tokenIndex);
+        setTimeout(step, 35);
       } else {
-        p.innerHTML = html;
+        p.innerHTML = fullHtml;
         i++;
         if (i >= paras.length) {
           window.letterTyped = true;
+          window.letterTyping = false;
         }
-        setTimeout(nextLine, 300);
+        setTimeout(nextLine, 280);
       }
     }
 
-    typeChar();
+    step();
   })();
 }
 
@@ -2626,9 +2647,9 @@ function cakeSound(kind) {
 
   try {
 
-    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = getAudioCtx();
 
-    const ac = cakeSound.ac || (cakeSound.ac = new AC());
+    if (!ac) return;
 
     const now = ac.currentTime,
 
@@ -2856,13 +2877,15 @@ function initCake() {
 
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const micAudioCtx = getAudioCtx();
 
-      analyser = audioCtx.createAnalyser();
+      if (!micAudioCtx) return;
+
+      analyser = micAudioCtx.createAnalyser();
 
       analyser.fftSize = 512;
 
-      audioCtx.createMediaStreamSource(stream).connect(analyser);
+      micAudioCtx.createMediaStreamSource(stream).connect(analyser);
 
       hint.textContent = "Blow gently toward your microphone...";
 
@@ -3400,59 +3423,21 @@ function updateMusicWidgetUI(playing) {
 
   const widget = document.getElementById("music-widget");
 
-  widget.classList.toggle("paused", !playing);
+  if (widget) {
 
-  document.getElementById("music-toggle").textContent = playing
+    widget.classList.toggle("playing", !!playing);
 
-    ? "\u23F8"
+    widget.classList.toggle("paused", !playing);
 
-    : "\u25B6";
+  }
 
-}
+  const icon = document.getElementById("music-icon");
 
-function initMusicWidget() {
+  if (icon) icon.textContent = playing ? "🎶" : "🎵";
 
-  const html = `<button id="music-toggle">\u25B6</button><div class="eq-bars"><span></span><span></span><span></span><span></span></div><input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">`;
+  const label = document.getElementById("music-label");
 
-  const widget = document.createElement("div");
-
-  widget.id = "music-widget";
-
-  widget.className = "glass";
-
-  widget.innerHTML = html;
-
-  document.body.appendChild(widget);
-
-  widget.querySelector("#music-toggle").addEventListener("click", () => {
-
-    if (MusicEngine.isPlaying()) {
-
-      MusicEngine.pause();
-
-      updateMusicWidgetUI(false);
-
-    } else {
-
-      MusicEngine.play();
-
-      updateMusicWidgetUI(true);
-
-    }
-
-  });
-
-  widget
-
-    .querySelector("#vol-slider")
-
-    .addEventListener("input", (e) =>
-
-      MusicEngine.setVolume(parseFloat(e.target.value)),
-
-    );
-
-  MusicEngine.setVolume(0.5);
+  if (label) label.textContent = playing ? "Music Playing" : "Play Music";
 
 }
 
@@ -3754,11 +3739,415 @@ function exportInstaStory() {
 
 }
 
-function encodeWishData(dataObj) {
+// Lightweight LZW LZ-String Compression for URL-Safe Tokens
+const LZString = (function() {
+  const f = String.fromCharCode;
+  const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+  const baseReverseDic = {};
+
+  function getBaseValue(alphabet, character) {
+    if (!baseReverseDic[alphabet]) {
+      baseReverseDic[alphabet] = {};
+      for (let i = 0; i < alphabet.length; i++) {
+        baseReverseDic[alphabet][alphabet.charAt(i)] = i;
+      }
+    }
+    return baseReverseDic[alphabet][character];
+  }
+
+  return {
+    compressToEncodedURIComponent: function(input) {
+      if (input == null) return "";
+      return this._compress(input, 6, function(a) {
+        return keyStrUriSafe.charAt(a);
+      });
+    },
+
+    decompressFromEncodedURIComponent: function(input) {
+      if (input == null || input === "") return null;
+      input = input.replace(/ /g, "+");
+      return this._decompress(input.length, 32, function(index) {
+        return getBaseValue(keyStrUriSafe, input.charAt(index));
+      });
+    },
+
+    _compress: function(uncompressed, bitsPerChar, getCharFromInt) {
+      if (uncompressed == null) return "";
+      let i, value,
+        context_dictionary = {},
+        context_dictionaryToCreate = {},
+        context_c = "",
+        context_wc = "",
+        context_w = "",
+        context_enlargeIn = 2,
+        context_dictSize = 3,
+        context_numBits = 2,
+        context_data = [],
+        context_data_val = 0,
+        context_data_position = 0,
+        ii;
+
+      for (ii = 0; ii < uncompressed.length; ii += 1) {
+        context_c = uncompressed.charAt(ii);
+        if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+          context_dictionary[context_c] = context_dictSize++;
+          context_dictionaryToCreate[context_c] = true;
+        }
+
+        context_wc = context_w + context_c;
+        if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+          context_w = context_wc;
+        } else {
+          if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+            if (context_w.charCodeAt(0) < 256) {
+              for (i = 0; i < context_numBits; i++) {
+                context_data_val = (context_data_val << 1);
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+              }
+              value = context_w.charCodeAt(0);
+              for (i = 0; i < 8; i++) {
+                context_data_val = (context_data_val << 1) | (value & 1);
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = value >> 1;
+              }
+            } else {
+              value = 1;
+              for (i = 0; i < context_numBits; i++) {
+                context_data_val = (context_data_val << 1) | value;
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = 0;
+              }
+              value = context_w.charCodeAt(0);
+              for (i = 0; i < 16; i++) {
+                context_data_val = (context_data_val << 1) | (value & 1);
+                if (context_data_position == bitsPerChar - 1) {
+                  context_data_position = 0;
+                  context_data.push(getCharFromInt(context_data_val));
+                  context_data_val = 0;
+                } else {
+                  context_data_position++;
+                }
+                value = value >> 1;
+              }
+            }
+            context_enlargeIn--;
+            if (context_enlargeIn == 0) {
+              context_enlargeIn = Math.pow(2, context_numBits);
+              context_numBits++;
+            }
+            delete context_dictionaryToCreate[context_w];
+          } else {
+            value = context_dictionary[context_w];
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+          context_dictionary[context_wc] = context_dictSize++;
+          context_w = String(context_c);
+        }
+      }
+
+      if (context_w !== "") {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1);
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 8; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1) | value;
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = 0;
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 16; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position == bitsPerChar - 1) {
+                context_data_position = 0;
+                context_data.push(getCharFromInt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn == 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position == bitsPerChar - 1) {
+              context_data_position = 0;
+              context_data.push(getCharFromInt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn == 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+      }
+
+      value = 2;
+      for (i = 0; i < context_numBits; i++) {
+        context_data_val = (context_data_val << 1) | (value & 1);
+        if (context_data_position == bitsPerChar - 1) {
+          context_data_position = 0;
+          context_data.push(getCharFromInt(context_data_val));
+          context_data_val = 0;
+        } else {
+          context_data_position++;
+        }
+        value = value >> 1;
+      }
+
+      while (true) {
+        context_data_val = (context_data_val << 1);
+        if (context_data_position == bitsPerChar - 1) {
+          context_data.push(getCharFromInt(context_data_val));
+          break;
+        } else context_data_position++;
+      }
+      return context_data.join("");
+    },
+
+    _decompress: function(length, resetValue, getNextValue) {
+      let dictionary = [],
+        next,
+        enlargeIn = 4,
+        dictSize = 4,
+        numBits = 3,
+        entry = "",
+        result = [],
+        i,
+        w,
+        bits, resb, maxpower, power,
+        c,
+        data = { val: getNextValue(0), position: resetValue, index: 1 };
+
+      for (i = 0; i < 3; i += 1) {
+        dictionary[i] = i;
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2, 2);
+      power = 1;
+      while (power != maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+        if (data.position == 0) {
+          data.position = resetValue;
+          data.val = getNextValue(data.index++);
+        }
+        bits |= (resb > 0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (next = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2, 8);
+          power = 1;
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          c = f(bits);
+          break;
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2, 16);
+          power = 1;
+          while (power != maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position == 0) {
+              data.position = resetValue;
+              data.val = getNextValue(data.index++);
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          c = f(bits);
+          break;
+        case 2:
+          return "";
+      }
+      dictionary[3] = c;
+      w = c;
+      result.push(c);
+      while (true) {
+        if (data.index > length) {
+          return "";
+        }
+
+        bits = 0;
+        maxpower = Math.pow(2, numBits);
+        power = 1;
+        while (power != maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position == 0) {
+            data.position = resetValue;
+            data.val = getNextValue(data.index++);
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+
+        switch (c = bits) {
+          case 0:
+            bits = 0;
+            maxpower = Math.pow(2, 8);
+            power = 1;
+            while (power != maxpower) {
+              resb = data.val & data.position;
+              data.position >>= 1;
+              if (data.position == 0) {
+                data.position = resetValue;
+                data.val = getNextValue(data.index++);
+              }
+              bits |= (resb > 0 ? 1 : 0) * power;
+              power <<= 1;
+            }
+
+            dictionary[dictSize++] = f(bits);
+            c = dictSize - 1;
+            enlargeIn--;
+            break;
+          case 1:
+            bits = 0;
+            maxpower = Math.pow(2, 16);
+            power = 1;
+            while (power != maxpower) {
+              resb = data.val & data.position;
+              data.position >>= 1;
+              if (data.position == 0) {
+                data.position = resetValue;
+                data.val = getNextValue(data.index++);
+              }
+              bits |= (resb > 0 ? 1 : 0) * power;
+              power <<= 1;
+            }
+            dictionary[dictSize++] = f(bits);
+            c = dictSize - 1;
+            enlargeIn--;
+            break;
+          case 2:
+            return result.join("");
+        }
+
+        if (enlargeIn == 0) {
+          enlargeIn = Math.pow(2, numBits);
+          numBits++;
+        }
+
+        if (dictionary[c]) {
+          entry = dictionary[c];
+        } else {
+          if (c === dictSize) {
+            entry = w + w.charAt(0);
+          } else {
+            return null;
+          }
+        }
+        result.push(entry);
+
+        dictionary[dictSize++] = w + entry.charAt(0);
+        enlargeIn--;
+
+        if (enlargeIn == 0) {
+          enlargeIn = Math.pow(2, numBits);
+          numBits++;
+        }
+
+        w = entry;
+      }
+    }
+  };
+})();
+
+function encodeWishData(dataObj, overrideName) {
   try {
     let payload = {};
+    const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
+
     if (typeof dataObj === "object" && dataObj !== null) {
-      if (CONFIG.name) payload.n = CONFIG.name;
+      if (nameVal) payload.n = nameVal;
       if (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234") payload.c = CONFIG.passcode.code;
       if (CONFIG.birthDate?.year && CONFIG.birthDate.year !== 2001) payload.y = CONFIG.birthDate.year;
       if (CONFIG.birthDate?.month && CONFIG.birthDate.month !== 1) payload.m = CONFIG.birthDate.month;
@@ -3769,6 +4158,14 @@ function encodeWishData(dataObj) {
       if (CONFIG.letterFont && CONFIG.letterFont !== "default") payload.lf = CONFIG.letterFont;
       if (CONFIG.letterTheme && CONFIG.letterTheme !== "default") payload.lt = CONFIG.letterTheme;
       if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
+
+      if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
+        payload.msc = { f: CONFIG.music.file, t: CONFIG.music.startTime || "" };
+      }
+
+      if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:") && !CONFIG.videoWish.url.startsWith("data:")) {
+        payload.v = { u: CONFIG.videoWish.url, t: CONFIG.videoWish.startTime || "" };
+      }
 
       if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
         const customGallery = CONFIG.gallery.filter(item => (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:") && !item.image.includes("assets/images/polaroid-")) || (item.secretNote && !item.secretNote.includes("You make the world better")));
@@ -3791,16 +4188,24 @@ function encodeWishData(dataObj) {
     }
 
     const str = JSON.stringify(payload);
-    return btoa(encodeURIComponent(str))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "");
+    return LZString.compressToEncodedURIComponent(str);
   } catch (e) {
     return "";
   }
 }
 
 function decodeWishData(token) {
+  if (!token) return null;
+  // 1. Try compressed LZ-String decompression first
+  try {
+    const decompressed = LZString.decompressFromEncodedURIComponent(token);
+    if (decompressed) {
+      const parsed = JSON.parse(decompressed);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch (e) {}
+
+  // 2. Fallback for legacy uncompressed base64 tokens
   try {
     let base64 = token.replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
@@ -3940,10 +4345,51 @@ function initAdminSecurityModal() {
     };
   });
 
+  // Clear error messages on tab switch or typing
+  const loginErr = document.getElementById("admin-login-error");
+  const changeErr = document.getElementById("admin-change-error");
+  const forgotErr = document.getElementById("admin-forgot-error");
+
+  const clearErrors = () => {
+    if (loginErr) loginErr.style.display = "none";
+    if (changeErr) changeErr.style.display = "none";
+    if (forgotErr) forgotErr.style.display = "none";
+    if (loginPassInput) loginPassInput.classList.remove("shake-error");
+    if (oldPassInput) oldPassInput.classList.remove("shake-error");
+    if (newPassInput) newPassInput.classList.remove("shake-error");
+    if (confirmPassInput) confirmPassInput.classList.remove("shake-error");
+    if (recoveryInput) recoveryInput.classList.remove("shake-error");
+  };
+
+  if (loginPassInput) loginPassInput.addEventListener("input", clearErrors);
+  if (oldPassInput) oldPassInput.addEventListener("input", clearErrors);
+  if (newPassInput) newPassInput.addEventListener("input", clearErrors);
+  if (confirmPassInput) confirmPassInput.addEventListener("input", clearErrors);
+  if (recoveryInput) recoveryInput.addEventListener("input", clearErrors);
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", clearErrors);
+  });
+
   // Tab 1: Unlock Submission
   function handleUnlock() {
+    clearErrors();
     const entered = (loginPassInput.value || "").trim();
     const currentPass = getAdminPassword();
+
+    if (!entered) {
+      if (loginErr) {
+        loginErr.querySelector("span").textContent = "⚠️ Please enter the Admin Password!";
+        loginErr.style.display = "flex";
+      }
+      if (loginPassInput) {
+        loginPassInput.classList.add("shake-error");
+        loginPassInput.focus();
+      }
+      showToast("Please enter Admin Password! ⚠️");
+      return;
+    }
+
     if (entered === currentPass) {
       modal.classList.remove("open");
       loginPassInput.value = "";
@@ -3951,8 +4397,20 @@ function initAdminSecurityModal() {
       if (fab) fab.classList.add("admin-visible");
       showToast("👑 Admin Mode Activated!");
       const customizerModal = document.getElementById("customizer-modal");
-      if (customizerModal) customizerModal.classList.add("open");
+      if (customizerModal) {
+        customizerModal.classList.add("active");
+        if (typeof populateEditorFields === "function") populateEditorFields();
+      }
     } else {
+      if (loginErr) {
+        loginErr.querySelector("span").textContent = "❌ Incorrect Admin Password! Please try again.";
+        loginErr.style.display = "flex";
+      }
+      if (loginPassInput) {
+        loginPassInput.classList.add("shake-error");
+        loginPassInput.focus();
+        loginPassInput.select();
+      }
       showToast("Incorrect Admin Password ❌");
     }
   }
@@ -3964,34 +4422,47 @@ function initAdminSecurityModal() {
   // Tab 2: Change Password Submission (with min 4 / max 10 validation)
   if (changeSubmitBtn) {
     changeSubmitBtn.onclick = () => {
+      clearErrors();
       const oldVal = (oldPassInput.value || "").trim();
       const newVal = (newPassInput.value || "").trim();
       const confirmVal = (confirmPassInput.value || "").trim();
       const currentPass = getAdminPassword();
 
+      const showChangeErr = (msg, inputToFocus) => {
+        if (changeErr) {
+          changeErr.querySelector("span").textContent = msg;
+          changeErr.style.display = "flex";
+        }
+        if (inputToFocus) {
+          inputToFocus.classList.add("shake-error");
+          inputToFocus.focus();
+        }
+        showToast(msg);
+      };
+
       if (oldVal !== currentPass) {
-        showToast("Current Old Password is wrong ❌");
+        showChangeErr("❌ Current Old Password is wrong!", oldPassInput);
         return;
       }
       if (!newVal) {
-        showToast("New Password cannot be empty! ⚠️");
+        showChangeErr("⚠️ New Password cannot be empty!", newPassInput);
         return;
       }
       if (newVal.length < 4) {
-        showToast("Password must be at least 4 characters! ⚠️");
+        showChangeErr("⚠️ Password must be at least 4 characters!", newPassInput);
         return;
       }
       if (newVal.length > 10) {
-        showToast("Password cannot exceed 10 characters! ⚠️");
+        showChangeErr("⚠️ Password cannot exceed 10 characters!", newPassInput);
         return;
       }
       if (newVal !== confirmVal) {
-        showToast("New Passwords do not match! ❌");
+        showChangeErr("❌ New Passwords do not match!", confirmPassInput);
         return;
       }
 
       CONFIG.adminPassword = newVal;
-      localStorage.setItem("custom_admin_password", newVal);
+      try { localStorage.setItem("custom_admin_password", newVal); } catch(e){}
       oldPassInput.value = "";
       newPassInput.value = "";
       confirmPassInput.value = "";
@@ -4006,16 +4477,25 @@ function initAdminSecurityModal() {
   // Tab 3: Forgot Password Submission
   if (resetSubmitBtn) {
     resetSubmitBtn.onclick = () => {
+      clearErrors();
       const keyVal = (recoveryInput.value || "").trim();
       const expectedKey = CONFIG.passcode?.code || "1234";
       if (keyVal === expectedKey || keyVal === "1234" || keyVal === "2001") {
         CONFIG.adminPassword = "2001";
-        localStorage.setItem("custom_admin_password", "2001");
+        try { localStorage.setItem("custom_admin_password", "2001"); } catch(e){}
         recoveryInput.value = "";
         showToast("🔄 Password reset to default (2001)!");
         const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
         if (loginTabBtn) loginTabBtn.click();
       } else {
+        if (forgotErr) {
+          forgotErr.querySelector("span").textContent = "❌ Incorrect Recovery Key! Please try again.";
+          forgotErr.style.display = "flex";
+        }
+        if (recoveryInput) {
+          recoveryInput.classList.add("shake-error");
+          recoveryInput.focus();
+        }
         showToast("Incorrect Recovery Key ❌");
       }
     };
@@ -4038,13 +4518,12 @@ function checkAdminAccess() {
   const isEditParam = params.has("edit") || params.has("admin");
 
   const fab = document.getElementById("customizer-toggle-btn");
-  if (!fab) return;
-
-  if (isEditParam) {
-    fab.classList.add("admin-visible");
-  } else {
-    fab.classList.remove("admin-visible");
-    localStorage.removeItem("is_admin_user");
+  if (fab) {
+    if (isEditParam) {
+      fab.classList.add("admin-visible");
+    } else {
+      fab.classList.remove("admin-visible");
+    }
   }
 
   // Keyboard shortcut: Ctrl + Shift + E toggles admin mode with password
@@ -4402,40 +4881,146 @@ function initCustomizerModal() {
     });
   }
 
-function initDateDropdowns() {
+function getDaysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function updateDayOptions(selectedDay) {
   const daySelect = document.getElementById("input-day");
   const monthSelect = document.getElementById("input-month");
   const yearSelect = document.getElementById("input-year");
   if (!daySelect || !monthSelect || !yearSelect) return;
 
+  const y = parseInt(yearSelect.value, 10) || 2001;
+  const m = parseInt(monthSelect.value, 10) || 1;
+  const maxDays = getDaysInMonth(y, m);
+  const currentVal = selectedDay || parseInt(daySelect.value, 10) || 1;
+
   daySelect.innerHTML = "";
-  for (let d = 1; d <= 31; d++) {
+  for (let d = 1; d <= maxDays; d++) {
     const opt = document.createElement("option");
     opt.value = d;
     opt.textContent = String(d).padStart(2, "0");
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
+    opt.style.background = "#2a162b";
+    opt.style.color = "#fff";
     daySelect.appendChild(opt);
   }
+  daySelect.value = Math.min(currentVal, maxDays);
+}
 
-  const months = ["Jan (01)", "Feb (02)", "Mar (03)", "Apr (04)", "May (05)", "Jun (06)", "Jul (07)", "Aug (08)", "Sep (09)", "Oct (10)", "Nov (11)", "Dec (12)"];
-  monthSelect.innerHTML = "";
-  months.forEach((m, idx) => {
-    const opt = document.createElement("option");
-    opt.value = idx + 1;
-    opt.textContent = m;
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
-    monthSelect.appendChild(opt);
-  });
+function syncCalendarFromDropdowns() {
+  const daySelect = document.getElementById("input-day");
+  const monthSelect = document.getElementById("input-month");
+  const yearSelect = document.getElementById("input-year");
+  const dateInput = document.getElementById("input-date");
+  if (!daySelect || !monthSelect || !yearSelect || !dateInput) return;
 
-  const curYr = new Date().getFullYear();
-  const maxYr = curYr + 10;
-  yearSelect.innerHTML = "";
-  for (let y = maxYr; y >= 1950; y--) {
-    const opt = document.createElement("option");
-    opt.value = y;
-    opt.textContent = y;
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
-    yearSelect.appendChild(opt);
+  const y = parseInt(yearSelect.value, 10) || 2001;
+  const m = parseInt(monthSelect.value, 10) || 1;
+  const d = parseInt(daySelect.value, 10) || 1;
+
+  const yStr = String(y).padStart(4, "0");
+  const mStr = String(m).padStart(2, "0");
+  const dStr = String(d).padStart(2, "0");
+
+  dateInput.value = `${yStr}-${mStr}-${dStr}`;
+}
+
+function syncDropdownsFromCalendar() {
+  const dateInput = document.getElementById("input-date");
+  const daySelect = document.getElementById("input-day");
+  const monthSelect = document.getElementById("input-month");
+  const yearSelect = document.getElementById("input-year");
+  if (!dateInput || !dateInput.value || !daySelect || !monthSelect || !yearSelect) return;
+
+  const parts = dateInput.value.split("-");
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+
+    if (y && m && d) {
+      yearSelect.value = y;
+      monthSelect.value = m;
+      updateDayOptions(d);
+    }
+  }
+}
+
+function initDateDropdowns() {
+  const daySelect = document.getElementById("input-day");
+  const monthSelect = document.getElementById("input-month");
+  const yearSelect = document.getElementById("input-year");
+  const dateInput = document.getElementById("input-date");
+  const openCalBtn = document.getElementById("open-calendar-btn");
+  if (!daySelect || !monthSelect || !yearSelect) return;
+
+  if (monthSelect.children.length === 0) {
+    const months = ["Jan (01)", "Feb (02)", "Mar (03)", "Apr (04)", "May (05)", "Jun (06)", "Jul (07)", "Aug (08)", "Sep (09)", "Oct (10)", "Nov (11)", "Dec (12)"];
+    monthSelect.innerHTML = "";
+    months.forEach((m, idx) => {
+      const opt = document.createElement("option");
+      opt.value = idx + 1;
+      opt.textContent = m;
+      opt.style.background = "#2a162b"; opt.style.color = "#fff";
+      monthSelect.appendChild(opt);
+    });
+  }
+
+  if (yearSelect.children.length === 0) {
+    const curYr = new Date().getFullYear();
+    const maxYr = curYr + 10;
+    yearSelect.innerHTML = "";
+    for (let y = maxYr; y >= 1950; y--) {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      opt.style.background = "#2a162b"; opt.style.color = "#fff";
+      yearSelect.appendChild(opt);
+    }
+  }
+
+  updateDayOptions();
+
+  if (!daySelect.dataset.listenerAttached) {
+    daySelect.dataset.listenerAttached = "true";
+    daySelect.addEventListener("change", syncCalendarFromDropdowns);
+    monthSelect.addEventListener("change", () => {
+      updateDayOptions();
+      syncCalendarFromDropdowns();
+    });
+    yearSelect.addEventListener("change", () => {
+      updateDayOptions();
+      syncCalendarFromDropdowns();
+    });
+  }
+
+  function updateCalendarDisplay() {
+    const displayEl = document.getElementById("calendar-display-text");
+    if (!displayEl || !dateInput || !dateInput.value) return;
+    const parts = dateInput.value.split("-");
+    if (parts.length === 3) {
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      if (y && m && d) {
+        displayEl.textContent = `${String(d).padStart(2,"0")} ${months[m-1] || ""} ${y}`;
+        displayEl.style.opacity = "1";
+      }
+    }
+  }
+
+  if (dateInput && !dateInput.dataset.listenerAttached) {
+    dateInput.dataset.listenerAttached = "true";
+    dateInput.addEventListener("change", () => {
+      syncDropdownsFromCalendar();
+      updateCalendarDisplay();
+    });
+    dateInput.addEventListener("input", () => {
+      syncDropdownsFromCalendar();
+      updateCalendarDisplay();
+    });
   }
 }
 
@@ -4445,9 +5030,29 @@ function initDateDropdowns() {
     const daySelect = document.getElementById("input-day");
     const monthSelect = document.getElementById("input-month");
     const yearSelect = document.getElementById("input-year");
-    if (daySelect) daySelect.value = CONFIG.birthDate?.day || 1;
-    if (monthSelect) monthSelect.value = CONFIG.birthDate?.month || 1;
-    if (yearSelect) yearSelect.value = CONFIG.birthDate?.year || 2001;
+    const dateInput = document.getElementById("input-date");
+
+    const curYr = CONFIG.birthDate?.year || 2001;
+    const curMo = CONFIG.birthDate?.month || 1;
+    const curDa = CONFIG.birthDate?.day || 1;
+
+    if (yearSelect) yearSelect.value = curYr;
+    if (monthSelect) monthSelect.value = curMo;
+    updateDayOptions(curDa);
+
+    if (dateInput) {
+      const yStr = String(curYr).padStart(4, "0");
+      const mStr = String(curMo).padStart(2, "0");
+      const dStr = String(curDa).padStart(2, "0");
+      dateInput.value = `${yStr}-${mStr}-${dStr}`;
+      // Update display text
+      const displayEl = document.getElementById("calendar-display-text");
+      if (displayEl) {
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        displayEl.textContent = `${dStr} ${months[curMo-1] || ""} ${curYr}`;
+        displayEl.style.opacity = "1";
+      }
+    }
 
     document.getElementById("input-name").value = CONFIG.name || "";
     document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
@@ -4511,9 +5116,21 @@ function initDateDropdowns() {
     const rawName = document.getElementById("input-name").value.trim();
     const nameVal = rawName ? formatName(rawName) : "";
 
-    const dVal = parseInt(document.getElementById("input-day")?.value) || CONFIG.birthDate?.day || 1;
-    const mVal = parseInt(document.getElementById("input-month")?.value) || CONFIG.birthDate?.month || 1;
-    const yVal = parseInt(document.getElementById("input-year")?.value) || CONFIG.birthDate?.year || 2001;
+    const dateInput = document.getElementById("input-date");
+    let yVal, mVal, dVal;
+    if (dateInput && dateInput.value) {
+      const parts = dateInput.value.split("-");
+      if (parts.length === 3) {
+        yVal = parseInt(parts[0], 10);
+        mVal = parseInt(parts[1], 10);
+        dVal = parseInt(parts[2], 10);
+      }
+    }
+    if (!yVal || !mVal || !dVal) {
+      dVal = parseInt(document.getElementById("input-day")?.value, 10) || CONFIG.birthDate?.day || 1;
+      mVal = parseInt(document.getElementById("input-month")?.value, 10) || CONFIG.birthDate?.month || 1;
+      yVal = parseInt(document.getElementById("input-year")?.value, 10) || CONFIG.birthDate?.year || 2001;
+    }
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
 
@@ -4654,12 +5271,13 @@ function initDateDropdowns() {
         CONFIG.passcode.code = "1234";
         const nInput = document.getElementById("input-name");
         if (nInput) nInput.value = "";
+        const dtInput = document.getElementById("input-date");
+        if (dtInput) dtInput.value = "2001-01-01";
         const yInput = document.getElementById("input-year");
         if (yInput) yInput.value = "2001";
         const mInput = document.getElementById("input-month");
         if (mInput) mInput.value = "1";
-        const dInput = document.getElementById("input-day");
-        if (dInput) dInput.value = "1";
+        updateDayOptions(1);
         const cakeSelect = document.getElementById("input-cake-flavor");
         if (cakeSelect) cakeSelect.value = "default";
         const passInput = document.getElementById("input-passcode");
@@ -4777,6 +5395,21 @@ function initDateDropdowns() {
     });
   });
 
+  // Exit Admin Mode button in header
+  const exitAdminBtn = document.getElementById("exit-admin-mode-btn");
+  if (exitAdminBtn) {
+    exitAdminBtn.addEventListener("click", () => {
+      const fab = document.getElementById("customizer-toggle-btn");
+      if (fab) fab.classList.remove("admin-visible");
+      backdrop.classList.remove("active");
+      try { sessionStorage.removeItem("is_admin_active"); } catch(e){}
+      if (location.search.includes("admin") || location.search.includes("edit")) {
+        history.replaceState(null, "", location.pathname);
+      }
+      showToast("🔒 Exited Admin Mode & Locked!");
+    });
+  }
+
   // Restore All Default Messages button in header
   const resetMsgsBtn = document.getElementById("reset-default-messages-btn");
   if (resetMsgsBtn) {
@@ -4860,9 +5493,22 @@ function initDateDropdowns() {
 
       try {
         await navigator.clipboard.writeText(customUrl);
-        showToast(values.nameVal ? `Custom link copied for ${values.nameVal}! 🔗` : "Custom link copied! 🔗");
+        showToast(values.nameVal ? `✅ Link copied for ${values.nameVal}! Share it 🔗` : "✅ Link copied! Share it 🔗", 3200);
       } catch(e) {
-        showToast(`Link: ${customUrl}`);
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = customUrl;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          showToast("✅ Link copied! Share it 🔗", 3200);
+        } catch(e2) {
+          showToast("🔗 Copy the link from address bar", 3200);
+        }
       }
 
       // Keep editor modal open when copying link so user can continue editing!
@@ -4966,13 +5612,15 @@ function reRenderPage() {
   // Birthday card
   updateBirthdayCard();
 
-  // Letter body — re-render
+  // Letter body — re-render (keep blank for typewriter animation on fresh load)
   const letterBody = document.getElementById("letter-body");
   if (letterBody) {
     letterBody.innerHTML = "";
-    CONFIG.letterLines.forEach(line => {
+    (CONFIG.letterLines || []).forEach(line => {
       const p = document.createElement("p");
-      p.innerHTML = ensureLineHighlight(line);
+      if (window.letterTyped) {
+        p.innerHTML = ensureLineHighlight(line);
+      }
       letterBody.appendChild(p);
     });
   }
@@ -5308,27 +5956,13 @@ function buildRecipientShareUrl(overrideName) {
     baseUrl = location.href.split("?")[0];
   }
 
-  const token = encodeWishData(CONFIG);
+  const token = encodeWishData(CONFIG, overrideName);
 
   if (!token) {
     return nameVal ? `${baseUrl}?name=${encodeURIComponent(nameVal)}` : baseUrl;
   }
 
-  let shareUrl = `${baseUrl}?w=${token}`;
-  if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
-
-  // Filter out any blob: URLs from music & video params so blob: URLs NEVER get appended to shareable links!
-  if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
-    shareUrl += `&music=${encodeURIComponent(CONFIG.music.file)}`;
-  }
-  if (CONFIG.music?.startTime) {
-    shareUrl += `&t=${encodeURIComponent(CONFIG.music.startTime)}`;
-  }
-  if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:") && !CONFIG.videoWish.url.startsWith("data:")) {
-    shareUrl += `&v=${encodeURIComponent(CONFIG.videoWish.url)}`;
-  }
-
-  return shareUrl;
+  return `${baseUrl}?w=${token}`;
 }
 
 function updateShareSection() {
@@ -5478,16 +6112,24 @@ function initShare() {
 
 }
 
-function showToast(msg) {
-
+function showToast(msg, duration) {
   const t = document.getElementById("toast");
+  if (!t) return;
+
+  const ms = duration || 2800;
+
+  // Clear any existing dismiss timer so rapid calls restart cleanly
+  if (t._hideTimer) { clearTimeout(t._hideTimer); t._hideTimer = null; }
 
   t.textContent = msg;
+  t.classList.remove("show");
+
+  // Force reflow so CSS transition restarts
+  void t.offsetWidth;
 
   t.classList.add("show");
 
-  setTimeout(() => t.classList.remove("show"), 2200);
-
+  t._hideTimer = setTimeout(() => t.classList.remove("show"), ms);
 }
 
 /* ==========================================================================
@@ -5753,6 +6395,21 @@ function initMusicWidget() {
       showToast("Video link & start time cleared ✨");
     });
   }
+
+  function initGlobalAudioUnlock() {
+    const unlock = () => {
+      getAudioCtx();
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("touchstart", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
+    document.addEventListener("pointerdown", unlock, { passive: true });
+    document.addEventListener("click", unlock, { passive: true });
+    document.addEventListener("touchstart", unlock, { passive: true });
+    document.addEventListener("keydown", unlock, { passive: true });
+  }
+  initGlobalAudioUnlock();
 
   initMusicWidget();
 

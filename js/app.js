@@ -3772,11 +3772,11 @@ function encodeWishData(dataObj) {
 
       if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
         const customGallery = CONFIG.gallery.filter(item => {
-          return item.image && (item.image.startsWith("data:") || item.image.startsWith("http") || !item.image.includes("assets/images/polaroid-"));
+          return (item.image && item.image.startsWith("http")) || (item.secretNote && !item.secretNote.includes("Remember this day"));
         });
         if (customGallery.length > 0) {
           payload.g = customGallery.map(item => ({
-            img: item.image || null,
+            img: (item.image && item.image.startsWith("http")) ? item.image : null,
             e: item.emoji || "🎈",
             c: item.cap || "",
             n: item.secretNote || ""

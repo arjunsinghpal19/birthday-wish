@@ -4441,13 +4441,13 @@ function initDateDropdowns() {
 
   // ─── POPULATE ALL FIELDS ───
   function populateEditorFields() {
-    initDateDropdowns();
-    const daySelect = document.getElementById("input-day");
-    const monthSelect = document.getElementById("input-month");
-    const yearSelect = document.getElementById("input-year");
-    if (daySelect) daySelect.value = CONFIG.birthDate?.day || 1;
-    if (monthSelect) monthSelect.value = CONFIG.birthDate?.month || 1;
-    if (yearSelect) yearSelect.value = CONFIG.birthDate?.year || 2001;
+    const bDateInput = document.getElementById("input-birthdate");
+    if (bDateInput && CONFIG.birthDate) {
+      const y = String(CONFIG.birthDate.year || 2001).padStart(4, "0");
+      const m = String(CONFIG.birthDate.month || 1).padStart(2, "0");
+      const d = String(CONFIG.birthDate.day || 1).padStart(2, "0");
+      bDateInput.value = `${y}-${m}-${d}`;
+    }
 
     document.getElementById("input-name").value = CONFIG.name || "";
     document.getElementById("input-passcode").value = CONFIG.passcode?.code || "";
@@ -4511,9 +4511,20 @@ function initDateDropdowns() {
     const rawName = document.getElementById("input-name").value.trim();
     const nameVal = rawName ? formatName(rawName) : "";
 
-    const dVal = parseInt(document.getElementById("input-day")?.value) || CONFIG.birthDate?.day || 1;
-    const mVal = parseInt(document.getElementById("input-month")?.value) || CONFIG.birthDate?.month || 1;
-    const yVal = parseInt(document.getElementById("input-year")?.value) || CONFIG.birthDate?.year || 2001;
+    const bDateVal = document.getElementById("input-birthdate")?.value;
+    let yVal = CONFIG.birthDate?.year || 2001;
+    let mVal = CONFIG.birthDate?.month || 1;
+    let dVal = CONFIG.birthDate?.day || 1;
+
+    if (bDateVal) {
+      const parts = bDateVal.split("-");
+      if (parts.length === 3) {
+        yVal = parseInt(parts[0]) || 2001;
+        mVal = parseInt(parts[1]) || 1;
+        dVal = parseInt(parts[2]) || 1;
+      }
+    }
+
     const rawPass = document.getElementById("input-passcode").value.trim();
     const passVal = nameVal ? (rawPass || "1234") : "1234";
 
@@ -4654,12 +4665,8 @@ function initDateDropdowns() {
         CONFIG.passcode.code = "1234";
         const nInput = document.getElementById("input-name");
         if (nInput) nInput.value = "";
-        const yInput = document.getElementById("input-year");
-        if (yInput) yInput.value = "2001";
-        const mInput = document.getElementById("input-month");
-        if (mInput) mInput.value = "1";
-        const dInput = document.getElementById("input-day");
-        if (dInput) dInput.value = "1";
+        const bDateInput = document.getElementById("input-birthdate");
+        if (bDateInput) bDateInput.value = "2001-01-01";
         const cakeSelect = document.getElementById("input-cake-flavor");
         if (cakeSelect) cakeSelect.value = "default";
         const passInput = document.getElementById("input-passcode");

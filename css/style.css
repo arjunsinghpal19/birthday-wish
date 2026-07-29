@@ -688,6 +688,37 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
 }
 .form-group textarea{ min-height:60px; line-height:1.6; }
 
+/* Real-Time Luxury Theme Calendar Date Picker */
+.luxury-date-picker {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 215, 0, 0.4) !important;
+  color: #fff !important;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.luxury-date-picker:focus, .luxury-date-picker:hover {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.35);
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+.luxury-date-picker::-webkit-calendar-picker-indicator {
+  filter: invert(0.8) sepia(1) saturate(5) hue-rotate(5deg);
+  cursor: pointer;
+  opacity: 0.9;
+  transform: scale(1.25);
+  transition: transform 0.2s ease;
+}
+.luxury-date-picker::-webkit-calendar-picker-indicator:hover {
+  transform: scale(1.4);
+  opacity: 1;
+}
+
 /* Dynamic Item Groups (Reasons, Timeline, Gallery, Wishes) */
 .editor-item-group{
   position:relative; padding:14px; margin-bottom:12px; border-radius:12px;

@@ -3781,13 +3781,13 @@ function encodeWishData(dataObj) {
           "Here's to making this year"
         ];
         const customGallery = CONFIG.gallery.filter(item => {
-          const isCustomImage = item.image && !item.image.includes("assets/images/polaroid-");
+          const isCustomImage = item.image && (item.image.startsWith("http://") || item.image.startsWith("https://"));
           const isCustomNote = item.secretNote && !defaultNotes.some(dn => item.secretNote.includes(dn));
           return isCustomImage || isCustomNote;
         });
         if (customGallery.length > 0) {
           payload.g = customGallery.map(item => ({
-            img: (item.image && !item.image.includes("assets/images/polaroid-")) ? item.image : null,
+            img: (item.image && (item.image.startsWith("http://") || item.image.startsWith("https://"))) ? item.image : null,
             e: item.emoji || "🎈",
             c: item.cap || "",
             n: item.secretNote || ""
@@ -4438,7 +4438,7 @@ function initCustomizerModal() {
           <button type="button" class="item-delete-btn" data-type="gallery" data-index="${i}" title="Delete">✕</button>
         </div>
         <div class="form-group" style="margin-bottom:12px;">
-          <label style="font-size:0.75rem;opacity:0.85;">Photo Image (Upload real photo or leave empty for Emoji tile)</label>
+          <label style="font-size:0.75rem;opacity:0.85;">Photo Image (Upload photo or paste online Image URL)</label>
           <div class="gallery-photo-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
             ${g.image ? `
               <div style="position:relative;width:50px;height:50px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,215,0,0.6);flex-shrink:0;">
@@ -4450,6 +4450,8 @@ function initCustomizerModal() {
                 📷 Select Photo from Device
                 <input type="file" class="gallery-file-input" accept="image/*" data-index="${i}" style="display:none;">
               </label>
+              <span style="font-size:0.75rem;opacity:0.6;">or</span>
+              <input type="url" class="gallery-url-input" placeholder="Paste Image Link (https://...)" value="${g.image && g.image.startsWith('http') ? g.image : ''}" data-index="${i}" style="flex:1;min-width:180px;font-size:0.8rem;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.2);color:#fff;">
             `}
           </div>
         </div>
@@ -4503,6 +4505,20 @@ function initCustomizerModal() {
           }
           renderGalleryInputs();
           reRenderPage();
+        }
+      });
+    });
+
+    // Bind direct URL inputs
+    container.querySelectorAll(".gallery-url-input").forEach(input => {
+      input.addEventListener("change", (e) => {
+        const idx = parseInt(input.dataset.index);
+        const url = e.target.value.trim();
+        if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
+          CONFIG.gallery[idx].image = url;
+          renderGalleryInputs();
+          reRenderPage();
+          showToast(`Photo link set for Tile ${idx + 1}! 📸`);
         }
       });
     });

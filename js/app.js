@@ -4479,12 +4479,30 @@ function initCustomizerModal() {
         const file = e.target.files[0];
         if (!file) return;
         const idx = parseInt(input.dataset.index);
-        const dataUrl = await compressImageFile(file);
+        showToast("⏳ Processing & Uploading Photo...");
+        const dataUrl = await compressImageFile(file, 350, 0.5);
         if (dataUrl) {
-          CONFIG.gallery[idx].image = dataUrl;
+          try {
+            const formData = new FormData();
+            formData.append("image", dataUrl.split(",")[1]);
+            const res = await fetch("https://api.imgbb.com/1/upload?key=6d0276711900d7966f1632f457bc6716", {
+              method: "POST",
+              body: formData
+            });
+            const json = await res.json();
+            if (json && json.data && json.data.url) {
+              CONFIG.gallery[idx].image = json.data.url;
+              showToast(`Photo Cloud Uploaded to Tile ${idx + 1}! ☁️📸`);
+            } else {
+              CONFIG.gallery[idx].image = dataUrl;
+              showToast(`Photo added to Tile ${idx + 1}! 📸`);
+            }
+          } catch (err) {
+            CONFIG.gallery[idx].image = dataUrl;
+            showToast(`Photo added to Tile ${idx + 1}! 📸`);
+          }
           renderGalleryInputs();
           reRenderPage();
-          showToast(`Photo added to Tile ${idx + 1}! 📸`);
         }
       });
     });

@@ -3771,10 +3771,12 @@ function encodeWishData(dataObj) {
       if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
 
       if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
-        const customGallery = CONFIG.gallery.filter(item => (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:") && !item.image.includes("assets/images/polaroid-")) || (item.secretNote && !item.secretNote.includes("You make the world better")));
+        const customGallery = CONFIG.gallery.filter(item => {
+          return item.image && (item.image.startsWith("data:") || item.image.startsWith("http") || !item.image.includes("assets/images/polaroid-"));
+        });
         if (customGallery.length > 0) {
           payload.g = customGallery.map(item => ({
-            img: (item.image && !item.image.startsWith("blob:") && !item.image.startsWith("data:") && !item.image.includes("assets/images/polaroid-")) ? item.image : null,
+            img: item.image || null,
             e: item.emoji || "🎈",
             c: item.cap || "",
             n: item.secretNote || ""
@@ -5049,14 +5051,13 @@ function initDateDropdowns() {
         showToast(`Link: ${customUrl}`);
       }
 
-      // Open Share Options Modal
-      const shareModal = document.getElementById("share-options-modal");
-      if (shareModal) {
-        shareModal.classList.add("open");
+      // Expand Inline Share Bar inside Customizer Footer
+      const inlineShare = document.getElementById("inline-share-options");
+      if (inlineShare) {
+        inlineShare.style.display = "block";
 
-        const closeBtn = document.getElementById("share-modal-close-btn");
-        if (closeBtn) closeBtn.onclick = () => shareModal.classList.remove("open");
-        shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.remove("open"); };
+        const closeBtn = document.getElementById("close-inline-share-btn");
+        if (closeBtn) closeBtn.onclick = () => { inlineShare.style.display = "none"; };
 
         // WhatsApp Share (Clean name detection & short link formatting)
         const waBtn = document.getElementById("share-whatsapp-btn");
@@ -5090,19 +5091,6 @@ function initDateDropdowns() {
               }
             } else {
               showToast("📋 Link copied! Paste anywhere to share.");
-            }
-          };
-        }
-
-        // Copy Again Button
-        const copyAgainBtn = document.getElementById("share-copy-again-btn");
-        if (copyAgainBtn) {
-          copyAgainBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(customUrl);
-              showToast("📋 Link copied again!");
-            } catch(e) {
-              showToast("Copied!");
             }
           };
         }

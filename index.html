@@ -721,9 +721,26 @@
       </div>
 
       <!-- STICKY FOOTER -->
-      <div class="editor-footer">
-        <button id="customizer-save-btn" class="btn">💾 Save & Apply</button>
-        <button id="customizer-share-link-btn" class="btn btn-ghost">🔗 Shareable Link</button>
+      <div class="editor-footer-wrap" style="padding:14px 20px;background:rgba(20,10,25,0.95);border-top:1px solid rgba(255,255,255,0.1);border-radius:0 0 20px 20px;">
+        <div id="inline-share-options" class="inline-share-bar" style="display:none;padding:12px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);margin-bottom:10px;border-radius:12px;animation:fadeIn 0.3s ease;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">✅ Link Copied! Share Birthday Wish:</span>
+            <button id="close-inline-share-btn" type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:0.9rem;padding:2px 6px;">✕</button>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="share-whatsapp-btn" type="button" class="btn" style="flex:1;min-width:130px;background:#25D366;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 3px 10px rgba(37,211,102,0.3);">
+              💬 WhatsApp
+            </button>
+            <button id="share-native-btn" type="button" class="btn" style="flex:1;min-width:130px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 3px 10px rgba(253,29,29,0.3);">
+              📱 Other Apps
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-footer" style="display:flex;gap:12px;">
+          <button id="customizer-save-btn" class="btn" style="flex:1;">💾 Save & Apply</button>
+          <button id="customizer-share-link-btn" class="btn btn-ghost" style="flex:1;">🔗 Shareable Link</button>
+        </div>
       </div>
 
     </div>
@@ -847,36 +864,6 @@
     <div class="photo-lightbox-content">
       <img id="photo-lightbox-img" src="" alt="Zoomed Photo">
       <p id="photo-lightbox-caption" class="photo-lightbox-caption"></p>
-    </div>
-  </div>
-
-  <!-- SHARE OPTIONS MODAL -->
-  <div id="share-options-modal" class="modal-backdrop" style="z-index:99999;">
-    <div class="modal-content glass card-glow-border" style="max-width:400px;width:90%;padding:24px 20px;border-radius:20px;text-align:center;position:relative;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <h3 style="font-family:var(--font-hand);font-size:1.5rem;color:var(--gold);margin:0;">🎉 Share Birthday Wish</h3>
-        <button id="share-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:4px;" type="button">✕</button>
-      </div>
-      <p style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin-bottom:16px;line-height:1.4;">
-        ✅ Link Copied! Niche kisi bhi platform par share karein:
-      </p>
-
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <!-- WhatsApp -->
-        <button id="share-whatsapp-btn" type="button" class="btn" style="background:#25D366;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);">
-          <span>💬 Share on WhatsApp</span>
-        </button>
-
-        <!-- Native Share / Apps -->
-        <button id="share-native-btn" type="button" class="btn" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(253,29,29,0.3);">
-          <span>📱 Share via Instagram / Other Apps</span>
-        </button>
-
-        <!-- Copy Link Only -->
-        <button id="share-copy-again-btn" type="button" class="btn btn-ghost" style="padding:10px;border-radius:10px;font-size:0.85rem;">
-          📋 Copy Link Only
-        </button>
-      </div>
     </div>
   </div>
 

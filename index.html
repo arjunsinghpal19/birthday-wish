@@ -785,14 +785,18 @@
 
       <!-- TAB 3: FORGOT PASSWORD -->
       <div id="admin-tab-forgot" class="admin-tab-content" style="display:none;">
-        <p style="font-size:0.9rem;color:rgba(255,255,255,0.8);margin-bottom:14px;line-height:1.5;">
-          Password reset karne ke liye Secret Birthday Key (Default: <code>1234</code>) enter karein:
+        <p style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin-bottom:14px;line-height:1.5;">
+          🔐 Enter your Master Recovery Passcode to reset Admin access:
         </p>
         <div class="form-group" style="margin-bottom:16px;">
           <label for="admin-recovery-key">Master Recovery Passcode</label>
-          <input type="text" id="admin-recovery-key" class="form-control" placeholder="e.g. 1234" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+          <div class="pass-input-wrap">
+            <input type="password" id="admin-recovery-key" class="form-control" placeholder="Enter Secret Recovery Key" maxlength="25" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+            <button type="button" class="eye-toggle" data-target="admin-recovery-key" aria-label="Toggle visibility">👁</button>
+          </div>
+          <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Recovery Key! Please try again.</div>
         </div>
-        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔄 Reset Password to Default (2001)</button>
+        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔓 Reset Admin Password</button>
       </div>
     </div>
   </div>

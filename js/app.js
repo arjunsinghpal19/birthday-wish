@@ -4034,22 +4034,74 @@ function initAdminSecurityModal() {
 
   // Tab 3: Forgot Password Submission
   if (resetSubmitBtn) {
-    resetSubmitBtn.onclick = () => {
-      const keyVal = (recoveryInput.value || "").trim();
+    const handleRecovery = () => {
+      const keyVal = (recoveryInput?.value || "").trim();
       const expectedKey = CONFIG.passcode?.code || "1234";
-      if (keyVal === expectedKey || keyVal === "1234" || keyVal === "2001") {
+      const recErrEl = document.getElementById("admin-recovery-error");
+
+      // Valid recovery passcodes: recipient passcode, 1234, 2001, arjun2001
+      const isValid = (keyVal === expectedKey || keyVal === "1234" || keyVal === "2001" || keyVal.toLowerCase() === "arjun2001");
+
+      if (isValid) {
         CONFIG.adminPassword = "2001";
         localStorage.setItem("custom_admin_password", "2001");
-        recoveryInput.value = "";
-        showToast("🔄 Password reset to default (2001)!");
+        if (recoveryInput) {
+          recoveryInput.value = "";
+          recoveryInput.classList.remove("input-error");
+        }
+        if (recErrEl) recErrEl.style.display = "none";
+        showToast("🔄 Admin Password reset successfully!");
         const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
         if (loginTabBtn) loginTabBtn.click();
       } else {
-        showToast("Incorrect Recovery Key ❌");
+        // Red Input Border
+        if (recoveryInput) {
+          recoveryInput.classList.add("input-error");
+          recoveryInput.focus();
+          recoveryInput.select();
+        }
+
+        // Modal Shake Effect
+        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
+        if (modalCard) {
+          modalCard.classList.remove("shake-error");
+          void modalCard.offsetWidth;
+          modalCard.classList.add("shake-error");
+        }
+
+        // Inline Error Text
+        if (recErrEl) recErrEl.style.display = "flex";
+        showToast("Incorrect Master Recovery Passcode ❌");
       }
     };
+
+    resetSubmitBtn.onclick = handleRecovery;
+    if (recoveryInput) {
+      recoveryInput.onkeydown = (e) => { if (e.key === "Enter") handleRecovery(); };
+      recoveryInput.addEventListener("input", () => {
+        recoveryInput.classList.remove("input-error");
+        const recErrEl = document.getElementById("admin-recovery-error");
+        if (recErrEl) recErrEl.style.display = "none";
+      });
+    }
   }
 }
+
+// ─── EMERGENCY DEVELOPER SHORTCUT (Ctrl + Shift + Alt + A) ───
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === "a" || e.key === "A" || e.key === "r" || e.key === "R")) {
+    e.preventDefault();
+    localStorage.removeItem("custom_admin_password");
+    if (typeof CONFIG !== "undefined") CONFIG.adminPassword = "2001";
+    showToast("⚡ Emergency Developer Reset Triggered! Admin Unlocked 🔓");
+    const fab = document.getElementById("customizer-toggle-btn");
+    if (fab) fab.classList.add("admin-visible");
+    const adminModal = document.getElementById("admin-login-modal");
+    if (adminModal) adminModal.classList.remove("open");
+    const customizerModal = document.getElementById("customizer-modal");
+    if (customizerModal) customizerModal.classList.add("open");
+  }
+});
 
 function promptForAdminAccess() {
   const modal = document.getElementById("admin-login-modal");

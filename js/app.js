@@ -2370,6 +2370,7 @@ function typeLetterBody() {
   window.letterTyping = true;
 
   const paras = document.querySelectorAll("#letter-body p");
+  paras.forEach(p => { p.innerHTML = ""; p.style.opacity = "1"; });
   let i = 0;
 
   (function nextLine() {
@@ -2379,7 +2380,6 @@ function typeLetterBody() {
     }
 
     const p = paras[i];
-    p.style.opacity = "0";
     const html = ensureLineHighlight(CONFIG.letterLines[i]);
     p.innerHTML = html;
 
@@ -5197,13 +5197,15 @@ function reRenderPage() {
   // Birthday card
   updateBirthdayCard();
 
-  // Letter body — re-render
+  // Letter body — re-render (keep empty until envelope opens and types)
   const letterBody = document.getElementById("letter-body");
   if (letterBody) {
     letterBody.innerHTML = "";
     CONFIG.letterLines.forEach(line => {
       const p = document.createElement("p");
-      p.innerHTML = ensureLineHighlight(line);
+      if (window.letterTyped) {
+        p.innerHTML = ensureLineHighlight(line);
+      }
       letterBody.appendChild(p);
     });
   }

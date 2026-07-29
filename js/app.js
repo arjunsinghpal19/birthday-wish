@@ -5649,7 +5649,38 @@ function updateShareSection() {
   }
 }
 
+function initWishes() {
+  const quoteText = document.getElementById("wish-quote-text");
+  const newQuoteBtn = document.getElementById("new-quote-btn");
+  if (!quoteText || !newQuoteBtn) return;
+
+  const quotes = Array.isArray(CONFIG.wishes) && CONFIG.wishes.length > 0 ? CONFIG.wishes : [
+    "May this year hand you everything last year taught you to deserve.",
+    "Wishing you a year as bright and unstoppable as you are.",
+    "May your birthday be the gentle start of your best year yet.",
+    "Here's to more laughter, less overthinking, and everything you're working towards.",
+    "May you keep choosing yourself this year, the way you choose everyone else."
+  ];
+
+  let currentIdx = Math.floor(Math.random() * quotes.length);
+  quoteText.textContent = quotes[currentIdx];
+
+  newQuoteBtn.addEventListener("click", () => {
+    currentIdx = (currentIdx + 1) % quotes.length;
+    quoteText.style.opacity = "0";
+    quoteText.style.transform = "translateY(8px)";
+    quoteText.style.transition = "all 0.2s ease";
+    setTimeout(() => {
+      quoteText.textContent = quotes[currentIdx];
+      quoteText.style.opacity = "1";
+      quoteText.style.transform = "translateY(0)";
+      if (typeof confettiBurst === "function") confettiBurst(innerWidth / 2, innerHeight * 0.4, 25);
+    }, 200);
+  });
+}
+
 function initShare() {
+  initWishes();
   updateShareSection();
 
   const instaBtn = document.getElementById("insta-story-btn");

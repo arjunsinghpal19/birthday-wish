@@ -3773,12 +3773,21 @@ function encodeWishData(dataObj) {
       if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
 
       if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
+        const defaultNotes = [
+          "Remember this day",
+          "Getting 50 photos",
+          "Half of the icing",
+          "Pure unscripted laughter",
+          "Here's to making this year"
+        ];
         const customGallery = CONFIG.gallery.filter(item => {
-          return (item.image && item.image.startsWith("http")) || (item.secretNote && !item.secretNote.includes("Remember this day"));
+          const isCustomImage = item.image && !item.image.includes("assets/images/polaroid-");
+          const isCustomNote = item.secretNote && !defaultNotes.some(dn => item.secretNote.includes(dn));
+          return isCustomImage || isCustomNote;
         });
         if (customGallery.length > 0) {
           payload.g = customGallery.map(item => ({
-            img: (item.image && item.image.startsWith("http")) ? item.image : null,
+            img: (item.image && !item.image.includes("assets/images/polaroid-")) ? item.image : null,
             e: item.emoji || "🎈",
             c: item.cap || "",
             n: item.secretNote || ""
@@ -4384,7 +4393,7 @@ function initCustomizerModal() {
     });
   }
 
-  function compressImageFile(file, maxSide = 600, quality = 0.7) {
+  function compressImageFile(file, maxSide = 350, quality = 0.5) {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {

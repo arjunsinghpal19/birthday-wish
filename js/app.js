@@ -2986,7 +2986,17 @@ function initCake() {
 
   });
 
-  saveBtn.addEventListener("click", () => saveCakeMemory());
+  function saveCakeMemory() {
+    if (typeof exportInstaStory === "function") {
+      exportInstaStory();
+    } else {
+      showToast("📸 Memory Saved to Gallery! ✨");
+    }
+    if (typeof launchFireworksShow === "function") launchFireworksShow(2500);
+    if (typeof confettiBurst === "function") confettiBurst(innerWidth / 2, innerHeight * 0.45, 150);
+  }
+
+  if (saveBtn) saveBtn.addEventListener("click", () => saveCakeMemory());
 
 }
 

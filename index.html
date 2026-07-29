@@ -850,6 +850,36 @@
     </div>
   </div>
 
+  <!-- SHARE OPTIONS MODAL -->
+  <div id="share-options-modal" class="modal-backdrop" style="z-index:99999;">
+    <div class="modal-content glass card-glow-border" style="max-width:400px;width:90%;padding:24px 20px;border-radius:20px;text-align:center;position:relative;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="font-family:var(--font-hand);font-size:1.5rem;color:var(--gold);margin:0;">🎉 Share Birthday Wish</h3>
+        <button id="share-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:4px;" type="button">✕</button>
+      </div>
+      <p style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin-bottom:16px;line-height:1.4;">
+        ✅ Link Copied! Niche kisi bhi platform par share karein:
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <!-- WhatsApp -->
+        <button id="share-whatsapp-btn" type="button" class="btn" style="background:#25D366;color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(37,211,102,0.3);">
+          <span>💬 Share on WhatsApp</span>
+        </button>
+
+        <!-- Native Share / Apps -->
+        <button id="share-native-btn" type="button" class="btn" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;border:none;padding:12px;border-radius:10px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 4px 15px rgba(253,29,29,0.3);">
+          <span>📱 Share via Instagram / Other Apps</span>
+        </button>
+
+        <!-- Copy Link Only -->
+        <button id="share-copy-again-btn" type="button" class="btn btn-ghost" style="padding:10px;border-radius:10px;font-size:0.85rem;">
+          📋 Copy Link Only
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
 </body>

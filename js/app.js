@@ -5025,15 +5025,82 @@ function initDateDropdowns() {
       updateShareSection();
 
       const customUrl = buildRecipientShareUrl(values.nameVal);
+      const recipientName = values.nameVal || "Friend";
 
+      // Visual Button Feedback
+      const origHTML = shareLinkBtn.innerHTML;
+      shareLinkBtn.innerHTML = "✅ Link Copied!";
+      shareLinkBtn.style.borderColor = "#2ecc71";
+      shareLinkBtn.style.color = "#2ecc71";
+      shareLinkBtn.style.boxShadow = "0 0 12px rgba(46,204,113,0.5)";
+
+      setTimeout(() => {
+        shareLinkBtn.innerHTML = origHTML;
+        shareLinkBtn.style.borderColor = "";
+        shareLinkBtn.style.color = "";
+        shareLinkBtn.style.boxShadow = "";
+      }, 2500);
+
+      // Clipboard copy
       try {
         await navigator.clipboard.writeText(customUrl);
-        showToast(values.nameVal ? `Custom link copied for ${values.nameVal}! 🔗` : "Custom link copied! 🔗");
+        showToast("📋 Wish Link copied to clipboard!");
       } catch(e) {
         showToast(`Link: ${customUrl}`);
       }
 
-      // Keep editor modal open when copying link so user can continue editing!
+      // Open Share Options Modal
+      const shareModal = document.getElementById("share-options-modal");
+      if (shareModal) {
+        shareModal.classList.add("open");
+
+        const closeBtn = document.getElementById("share-modal-close-btn");
+        if (closeBtn) closeBtn.onclick = () => shareModal.classList.remove("open");
+        shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.remove("open"); };
+
+        // WhatsApp Share (Secret Passcode NOT revealed so recipient guesses it!)
+        const waBtn = document.getElementById("share-whatsapp-btn");
+        if (waBtn) {
+          waBtn.onclick = () => {
+            const msg = `🎉 Hey! Maine ${recipientName} ke liye ek special surprise Birthday Wish banayi hai! 🎂\n\nLink par click karke dekho: ${customUrl}\n\n(Passcode guess karke lock open karein! 🔑)`;
+            const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, "_blank");
+          };
+        }
+
+        // Native System Share (Instagram / Telegram / Messages)
+        const nativeBtn = document.getElementById("share-native-btn");
+        if (nativeBtn) {
+          nativeBtn.onclick = async () => {
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: `Birthday Wish for ${recipientName}`,
+                  text: `🎉 Surprise Birthday Wish for ${recipientName}! Click link to open:`,
+                  url: customUrl
+                });
+              } catch(e) {
+                // Share modal dismissed
+              }
+            } else {
+              showToast("📋 Link copied! Paste anywhere to share.");
+            }
+          };
+        }
+
+        // Copy Again Button
+        const copyAgainBtn = document.getElementById("share-copy-again-btn");
+        if (copyAgainBtn) {
+          copyAgainBtn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(customUrl);
+              showToast("📋 Link copied again!");
+            } catch(e) {
+              showToast("Copied!");
+            }
+          };
+        }
+      }
     });
   }
 

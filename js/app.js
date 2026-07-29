@@ -4175,6 +4175,13 @@ function promptForAdminAccess() {
 function checkAdminAccess() {
   initAdminSecurityModal();
 
+  const footerLockBtn = document.getElementById("footer-admin-lock-btn");
+  if (footerLockBtn) {
+    footerLockBtn.addEventListener("click", () => {
+      promptForAdminAccess();
+    });
+  }
+
   const params = new URLSearchParams(location.search);
   const isEditParam = params.has("edit") || params.has("admin");
 

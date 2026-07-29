@@ -1856,3 +1856,31 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   transform: scale(1.1);
 }
 
+/* ─── ADMIN PASSWORD ERROR STYLES ─── */
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.shake-error {
+  animation: shakeError 0.4s ease-in-out !important;
+}
+
+.input-error {
+  border-color: #ff4d4d !important;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.5) !important;
+  background: rgba(255, 77, 77, 0.1) !important;
+}
+
+.admin-error-msg {
+  color: #ff4d4d;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: fadeIn 0.3s ease;
+}
+

@@ -3944,21 +3944,50 @@ function initAdminSecurityModal() {
   function handleUnlock() {
     const entered = (loginPassInput.value || "").trim();
     const currentPass = getAdminPassword();
+    const errorMsgEl = document.getElementById("admin-login-error");
+
     if (entered === currentPass) {
       modal.classList.remove("open");
       loginPassInput.value = "";
+      if (loginPassInput) loginPassInput.classList.remove("input-error");
+      if (errorMsgEl) errorMsgEl.style.display = "none";
       const fab = document.getElementById("customizer-toggle-btn");
       if (fab) fab.classList.add("admin-visible");
       showToast("👑 Admin Mode Activated!");
       const customizerModal = document.getElementById("customizer-modal");
       if (customizerModal) customizerModal.classList.add("open");
     } else {
+      // Trigger Red Input Border
+      if (loginPassInput) {
+        loginPassInput.classList.add("input-error");
+        loginPassInput.focus();
+        loginPassInput.select();
+      }
+
+      // Trigger Modal Shake Effect
+      const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
+      if (modalCard) {
+        modalCard.classList.remove("shake-error");
+        void modalCard.offsetWidth; // Trigger reflow
+        modalCard.classList.add("shake-error");
+      }
+
+      // Show Red Text Error Message
+      if (errorMsgEl) {
+        errorMsgEl.style.display = "flex";
+      }
+
       showToast("Incorrect Admin Password ❌");
     }
   }
   if (loginSubmitBtn) loginSubmitBtn.onclick = handleUnlock;
   if (loginPassInput) {
     loginPassInput.onkeydown = (e) => { if (e.key === "Enter") handleUnlock(); };
+    loginPassInput.addEventListener("input", () => {
+      loginPassInput.classList.remove("input-error");
+      const errorMsgEl = document.getElementById("admin-login-error");
+      if (errorMsgEl) errorMsgEl.style.display = "none";
+    });
   }
 
   // Tab 2: Change Password Submission (with min 4 / max 10 validation)

@@ -133,6 +133,10 @@ const CONFIG = {
     // anytime to automatically use the built-in melody instead.
     file: "assets/music/happy-birthday-song.mpeg",
   },
+
+  letterFont: "default",
+  letterTheme: "default",
+  cakeFlavor: "default",
 };
 
 /* ==========================================================================

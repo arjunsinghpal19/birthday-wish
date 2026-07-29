@@ -4644,7 +4644,7 @@ function initDateDropdowns() {
     const cakeFlavorSelect = document.getElementById("input-cake-flavor");
     if (cakeFlavorSelect) cakeFlavorSelect.value = CONFIG.cakeFlavor || "default";
     const letterFontSelect = document.getElementById("input-letter-font");
-    if (letterFontSelect) letterFontSelect.value = CONFIG.letterFont || "cursive";
+    if (letterFontSelect) letterFontSelect.value = CONFIG.letterFont || "default";
     const letterThemeSelect = document.getElementById("input-letter-theme");
     if (letterThemeSelect) letterThemeSelect.value = CONFIG.letterTheme || "default";
 
@@ -4760,7 +4760,7 @@ function initDateDropdowns() {
     });
 
     const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "default";
-    const letterFont = document.getElementById("input-letter-font")?.value || "cursive";
+    const letterFont = document.getElementById("input-letter-font")?.value || "default";
     const letterTheme = document.getElementById("input-letter-theme")?.value || "default";
 
     return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont, letterTheme, secQuestVal, secAnsVal };

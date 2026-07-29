@@ -4051,7 +4051,7 @@ function initAdminSecurityModal() {
     const handleRecovery = () => {
       const keyVal = (recoveryInput?.value || "").trim();
       const ansVal = (secretAnsInput?.value || "").trim().toLowerCase();
-      const expectedAns = (localStorage.getItem("custom_secret_answer") || "arjun").trim().toLowerCase();
+      const expectedAns = (localStorage.getItem("custom_secret_answer") || "Arjun").trim().toLowerCase();
       const recErrEl = document.getElementById("admin-recovery-error");
 
       // Check Master Key (Arjun@123 OR SHA-256 hash OR 2001 OR 1234)
@@ -4643,7 +4643,7 @@ function initDateDropdowns() {
     const secQuestInput = document.getElementById("input-secret-question");
     if (secQuestInput) secQuestInput.value = localStorage.getItem("custom_secret_question") || "What is your Secret Security Keyword?";
     const secAnsInput = document.getElementById("input-secret-answer");
-    if (secAnsInput) secAnsInput.value = localStorage.getItem("custom_secret_answer") || "arjun";
+    if (secAnsInput) secAnsInput.value = localStorage.getItem("custom_secret_answer") || "Arjun";
 
     // Dynamic sections
     renderLetterInputs();

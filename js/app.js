@@ -5058,11 +5058,17 @@ function initDateDropdowns() {
         if (closeBtn) closeBtn.onclick = () => shareModal.classList.remove("open");
         shareModal.onclick = (e) => { if (e.target === shareModal) shareModal.classList.remove("open"); };
 
-        // WhatsApp Share (Secret Passcode NOT revealed so recipient guesses it!)
+        // WhatsApp Share (Clean name detection & short link formatting)
         const waBtn = document.getElementById("share-whatsapp-btn");
         if (waBtn) {
           waBtn.onclick = () => {
-            const msg = `🎉 Hey! Maine ${recipientName} ke liye ek special surprise Birthday Wish banayi hai! 🎂\n\nLink par click karke dekho: ${customUrl}\n\n(Passcode guess karke lock open karein! 🔑)`;
+            const trimmedName = (recipientName || "").trim();
+            let greetingHeader = "Hey! 🎂✨";
+            if (trimmedName && trimmedName !== "Friend") {
+              greetingHeader = `Hey ${trimmedName}! 🎂✨`;
+            }
+
+            const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${customUrl}`;
             const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
             window.open(waUrl, "_blank");
           };

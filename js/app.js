@@ -5646,26 +5646,38 @@ function initMusicWidget() {
   initPhotoLightbox();
   renderVideoWishSection();
 
-  // Restore saved audio/voice note from IndexedDB if available
-  try {
-    const savedAudioBlob = await AudioStorage.getAudio();
-    if (savedAudioBlob) {
-      const blobUrl = URL.createObjectURL(savedAudioBlob);
-      CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
-    }
-  } catch(e){}
+  // Check if opening fresh base URL to create a new wish or opening a shared recipient link
+  const urlParams = new URLSearchParams(location.search);
+  const hasParams = urlParams.has("w") || urlParams.has("wish") || urlParams.has("name") || urlParams.has("music") || urlParams.has("v");
 
-  // Restore saved video from IndexedDB if available
-  try {
-    const savedVidBlob = await VideoStorage.getVideo();
-    if (savedVidBlob) {
-      const blobUrl = URL.createObjectURL(savedVidBlob);
-      CONFIG.videoWish = CONFIG.videoWish || {};
-      CONFIG.videoWish.file = blobUrl;
-      CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
-      renderVideoWishSection();
-    }
-  } catch(e){}
+  if (!hasParams) {
+    // FRESH NEW WISH CREATION: Automatically wipe previous session's stored audio/video files
+    try { await AudioStorage.removeAudio(); } catch(e){}
+    try { await VideoStorage.removeVideo(); } catch(e){}
+    CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
+    CONFIG.videoWish = { url: "", startTime: "", file: null, fileName: null };
+    renderVideoWishSection();
+  } else {
+    // Shared wish link opened: Only restore from IndexedDB if stored for this session
+    try {
+      const savedAudioBlob = await AudioStorage.getAudio();
+      if (savedAudioBlob) {
+        const blobUrl = URL.createObjectURL(savedAudioBlob);
+        CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
+      }
+    } catch(e){}
+
+    try {
+      const savedVidBlob = await VideoStorage.getVideo();
+      if (savedVidBlob) {
+        const blobUrl = URL.createObjectURL(savedVidBlob);
+        CONFIG.videoWish = CONFIG.videoWish || {};
+        CONFIG.videoWish.file = blobUrl;
+        CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
+        renderVideoWishSection();
+      }
+    } catch(e){}
+  }
 
   // Audio / Voice Note file input listeners
   const audFileInput = document.getElementById("input-audio-file");

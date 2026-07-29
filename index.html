@@ -446,6 +446,25 @@
       <!-- SCROLLABLE BODY -->
       <div class="editor-body" id="editor-body">
 
+        <!-- ═══ SECTION: SECURITY & SECRET QUESTION ═══ -->
+        <div class="editor-section" data-section="security">
+          <button class="editor-section-header" type="button">
+            <span>🔒 Admin Security & Secret Question</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="input-secret-question">❓ Secret Security Question</label>
+              <small class="field-hint">Apna personal Secret Question set karein (Forgot Password ke liye)</small>
+              <input type="text" id="input-secret-question" placeholder="e.g. What is your Secret Security Keyword?" />
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="input-secret-answer">🔑 Secret Answer</label>
+              <small class="field-hint">Is Question ka secret answer (bina kisi ko bataaye)</small>
+              <input type="password" id="input-secret-answer" placeholder="e.g. arjun" />
+            </div>
+          </div>
+        </div>
+
         <!-- ═══ SECTION: BASIC INFO ═══ -->
         <div class="editor-section" data-section="basic">
           <button class="editor-section-header active" type="button">
@@ -785,18 +804,58 @@
 
       <!-- TAB 3: FORGOT PASSWORD -->
       <div id="admin-tab-forgot" class="admin-tab-content" style="display:none;">
-        <p style="font-size:0.85rem;color:rgba(255,255,255,0.85);margin-bottom:14px;line-height:1.5;">
-          🔐 Enter your Master Recovery Passcode to reset Admin access:
-        </p>
-        <div class="form-group" style="margin-bottom:16px;">
-          <label for="admin-recovery-key">Master Recovery Passcode</label>
-          <div class="pass-input-wrap">
-            <input type="password" id="admin-recovery-key" class="form-control" placeholder="Enter Secret Recovery Key" maxlength="25" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-recovery-key" aria-label="Toggle visibility">👁</button>
+        
+        <!-- STEP 1: VERIFY IDENTITY -->
+        <div id="forgot-step-verify">
+          <p style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-bottom:12px;line-height:1.4;">
+            🔐 Account Recovery ke liye <b>Master Key</b> ya <b>Secret Question Answer</b> me se koi EK dalei:
+          </p>
+          
+          <div class="form-group" style="margin-bottom:10px;">
+            <label for="admin-recovery-key" style="font-size:0.75rem;opacity:0.9;">Option A: Master Recovery Key</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-recovery-key" class="form-control" placeholder="Enter Master Key (e.g. Arjun@123)" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-recovery-key" aria-label="Toggle visibility">👁</button>
+            </div>
           </div>
-          <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Recovery Key! Please try again.</div>
+
+          <div style="text-align:center;font-size:0.72rem;opacity:0.6;margin:6px 0;">— OR —</div>
+
+          <div class="form-group" style="margin-bottom:14px;">
+            <label for="admin-secret-answer" id="label-secret-question" style="font-size:0.75rem;opacity:0.9;">Option B: Secret Question Answer</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-secret-answer" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-secret-answer" aria-label="Toggle visibility">👁</button>
+            </div>
+            <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Key or Secret Answer! Please try again.</div>
+          </div>
+
+          <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Identity & Proceed</button>
         </div>
-        <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔓 Reset Admin Password</button>
+
+        <!-- STEP 2: SET NEW PASSWORD -->
+        <div id="forgot-step-newpass" style="display:none;">
+          <div style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:#2ecc71;padding:8px 12px;border-radius:8px;font-size:0.8rem;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+            ✓ Identity Verified! Enter your new Admin password:
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label for="admin-reset-new-pass" style="font-size:0.75rem;">New Admin Password</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-reset-new-pass" class="form-control" placeholder="New Password (min 4 chars)" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-reset-new-pass" aria-label="Toggle visibility">👁</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label for="admin-reset-confirm-pass" style="font-size:0.75rem;">Confirm New Password</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-reset-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-reset-confirm-pass" aria-label="Toggle visibility">👁</button>
+            </div>
+            <div id="admin-setnew-error" class="admin-error-msg" style="display:none;">❌ Passwords do not match!</div>
+          </div>
+          <button id="admin-save-newpass-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Save New Password & Unlock</button>
+        </div>
+
       </div>
     </div>
   </div>

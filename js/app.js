@@ -3916,15 +3916,24 @@ function initAdminSecurityModal() {
       if (!input) return;
       if (input.type === "password") {
         input.type = "text";
-        btn.textContent = "👁\u200D🗨";
+        btn.textContent = "👁️‍🗨️";
       } else {
         input.type = "password";
-        btn.textContent = "👁";
+        btn.textContent = "👁️";
       }
     });
   });
 
-  // Tab Switching
+  // Tab Switching & Dynamic Secret Question Label
+  const secretAnsInput = document.getElementById("admin-secret-answer");
+  const updateQuestionLabel = () => {
+    const questLabel = document.getElementById("label-secret-question");
+    if (questLabel) {
+      const qText = localStorage.getItem("custom_secret_question") || "What is your Secret Security Keyword?";
+      questLabel.textContent = `Option B: ${qText}`;
+    }
+  };
+
   tabBtns.forEach(btn => {
     btn.onclick = () => {
       const tabName = btn.dataset.tab;
@@ -3936,6 +3945,11 @@ function initAdminSecurityModal() {
       if (targetContent) {
         targetContent.classList.add("active");
         targetContent.style.display = "block";
+      }
+      if (tabName === "forgot") {
+        updateQuestionLabel();
+        document.getElementById("forgot-step-verify").style.display = "block";
+        document.getElementById("forgot-step-newpass").style.display = "none";
       }
     };
   });
@@ -4032,36 +4046,31 @@ function initAdminSecurityModal() {
     };
   }
 
-  // Tab 3: Forgot Password Submission
+  // Tab 3: Forgot Password Submission (Step 1: Master Key Arjun@123 OR Secret Question Answer)
   if (resetSubmitBtn) {
     const handleRecovery = () => {
       const keyVal = (recoveryInput?.value || "").trim();
-      const expectedKey = CONFIG.passcode?.code || "1234";
+      const ansVal = (secretAnsInput?.value || "").trim().toLowerCase();
+      const expectedAns = (localStorage.getItem("custom_secret_answer") || "arjun").trim().toLowerCase();
       const recErrEl = document.getElementById("admin-recovery-error");
 
-      // Valid recovery passcodes: recipient passcode, 1234, 2001, arjun2001
-      const isValid = (keyVal === expectedKey || keyVal === "1234" || keyVal === "2001" || keyVal.toLowerCase() === "arjun2001");
+      // Check Master Key (Arjun@123 OR SHA-256 hash OR 2001 OR 1234)
+      const isMasterKey = (keyVal === "Arjun@123" || keyVal === "255ea3b51c4ca0814a74e3c1a2392fcf20edeeabcd1b1e6bbc705dde02686ebb" || keyVal === "2001" || keyVal === "1234");
+      const isSecretAns = (ansVal && ansVal === expectedAns);
 
-      if (isValid) {
-        CONFIG.adminPassword = "2001";
-        localStorage.setItem("custom_admin_password", "2001");
-        if (recoveryInput) {
-          recoveryInput.value = "";
-          recoveryInput.classList.remove("input-error");
-        }
+      if (isMasterKey || isSecretAns) {
         if (recErrEl) recErrEl.style.display = "none";
-        showToast("🔄 Admin Password reset successfully!");
-        const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
-        if (loginTabBtn) loginTabBtn.click();
-      } else {
-        // Red Input Border
-        if (recoveryInput) {
-          recoveryInput.classList.add("input-error");
-          recoveryInput.focus();
-          recoveryInput.select();
-        }
+        if (recoveryInput) recoveryInput.classList.remove("input-error");
+        if (secretAnsInput) secretAnsInput.classList.remove("input-error");
 
-        // Modal Shake Effect
+        // Transition to Step 2: Set New Password Form
+        document.getElementById("forgot-step-verify").style.display = "none";
+        document.getElementById("forgot-step-newpass").style.display = "block";
+        showToast("✓ Identity Verified! Set your new password.");
+      } else {
+        if (recoveryInput) recoveryInput.classList.add("input-error");
+        if (secretAnsInput) secretAnsInput.classList.add("input-error");
+
         const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
         if (modalCard) {
           modalCard.classList.remove("shake-error");
@@ -4069,9 +4078,8 @@ function initAdminSecurityModal() {
           modalCard.classList.add("shake-error");
         }
 
-        // Inline Error Text
         if (recErrEl) recErrEl.style.display = "flex";
-        showToast("Incorrect Master Recovery Passcode ❌");
+        showToast("Incorrect Master Key or Secret Answer ❌");
       }
     };
 
@@ -4079,11 +4087,63 @@ function initAdminSecurityModal() {
     if (recoveryInput) {
       recoveryInput.onkeydown = (e) => { if (e.key === "Enter") handleRecovery(); };
       recoveryInput.addEventListener("input", () => {
-        recoveryInput.classList.remove("input-error");
+        if (recoveryInput) recoveryInput.classList.remove("input-error");
         const recErrEl = document.getElementById("admin-recovery-error");
         if (recErrEl) recErrEl.style.display = "none";
       });
     }
+    if (secretAnsInput) {
+      secretAnsInput.onkeydown = (e) => { if (e.key === "Enter") handleRecovery(); };
+      secretAnsInput.addEventListener("input", () => {
+        if (secretAnsInput) secretAnsInput.classList.remove("input-error");
+        const recErrEl = document.getElementById("admin-recovery-error");
+        if (recErrEl) recErrEl.style.display = "none";
+      });
+    }
+  }
+
+  // Step 2: Save New Password & Unlock Admin Button
+  const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
+  if (saveNewPassBtn) {
+    saveNewPassBtn.onclick = () => {
+      const newPassInput = document.getElementById("admin-reset-new-pass");
+      const confirmPassInput = document.getElementById("admin-reset-confirm-pass");
+      const errEl = document.getElementById("admin-setnew-error");
+
+      const newPass = (newPassInput?.value || "").trim();
+      const confirmPass = (confirmPassInput?.value || "").trim();
+
+      if (!newPass || newPass.length < 4) {
+        if (errEl) { errEl.textContent = "❌ Password must be at least 4 characters!"; errEl.style.display = "flex"; }
+        showToast("Password must be at least 4 characters! ⚠️");
+        return;
+      }
+      if (newPass !== confirmPass) {
+        if (errEl) { errEl.textContent = "❌ Passwords do not match!"; errEl.style.display = "flex"; }
+        showToast("Passwords do not match! ❌");
+        return;
+      }
+
+      CONFIG.adminPassword = newPass;
+      localStorage.setItem("custom_admin_password", newPass);
+      showToast("🔑 New Admin Password saved successfully!");
+
+      // Unlock Customizer Panel
+      modal.classList.remove("open");
+      const fab = document.getElementById("customizer-toggle-btn");
+      if (fab) fab.classList.add("admin-visible");
+      const customizerModal = document.getElementById("customizer-modal");
+      if (customizerModal) customizerModal.classList.add("open");
+
+      // Reset Step 1 / Step 2 UI for next time
+      document.getElementById("forgot-step-verify").style.display = "block";
+      document.getElementById("forgot-step-newpass").style.display = "none";
+      if (newPassInput) newPassInput.value = "";
+      if (confirmPassInput) confirmPassInput.value = "";
+      if (recoveryInput) recoveryInput.value = "";
+      if (secretAnsInput) secretAnsInput.value = "";
+      if (errEl) errEl.style.display = "none";
+    };
   }
 }
 
@@ -4579,6 +4639,12 @@ function initDateDropdowns() {
     const letterThemeSelect = document.getElementById("input-letter-theme");
     if (letterThemeSelect) letterThemeSelect.value = CONFIG.letterTheme || "default";
 
+    // Secret Security Question & Answer
+    const secQuestInput = document.getElementById("input-secret-question");
+    if (secQuestInput) secQuestInput.value = localStorage.getItem("custom_secret_question") || "What is your Secret Security Keyword?";
+    const secAnsInput = document.getElementById("input-secret-answer");
+    if (secAnsInput) secAnsInput.value = localStorage.getItem("custom_secret_answer") || "arjun";
+
     // Dynamic sections
     renderLetterInputs();
     renderReasonInputs();
@@ -4622,6 +4688,10 @@ function initDateDropdowns() {
     const videoUrlVal = vidUrlInput ? vidUrlInput.value.trim() : "";
     const vidStartInput = document.getElementById("input-video-start");
     const videoStartVal = vidStartInput ? vidStartInput.value.trim() : "";
+
+    // Secret Security Question & Answer
+    const secQuestVal = document.getElementById("input-secret-question")?.value.trim() || "";
+    const secAnsVal = document.getElementById("input-secret-answer")?.value.trim() || "";
 
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
@@ -4684,7 +4754,7 @@ function initDateDropdowns() {
     const letterFont = document.getElementById("input-letter-font")?.value || "cursive";
     const letterTheme = document.getElementById("input-letter-theme")?.value || "default";
 
-    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont, letterTheme };
+    return { nameVal, yVal, mVal, dVal, passVal, fromVal, memoryVal, giftMsg, giftCoupon, musicUrlVal, musicStartVal, videoUrlVal, videoStartVal, letterLines, reasons, wishes, gallery, timeline, cakeFlavor, letterFont, letterTheme, secQuestVal, secAnsVal };
   }
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
@@ -4703,6 +4773,9 @@ function initDateDropdowns() {
     CONFIG.cakeFlavor = vals.cakeFlavor;
     CONFIG.letterFont = vals.letterFont;
     CONFIG.letterTheme = vals.letterTheme;
+    if (vals.secQuestVal) localStorage.setItem("custom_secret_question", vals.secQuestVal);
+    if (vals.secAnsVal) localStorage.setItem("custom_secret_answer", vals.secAnsVal);
+
     if (vals.musicUrlVal) {
       CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
     } else if (!CONFIG.music || !CONFIG.music.file) {

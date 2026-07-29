@@ -2379,6 +2379,7 @@ function typeLetterBody() {
     }
 
     const p = paras[i];
+    p.style.opacity = "0";
     const html = ensureLineHighlight(CONFIG.letterLines[i]);
     p.innerHTML = html;
 
@@ -2394,6 +2395,7 @@ function typeLetterBody() {
 
     const fullString = textNodes.map(n => n.textContent).join("");
     textNodes.forEach(n => { n.originalText = n.textContent; n.textContent = ""; });
+    p.style.opacity = "1";
 
     let charIdx = 0;
     function typeChar() {

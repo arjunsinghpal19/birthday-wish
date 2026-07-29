@@ -765,7 +765,7 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
 #timeline{ flex-direction:column; }
 .timeline-wrap{ max-width:620px; width:100%; margin:0 auto; position:relative; padding:0; isolation:isolate; }
 .timeline-wrap::before{
-  content:''; position:absolute; left:calc(50% - (-1px)); top:var(--timeline-line-start, 15px); height:var(--timeline-line-height, calc(100% - 30px)); width:2px;
+  content:''; position:absolute; left:calc(50% + (-1px)); top:var(--timeline-line-start, 15px); height:var(--timeline-line-height, calc(100% - 30px)); width:2px;
   background:linear-gradient(180deg,var(--gold),var(--pink),var(--purple));
   z-index:1 !important;
 }

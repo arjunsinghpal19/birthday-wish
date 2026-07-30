@@ -269,23 +269,71 @@
     showToast("Wish deleted successfully 🗑️");
   }
 
-  // Handle Create Wish Form Submission
+  // Real-Time Passcode Validation (Exactly 4 Numeric Digits)
+  function initPasscodeValidation() {
+    const passcodeEl = document.getElementById("create-passcode");
+    const errorEl = document.getElementById("create-passcode-error");
+    const submitBtn = document.getElementById("cust-create-submit-btn");
+
+    if (!passcodeEl) return;
+
+    function validatePasscode() {
+      const val = passcodeEl.value.trim();
+      const isValid = /^\d{4}$/.test(val);
+
+      if (!isValid) {
+        if (errorEl) errorEl.style.display = "block";
+        passcodeEl.style.borderColor = "#ff7675";
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.style.opacity = "0.5";
+          submitBtn.style.cursor = "not-allowed";
+        }
+      } else {
+        if (errorEl) errorEl.style.display = "none";
+        passcodeEl.style.borderColor = "var(--border-gold)";
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = "1";
+          submitBtn.style.cursor = "pointer";
+        }
+      }
+      return isValid;
+    }
+
+    passcodeEl.addEventListener("input", validatePasscode);
+    passcodeEl.addEventListener("blur", validatePasscode);
+    validatePasscode();
+  }
+
+  // Handle Create Wish Form Submission (Complete Database Scoping & Verification)
   function initCreateWishForm() {
     const form = document.getElementById("cust-create-wish-form");
     if (!form) return;
 
+    initPasscodeValidation();
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const recipient = document.getElementById("create-recipient-name")?.value || "Friend";
-      const sender = document.getElementById("create-sender-name")?.value || "Friend";
-      const passcode = document.getElementById("create-passcode")?.value || "1234";
+      const recipient = document.getElementById("create-recipient-name")?.value?.trim() || "Friend";
+      const sender = document.getElementById("create-sender-name")?.value?.trim() || "Friend";
+      const passcode = document.getElementById("create-passcode")?.value?.trim() || "";
       const eventType = document.getElementById("create-event-type")?.value || "birthday";
 
+      // 1. Strict Passcode Validation
+      if (!/^\d{4}$/.test(passcode)) {
+        showToast("⚠️ Passcode must be exactly 4 numeric digits! (e.g. 1234)");
+        return;
+      }
+
+      // 2. Customer Identity Scoping
+      const customer = getCustomerSessionIdentity();
       const newWish = {
         recipient_name: recipient,
         sender_name: sender,
         pass_code: passcode,
         event_type: eventType,
+        user_id: customer && customer.id ? customer.id : null,
         letter_lines: [
           "Wishing you joy, health and endless happiness today!",
           "May this year bring you all the love and success you deserve."
@@ -293,23 +341,41 @@
         created_at: new Date().toISOString()
       };
 
+      let createdRecord = null;
+      let dbError = null;
+
       try {
         if (window.SupabaseModule) {
           const client = window.SupabaseModule.getClient();
           if (client) {
             const { data, error } = await client.from("wishes").insert([newWish]).select();
-            if (!error && data && data[0]) {
-              customerWishes.unshift(data[0]);
+            if (error) {
+              dbError = error.message;
+            } else if (data && data[0]) {
+              createdRecord = data[0];
             }
           }
         }
       } catch (err) {
-        console.warn("Create wish error:", err);
+        dbError = err.message || "Database insert exception";
       }
+
+      // 3. Verify Insert Response before showing success toast
+      if (dbError || !createdRecord) {
+        showToast(`❌ Database Save Failed: ${dbError || "No data returned"}`);
+        return;
+      }
+
+      // 4. Update local state and immediately refresh view (Zero Page Refresh)
+      customerWishes.unshift(createdRecord);
+      renderCustomerWishesTable();
+      renderRecentWishesTable();
+      updateCustomerMetrics();
+
+      await loadCustomerWishesData();
 
       showToast(`✨ Wish for "${recipient}" created successfully!`);
       form.reset();
-      loadCustomerWishesData();
 
       // Switch tab to My Wishes
       const myWishesBtn = document.querySelector(".cust-sidebar .nav-item[data-tab='wishes']");

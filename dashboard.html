@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard - Wish Studio</title>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div id="customer-app">
+
+    <!-- ==================== LEFT SIDEBAR ==================== -->
+    <aside class="cust-sidebar" id="cust-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">✨</div>
+        <div class="sidebar-brand">
+          <h1>Wish Studio</h1>
+          <span>Customer Portal</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="icon">🏠</span> Dashboard
+        </button>
+        <button class="nav-item" data-tab="wishes">
+          <span class="icon">🎂</span> My Wishes
+        </button>
+        <button class="nav-item" data-tab="create">
+          <span class="icon">➕</span> Create Wish
+        </button>
+        <button class="nav-item" data-tab="media">
+          <span class="icon">🖼</span> My Media
+        </button>
+        <button class="nav-item" data-tab="themes">
+          <span class="icon">🎨</span> Themes
+        </button>
+        <button class="nav-item" data-tab="profile">
+          <span class="icon">👤</span> Profile
+        </button>
+        <button class="nav-item" data-tab="subscription">
+          <span class="icon">📦</span> Subscription
+        </button>
+        <button class="nav-item" data-tab="billing">
+          <span class="icon">💳</span> Billing
+        </button>
+        <button class="nav-item" data-tab="support">
+          <span class="icon">💬</span> Support
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item logout-btn" id="cust-logout-btn">
+          <span class="icon">🚪</span> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+    <main class="cust-main">
+
+      <!-- TOP NAVBAR -->
+      <header class="cust-navbar">
+        <button class="mobile-toggle" id="mobile-sidebar-toggle">☰</button>
+
+        <div class="nav-greeting">
+          <h3>Welcome Back! 👋</h3>
+          <p>Manage your custom wishes & media</p>
+        </div>
+
+        <div class="nav-actions">
+          <div class="plan-badge">
+            <span>⭐ Creator Free Tier</span>
+          </div>
+          <a href="index.html" class="public-site-link" target="_blank">
+            <span>✨ Public Page</span> ↗
+          </a>
+        </div>
+      </header>
+
+      <!-- VIEWPORT -->
+      <div class="cust-viewport">
+
+        <!-- 1. 🏠 DASHBOARD HOME -->
+        <section id="view-dashboard" class="tab-view active">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>My Studio Overview</h2>
+              <p>Your personal wishes, media usage & active links</p>
+            </div>
+            <button class="btn-primary" onclick="window.customerApp.loadCustomerWishesData()">🔄 Refresh</button>
+          </div>
+
+          <!-- Customer KPI Cards Grid -->
+          <div class="metrics-grid">
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Total Created Wishes</span>
+                <span class="metric-icon">🎂</span>
+              </div>
+              <div class="metric-value" id="cust-kpi-total-wishes">0</div>
+              <div class="metric-sub">Active wish links</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Created Today</span>
+                <span class="metric-icon">✨</span>
+              </div>
+              <div class="metric-value" id="cust-kpi-today-wishes">0</div>
+              <div class="metric-sub">Today's releases</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">My Media Files</span>
+                <span class="metric-icon">🖼</span>
+              </div>
+              <div class="metric-value" id="cust-kpi-total-media">0 Files</div>
+              <div class="metric-sub">Uploaded photos & videos</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Subscription Tier</span>
+                <span class="metric-icon">📦</span>
+              </div>
+              <div class="metric-value" style="font-size:1.3rem;color:var(--gold);" id="cust-kpi-current-plan">Free Creator</div>
+              <div class="metric-sub">Personal Account</div>
+            </div>
+          </div>
+
+          <!-- Recent Wishes Panel -->
+          <div class="glass-panel table-panel">
+            <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">My Recent Wishes</h3>
+            <table class="cust-table">
+              <thead>
+                <tr>
+                  <th>Recipient</th>
+                  <th>Sender</th>
+                  <th>UUID</th>
+                  <th>Created Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cust-dash-recent-tbody">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 2. 🎂 MY WISHES -->
+        <section id="view-wishes" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>My Wishes</h2>
+              <p>Manage, inspect, share, or delete your custom wish pages</p>
+            </div>
+          </div>
+
+          <div class="glass-panel table-panel">
+            <table class="cust-table">
+              <thead>
+                <tr>
+                  <th>Wish Details</th>
+                  <th>Sender</th>
+                  <th>Passcode</th>
+                  <th>UUID Link</th>
+                  <th>Created Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="cust-wishes-tbody">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 3. ➕ CREATE WISH -->
+        <section id="view-create" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Create New Wish</h2>
+              <p>Build a personalized surprise wish page for your loved ones</p>
+            </div>
+          </div>
+
+          <div class="glass-card" style="max-width:640px;">
+            <form id="cust-create-wish-form">
+              <div class="form-group">
+                <label for="create-recipient-name">Recipient Name *</label>
+                <input type="text" id="create-recipient-name" class="form-input" placeholder="e.g. Pooja, Bestie" required>
+              </div>
+
+              <div class="form-group">
+                <label for="create-sender-name">Your Name / Sender *</label>
+                <input type="text" id="create-sender-name" class="form-input" placeholder="e.g. Arjun" required>
+              </div>
+
+              <div class="form-group">
+                <label for="create-event-type">Event Category *</label>
+                <select id="create-event-type" class="form-input" style="background:rgba(10,5,20,0.8);">
+                  <option value="birthday">🎂 Birthday</option>
+                  <option value="anniversary">💍 Anniversary</option>
+                  <option value="wedding">💒 Wedding</option>
+                  <option value="proposal">💎 Proposal</option>
+                  <option value="graduation">🎓 Graduation</option>
+                  <option value="baby_shower">🍼 Baby Shower</option>
+                  <option value="festival">🪔 Festival</option>
+                  <option value="custom">✨ Custom Event</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="create-passcode">Access Passcode (4 Digits)</label>
+                <input type="text" id="create-passcode" class="form-input" value="1234" maxlength="6" required>
+              </div>
+
+              <button type="submit" class="btn-primary" style="width:100%;margin-top:12px;">✨ Publish Wish Page</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 4. 🖼 MY MEDIA -->
+        <section id="view-media" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>My Media Library</h2>
+              <p>Upload and manage your personal photos, videos and audio clips</p>
+            </div>
+            <button class="btn-primary" onclick="document.getElementById('cust-media-upload').click()">☁️ Upload Media</button>
+            <input type="file" id="cust-media-upload" style="display:none;" multiple accept="image/*,video/*,audio/*">
+          </div>
+
+          <div class="glass-card" style="text-align:center;padding:48px;">
+            <span style="font-size:3rem;">🖼</span>
+            <h4 style="font-family:var(--font-heading);margin:12px 0 6px 0;color:var(--gold);">Personal Cloud Storage</h4>
+            <p style="color:var(--text-muted);font-size:0.85rem;max-width:400px;margin:0 auto 20px auto;">All media uploaded here is private to your account and linked to your wish pages.</p>
+            <button class="btn-primary" onclick="document.getElementById('cust-media-upload').click()">Select Files to Upload</button>
+          </div>
+        </section>
+
+        <!-- 5. 🎨 THEMES -->
+        <section id="view-themes" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Theme Gallery</h2>
+              <p>Choose visual styles & aesthetic color schemes for your wishes</p>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;">
+            <div class="glass-card" style="border-color:var(--border-gold);">
+              <span style="font-size:2rem;">👑</span>
+              <h4 style="font-family:var(--font-heading);color:var(--gold);margin:10px 0 6px 0;">Royal Purple & Gold</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);">Luxury dark theme with floating gold dust particles.</p>
+              <span style="display:inline-block;margin-top:12px;padding:4px 10px;border-radius:12px;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:0.75rem;font-weight:600;">Active Default</span>
+            </div>
+
+            <div class="glass-card">
+              <span style="font-size:2rem;">🌸</span>
+              <h4 style="font-family:var(--font-heading);color:#ff7675;margin:10px 0 6px 0;">Rose Gold Romance</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);">Soft pink tones designed for anniversaries & proposals.</p>
+              <button class="btn-primary" style="margin-top:12px;padding:6px 14px;font-size:0.78rem;" onclick="window.customerApp.showToast('Theme selected! ✨')">Select Theme</button>
+            </div>
+
+            <div class="glass-card">
+              <span style="font-size:2rem;">🌌</span>
+              <h4 style="font-family:var(--font-heading);color:#74b9ff;margin:10px 0 6px 0;">Galaxy Night</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);">Deep midnight blue with glowing star constellations.</p>
+              <button class="btn-primary" style="margin-top:12px;padding:6px 14px;font-size:0.78rem;" onclick="window.customerApp.showToast('Theme selected! ✨')">Select Theme</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. 👤 PROFILE -->
+        <section id="view-profile" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Account Profile</h2>
+              <p>Manage your personal profile, email, and password settings</p>
+            </div>
+          </div>
+
+          <div class="glass-card" style="max-width:540px;">
+            <form onsubmit="event.preventDefault(); window.customerApp.showToast('Profile settings saved! 💾');">
+              <div class="form-group">
+                <label>Account Name</label>
+                <input type="text" class="form-input" value="Customer User" required>
+              </div>
+
+              <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" class="form-input" value="customer@example.com" required>
+              </div>
+
+              <div class="form-group">
+                <label>Update Password</label>
+                <input type="password" class="form-input" placeholder="Enter new password">
+              </div>
+
+              <button type="submit" class="btn-primary" style="margin-top:10px;">💾 Save Changes</button>
+            </form>
+          </div>
+        </section>
+
+        <!-- 7. 📦 SUBSCRIPTION -->
+        <section id="view-subscription" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>My Subscription</h2>
+              <p>View your active plan details and available upgrade options</p>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:24px;">
+            <div class="glass-card" style="border-color:var(--border-gold);">
+              <span style="font-size:0.8rem;color:var(--gold);font-weight:700;">CURRENT PLAN</span>
+              <h3 style="font-family:var(--font-heading);font-size:1.6rem;color:#fff;margin:8px 0;">Free Creator Tier</h3>
+              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Create unlimited basic wish pages with standard themes.</p>
+              <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:0.85rem;color:var(--text-main);margin-bottom:20px;">
+                <li>✓ Unlimited Wishes</li>
+                <li>✓ 4K Polaroid Photos</li>
+                <li>✓ Standard Audio Songs</li>
+                <li>✓ Passcode Lock Protection</li>
+              </ul>
+              <button class="btn-primary" style="width:100%;" disabled style="opacity:0.6;">Active Plan</button>
+            </div>
+
+            <div class="glass-card">
+              <span style="font-size:0.8rem;color:var(--purple-light);font-weight:700;">PRO UPGRADE</span>
+              <h3 style="font-family:var(--font-heading);font-size:1.6rem;color:#fff;margin:8px 0;">Studio Pro Plan</h3>
+              <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">Unlock custom domains, HD video uploads & priority support.</p>
+              <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;font-size:0.85rem;color:var(--text-main);margin-bottom:20px;">
+                <li>✓ HD Video Gallery Uploads</li>
+                <li>✓ Custom Branded Domain</li>
+                <li>✓ Premium Music Catalog</li>
+                <li>✓ Priority Customer Support</li>
+              </ul>
+              <button class="btn-primary" style="width:100%;" onclick="window.customerApp.showToast('Pro Billing coming soon! 🚀')">Upgrade to Pro</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. 💳 BILLING -->
+        <section id="view-billing" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Billing & Payment History</h2>
+              <p>View your past invoices and payment details</p>
+            </div>
+          </div>
+
+          <div class="glass-panel table-panel">
+            <table class="cust-table">
+              <thead>
+                <tr>
+                  <th>Invoice ID</th>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>#INV-2026-001</code></td>
+                  <td>2026-07-30</td>
+                  <td>Free Creator Tier Subscription</td>
+                  <td>$0.00</td>
+                  <td><span style="padding:4px 10px;border-radius:12px;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:0.75rem;font-weight:600;">Paid</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 9. 💬 SUPPORT -->
+        <section id="view-support" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Help & Customer Support</h2>
+              <p>Need help with your wish pages? Contact our support team</p>
+            </div>
+          </div>
+
+          <div class="glass-card" style="max-width:540px;">
+            <form onsubmit="event.preventDefault(); window.customerApp.showToast('Support ticket submitted! We will respond shortly. ✉️'); this.reset();">
+              <div class="form-group">
+                <label>Subject</label>
+                <input type="text" class="form-input" placeholder="e.g. Help with video upload" required>
+              </div>
+
+              <div class="form-group">
+                <label>Message</label>
+                <textarea class="form-input" rows="4" placeholder="Describe your issue..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn-primary">✉️ Send Message</button>
+            </form>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Customer Script Engine -->
+  <script src="js/database.js"></script>
+  <script src="js/customer.js"></script>
+</body>
+</html>

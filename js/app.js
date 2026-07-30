@@ -4162,14 +4162,13 @@ function initAdminSecurityModal() {
       loginPassInput.value = "";
       if (loginPassInput) loginPassInput.classList.remove("input-error");
       if (errorMsgEl) errorMsgEl.style.display = "none";
-      const fab = document.getElementById("customizer-toggle-btn");
-      if (fab) fab.classList.add("admin-visible");
-      showToast("👑 Admin Mode Activated!");
+      showToast("👑 Password Verified! Redirecting to Admin Dashboard... 🚀");
       if (window.adminApp && typeof window.adminApp.logEvent === "function") {
         window.adminApp.logEvent("ADMIN_LOGIN", "Admin authenticated via password entry");
       }
-      const customizerModal = document.getElementById("customizer-modal");
-      if (customizerModal) customizerModal.classList.add("open");
+      setTimeout(() => {
+        window.location.href = "admin.html";
+      }, 300);
     } else {
       // Trigger Red Input Border
       if (loginPassInput) {
@@ -4330,25 +4329,25 @@ function initAdminSecurityModal() {
       }
 
       showToast("⏳ Persisting New Master Password...");
-      sessionStorage.removeItem("admin_authenticated"); // Invalidate previous active session
+      sessionStorage.setItem("admin_authenticated", "true");
+      sessionStorage.setItem("admin_auth_timestamp", Date.now().toString());
       if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
-        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newPass });
+        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newPass, last_login: new Date().toISOString() });
       } else {
         localStorage.setItem("admin_master_password", newPass);
         localStorage.setItem("custom_admin_password", newPass);
       }
-      showToast("🔑 New Admin Password Saved & Persisted! ✅");
+      showToast("🔑 New Password Saved! Redirecting to Admin Dashboard... 🚀");
 
       // Log event if adminApp available
       if (window.adminApp && typeof window.adminApp.logEvent === "function") {
         window.adminApp.logEvent("PASSWORD_RESET", "Password reset successfully via recovery verification");
       }
 
-      // Unlock Customizer Panel
       modal.classList.remove("open");
-      const fab = document.getElementById("customizer-toggle-btn");
-      if (fab) fab.classList.add("admin-visible");
-      const customizerModal = document.getElementById("customizer-modal");
+      setTimeout(() => {
+        window.location.href = "admin.html";
+      }, 400);
       if (customizerModal) customizerModal.classList.add("open");
 
       // Reset Step 1 / Step 2 UI for next time

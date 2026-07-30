@@ -3934,15 +3934,15 @@ async function parseQueryParams() {
   if (tokenParam) {
     let decoded = null;
 
-    // Check if token is a Cloud DB UUID / Blob ID (e.g., contains hyphens or matches UUID/Blob pattern)
-    if (tokenParam.length >= 20 && (tokenParam.includes("-") || !tokenParam.match(/^[A-Za-z0-9_-]+$/))) {
-      const cloudData = await fetchWishFromDatabase(tokenParam);
-      if (cloudData) {
-        decoded = cloudData;
-      }
+    if (window.ShareModule) {
+      decoded = await window.ShareModule.parseRoute(CONFIG);
     }
 
-    // Fallback to legacy Base64 decoding (Permanent Backward Compatibility)
+    if (!decoded && tokenParam.length >= 20 && (tokenParam.includes("-") || !tokenParam.match(/^[A-Za-z0-9_-]+$/))) {
+      decoded = await fetchWishFromDatabase(tokenParam);
+    }
+
+    // Permanent Backward Compatibility Fallback
     if (!decoded) {
       decoded = decodeWishData(tokenParam);
     }

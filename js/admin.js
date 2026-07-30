@@ -668,7 +668,7 @@
 
   // Security Settings & Triple Recovery Channel Handlers (Phase 2.1.1 FINAL)
   async function initSecurityHandlers() {
-    let settings = { is_first_time: false, admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
+    let settings = { is_first_time: true, admin_master_password: "", admin_recovery_email: "", admin_recovery_code: "", custom_secret_question: "", custom_secret_answer: "" };
 
     if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
       settings = await window.DatabaseModule.getSecuritySettings();

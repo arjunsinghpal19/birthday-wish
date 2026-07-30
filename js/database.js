@@ -188,11 +188,11 @@
 
       return {
         is_first_time: isFirstTime,
-        admin_master_password: localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "admin123",
-        admin_recovery_email: localData?.admin_recovery_email !== undefined ? localData.admin_recovery_email : (localStorage.getItem("admin_recovery_email") || "admin@example.com"),
+        admin_master_password: localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "",
+        admin_recovery_email: localData?.admin_recovery_email !== undefined ? localData.admin_recovery_email : (localStorage.getItem("admin_recovery_email") || ""),
         admin_recovery_code: localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || defaultCode,
-        custom_secret_question: localData?.custom_secret_question !== undefined ? localData.custom_secret_question : (localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?"),
-        custom_secret_answer: localData?.custom_secret_answer !== undefined ? localData.custom_secret_answer : (localStorage.getItem("custom_secret_answer") || "arjun"),
+        custom_secret_question: localData?.custom_secret_question !== undefined ? localData.custom_secret_question : (localStorage.getItem("custom_secret_question") || ""),
+        custom_secret_answer: localData?.custom_secret_answer !== undefined ? localData.custom_secret_answer : (localStorage.getItem("custom_secret_answer") || ""),
         
         // Future SaaS User Architecture
         master_profile: localData?.master_profile || { username: "admin", display_name: "Master Admin", avatar: "👑" },
@@ -205,12 +205,12 @@
       };
     } catch (e) {
       return {
-        is_first_time: false,
-        admin_master_password: localStorage.getItem("admin_master_password") || "admin123",
-        admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
-        admin_recovery_code: localStorage.getItem("admin_recovery_code") || generateSecureBackupCode(),
-        custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun",
+        is_first_time: true,
+        admin_master_password: "",
+        admin_recovery_email: "",
+        admin_recovery_code: generateSecureBackupCode(),
+        custom_secret_question: "",
+        custom_secret_answer: "",
         master_profile: { username: "admin", display_name: "Master Admin", avatar: "👑" },
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString(),

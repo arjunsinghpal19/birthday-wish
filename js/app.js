@@ -5206,7 +5206,7 @@ function initDateDropdowns() {
   });
 
   // ─── SAVE ───
-  saveBtn.addEventListener("click", () => {
+  saveBtn.addEventListener("click", async () => {
     const values = readAllValues();
     applyAllValues(values);
 
@@ -5214,7 +5214,7 @@ function initDateDropdowns() {
     const saveData = JSON.parse(JSON.stringify(CONFIG));
     localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
 
-    updateShareSection();
+    await updateShareSection();
 
     backdrop.classList.remove("active");
     playChimeSound();
@@ -5226,9 +5226,9 @@ function initDateDropdowns() {
     shareLinkBtn.addEventListener("click", async () => {
       const values = readAllValues();
       applyAllValues(values);
-      updateShareSection();
+      await updateShareSection();
 
-      const customUrl = buildRecipientShareUrl(values.nameVal);
+      const customUrl = await buildRecipientShareUrl(values.nameVal);
       const recipientName = values.nameVal || "Friend";
 
       // Visual Button Feedback
@@ -5264,14 +5264,15 @@ function initDateDropdowns() {
         // WhatsApp Share (Clean name detection & short link formatting)
         const waBtn = document.getElementById("share-whatsapp-btn");
         if (waBtn) {
-          waBtn.onclick = () => {
+          waBtn.onclick = async () => {
+            const currentUrl = await buildRecipientShareUrl(values.nameVal);
             const trimmedName = (recipientName || "").trim();
             let greetingHeader = "Hey! 🎂✨";
             if (trimmedName && trimmedName !== "Friend") {
               greetingHeader = `Hey ${trimmedName}! 🎂✨`;
             }
 
-            const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${customUrl}`;
+            const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${currentUrl}`;
             const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
             window.open(waUrl, "_blank");
           };
@@ -5281,12 +5282,13 @@ function initDateDropdowns() {
         const nativeBtn = document.getElementById("share-native-btn");
         if (nativeBtn) {
           nativeBtn.onclick = async () => {
+            const currentUrl = await buildRecipientShareUrl(values.nameVal);
             if (navigator.share) {
               try {
                 await navigator.share({
                   title: `Birthday Wish for ${recipientName}`,
                   text: `🎉 Surprise Birthday Wish for ${recipientName}! Click link to open:`,
-                  url: customUrl
+                  url: currentUrl
                 });
               } catch(e) {
                 // Share modal dismissed
@@ -5846,7 +5848,7 @@ function initShare() {
   const copyBtn = document.getElementById("copy-link-btn");
   if (copyBtn) {
     copyBtn.addEventListener("click", async () => {
-      const shareUrl = buildRecipientShareUrl();
+      const shareUrl = await buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
 
@@ -5876,7 +5878,7 @@ function initShare() {
   const shareBtn = document.getElementById("native-share-btn");
   if (shareBtn) {
     shareBtn.addEventListener("click", async () => {
-      const shareUrl = buildRecipientShareUrl();
+      const shareUrl = await buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
@@ -5902,8 +5904,8 @@ function initShare() {
   // Dedicated WhatsApp Share Button
   const waBtn = document.getElementById("whatsapp-share-btn");
   if (waBtn) {
-    waBtn.addEventListener("click", () => {
-      const shareUrl = buildRecipientShareUrl();
+    waBtn.addEventListener("click", async () => {
+      const shareUrl = await buildRecipientShareUrl();
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;

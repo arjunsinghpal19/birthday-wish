@@ -1556,7 +1556,13 @@ const MusicEngine = (() => {
   function play() {
     if (playing) return;
 
-    const fileOrUrl = CONFIG.music ? CONFIG.music.file : null;
+    let fileOrUrl = CONFIG.music ? CONFIG.music.file : null;
+    if (!fileOrUrl || fileOrUrl === "null" || fileOrUrl === "undefined") {
+      fileOrUrl = "assets/music/happy-birthday-song.mpeg";
+      if (CONFIG.music) CONFIG.music.file = fileOrUrl;
+      else CONFIG.music = { file: fileOrUrl, startTime: "" };
+    }
+
     const ytId = extractYouTubeId(fileOrUrl);
 
     if (ytId) {
@@ -1594,11 +1600,14 @@ const MusicEngine = (() => {
         audioEl = new Audio(fileOrUrl);
         audioEl.loop = true;
         audioEl.volume = 0.5;
-        audioEl.addEventListener("error", () => {
-          console.warn("Local audio file failed or missing. Falling back to Web Audio melody.");
-          CONFIG.music.file = null;
-          playing = false;
-          play();
+        audioEl.addEventListener("error", (e) => {
+          console.warn("Audio load error fallback:", e);
+          if (fileOrUrl !== "assets/music/happy-birthday-song.mpeg") {
+            fileOrUrl = "assets/music/happy-birthday-song.mpeg";
+            if (CONFIG.music) CONFIG.music.file = fileOrUrl;
+            audioEl.src = fileOrUrl;
+            audioEl.play().then(() => { playing = true; }).catch(() => {});
+          }
         });
       } else if (audioEl.src !== fileOrUrl && !audioEl.src.endsWith(fileOrUrl)) {
         audioEl.src = fileOrUrl;
@@ -1606,10 +1615,9 @@ const MusicEngine = (() => {
 
       audioEl.play().then(() => {
         playing = true;
-      }).catch(() => {
-        CONFIG.music.file = null;
+      }).catch((e) => {
+        console.warn("Autoplay interaction pending:", e);
         playing = false;
-        play();
       });
       return;
     }
@@ -3409,63 +3417,49 @@ function saveCakeMemory() {
 }
 
 function updateMusicWidgetUI(playing) {
-
   const widget = document.getElementById("music-widget");
+  if (widget) widget.classList.toggle("paused", !playing);
 
-  widget.classList.toggle("paused", !playing);
+  const toggleBtn = document.getElementById("music-toggle-btn");
+  const musicIcon = document.getElementById("music-icon");
+  const musicLabel = document.getElementById("music-label");
 
-  document.getElementById("music-toggle").textContent = playing
+  if (toggleBtn) toggleBtn.classList.toggle("paused", !playing);
+  if (musicIcon) musicIcon.textContent = playing ? "🎵" : "🔇";
+  if (musicLabel) musicLabel.textContent = playing ? "Birthday Music" : "Music Paused";
 
-    ? "\u23F8"
-
-    : "\u25B6";
-
+  const secToggle = document.getElementById("music-toggle");
+  if (secToggle) secToggle.textContent = playing ? "\u23F8" : "\u25B6";
 }
 
 function initMusicWidget() {
+  const toggleBtn = document.getElementById("music-toggle-btn");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      if (MusicEngine.isPlaying()) {
+        MusicEngine.pause();
+        updateMusicWidgetUI(false);
+      } else {
+        MusicEngine.play();
+        updateMusicWidgetUI(true);
+      }
+    });
+  }
 
-  const html = `<button id="music-toggle">\u25B6</button><div class="eq-bars"><span></span><span></span><span></span><span></span></div><input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.5">`;
-
-  const widget = document.createElement("div");
-
-  widget.id = "music-widget";
-
-  widget.className = "glass";
-
-  widget.innerHTML = html;
-
-  document.body.appendChild(widget);
-
-  widget.querySelector("#music-toggle").addEventListener("click", () => {
-
-    if (MusicEngine.isPlaying()) {
-
-      MusicEngine.pause();
-
-      updateMusicWidgetUI(false);
-
-    } else {
-
-      MusicEngine.play();
-
-      updateMusicWidgetUI(true);
-
-    }
-
-  });
-
-  widget
-
-    .querySelector("#vol-slider")
-
-    .addEventListener("input", (e) =>
-
-      MusicEngine.setVolume(parseFloat(e.target.value)),
-
-    );
+  const secToggle = document.getElementById("music-toggle");
+  if (secToggle) {
+    secToggle.addEventListener("click", () => {
+      if (MusicEngine.isPlaying()) {
+        MusicEngine.pause();
+        updateMusicWidgetUI(false);
+      } else {
+        MusicEngine.play();
+        updateMusicWidgetUI(true);
+      }
+    });
+  }
 
   MusicEngine.setVolume(0.5);
-
 }
 
 function exportInstaStory() {
@@ -5736,12 +5730,18 @@ function renderVideoWishSection() {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     const ytId = (match && match[2].length === 11) ? match[2] : null;
+
+    section.style.display = "flex";
     if (ytId) {
-      section.style.display = "flex";
       container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1${startParam}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
     } else {
-      section.style.display = "none";
-      container.innerHTML = "";
+      container.innerHTML = `<video id="remote-wish-video" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${url}"></video>`;
+      if (startSec > 0) {
+        const vid = document.getElementById("remote-wish-video");
+        if (vid) {
+          vid.onloadedmetadata = () => { vid.currentTime = startSec; };
+        }
+      }
     }
   } else {
     section.style.display = "none";

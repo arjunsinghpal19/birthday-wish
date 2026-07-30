@@ -17,12 +17,8 @@
     { time: new Date(Date.now() - 86400000).toLocaleString(), event: "SECURITY_UPDATE", desc: "Master recovery settings updated", status: "INFO" }
   ];
 
-  // Mock / Cached Wishes Data for Table Rendering
-  let wishesList = [
-    { id: "57146e5d-3fb1-4392-8e3a-8a18cbe027b1", recipient_name: "Pooja Special", sender_name: "Arjun Friend", pass_code: "2026", created_at: "2026-07-30" },
-    { id: "afe4d044-c6e3-4619-b22b-2d0cee94d126", recipient_name: "Rohan", sender_name: "Bestie", pass_code: "1234", created_at: "2026-07-29" },
-    { id: "b28c7401-44aa-4921-99ee-773a6e819a12", recipient_name: "Priya", sender_name: "Rahul", pass_code: "9999", created_at: "2026-07-28" }
-  ];
+  // Live Supabase Wishes Data Array (Shared Single-Source-of-Truth Dataset)
+  let wishesList = [];
 
   // Media Library Catalog Items
   const mediaItems = {
@@ -163,7 +159,7 @@
         const client = window.SupabaseModule.getClient();
         if (client) {
           const { data, error } = await client.from("wishes").select("*").order("created_at", { ascending: false });
-          if (!error && data && data.length > 0) {
+          if (!error && Array.isArray(data)) {
             // Filter out system security config row
             wishesList = data.filter(w => w.id !== "00000000-0000-0000-0000-000000000001" && w.recipient_name !== "__SYSTEM_SECURITY_CONFIG__");
           }

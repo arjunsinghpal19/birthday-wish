@@ -326,14 +326,12 @@
         return;
       }
 
-      // 2. Customer Identity Scoping
-      const customer = getCustomerSessionIdentity();
-      const newWish = {
+      // 2. Prepare Valid Database Payload (Matching public.wishes schema)
+      const record = {
         recipient_name: recipient,
         sender_name: sender,
         pass_code: passcode,
-        event_type: eventType,
-        user_id: customer && customer.id ? customer.id : null,
+        birth_date: { year: 2001, month: 1, day: 1 },
         letter_lines: [
           "Wishing you joy, health and endless happiness today!",
           "May this year bring you all the love and success you deserve."
@@ -341,32 +339,55 @@
         created_at: new Date().toISOString()
       };
 
-      let createdRecord = null;
+      let insertedId = null;
       let dbError = null;
+      let isSuccess = false;
 
       try {
         if (window.SupabaseModule) {
           const client = window.SupabaseModule.getClient();
           if (client) {
-            const { data, error } = await client.from("wishes").insert([newWish]).select();
-            if (error) {
-              dbError = error.message;
-            } else if (data && data[0]) {
-              createdRecord = data[0];
+            const response = await client.from("wishes").insert([record]).select("id");
+            console.log("💾 Supabase Insert Response:", {
+              data: response.data,
+              error: response.error,
+              status: response.status,
+              statusText: response.statusText
+            });
+
+            if (response.error) {
+              dbError = response.error.message || response.error.details || response.error.hint;
+            } else if (response.status === 201 || response.status === 200 || response.data) {
+              isSuccess = true;
+              if (Array.isArray(response.data) && response.data[0] && response.data[0].id) {
+                insertedId = response.data[0].id;
+              } else if (response.data && response.data.id) {
+                insertedId = response.data.id;
+              }
             }
           }
         }
       } catch (err) {
+        console.error("❌ DB insert exception:", err);
         dbError = err.message || "Database insert exception";
       }
 
-      // 3. Verify Insert Response before showing success toast
-      if (dbError || !createdRecord) {
-        showToast(`❌ Database Save Failed: ${dbError || "No data returned"}`);
+      // 3. If insert failed with database error, display real error message
+      if (dbError || !isSuccess) {
+        showToast(`❌ Database Save Failed: ${dbError || "Error saving record"}`);
         return;
       }
 
-      // 4. Update local state and immediately refresh view (Zero Page Refresh)
+      // 4. Construct inserted record object for immediate UI update (Zero Page Refresh)
+      const createdRecord = {
+        id: insertedId || (crypto.randomUUID ? crypto.randomUUID() : "w_" + Date.now()),
+        recipient_name: recipient,
+        sender_name: sender,
+        pass_code: passcode,
+        letter_lines: record.letter_lines,
+        created_at: record.created_at
+      };
+
       customerWishes.unshift(createdRecord);
       renderCustomerWishesTable();
       renderRecentWishesTable();

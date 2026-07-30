@@ -444,13 +444,13 @@
     renderDamGrid();
   }
 
-  // Update Storage Manager Progress Bar & Meta Counters
+  // Update Storage Manager Progress Bar & Meta Counters (Phase 4.4 Live Storage Engine)
   function updateStorageAnalytics() {
-    const BASE_TOTAL_BYTES = 1073741824; // 1 GB Base Tier
+    const BASE_TOTAL_BYTES = 524288000; // 500 MB Free Quota Capacity
     let usedBytes = 0;
-    let imagesCount = 0;
-    let videosCount = 0;
-    let audioCount = 0;
+    let imagesCount = 0, imagesBytes = 0;
+    let videosCount = 0, videosBytes = 0;
+    let audioCount = 0, audioBytes = 0;
     let usedCount = 0;
     let unusedCount = 0;
     let favCount = 0;
@@ -459,25 +459,35 @@
     const oneWeekAgo = Date.now() - 7 * 86400000;
 
     realStorageFiles.forEach(f => {
-      usedBytes += (f.size || 0);
-      if (f.folder === "photos") imagesCount++;
-      if (f.folder === "videos") videosCount++;
-      if (f.folder === "audio") audioCount++;
+      const fSize = f.size || 0;
+      usedBytes += fSize;
+
+      if (f.folder === "photos" || f.name?.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+        imagesCount++;
+        imagesBytes += fSize;
+      } else if (f.folder === "videos" || f.name?.match(/\.(mp4|webm|mov|mkv)$/i)) {
+        videosCount++;
+        videosBytes += fSize;
+      } else if (f.folder === "audio" || f.name?.match(/\.(mp3|wav|ogg|mpeg|m4a)$/i)) {
+        audioCount++;
+        audioBytes += fSize;
+      }
+
       if (f.isUsed) usedCount++;
       else unusedCount++;
       if (f.isFavorite) favCount++;
       if (new Date(f.created_at).getTime() > oneWeekAgo) recentCount++;
     });
 
-    const percentUsed = Math.min(100, Math.max(0.5, ((usedBytes / BASE_TOTAL_BYTES) * 100))).toFixed(1);
     const freeBytes = Math.max(0, BASE_TOTAL_BYTES - usedBytes);
+    const percentUsed = Math.min(100, Math.max(0.5, ((usedBytes / BASE_TOTAL_BYTES) * 100))).toFixed(1);
 
     // Update Header Progress Bar
     const progressFill = document.getElementById("dam-storage-progress-fill");
     if (progressFill) progressFill.style.width = `${percentUsed}%`;
 
     const usedText = document.getElementById("dam-storage-used-text");
-    if (usedText) usedText.textContent = `${formatBytes(usedBytes)} / 1 GB`;
+    if (usedText) usedText.textContent = `${formatBytes(usedBytes)} / 500 MB`;
 
     const freeText = document.getElementById("dam-storage-free-text");
     if (freeText) freeText.textContent = `${formatBytes(freeBytes)} Remaining`;
@@ -488,9 +498,21 @@
     const percentText = document.getElementById("dam-percent-text");
     if (percentText) percentText.textContent = `${percentUsed}% Capacity Used`;
 
-    // Update KPI Card on Dashboard
+    // Update KPI Cards on Dashboard
+    const kpiImages = document.getElementById("kpi-total-images");
+    if (kpiImages) kpiImages.textContent = imagesCount;
+
+    const kpiVideos = document.getElementById("kpi-total-videos");
+    if (kpiVideos) kpiVideos.textContent = videosCount;
+
+    const kpiAudio = document.getElementById("kpi-total-audio");
+    if (kpiAudio) kpiAudio.textContent = audioCount;
+
     const kpiStorage = document.getElementById("kpi-storage-used");
     if (kpiStorage) kpiStorage.textContent = formatBytes(usedBytes);
+
+    const kpiAvail = document.getElementById("kpi-storage-available");
+    if (kpiAvail) kpiAvail.textContent = `${formatBytes(freeBytes)} Remaining`;
 
     // Update Filter Chip Counter Badges
     const elAll = document.getElementById("count-all"); if (elAll) elAll.textContent = realStorageFiles.length;

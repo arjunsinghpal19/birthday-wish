@@ -222,11 +222,64 @@
     }
   }
 
+  // Dynamic Human-Readable Bytes Formatter (B, KB, MB, GB, TB)
+  function formatBytes(bytes, decimals = 1) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
+  // Storage Analytics & Media Usage Calculator
+  function calculateStorageAnalytics(fileList, capacityBytes = 500 * 1024 * 1024) {
+    let totalUsedBytes = 0;
+    let imagesCount = 0, imagesBytes = 0;
+    let videosCount = 0, videosBytes = 0;
+    let audioCount = 0, audioBytes = 0;
+
+    if (Array.isArray(fileList)) {
+      fileList.forEach(f => {
+        const size = f.size || (f.metadata ? f.metadata.size : 0) || 0;
+        totalUsedBytes += size;
+        const folder = f.folder || (f.path ? f.path.split('/')[0] : '');
+
+        if (folder === 'photos' || (f.name && f.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i))) {
+          imagesCount++;
+          imagesBytes += size;
+        } else if (folder === 'videos' || (f.name && f.name.match(/\.(mp4|webm|mov|mkv)$/i))) {
+          videosCount++;
+          videosBytes += size;
+        } else if (folder === 'audio' || (f.name && f.name.match(/\.(mp3|wav|ogg|mpeg|m4a)$/i))) {
+          audioCount++;
+          audioBytes += size;
+        }
+      });
+    }
+
+    const remainingBytes = Math.max(0, capacityBytes - totalUsedBytes);
+
+    return {
+      totalUsedBytes,
+      formattedTotalUsed: formatBytes(totalUsedBytes),
+      remainingBytes,
+      formattedRemaining: formatBytes(remainingBytes),
+      capacityBytes,
+      formattedCapacity: formatBytes(capacityBytes),
+      images: { count: imagesCount, bytes: imagesBytes, formattedSize: formatBytes(imagesBytes) },
+      videos: { count: videosCount, bytes: videosBytes, formattedSize: formatBytes(videosBytes) },
+      audio: { count: audioCount, bytes: audioBytes, formattedSize: formatBytes(audioBytes) }
+    };
+  }
+
   window.DatabaseModule = {
     saveWish: saveWishRecord,
     getWishById: getWishRecordById,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,
-    generateSecureBackupCode: generateSecureBackupCode
+    generateSecureBackupCode: generateSecureBackupCode,
+    formatBytes: formatBytes,
+    calculateStorageAnalytics: calculateStorageAnalytics
   };
 })(window);

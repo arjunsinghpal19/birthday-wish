@@ -124,7 +124,11 @@
     renderRecentWishesTable();
   }
 
-  // Load Customer Specific Media Assets from Supabase Storage
+  // Customer Media Dataset & Storage Analytics
+  let customerMediaFiles = [];
+  let customerStorageAnalytics = null;
+
+  // Load Customer Specific Media Assets from Supabase Storage (Live Storage Engine)
   async function loadCustomerMediaData() {
     try {
       if (window.StorageModule && typeof window.StorageModule.listAllMedia === "function") {
@@ -147,9 +151,13 @@
       console.warn("Using local customer media data:", e);
       customerMediaFiles = [];
     }
+
+    if (window.DatabaseModule && typeof window.DatabaseModule.calculateStorageAnalytics === "function") {
+      customerStorageAnalytics = window.DatabaseModule.calculateStorageAnalytics(customerMediaFiles, 500 * 1024 * 1024);
+    }
   }
 
-  // Update Customer Dashboard Metrics
+  // Update Customer Dashboard Metrics (Live Customer Storage Metrics)
   function updateCustomerMetrics() {
     const totalEl = document.getElementById("cust-kpi-total-wishes");
     if (totalEl) totalEl.textContent = customerWishes.length;
@@ -160,7 +168,10 @@
     if (todayEl) todayEl.textContent = todayCount;
 
     const mediaEl = document.getElementById("cust-kpi-total-media");
-    if (mediaEl) mediaEl.textContent = `${customerMediaFiles.length} File${customerMediaFiles.length === 1 ? '' : 's'}`;
+    if (mediaEl) {
+      const formattedSize = customerStorageAnalytics ? customerStorageAnalytics.formattedTotalUsed : "0 B";
+      mediaEl.textContent = `${customerMediaFiles.length} File${customerMediaFiles.length === 1 ? '' : 's'} (${formattedSize})`;
+    }
 
     const planEl = document.getElementById("cust-kpi-current-plan");
     if (planEl) planEl.textContent = "Free Creator";

@@ -357,6 +357,7 @@
         <td>
           <div class="action-btns">
             <a class="btn-icon" href="${fullUrl}" target="_blank" title="Open Public Page">👁️</a>
+            <button class="btn-icon" title="Edit Wish" onclick="window.adminApp.editWish('${w.id}')">✏️</button>
             <button class="btn-icon" title="Duplicate Wish" onclick="window.adminApp.duplicateWish('${w.id}')">📋</button>
             <button class="btn-icon danger" title="Delete Wish" onclick="window.adminApp.deleteWish('${w.id}')">🗑️</button>
           </div>
@@ -1162,6 +1163,15 @@
     showToast("Wish record deleted 🗑️");
   }
 
+  // Edit Wish Helper (Opens wish page in new tab for editing)
+  function editWish(id) {
+    if (!id) return;
+    const fullUrl = `${location.origin}/?w=${id}`;
+    window.open(fullUrl, "_blank");
+    logEvent("WISH_EDIT_OPENED", `Opened wish for editing: ${id}`);
+    showToast("Wish page opened for editing ✏️");
+  }
+
   // Duplicate Wish Helper
   function duplicateWish(id) {
     const item = wishesList.find(w => w.id === id);
@@ -1276,7 +1286,8 @@
     const createBtn = document.getElementById("btn-create-new-wish-admin");
     if (createBtn) {
       createBtn.addEventListener("click", () => {
-        window.location.href = "index.html";
+        // Open in new tab to preserve admin session (do NOT navigate away)
+        window.open("index.html", "_blank");
       });
     }
   });
@@ -1285,6 +1296,7 @@
   window.adminApp = {
     showToast,
     copyWishUrl,
+    editWish,
     deleteWish,
     duplicateWish,
     logEvent,

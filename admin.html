@@ -18,7 +18,8 @@
       }
       checkGuard();
       window.addEventListener("pageshow", function (e) {
-        if (e.persisted || sessionStorage.getItem("admin_authenticated") !== "true") {
+        // Only redirect if auth is actually missing (not just because bfcache restored)
+        if (sessionStorage.getItem("admin_authenticated") !== "true") {
           window.location.replace("index.html?login=admin");
         }
       });

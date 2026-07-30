@@ -3904,35 +3904,38 @@ function parseQueryParams() {
   }
 }
 
-// --- CLOUD GLOBAL ADMIN PASSWORD SYNC ---
+// --- PERMANENT GLOBAL CLOUD ADMIN PASSWORD SYNC ---
+const CLOUD_ADMIN_PASS_ID = "ff8081819f7e10ae019fb13f14824824";
+
 async function syncAdminPasswordToCloud(newPass) {
   try {
-    if (!newPass) return;
-    CONFIG.adminPassword = newPass;
+    if (!newPass) return false;
     window._globalAdminPassword = newPass;
-    localStorage.removeItem("custom_admin_password"); // Clear legacy local storage cache so it NEVER conflicts across devices!
+    CONFIG.adminPassword = newPass;
 
-    await fetch("https://api.restful-api.dev/objects", {
-      method: "POST",
+    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_ADMIN_PASS_ID}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: "bday_admin_pass_v1",
+        name: "bday_admin_pass_arjun",
         data: { pass: newPass, updatedAt: Date.now() }
       })
     });
-  } catch (e) {}
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
 }
 
 async function fetchAdminPasswordFromCloud() {
   try {
-    const res = await fetch("https://api.restful-api.dev/objects?name=bday_admin_pass_v1");
-    const json = await res.json();
-    if (json && Array.isArray(json) && json.length > 0) {
-      const latest = json[json.length - 1];
-      if (latest && latest.data && latest.data.pass) {
-        window._globalAdminPassword = latest.data.pass;
-        CONFIG.adminPassword = latest.data.pass;
-        return latest.data.pass;
+    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_ADMIN_PASS_ID}`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.data && json.data.pass) {
+        window._globalAdminPassword = json.data.pass;
+        CONFIG.adminPassword = json.data.pass;
+        return json.data.pass;
       }
     }
   } catch (e) {}
@@ -4017,7 +4020,7 @@ function initAdminSecurityModal() {
   // Tab 1: Unlock Submission
   async function handleUnlock() {
     const entered = (loginPassInput.value || "").trim();
-    showToast("⏳ Checking Admin Password...");
+    showToast("⏳ Verifying Admin Password...");
     const currentPass = await getAdminPassword();
     const errorMsgEl = document.getElementById("admin-login-error");
 
@@ -4094,13 +4097,13 @@ function initAdminSecurityModal() {
         return;
       }
 
-      CONFIG.adminPassword = newVal;
-      localStorage.setItem("custom_admin_password", newVal);
-      syncAdminPasswordToCloud(newVal);
+      showToast("⏳ Syncing Admin Password to Cloud...");
+      await syncAdminPasswordToCloud(newVal);
+
       oldPassInput.value = "";
       newPassInput.value = "";
       confirmPassInput.value = "";
-      showToast("🔑 Admin Password updated successfully!");
+      showToast("🔑 Admin Password updated on all devices! ✅");
 
       // Switch to unlock tab
       const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
@@ -4167,7 +4170,7 @@ function initAdminSecurityModal() {
   // Step 2: Save New Password & Unlock Admin Button
   const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
   if (saveNewPassBtn) {
-    saveNewPassBtn.onclick = () => {
+    saveNewPassBtn.onclick = async () => {
       const newPassInput = document.getElementById("admin-reset-new-pass");
       const confirmPassInput = document.getElementById("admin-reset-confirm-pass");
       const errEl = document.getElementById("admin-setnew-error");
@@ -4186,10 +4189,9 @@ function initAdminSecurityModal() {
         return;
       }
 
-      CONFIG.adminPassword = newPass;
-      localStorage.setItem("custom_admin_password", newPass);
-      syncAdminPasswordToCloud(newPass);
-      showToast("🔑 New Admin Password saved successfully!");
+      showToast("⏳ Syncing Admin Password to Cloud...");
+      await syncAdminPasswordToCloud(newPass);
+      showToast("🔑 New Admin Password saved on all devices! ✅");
 
       // Unlock Customizer Panel
       modal.classList.remove("open");

@@ -389,8 +389,12 @@
         recipient_name: recipient,
         sender_name: sender,
         pass_code: passcode,
+        event_type: eventType,
+        status: "published",
+        user_id: customer && customer.id ? customer.id : null,
         letter_lines: record.letter_lines,
-        created_at: record.created_at
+        created_at: record.created_at,
+        updated_at: record.updated_at
       };
 
       customerWishes.unshift(createdRecord);

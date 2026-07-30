@@ -666,9 +666,9 @@
     return `BW-${segment()}-${segment()}-${segment()}`;
   }
 
-  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 FINAL)
+  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1.1 FINAL)
   async function initSecurityHandlers() {
-    let settings = { admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
+    let settings = { is_first_time: false, admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
 
     if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
       settings = await window.DatabaseModule.getSecuritySettings();
@@ -677,6 +677,78 @@
     if (!settings.admin_recovery_code) {
       settings.admin_recovery_code = generateBackupCode();
       if (window.DatabaseModule) window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: settings.admin_recovery_code });
+    }
+
+    // Toggle First-Time Wizard vs Normal Settings Grid
+    const wizardBox = document.getElementById("sec-first-time-wizard");
+    const normalGrid = document.getElementById("sec-normal-settings-grid");
+
+    if (settings.is_first_time) {
+      if (wizardBox) wizardBox.style.display = "block";
+      if (normalGrid) normalGrid.style.display = "none";
+    } else {
+      if (wizardBox) wizardBox.style.display = "none";
+      if (normalGrid) normalGrid.style.display = "grid";
+    }
+
+    // Wizard Submission Handler
+    const wizardBtn = document.getElementById("btn-complete-wizard");
+    if (wizardBtn) {
+      wizardBtn.addEventListener("click", async () => {
+        const pass = (document.getElementById("wizard-pass")?.value || "").trim();
+        const confirmPass = (document.getElementById("wizard-confirm-pass")?.value || "").trim();
+        const email = (document.getElementById("wizard-email")?.value || "").trim();
+        const q = (document.getElementById("wizard-question")?.value || "").trim();
+        const a = (document.getElementById("wizard-answer")?.value || "").trim().toLowerCase();
+
+        if (!pass || pass.length < 4) {
+          showToast("Master Password must be at least 4 characters ⚠️");
+          return;
+        }
+        if (pass !== confirmPass) {
+          showToast("Passwords do not match ❌");
+          return;
+        }
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showToast("Please enter a valid recovery email address ⚠️");
+          return;
+        }
+        if (!q || !a) {
+          showToast("Please enter a security question and secret answer ⚠️");
+          return;
+        }
+
+        const newCode = generateBackupCode();
+        const newSettings = {
+          is_first_time: false,
+          admin_master_password: pass,
+          admin_recovery_email: email,
+          admin_recovery_code: newCode,
+          custom_secret_question: q,
+          custom_secret_answer: a,
+          created_at: new Date().toISOString(),
+          last_password_change: new Date().toISOString()
+        };
+
+        if (window.DatabaseModule) {
+          await window.DatabaseModule.saveSecuritySettings(newSettings);
+        }
+
+        settings = { ...settings, ...newSettings };
+
+        // Hide Wizard & Show Normal Grid
+        if (wizardBox) wizardBox.style.display = "none";
+        if (normalGrid) normalGrid.style.display = "grid";
+
+        // Re-populate elements
+        const emailInput = document.getElementById("sec-recovery-email");
+        if (emailInput) emailInput.value = settings.admin_recovery_email;
+        const codeDisplay = document.getElementById("sec-code-display");
+        if (codeDisplay) codeDisplay.textContent = settings.admin_recovery_code;
+
+        logEvent("ADMIN_FIRST_TIME_SETUP", "First-Time Admin Security Setup Completed");
+        showToast("✨ First-Time Security Setup Complete & Secured! 🎉");
+      });
     }
 
     // Populate elements

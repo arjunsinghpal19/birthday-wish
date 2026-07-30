@@ -116,7 +116,7 @@
     }
   }
 
-  // Persistent Security System Settings (Phase 2.1 FINAL)
+  // Persistent Security System Settings (Phase 2.1.1 FINAL SaaS Schema)
   const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
 
   async function saveSecuritySettings(secObj) {
@@ -130,7 +130,7 @@
 
       localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(updated));
 
-      // Also mirror individual keys for backward compatibility
+      // Mirror keys to LocalStorage
       if (updated.admin_master_password) localStorage.setItem("admin_master_password", updated.admin_master_password);
       if (updated.admin_recovery_email !== undefined) localStorage.setItem("admin_recovery_email", updated.admin_recovery_email);
       if (updated.admin_recovery_code) localStorage.setItem("admin_recovery_code", updated.admin_recovery_code);
@@ -183,21 +183,41 @@
       }
 
       const defaultCode = generateSecureBackupCode();
+      const hasCustomPass = !!(localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password"));
+      const isFirstTime = localData?.is_first_time !== undefined ? localData.is_first_time : !hasCustomPass;
 
       return {
+        is_first_time: isFirstTime,
         admin_master_password: localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "admin123",
         admin_recovery_email: localData?.admin_recovery_email !== undefined ? localData.admin_recovery_email : (localStorage.getItem("admin_recovery_email") || "admin@example.com"),
         admin_recovery_code: localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || defaultCode,
         custom_secret_question: localData?.custom_secret_question !== undefined ? localData.custom_secret_question : (localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?"),
-        custom_secret_answer: localData?.custom_secret_answer !== undefined ? localData.custom_secret_answer : (localStorage.getItem("custom_secret_answer") || "arjun")
+        custom_secret_answer: localData?.custom_secret_answer !== undefined ? localData.custom_secret_answer : (localStorage.getItem("custom_secret_answer") || "arjun"),
+        
+        // Future SaaS User Architecture
+        master_profile: localData?.master_profile || { username: "admin", display_name: "Master Admin", avatar: "👑" },
+        created_at: localData?.created_at || new Date().toISOString(),
+        last_login: localData?.last_login || new Date().toISOString(),
+        last_password_change: localData?.last_password_change || new Date().toISOString(),
+        account_status: localData?.account_status || "active",
+        user_role: localData?.user_role || "super_admin",
+        two_factor_auth: localData?.two_factor_auth || { enabled: false, secret: null }
       };
     } catch (e) {
       return {
+        is_first_time: false,
         admin_master_password: localStorage.getItem("admin_master_password") || "admin123",
         admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
         admin_recovery_code: localStorage.getItem("admin_recovery_code") || generateSecureBackupCode(),
         custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun"
+        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun",
+        master_profile: { username: "admin", display_name: "Master Admin", avatar: "👑" },
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString(),
+        last_password_change: new Date().toISOString(),
+        account_status: "active",
+        user_role: "super_admin",
+        two_factor_auth: { enabled: false, secret: null }
       };
     }
   }

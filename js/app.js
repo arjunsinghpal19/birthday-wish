@@ -4146,6 +4146,9 @@ function initAdminSecurityModal() {
     if (entered === currentPass) {
       sessionStorage.setItem("admin_authenticated", "true");
       sessionStorage.setItem("admin_auth_timestamp", Date.now().toString());
+      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
+        window.DatabaseModule.saveSecuritySettings({ last_login: new Date().toISOString() });
+      }
       modal.classList.remove("open");
       loginPassInput.value = "";
       if (loginPassInput) loginPassInput.classList.remove("input-error");

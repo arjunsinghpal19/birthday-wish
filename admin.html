@@ -413,7 +413,43 @@
             </div>
           </div>
 
-          <div class="settings-grid">
+          <!-- FIRST-TIME INSTALLATION SETUP WIZARD (Displayed when is_first_time: true) -->
+          <div class="glass-panel" id="sec-first-time-wizard" style="display:none;padding:32px;margin-bottom:32px;border:1px dashed var(--border-gold);">
+            <div style="text-align:center;max-width:560px;margin:0 auto 24px auto;">
+              <span style="font-size:2.8rem;">🚀</span>
+              <h3 style="font-family:var(--font-heading);font-size:1.6rem;color:var(--gold);margin:8px 0 4px 0;">First-Time Admin Setup Wizard</h3>
+              <p style="color:var(--text-muted);font-size:0.88rem;">Welcome! Configure your Master Admin Password and Recovery Channels to secure your platform. Zero current password required for initial setup.</p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;">
+              <div class="form-group">
+                <label>Set Master Admin Password</label>
+                <input type="password" class="form-input" id="wizard-pass" placeholder="New Password (min 4 chars)">
+              </div>
+              <div class="form-group">
+                <label>Confirm Master Password</label>
+                <input type="password" class="form-input" id="wizard-confirm-pass" placeholder="Re-type Master Password">
+              </div>
+              <div class="form-group">
+                <label>Recovery Email Address</label>
+                <input type="email" class="form-input" id="wizard-email" placeholder="admin@example.com">
+              </div>
+              <div class="form-group">
+                <label>Security Question</label>
+                <input type="text" class="form-input" id="wizard-question" value="What is your childhood pet's name?">
+              </div>
+              <div class="form-group">
+                <label>Security Secret Answer</label>
+                <input type="password" class="form-input" id="wizard-answer" placeholder="Enter secret answer">
+              </div>
+            </div>
+
+            <div style="text-align:center;margin-top:20px;">
+              <button type="button" class="btn-primary btn-gold" id="btn-complete-wizard" style="padding:12px 32px;font-size:1rem;">✨ Complete First-Time Setup & Secure Platform</button>
+            </div>
+          </div>
+
+          <div class="settings-grid" id="sec-normal-settings-grid">
             <!-- 1. Change Password -->
             <div class="glass-panel" style="padding:24px;">
               <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🔑 Change Master Admin Password</h3>

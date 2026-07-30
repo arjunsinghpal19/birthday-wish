@@ -444,9 +444,8 @@
     renderDamGrid();
   }
 
-  // Update Storage Manager Progress Bar & Meta Counters (Phase 4.4 Live Storage Engine)
+  // Update Storage Manager Progress Bar & Meta Counters (Phase 4.5 Live Storage - Supabase Free Plan)
   function updateStorageAnalytics() {
-    const BASE_TOTAL_BYTES = 524288000; // 500 MB Free Quota Capacity
     let usedBytes = 0;
     let imagesCount = 0, imagesBytes = 0;
     let videosCount = 0, videosBytes = 0;
@@ -479,24 +478,23 @@
       if (new Date(f.created_at).getTime() > oneWeekAgo) recentCount++;
     });
 
-    const freeBytes = Math.max(0, BASE_TOTAL_BYTES - usedBytes);
-    const percentUsed = Math.min(100, Math.max(0.5, ((usedBytes / BASE_TOTAL_BYTES) * 100))).toFixed(1);
+    const formattedUsed = formatBytes(usedBytes);
 
     // Update Header Progress Bar
     const progressFill = document.getElementById("dam-storage-progress-fill");
-    if (progressFill) progressFill.style.width = `${percentUsed}%`;
+    if (progressFill) progressFill.style.width = `100%`;
 
     const usedText = document.getElementById("dam-storage-used-text");
-    if (usedText) usedText.textContent = `${formatBytes(usedBytes)} / 500 MB`;
+    if (usedText) usedText.textContent = `Used: ${formattedUsed}`;
 
     const freeText = document.getElementById("dam-storage-free-text");
-    if (freeText) freeText.textContent = `${formatBytes(freeBytes)} Remaining`;
+    if (freeText) freeText.textContent = `Live Supabase Bucket`;
 
     const countText = document.getElementById("dam-file-count-text");
     if (countText) countText.textContent = `Total Files: ${realStorageFiles.length} (${imagesCount} Photos, ${videosCount} Videos, ${audioCount} Audio)`;
 
     const percentText = document.getElementById("dam-percent-text");
-    if (percentText) percentText.textContent = `${percentUsed}% Capacity Used`;
+    if (percentText) percentText.textContent = `Supabase Storage (Free Plan)`;
 
     // Update KPI Cards on Dashboard
     const kpiImages = document.getElementById("kpi-total-images");
@@ -509,10 +507,10 @@
     if (kpiAudio) kpiAudio.textContent = audioCount;
 
     const kpiStorage = document.getElementById("kpi-storage-used");
-    if (kpiStorage) kpiStorage.textContent = formatBytes(usedBytes);
+    if (kpiStorage) kpiStorage.textContent = formattedUsed;
 
     const kpiAvail = document.getElementById("kpi-storage-available");
-    if (kpiAvail) kpiAvail.textContent = `${formatBytes(freeBytes)} Remaining`;
+    if (kpiAvail) kpiAvail.textContent = `Live Supabase Bucket`;
 
     // Update Filter Chip Counter Badges
     const elAll = document.getElementById("count-all"); if (elAll) elAll.textContent = realStorageFiles.length;

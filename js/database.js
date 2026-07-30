@@ -232,8 +232,8 @@
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
 
-  // Storage Analytics & Media Usage Calculator
-  function calculateStorageAnalytics(fileList, capacityBytes = 500 * 1024 * 1024) {
+  // Storage Analytics & Media Usage Calculator (Supabase Free Plan / Dynamic Architecture)
+  function calculateStorageAnalytics(fileList, capacityBytes = null) {
     let totalUsedBytes = 0;
     let imagesCount = 0, imagesBytes = 0;
     let videosCount = 0, videosBytes = 0;
@@ -258,15 +258,17 @@
       });
     }
 
-    const remainingBytes = Math.max(0, capacityBytes - totalUsedBytes);
+    const hasCapacity = (capacityBytes !== null && typeof capacityBytes === 'number');
+    const remainingBytes = hasCapacity ? Math.max(0, capacityBytes - totalUsedBytes) : null;
 
     return {
       totalUsedBytes,
       formattedTotalUsed: formatBytes(totalUsedBytes),
       remainingBytes,
-      formattedRemaining: formatBytes(remainingBytes),
+      formattedRemaining: hasCapacity ? formatBytes(remainingBytes) : null,
       capacityBytes,
-      formattedCapacity: formatBytes(capacityBytes),
+      formattedCapacity: hasCapacity ? formatBytes(capacityBytes) : null,
+      hasCapacity,
       images: { count: imagesCount, bytes: imagesBytes, formattedSize: formatBytes(imagesBytes) },
       videos: { count: videosCount, bytes: videosBytes, formattedSize: formatBytes(videosBytes) },
       audio: { count: audioCount, bytes: audioBytes, formattedSize: formatBytes(audioBytes) }

@@ -153,7 +153,7 @@
     }
 
     if (window.DatabaseModule && typeof window.DatabaseModule.calculateStorageAnalytics === "function") {
-      customerStorageAnalytics = window.DatabaseModule.calculateStorageAnalytics(customerMediaFiles, 500 * 1024 * 1024);
+      customerStorageAnalytics = window.DatabaseModule.calculateStorageAnalytics(customerMediaFiles, null);
     }
   }
 

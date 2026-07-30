@@ -326,17 +326,22 @@
         return;
       }
 
-      // 2. Prepare Valid Database Payload (Matching public.wishes schema)
+      // 2. Prepare Valid Database Payload (Matching Phase 5.1 Production Schema)
+      const customer = getCustomerSessionIdentity();
       const record = {
         recipient_name: recipient,
         sender_name: sender,
         pass_code: passcode,
+        event_type: eventType,
+        status: "published",
+        user_id: customer && customer.id ? customer.id : null,
         birth_date: { year: 2001, month: 1, day: 1 },
         letter_lines: [
           "Wishing you joy, health and endless happiness today!",
           "May this year bring you all the love and success you deserve."
         ],
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       let insertedId = null;

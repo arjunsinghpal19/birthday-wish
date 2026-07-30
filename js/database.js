@@ -17,22 +17,26 @@
       if (!client) return null;
 
       const record = {
-        recipient_name: configObj.name || "",
-        sender_name: configObj.from || "",
-        pass_code: configObj.passcode?.code || "1234",
-        birth_date: configObj.birthDate || { year: 2001, month: 1, day: 1 },
-        letter_lines: configObj.letterLines || [],
-        memory_text: configObj.memory || "",
-        reasons_json: configObj.reasons || [],
-        wishes_json: configObj.wishes || [],
-        gallery_json: configObj.gallery || [],
-        timeline_json: configObj.timeline || [],
-        gift_json: configObj.gift || {},
-        music_url: configObj.music?.file || null,
-        video_url: configObj.videoWish?.url || configObj.videoWish?.file || null,
-        cake_flavor: configObj.cakeFlavor || "default",
-        letter_font: configObj.letterFont || "default",
-        letter_theme: configObj.letterTheme || "default"
+        recipient_name: configObj.name || configObj.recipient_name || "",
+        sender_name: configObj.from || configObj.sender_name || "",
+        pass_code: configObj.passcode?.code || configObj.pass_code || "1234",
+        birth_date: configObj.birthDate || configObj.birth_date || { year: 2001, month: 1, day: 1 },
+        letter_lines: configObj.letterLines || configObj.letter_lines || [],
+        memory_text: configObj.memory || configObj.memory_text || "",
+        reasons_json: configObj.reasons || configObj.reasons_json || [],
+        wishes_json: configObj.wishes || configObj.wishes_json || [],
+        gallery_json: configObj.gallery || configObj.gallery_json || [],
+        timeline_json: configObj.timeline || configObj.timeline_json || [],
+        gift_json: configObj.gift || configObj.gift_json || {},
+        music_url: configObj.music?.file || configObj.music_url || null,
+        video_url: configObj.videoWish?.url || configObj.videoWish?.file || configObj.video_url || null,
+        cake_flavor: configObj.cakeFlavor || configObj.cake_flavor || "default",
+        letter_font: configObj.letterFont || configObj.letter_font || "default",
+        letter_theme: configObj.letterTheme || configObj.letter_theme || "default",
+        user_id: configObj.userId || configObj.user_id || null,
+        event_type: configObj.eventType || configObj.event_type || "birthday",
+        status: configObj.status || "published",
+        updated_at: new Date().toISOString()
       };
 
       console.log("💾 Database INSERT record music_url:", record.music_url, "video_url:", record.video_url);

@@ -97,7 +97,7 @@
     }
   }
 
-  // Render Dashboard KPI Cards & Recent Lists
+  // Render Dashboard KPI Cards & Recent Lists (Phase 3.0 Super Admin)
   async function loadDashboardData() {
     try {
       if (window.SupabaseModule) {
@@ -105,7 +105,8 @@
         if (client) {
           const { data, error } = await client.from("wishes").select("*").order("created_at", { ascending: false });
           if (!error && data && data.length > 0) {
-            wishesList = data;
+            // Filter out system security config row
+            wishesList = data.filter(w => w.id !== "00000000-0000-0000-0000-000000000001" && w.recipient_name !== "__SYSTEM_SECURITY_CONFIG__");
           }
         }
       }
@@ -113,9 +114,19 @@
       console.warn("Using local cached wishes data:", e);
     }
 
-    // Update KPI Numbers
+    // 1. Total Wishes
     const totalWishesEl = document.getElementById("kpi-total-wishes");
     if (totalWishesEl) totalWishesEl.textContent = wishesList.length;
+
+    // 2. Today's Wishes
+    const todayStr = new Date().toDateString();
+    const todaysWishesCount = wishesList.filter(w => w.created_at && new Date(w.created_at).toDateString() === todayStr).length;
+    const todayWishesEl = document.getElementById("kpi-today-wishes");
+    if (todayWishesEl) todayWishesEl.textContent = todaysWishesCount;
+
+    // 3. System Version Badge
+    const sysVerEl = document.getElementById("kpi-system-version");
+    if (sysVerEl) sysVerEl.textContent = "v3.0 Super Admin";
 
     renderRecentWishesTable();
     renderWishesTable();

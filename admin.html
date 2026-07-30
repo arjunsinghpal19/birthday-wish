@@ -37,8 +37,8 @@
       <div class="sidebar-header">
         <div class="logo-badge">👑</div>
         <div class="sidebar-brand">
-          <h1>Admin Control</h1>
-          <span>Birthday Suite v2.5</span>
+          <h1>Super Admin</h1>
+          <span>Wish Studio v3.0</span>
         </div>
       </div>
 
@@ -117,15 +117,15 @@
             <button class="btn-primary" id="btn-refresh-dashboard">🔄 Refresh Analytics</button>
           </div>
 
-          <!-- KPI Cards Grid -->
+          <!-- Super Admin KPI Cards Grid (12 Metrics) -->
           <div class="metrics-grid">
             <div class="glass-card metric-card">
               <div class="metric-header">
                 <span class="metric-title">Total Wishes</span>
                 <span class="metric-icon">🎂</span>
               </div>
-              <div class="metric-value" id="kpi-total-wishes">142</div>
-              <div class="metric-sub"><span class="trend">↑ +18%</span> vs last month</div>
+              <div class="metric-value" id="kpi-total-wishes">0</div>
+              <div class="metric-sub">Across all event types</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -133,8 +133,8 @@
                 <span class="metric-title">Today's Wishes</span>
                 <span class="metric-icon">✨</span>
               </div>
-              <div class="metric-value" id="kpi-today-wishes">12</div>
-              <div class="metric-sub"><span class="trend">↑ +4</span> created today</div>
+              <div class="metric-value" id="kpi-today-wishes">0</div>
+              <div class="metric-sub">Created today</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -142,7 +142,7 @@
                 <span class="metric-title">Images Uploaded</span>
                 <span class="metric-icon">🖼</span>
               </div>
-              <div class="metric-value" id="kpi-total-images">86</div>
+              <div class="metric-value" id="kpi-total-images">0</div>
               <div class="metric-sub">Supabase Storage</div>
             </div>
 
@@ -151,8 +151,8 @@
                 <span class="metric-title">Videos Uploaded</span>
                 <span class="metric-icon">📹</span>
               </div>
-              <div class="metric-value" id="kpi-total-videos">24</div>
-              <div class="metric-sub">Personal MP4 & YouTube</div>
+              <div class="metric-value" id="kpi-total-videos">0</div>
+              <div class="metric-sub">MP4 & YouTube</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -160,8 +160,8 @@
                 <span class="metric-title">Audio Notes</span>
                 <span class="metric-icon">🎙</span>
               </div>
-              <div class="metric-value" id="kpi-total-audio">32</div>
-              <div class="metric-sub">Voice & Tunes</div>
+              <div class="metric-value" id="kpi-total-audio">0</div>
+              <div class="metric-sub">Voice & Music</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -169,8 +169,17 @@
                 <span class="metric-title">Storage Used</span>
                 <span class="metric-icon">☁️</span>
               </div>
-              <div class="metric-value" id="kpi-storage-used">184 MB</div>
+              <div class="metric-value" id="kpi-storage-used">0 B</div>
               <div class="metric-sub">Bucket: wish-media</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Storage Available</span>
+                <span class="metric-icon">💾</span>
+              </div>
+              <div class="metric-value" id="kpi-storage-available">500 MB</div>
+              <div class="metric-sub">Supabase Free Quota</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -178,8 +187,44 @@
                 <span class="metric-title">System Version</span>
                 <span class="metric-icon">⚡</span>
               </div>
-              <div class="metric-value" style="font-size:1.5rem;color:var(--gold);">v2.5 Pro</div>
-              <div class="metric-sub">UUID DB Pipeline</div>
+              <div class="metric-value" style="font-size:1.4rem;color:var(--gold);" id="kpi-system-version">v3.0 Super Admin</div>
+              <div class="metric-sub">Wish Studio Pipeline</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Monthly Revenue</span>
+                <span class="metric-icon">💵</span>
+              </div>
+              <div class="metric-value" id="kpi-future-revenue">$0.00</div>
+              <div class="metric-sub">SaaS Billing Hook (Placeholder)</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Active Customers</span>
+                <span class="metric-icon">👥</span>
+              </div>
+              <div class="metric-value" id="kpi-future-customers">0 Users</div>
+              <div class="metric-sub">Multi-Tenant Hook (Placeholder)</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Active Plans</span>
+                <span class="metric-icon">📦</span>
+              </div>
+              <div class="metric-value" id="kpi-future-plans">Free Tier</div>
+              <div class="metric-sub">Subscription Hook (Placeholder)</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Platform Security</span>
+                <span class="metric-icon">🛡️</span>
+              </div>
+              <div class="metric-value" style="font-size:1.3rem;color:#2ecc71;" id="kpi-security-status">Secured</div>
+              <div class="metric-sub">Triple Recovery Active</div>
             </div>
           </div>
 

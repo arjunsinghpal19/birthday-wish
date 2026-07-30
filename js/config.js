@@ -137,6 +137,24 @@ const CONFIG = {
   letterFont: "default",
   letterTheme: "default",
   cakeFlavor: "default",
+
+  // Phase 3.0 Super Admin Multi-Event Architecture Registry
+  EVENT_TYPES: [
+    { id: "birthday", name: "Birthday", icon: "🎂", badgeColor: "#e74c3c" },
+    { id: "anniversary", name: "Anniversary", icon: "💍", badgeColor: "#f1c40f" },
+    { id: "wedding", name: "Wedding", icon: "💒", badgeColor: "#9b59b6" },
+    { id: "proposal", name: "Proposal", icon: "💎", badgeColor: "#e84393" },
+    { id: "graduation", name: "Graduation", icon: "🎓", badgeColor: "#3498db" },
+    { id: "baby_shower", name: "Baby Shower", icon: "🍼", badgeColor: "#2ecc71" },
+    { id: "farewell", name: "Farewell", icon: "✈️", badgeColor: "#e67e22" },
+    { id: "festival", name: "Festival", icon: "🪔", badgeColor: "#fdcb6e" },
+    { id: "house_warming", name: "House Warming", icon: "🏡", badgeColor: "#1abc9c" },
+    { id: "custom", name: "Custom Event", icon: "✨", badgeColor: "#a29bfe" }
+  ],
+  getEventType: function(id) {
+    if (!id) return { id: "birthday", name: "Birthday", icon: "🎂", badgeColor: "#e74c3c" };
+    return CONFIG.EVENT_TYPES.find(e => e.id === id) || { id: id, name: id.charAt(0).toUpperCase() + id.slice(1), icon: "✨", badgeColor: "#a29bfe" };
+  }
 };
 
 /* ==========================================================================

@@ -3904,11 +3904,53 @@ function parseQueryParams() {
   }
 }
 
-function getAdminPassword() {
+// --- CLOUD GLOBAL ADMIN PASSWORD SYNC ---
+async function syncAdminPasswordToCloud(newPass) {
+  try {
+    if (!newPass) return;
+    CONFIG.adminPassword = newPass;
+    localStorage.setItem("custom_admin_password", newPass);
+    window._globalAdminPassword = newPass;
+
+    // Push to Cloud Store for cross-device sync
+    fetch("https://api.restful-api.dev/objects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "bday_admin_pass_v1",
+        data: { pass: newPass, updatedAt: Date.now() }
+      })
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+async function fetchAdminPasswordFromCloud() {
+  try {
+    if (window._globalAdminPassword) return window._globalAdminPassword;
+
+    // Check Cloud Store for cross-device admin password
+    const res = await fetch("https://api.restful-api.dev/objects?name=bday_admin_pass_v1");
+    const json = await res.json();
+    if (json && Array.isArray(json) && json.length > 0) {
+      const latest = json[json.length - 1];
+      if (latest && latest.data && latest.data.pass) {
+        window._globalAdminPassword = latest.data.pass;
+        CONFIG.adminPassword = latest.data.pass;
+        localStorage.setItem("custom_admin_password", latest.data.pass);
+        return latest.data.pass;
+      }
+    }
+  } catch (e) {}
+
   return localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
 }
 
+function getAdminPassword() {
+  return window._globalAdminPassword || localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
+}
+
 function initAdminSecurityModal() {
+  fetchAdminPasswordFromCloud();
   const modal = document.getElementById("admin-login-modal");
   const closeBtn = document.getElementById("admin-modal-close-btn");
   const tabBtns = document.querySelectorAll(".admin-tab-btn");
@@ -4058,6 +4100,7 @@ function initAdminSecurityModal() {
 
       CONFIG.adminPassword = newVal;
       localStorage.setItem("custom_admin_password", newVal);
+      syncAdminPasswordToCloud(newVal);
       oldPassInput.value = "";
       newPassInput.value = "";
       confirmPassInput.value = "";
@@ -4149,6 +4192,7 @@ function initAdminSecurityModal() {
 
       CONFIG.adminPassword = newPass;
       localStorage.setItem("custom_admin_password", newPass);
+      syncAdminPasswordToCloud(newPass);
       showToast("🔑 New Admin Password saved successfully!");
 
       // Unlock Customizer Panel

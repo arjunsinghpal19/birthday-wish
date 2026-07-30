@@ -1163,13 +1163,12 @@
     showToast("Wish record deleted 🗑️");
   }
 
-  // Edit Wish Helper (Opens wish page in new tab for editing)
+  // Edit Wish Helper (Same-tab navigation preserves admin sessionStorage)
   function editWish(id) {
     if (!id) return;
-    const fullUrl = `${location.origin}/?w=${id}`;
-    window.open(fullUrl, "_blank");
     logEvent("WISH_EDIT_OPENED", `Opened wish for editing: ${id}`);
-    showToast("Wish page opened for editing ✏️");
+    const fullUrl = `${location.origin}/?w=${id}`;
+    window.location.href = fullUrl;
   }
 
   // Duplicate Wish Helper
@@ -1286,8 +1285,8 @@
     const createBtn = document.getElementById("btn-create-new-wish-admin");
     if (createBtn) {
       createBtn.addEventListener("click", () => {
-        // Open in new tab to preserve admin session (do NOT navigate away)
-        window.open("index.html", "_blank");
+        // Same-tab navigation preserves admin sessionStorage
+        window.location.href = "index.html";
       });
     }
   });

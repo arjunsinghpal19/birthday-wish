@@ -3966,13 +3966,26 @@ async function parseQueryParams() {
       if (decoded.lt) CONFIG.letterTheme = decoded.lt;
       if (decoded.gft) CONFIG.gift = decoded.gft;
 
-      if (decoded.g && Array.isArray(decoded.g)) {
+      if (decoded.l && Array.isArray(decoded.l) && decoded.l.length > 0) {
+        CONFIG.letterLines = decoded.l;
+      }
+      if (decoded.r && Array.isArray(decoded.r) && decoded.r.length > 0) {
+        CONFIG.reasons = decoded.r;
+      }
+      if (decoded.w && Array.isArray(decoded.w) && decoded.w.length > 0) {
+        CONFIG.wishes = decoded.w;
+      }
+      if (decoded.t && Array.isArray(decoded.t) && decoded.t.length > 0) {
+        CONFIG.timeline = decoded.t;
+      }
+
+      if (decoded.g && Array.isArray(decoded.g) && decoded.g.length > 0) {
         CONFIG.gallery = decoded.g.map((item, i) => {
           const defaultCard = (window.DEFAULT_CONFIG_BACKUP && window.DEFAULT_CONFIG_BACKUP.gallery && window.DEFAULT_CONFIG_BACKUP.gallery[i]) || (CONFIG.gallery && CONFIG.gallery[i]) || {};
           return {
             image: item.img || item.image || defaultCard.image || `assets/images/polaroid-${(i % 6) + 1}.jpg`,
             emoji: item.e || item.emoji || defaultCard.emoji || "🎈",
-            rot: ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+            rot: item.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
             cap: item.c || item.cap || defaultCard.cap || "Memory",
             secretNote: item.n || item.secretNote || defaultCard.secretNote || ""
           };
@@ -3988,6 +4001,12 @@ async function parseQueryParams() {
       if (decoded.msc) {
         CONFIG.music = { file: decoded.msc.f || decoded.msc.file, startTime: decoded.msc.t || decoded.msc.startTime || "" };
       }
+
+      // Re-render UI and populate all DOM slots with decoded wish data!
+      if (typeof populateContent === "function") populateContent();
+      if (typeof reRenderPage === "function") reRenderPage();
+      if (typeof renderVideoWishSection === "function") renderVideoWishSection();
+      if (typeof populateEditorFields === "function") populateEditorFields();
     }
   }
 

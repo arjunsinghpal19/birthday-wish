@@ -84,6 +84,9 @@
     }
   }
 
+  // Customer Media Dataset
+  let customerMediaFiles = [];
+
   // Load Customer Specific Wishes Data
   async function loadCustomerWishesData() {
     try {
@@ -101,9 +104,35 @@
       console.warn("Using local customer wishes data:", e);
     }
 
+    await loadCustomerMediaData();
     updateCustomerMetrics();
     renderCustomerWishesTable();
     renderRecentWishesTable();
+  }
+
+  // Load Customer Specific Media Assets from Supabase Storage
+  async function loadCustomerMediaData() {
+    try {
+      if (window.StorageModule && typeof window.StorageModule.listAllMedia === "function") {
+        const allFiles = await window.StorageModule.listAllMedia();
+        if (Array.isArray(allFiles)) {
+          // Filter media files linked to customer's wishes
+          const customerUrls = new Set();
+          customerWishes.forEach(w => {
+            if (w.music_url) customerUrls.add(w.music_url);
+            if (w.video_url) customerUrls.add(w.video_url);
+            if (Array.isArray(w.gallery_json)) {
+              w.gallery_json.forEach(g => { if (g && g.image) customerUrls.add(g.image); });
+            }
+          });
+
+          customerMediaFiles = allFiles.filter(f => customerUrls.has(f.publicUrl));
+        }
+      }
+    } catch (e) {
+      console.warn("Using local customer media data:", e);
+      customerMediaFiles = [];
+    }
   }
 
   // Update Customer Dashboard Metrics
@@ -117,7 +146,7 @@
     if (todayEl) todayEl.textContent = todayCount;
 
     const mediaEl = document.getElementById("cust-kpi-total-media");
-    if (mediaEl) mediaEl.textContent = "12 Files";
+    if (mediaEl) mediaEl.textContent = `${customerMediaFiles.length} File${customerMediaFiles.length === 1 ? '' : 's'}`;
 
     const planEl = document.getElementById("cust-kpi-current-plan");
     if (planEl) planEl.textContent = "Free Creator";

@@ -237,26 +237,114 @@
           </div>
         </section>
 
-        <!-- 3. 🖼 MEDIA LIBRARY -->
+        <!-- 3. 🖼 DIGITAL ASSET MANAGER (MEDIA LIBRARY REDESIGN) -->
         <section id="view-media" class="tab-view">
           <div class="view-header">
             <div class="view-title">
-              <h2>Media Library</h2>
-              <p>Bucket wish-media uploads: images, videos & custom voice notes</p>
+              <h2>Digital Asset Manager</h2>
+              <p>Supabase Storage <code>wish-media</code> bucket: images, videos & voice notes</p>
             </div>
-            <button class="btn-primary" id="btn-upload-media-admin">☁️ Upload New Media</button>
+            <div style="display:flex;gap:10px;">
+              <input type="file" id="dam-direct-upload-input" multiple style="display:none;">
+              <button class="btn-primary" id="btn-upload-media-admin" onclick="document.getElementById('dam-direct-upload-input').click()">☁️ Upload New Asset</button>
+            </div>
           </div>
 
-          <div class="media-tabs">
-            <button class="tab-btn active" data-mediatab="images">📸 Images (86)</button>
-            <button class="tab-btn" data-mediatab="videos">📹 Videos (24)</button>
-            <button class="tab-btn" data-mediatab="audio">🎙 Audio Notes (32)</button>
+          <!-- Storage Usage Progress Manager -->
+          <div class="glass-panel storage-manager-card">
+            <div class="storage-header-row">
+              <div class="storage-info-title">
+                <h3>☁️ Supabase Cloud Storage Manager</h3>
+                <p>Bucket: <code>wish-media</code> (Photos, Videos, Audio)</p>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <div style="text-align:right;">
+                  <div style="font-family:var(--font-heading);font-weight:800;font-size:1.1rem;color:var(--gold);" id="dam-storage-used-text">184 MB / 1 GB</div>
+                  <div style="font-size:0.75rem;color:var(--text-dim);" id="dam-storage-free-text">840 MB Remaining</div>
+                </div>
+                <div style="position:relative;">
+                  <button class="cleanup-dropdown-btn" id="dam-cleanup-trigger-btn">
+                    <span>🧹 Cleanup Tools</span> ▾
+                  </button>
+                  <div id="dam-cleanup-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:6px;width:220px;background:rgba(20,10,32,0.95);backdrop-filter:blur(20px);border:1px solid var(--border-glass);border-radius:12px;padding:8px;z-index:100;box-shadow:var(--shadow-lg);">
+                    <button type="button" class="btn-sm" style="width:100%;text-align:left;margin-bottom:4px;" id="btn-delete-selected-dam">🗑 Delete Selected</button>
+                    <button type="button" class="btn-sm" style="width:100%;text-align:left;margin-bottom:4px;color:var(--gold);" id="btn-delete-unused-dam">🧹 Delete Unused Files</button>
+                    <button type="button" class="btn-sm" style="width:100%;text-align:left;color:var(--purple-light);" id="btn-delete-temp-dam">⏳ Delete Old Temp Files</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="storage-progress-container">
+              <div class="storage-progress-bar-bg">
+                <div class="storage-progress-bar-fill" id="dam-storage-progress-fill"></div>
+              </div>
+              <div class="storage-meta-row">
+                <span id="dam-file-count-text">Calculated dynamically from Supabase API</span>
+                <span id="dam-percent-text">18.4% Used</span>
+              </div>
+            </div>
           </div>
 
+          <!-- DAM Filter Chips & Toolbar -->
+          <div class="dam-filter-bar">
+            <div class="filter-chips-group">
+              <button class="chip-btn active" data-damfilter="all">📂 All Files <span class="count" id="count-all">0</span></button>
+              <button class="chip-btn" data-damfilter="images">📸 Images <span class="count" id="count-images">0</span></button>
+              <button class="chip-btn" data-damfilter="videos">📹 Videos <span class="count" id="count-videos">0</span></button>
+              <button class="chip-btn" data-damfilter="audio">🎙 Audio <span class="count" id="count-audio">0</span></button>
+              <button class="chip-btn" data-damfilter="used">🔗 Used Files <span class="count" id="count-used">0</span></button>
+              <button class="chip-btn" data-damfilter="unused">⭕ Unused <span class="count" id="count-unused">0</span></button>
+              <button class="chip-btn" data-damfilter="favorites">⭐ Favorites <span class="count" id="count-favorites">0</span></button>
+              <button class="chip-btn" data-damfilter="recent">🕒 Recent <span class="count" id="count-recent">0</span></button>
+            </div>
+
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <select class="filter-select" id="dam-event-filter">
+                <option value="all">🎉 All Event Types</option>
+                <option value="birthday">🎂 Birthday</option>
+                <option value="anniversary">💖 Anniversary</option>
+                <option value="wedding">💍 Wedding</option>
+                <option value="engagement">✨ Engagement</option>
+                <option value="proposal">💌 Proposal</option>
+                <option value="baby_shower">🍼 Baby Shower</option>
+                <option value="farewell">💐 Farewell</option>
+                <option value="graduation">🎓 Graduation</option>
+                <option value="custom">🌟 Custom</option>
+              </select>
+
+              <div class="table-search" style="min-width:200px;">
+                <span class="icon">🔍</span>
+                <input type="text" id="dam-search-input" placeholder="Search filename, owner, UUID...">
+              </div>
+            </div>
+          </div>
+
+          <!-- Digital Assets Grid -->
           <div class="media-grid" id="media-grid-container">
-            <!-- Media cards rendered dynamically -->
+            <!-- Asset cards rendered dynamically -->
           </div>
         </section>
+
+        <!-- LIGHTBOX ASSET PREVIEW MODAL -->
+        <div id="asset-preview-modal" class="asset-modal-backdrop">
+          <div class="glass-panel asset-modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3 style="font-family:var(--font-heading);font-size:1.3rem;color:var(--gold);" id="asset-modal-filename">Asset Preview</h3>
+              <button type="button" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;" onclick="document.getElementById('asset-preview-modal').classList.remove('open')">✕</button>
+            </div>
+            <div id="asset-modal-viewer" style="max-height:60vh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;background:#000;">
+              <!-- Dynamic Image / Video / Audio Viewer -->
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;" id="asset-modal-footer">
+              <span style="font-size:0.8rem;color:var(--text-muted);" id="asset-modal-meta">Size: 1.2 MB | Created: 2026-07-30</span>
+              <div style="display:flex;gap:10px;">
+                <button class="btn-sm" id="btn-modal-copy-url">📋 Copy URL</button>
+                <a class="btn-sm" id="btn-modal-download" download target="_blank" style="text-decoration:none;text-align:center;">📥 Download</a>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- 4. 🎨 THEMES -->
         <section id="view-themes" class="tab-view">

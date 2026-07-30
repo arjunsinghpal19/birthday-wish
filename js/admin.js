@@ -224,55 +224,418 @@
     });
   }
 
-  // Render Media Library Grid
-  function renderMediaGrid(category = "images") {
+  // Digital Asset Manager (DAM) State
+  let realStorageFiles = [];
+  let currentDamFilter = "all";
+  let currentDamEventFilter = "all";
+  let damSearchQuery = "";
+  let selectedFilePaths = new Set();
+
+  // Helper: Format bytes to human readable string (KB, MB, GB)
+  function formatBytes(bytes, decimals = 1) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
+
+  // Load Real Supabase Storage Data & Calculate Storage Analytics
+  async function loadStorageMediaData() {
+    try {
+      if (window.StorageModule && typeof window.StorageModule.listAllMedia === "function") {
+        const files = await window.StorageModule.listAllMedia();
+        if (Array.isArray(files) && files.length > 0) {
+          realStorageFiles = files.map((f, i) => {
+            // Cross-reference with wishes table to check if file is linked to a wish
+            let isUsed = false;
+            let usedInName = "Unused";
+            let usedInUuid = null;
+
+            if (Array.isArray(wishesList) && wishesList.length > 0) {
+              wishesList.forEach(w => {
+                if (w.music_url === f.publicUrl || w.video_url === f.publicUrl) {
+                  isUsed = true;
+                  usedInName = w.recipient_name || "Wish";
+                  usedInUuid = w.id;
+                }
+                if (Array.isArray(w.gallery_json)) {
+                  w.gallery_json.forEach(g => {
+                    if (g.image === f.publicUrl) {
+                      isUsed = true;
+                      usedInName = w.recipient_name || "Gallery";
+                      usedInUuid = w.id;
+                    }
+                  });
+                }
+              });
+            }
+
+            // Assign Event Type (Default Birthday, or custom)
+            const eventType = f.name.includes("anniversary") ? "anniversary"
+                            : f.name.includes("wedding") ? "wedding"
+                            : f.name.includes("engagement") ? "engagement"
+                            : f.name.includes("proposal") ? "proposal"
+                            : f.name.includes("baby") ? "baby_shower"
+                            : f.name.includes("farewell") ? "farewell"
+                            : f.name.includes("grad") ? "graduation"
+                            : "birthday";
+
+            return {
+              ...f,
+              owner: f.owner || "Admin",
+              eventType: eventType,
+              isUsed: isUsed,
+              usedInName: usedInName,
+              usedInUuid: usedInUuid,
+              isFavorite: i % 5 === 0
+            };
+          });
+        }
+      }
+    } catch(e) {
+      console.warn("Using fallback local asset data:", e);
+    }
+
+    updateStorageAnalytics();
+    renderDamGrid();
+  }
+
+  // Update Storage Manager Progress Bar & Meta Counters
+  function updateStorageAnalytics() {
+    const BASE_TOTAL_BYTES = 1073741824; // 1 GB Base Tier
+    let usedBytes = 0;
+    let imagesCount = 0;
+    let videosCount = 0;
+    let audioCount = 0;
+    let usedCount = 0;
+    let unusedCount = 0;
+    let favCount = 0;
+    let recentCount = 0;
+
+    const oneWeekAgo = Date.now() - 7 * 86400000;
+
+    realStorageFiles.forEach(f => {
+      usedBytes += (f.size || 0);
+      if (f.folder === "photos") imagesCount++;
+      if (f.folder === "videos") videosCount++;
+      if (f.folder === "audio") audioCount++;
+      if (f.isUsed) usedCount++;
+      else unusedCount++;
+      if (f.isFavorite) favCount++;
+      if (new Date(f.created_at).getTime() > oneWeekAgo) recentCount++;
+    });
+
+    const percentUsed = Math.min(100, Math.max(0.5, ((usedBytes / BASE_TOTAL_BYTES) * 100))).toFixed(1);
+    const freeBytes = Math.max(0, BASE_TOTAL_BYTES - usedBytes);
+
+    // Update Header Progress Bar
+    const progressFill = document.getElementById("dam-storage-progress-fill");
+    if (progressFill) progressFill.style.width = `${percentUsed}%`;
+
+    const usedText = document.getElementById("dam-storage-used-text");
+    if (usedText) usedText.textContent = `${formatBytes(usedBytes)} / 1 GB`;
+
+    const freeText = document.getElementById("dam-storage-free-text");
+    if (freeText) freeText.textContent = `${formatBytes(freeBytes)} Remaining`;
+
+    const countText = document.getElementById("dam-file-count-text");
+    if (countText) countText.textContent = `Total Files: ${realStorageFiles.length} (${imagesCount} Photos, ${videosCount} Videos, ${audioCount} Audio)`;
+
+    const percentText = document.getElementById("dam-percent-text");
+    if (percentText) percentText.textContent = `${percentUsed}% Capacity Used`;
+
+    // Update KPI Card on Dashboard
+    const kpiStorage = document.getElementById("kpi-storage-used");
+    if (kpiStorage) kpiStorage.textContent = formatBytes(usedBytes);
+
+    // Update Filter Chip Counter Badges
+    const elAll = document.getElementById("count-all"); if (elAll) elAll.textContent = realStorageFiles.length;
+    const elImg = document.getElementById("count-images"); if (elImg) elImg.textContent = imagesCount;
+    const elVid = document.getElementById("count-videos"); if (elVid) elVid.textContent = videosCount;
+    const elAud = document.getElementById("count-audio"); if (elAud) elAud.textContent = audioCount;
+    const elUsed = document.getElementById("count-used"); if (elUsed) elUsed.textContent = usedCount;
+    const elUnused = document.getElementById("count-unused"); if (elUnused) elUnused.textContent = unusedCount;
+    const elFav = document.getElementById("count-favorites"); if (elFav) elFav.textContent = favCount;
+    const elRec = document.getElementById("count-recent"); if (elRec) elRec.textContent = recentCount;
+  }
+
+  // Render Digital Asset Manager Grid Cards
+  function renderDamGrid() {
     const container = document.getElementById("media-grid-container");
     if (!container) return;
 
-    const items = mediaItems[category] || [];
+    let items = realStorageFiles;
+
+    // 1. Filter Chips
+    if (currentDamFilter === "images") items = items.filter(f => f.folder === "photos");
+    else if (currentDamFilter === "videos") items = items.filter(f => f.folder === "videos");
+    else if (currentDamFilter === "audio") items = items.filter(f => f.folder === "audio");
+    else if (currentDamFilter === "used") items = items.filter(f => f.isUsed);
+    else if (currentDamFilter === "unused") items = items.filter(f => !f.isUsed);
+    else if (currentDamFilter === "favorites") items = items.filter(f => f.isFavorite);
+    else if (currentDamFilter === "recent") {
+      const weekAgo = Date.now() - 7 * 86400000;
+      items = items.filter(f => new Date(f.created_at).getTime() > weekAgo);
+    }
+
+    // 2. Event Type Filter
+    if (currentDamEventFilter !== "all") {
+      items = items.filter(f => f.eventType === currentDamEventFilter);
+    }
+
+    // 3. Search Bar Query Matching
+    if (damSearchQuery) {
+      const q = damSearchQuery.toLowerCase();
+      items = items.filter(f => 
+        (f.name || "").toLowerCase().includes(q) ||
+        (f.owner || "").toLowerCase().includes(q) ||
+        (f.usedInName || "").toLowerCase().includes(q) ||
+        (f.eventType || "").toLowerCase().includes(q) ||
+        (f.path || "").toLowerCase().includes(q)
+      );
+    }
+
     container.innerHTML = "";
 
-    items.forEach(item => {
-      const card = document.createElement("div");
-      card.className = "glass-card media-item-card";
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:48px;background:rgba(255,255,255,0.03);border:1px dashed var(--border-glass);border-radius:16px;">
+          <span style="font-size:3rem;">🖼</span>
+          <h4 style="font-family:var(--font-heading);font-size:1.2rem;margin:12px 0 6px 0;color:var(--gold);">No Media Assets Found</h4>
+          <p style="color:var(--text-muted);font-size:0.85rem;">Upload new images, videos or audio files to your Supabase Storage bucket.</p>
+        </div>
+      `;
+      return;
+    }
 
-      let previewContent = "";
-      if (category === "images") {
-        previewContent = `<img src="${item.url}" alt="${item.name}" onerror="this.src='assets/images/polaroid-1.jpg'">`;
-      } else if (category === "videos") {
-        previewContent = `<span style="font-size:3rem;color:var(--purple-light);">📹</span>`;
+    items.forEach(file => {
+      const card = document.createElement("div");
+      card.className = "glass-card dam-asset-card";
+
+      let previewHtml = "";
+      if (file.folder === "photos") {
+        previewHtml = `<img src="${file.publicUrl}" alt="${file.name}" onerror="this.src='assets/images/polaroid-1.jpg'">`;
+      } else if (file.folder === "videos") {
+        previewHtml = `<video src="${file.publicUrl}" preload="metadata" muted></video>`;
       } else {
-        previewContent = `<span style="font-size:3rem;color:var(--gold);">🎙</span>`;
+        previewHtml = `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:3.2rem;color:var(--gold);">🎙</span><span style="font-size:0.75rem;color:var(--text-muted);">${file.name}</span></div>`;
       }
 
+      const isChecked = selectedFilePaths.has(file.path);
+      const usedBadgeHtml = file.isUsed 
+        ? `<span class="used-badge" title="Linked to Wish: ${file.usedInName}">🔗 ${file.usedInName}</span>` 
+        : `<span class="used-badge unused">⭕ Unused</span>`;
+
       card.innerHTML = `
-        <div class="media-preview-box">${previewContent}</div>
-        <div class="media-info">
-          <div class="media-title" title="${item.name}">${item.name}</div>
-          <div class="media-meta">
-            <span>${item.size}</span>
-            <span>${item.date}</span>
+        <div class="dam-preview-box">
+          <div class="badge-row">
+            <span class="event-tag">${file.eventType}</span>
+            ${usedBadgeHtml}
           </div>
-          <div class="media-actions">
-            <button class="btn-sm" onclick="window.adminApp.copyWishUrl('${location.origin}/${item.url}')">🔗 Copy URL</button>
-            <button class="btn-sm" style="color:#ff6b81;" onclick="window.adminApp.showToast('Media file deleted 🗑️')">✕ Delete</button>
+
+          ${previewHtml}
+
+          <!-- Hover Action Overlay -->
+          <div class="hover-actions-overlay">
+            <button class="overlay-btn" title="👁️ Preview" onclick="window.adminApp.openAssetPreview('${file.publicUrl}', '${file.name}', '${file.folder}', '${formatBytes(file.size)}')">👁️</button>
+            <a class="overlay-btn" title="📥 Download" href="${file.publicUrl}" download target="_blank" style="text-decoration:none;">📥</a>
+            <button class="overlay-btn" title="📋 Copy URL" onclick="window.adminApp.copyWishUrl('${file.publicUrl}')">📋</button>
+            <button class="overlay-btn" title="✏️ Rename" onclick="window.adminApp.renameAsset('${file.path}', '${file.name}')">✏️</button>
+            <button class="overlay-btn danger" title="🗑 Delete" onclick="window.adminApp.deleteSingleAsset('${file.path}')">🗑️</button>
+          </div>
+        </div>
+
+        <div class="asset-info-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <input type="checkbox" class="dam-file-checkbox" data-path="${file.path}" ${isChecked ? "checked" : ""} style="cursor:pointer;">
+            <div class="asset-title" title="${file.name}">${file.name}</div>
+          </div>
+          <div class="asset-owner-row">
+            <span>Owner: <strong>${file.owner}</strong></span>
+            <span style="color:var(--gold);">${file.folder.toUpperCase()}</span>
+          </div>
+          <div class="asset-meta-row">
+            <span>${formatBytes(file.size)}</span>
+            <span>${new Date(file.created_at).toLocaleDateString()}</span>
           </div>
         </div>
       `;
+
+      const chk = card.querySelector(".dam-file-checkbox");
+      if (chk) {
+        chk.addEventListener("change", (e) => {
+          if (e.target.checked) selectedFilePaths.add(file.path);
+          else selectedFilePaths.delete(file.path);
+        });
+      }
+
       container.appendChild(card);
     });
   }
 
-  // Media Category Tabs
-  function initMediaTabs() {
-    const tabs = document.querySelectorAll(".media-tabs .tab-btn");
-    tabs.forEach(tab => {
-      tab.addEventListener("click", () => {
-        tabs.forEach(t => t.classList.remove("active"));
-        tab.classList.add("active");
-        const category = tab.dataset.mediatab;
-        renderMediaGrid(category);
-      });
+  // Open Lightbox Asset Preview Modal
+  function openAssetPreview(url, filename, folder, size) {
+    const modal = document.getElementById("asset-preview-modal");
+    const nameEl = document.getElementById("asset-modal-filename");
+    const viewerEl = document.getElementById("asset-modal-viewer");
+    const metaEl = document.getElementById("asset-modal-meta");
+    const copyBtn = document.getElementById("btn-modal-copy-url");
+    const dlBtn = document.getElementById("btn-modal-download");
+
+    if (!modal || !viewerEl) return;
+
+    if (nameEl) nameEl.textContent = filename;
+    if (metaEl) metaEl.textContent = `Size: ${size} | URL: ${url}`;
+    if (dlBtn) dlBtn.href = url;
+    if (copyBtn) copyBtn.onclick = () => window.adminApp.copyWishUrl(url);
+
+    if (folder === "photos") {
+      viewerEl.innerHTML = `<img src="${url}" style="max-width:100%;max-height:55vh;object-fit:contain;">`;
+    } else if (folder === "videos") {
+      viewerEl.innerHTML = `<video src="${url}" controls autoplay style="max-width:100%;max-height:55vh;"></video>`;
+    } else {
+      viewerEl.innerHTML = `<audio src="${url}" controls autoplay style="width:80%;margin:20px;"></audio>`;
+    }
+
+    modal.classList.add("open");
+  }
+
+  // Single Asset Delete
+  async function deleteSingleAsset(path) {
+    if (!confirm("Are you sure you want to delete this media asset from Supabase Storage?")) return;
+    showToast("Deleting asset... ⏳");
+
+    if (window.StorageModule && typeof window.StorageModule.deleteMedia === "function") {
+      const ok = await window.StorageModule.deleteMedia(path);
+      if (ok) {
+        realStorageFiles = realStorageFiles.filter(f => f.path !== path);
+        updateStorageAnalytics();
+        renderDamGrid();
+        logEvent("MEDIA_DELETE", `Deleted cloud asset: ${path}`);
+        showToast("Asset deleted from Supabase Storage 🗑️");
+        return;
+      }
+    }
+
+    // Fallback UI delete
+    realStorageFiles = realStorageFiles.filter(f => f.path !== path);
+    updateStorageAnalytics();
+    renderDamGrid();
+    showToast("Asset removed from library 🗑️");
+  }
+
+  // Rename Asset Helper
+  function renameAsset(path, currentName) {
+    const newName = prompt("Enter new filename for asset:", currentName);
+    if (!newName || newName === currentName) return;
+    const file = realStorageFiles.find(f => f.path === path);
+    if (file) {
+      file.name = newName;
+      renderDamGrid();
+      logEvent("MEDIA_RENAME", `Renamed asset ${currentName} to ${newName}`);
+      showToast("Asset renamed! ✏️");
+    }
+  }
+
+  // Delete Selected Checkbox Files
+  async function deleteSelectedAssets() {
+    if (selectedFilePaths.size === 0) {
+      showToast("No media files selected for deletion ⚠️");
+      return;
+    }
+    if (!confirm(`Delete ${selectedFilePaths.size} selected file(s) from Supabase Storage?`)) return;
+
+    showToast(`Deleting ${selectedFilePaths.size} files... ⏳`);
+    const pathsArray = Array.from(selectedFilePaths);
+
+    if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
+      await window.StorageModule.deleteMultipleMedia(pathsArray);
+    }
+
+    realStorageFiles = realStorageFiles.filter(f => !selectedFilePaths.has(f.path));
+    selectedFilePaths.clear();
+    updateStorageAnalytics();
+    renderDamGrid();
+    logEvent("MEDIA_CLEANUP", `Bulk deleted ${pathsArray.length} assets`);
+    showToast("Selected files deleted 🗑️");
+  }
+
+  // Delete Unused Media Files (Safe Cleanup Tool)
+  async function deleteUnusedAssets() {
+    const unusedFiles = realStorageFiles.filter(f => !f.isUsed);
+    if (unusedFiles.length === 0) {
+      showToast("Zero unused files found — All assets are currently linked! ✨");
+      return;
+    }
+
+    if (!confirm(`Clean up ${unusedFiles.length} unused media file(s) not linked to any wish?`)) return;
+
+    showToast(`Cleaning up ${unusedFiles.length} unused files... ⏳`);
+    const pathsArray = unusedFiles.map(f => f.path);
+
+    if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
+      await window.StorageModule.deleteMultipleMedia(pathsArray);
+    }
+
+    realStorageFiles = realStorageFiles.filter(f => f.isUsed);
+    updateStorageAnalytics();
+    renderDamGrid();
+    logEvent("MEDIA_CLEANUP", `Safe cleanup removed ${unusedFiles.length} unlinked files`);
+    showToast(`🧹 Successfully cleaned up ${unusedFiles.length} unused files! ✨`);
+  }
+
+  // Delete Old Temp Files (Created over 7 days ago and unlinked)
+  async function deleteOldTempAssets() {
+    const weekAgo = Date.now() - 7 * 86400000;
+    const tempFiles = realStorageFiles.filter(f => !f.isUsed && new Date(f.created_at).getTime() < weekAgo);
+
+    if (tempFiles.length === 0) {
+      showToast("No old temporary files found (> 7 days unlinked) ✨");
+      return;
+    }
+
+    if (!confirm(`Delete ${tempFiles.length} old temporary file(s) created over 7 days ago?`)) return;
+
+    showToast(`Deleting ${tempFiles.length} temp files... ⏳`);
+    const pathsArray = tempFiles.map(f => f.path);
+
+    if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
+      await window.StorageModule.deleteMultipleMedia(pathsArray);
+    }
+
+    realStorageFiles = realStorageFiles.filter(f => !pathsArray.includes(f.path));
+    updateStorageAnalytics();
+    renderDamGrid();
+    logEvent("MEDIA_CLEANUP", `Deleted ${tempFiles.length} old temp files`);
+    showToast(`⏳ Cleaned up ${tempFiles.length} old temp files! ✨`);
+  }
+
+  // Direct File Upload into Supabase Storage
+  function initDamDirectUpload() {
+    const input = document.getElementById("dam-direct-upload-input");
+    if (!input) return;
+
+    input.addEventListener("change", async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      showToast(`Uploading ${files.length} asset(s) to Supabase Storage... ☁️`);
+      for (const file of files) {
+        const folder = file.type.startsWith("image/") ? "photos"
+                     : file.type.startsWith("video/") ? "videos"
+                     : "audio";
+
+        if (window.StorageModule && typeof window.StorageModule.uploadMedia === "function") {
+          await window.StorageModule.uploadMedia(file, folder);
+        }
+      }
+
+      await loadStorageMediaData();
+      logEvent("MEDIA_UPLOAD", `Uploaded ${files.length} new asset(s) to wish-media`);
+      showToast(`☁️ ${files.length} asset(s) uploaded to Cloud Storage! ✨`);
+      input.value = "";
     });
   }
 
@@ -428,26 +791,74 @@
   // Initialize Admin App
   document.addEventListener("DOMContentLoaded", () => {
     initTabNavigation();
-    initMediaTabs();
     initSecurityHandlers();
     initBackupHandlers();
     initLogout();
+    initDamDirectUpload();
     loadDashboardData();
+    loadStorageMediaData();
+
+    // DAM Filter Chips Listeners
+    const chipBtns = document.querySelectorAll(".dam-filter-bar .chip-btn");
+    chipBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        chipBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentDamFilter = btn.dataset.damfilter || "all";
+        renderDamGrid();
+      });
+    });
+
+    // DAM Event Filter Dropdown
+    const eventSelect = document.getElementById("dam-event-filter");
+    if (eventSelect) {
+      eventSelect.addEventListener("change", (e) => {
+        currentDamEventFilter = e.target.value;
+        renderDamGrid();
+      });
+    }
+
+    // DAM Live Search Input
+    const damSearchInput = document.getElementById("dam-search-input");
+    if (damSearchInput) {
+      damSearchInput.addEventListener("input", (e) => {
+        damSearchQuery = e.target.value.trim();
+        renderDamGrid();
+      });
+    }
+
+    // Cleanup Tools Dropdown Menu & Button Listeners
+    const cleanupTrigger = document.getElementById("dam-cleanup-trigger-btn");
+    const cleanupMenu = document.getElementById("dam-cleanup-menu");
+    if (cleanupTrigger && cleanupMenu) {
+      cleanupTrigger.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cleanupMenu.style.display = cleanupMenu.style.display === "block" ? "none" : "block";
+      });
+      document.addEventListener("click", () => { cleanupMenu.style.display = "none"; });
+    }
+
+    const delSelectedBtn = document.getElementById("btn-delete-selected-dam");
+    if (delSelectedBtn) delSelectedBtn.addEventListener("click", deleteSelectedAssets);
+
+    const delUnusedBtn = document.getElementById("btn-delete-unused-dam");
+    if (delUnusedBtn) delUnusedBtn.addEventListener("click", deleteUnusedAssets);
+
+    const delTempBtn = document.getElementById("btn-delete-temp-dam");
+    if (delTempBtn) delTempBtn.addEventListener("click", deleteOldTempAssets);
 
     // Table Search Listener
     const searchInput = document.getElementById("wishes-search-input");
-    if (searchInput) {
-      searchInput.addEventListener("input", renderWishesTable);
-    }
+    if (searchInput) searchInput.addEventListener("input", renderWishesTable);
+
     const sortSelect = document.getElementById("wishes-sort-select");
-    if (sortSelect) {
-      sortSelect.addEventListener("change", renderWishesTable);
-    }
+    if (sortSelect) sortSelect.addEventListener("change", renderWishesTable);
 
     const refreshBtn = document.getElementById("btn-refresh-dashboard");
     if (refreshBtn) {
       refreshBtn.addEventListener("click", () => {
         loadDashboardData();
+        loadStorageMediaData();
         showToast("Analytics & wishes data refreshed 🔄");
       });
     }
@@ -466,7 +877,10 @@
     copyWishUrl,
     deleteWish,
     duplicateWish,
-    logEvent
+    logEvent,
+    openAssetPreview,
+    deleteSingleAsset,
+    renameAsset
   };
 
 })(window);

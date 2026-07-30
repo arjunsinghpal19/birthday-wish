@@ -657,13 +657,16 @@
     });
   }
 
-  // Generate Random Recovery Code (e.g. BW-9F8A-3E21-7B04)
+  // Generate Cryptographically Secure Random Recovery Code (Web Crypto API)
   function generateBackupCode() {
+    if (window.DatabaseModule && typeof window.DatabaseModule.generateSecureBackupCode === "function") {
+      return window.DatabaseModule.generateSecureBackupCode();
+    }
     const segment = () => Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase();
     return `BW-${segment()}-${segment()}-${segment()}`;
   }
 
-  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 Persistent)
+  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 FINAL)
   async function initSecurityHandlers() {
     let settings = { admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
 
@@ -678,7 +681,7 @@
 
     // Populate elements
     const emailInput = document.getElementById("sec-recovery-email");
-    if (emailInput) emailInput.value = settings.admin_recovery_email;
+    if (emailInput) emailInput.value = settings.admin_recovery_email || "";
 
     const codeDisplay = document.getElementById("sec-code-display");
     if (codeDisplay) codeDisplay.textContent = settings.admin_recovery_code;
@@ -692,7 +695,7 @@
         qPreset.value = "custom";
         if (qCustomInput) {
           qCustomInput.style.display = "block";
-          qCustomInput.value = settings.custom_secret_question;
+          qCustomInput.value = settings.custom_secret_question || "";
         }
       }
 
@@ -743,14 +746,14 @@
       });
     }
 
-    // 2. Save Recovery Email
+    // 2. Save / Update / Clear Recovery Email
     const saveEmailBtn = document.getElementById("sec-save-email-btn");
     if (saveEmailBtn) {
       saveEmailBtn.addEventListener("click", async () => {
         const email = (document.getElementById("sec-recovery-email")?.value || "").trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!email || !emailRegex.test(email)) {
+        if (email && !emailRegex.test(email)) {
           showToast("Please enter a valid email address ⚠️");
           return;
         }
@@ -759,24 +762,25 @@
         if (window.DatabaseModule) {
           await window.DatabaseModule.saveSecuritySettings({ admin_recovery_email: email });
         }
-        logEvent("RECOVERY_EMAIL_UPDATED", `Recovery email updated to ${email}`);
-        showToast("📧 Recovery Email Saved & Persisted! ✅");
+        logEvent("RECOVERY_EMAIL_UPDATED", email ? `Recovery email updated to ${email}` : "Recovery email cleared");
+        showToast(email ? "📧 Recovery Email Saved & Persisted! ✅" : "📧 Recovery Email Cleared! 🗑️");
       });
     }
 
-    // 3. Backup Recovery Code Actions
+    // 3. Backup Recovery Code Actions (Regenerate invalidates old code)
     const regenBtn = document.getElementById("btn-regen-recovery-code");
     if (regenBtn) {
       regenBtn.addEventListener("click", async () => {
-        if (!confirm("Regenerate Emergency Recovery Code? Your previous code will become invalid.")) return;
+        if (!confirm("Regenerate Emergency Recovery Code? Your previous code will become permanently invalid.")) return;
+        const oldCode = settings.admin_recovery_code;
         const newCode = generateBackupCode();
         settings.admin_recovery_code = newCode;
         if (window.DatabaseModule) {
           await window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: newCode });
         }
         if (codeDisplay) codeDisplay.textContent = newCode;
-        logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated & persisted");
-        showToast("🔄 New Recovery Code Generated & Persisted! 🔑");
+        logEvent("RECOVERY_CODE_GENERATED", `New Recovery Code generated. Old code (${oldCode.substring(0, 7)}...) invalidated.`);
+        showToast("🔄 New Recovery Code Generated! Old Code Invalidated 🔑");
       });
     }
 
@@ -931,8 +935,28 @@
     showToast("Wish record duplicated 📋");
   }
 
+  // Session Validation & Expiry Check (24-Hour Limit)
+  function checkSessionSecurity() {
+    const isAuth = sessionStorage.getItem("admin_authenticated") === "true";
+    const authTime = parseInt(sessionStorage.getItem("admin_auth_timestamp") || "0", 10);
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+    if (isAuth && authTime > 0) {
+      if (Date.now() - authTime > TWENTY_FOUR_HOURS) {
+        sessionStorage.removeItem("admin_authenticated");
+        sessionStorage.removeItem("admin_auth_timestamp");
+        logEvent("SESSION_EXPIRED", "Admin session expired after 24 hours");
+        alert("Session Expired: Please log in again with your Master Admin Password.");
+        window.location.href = "index.html";
+        return false;
+      }
+    }
+    return true;
+  }
+
   // Initialize Admin App
   document.addEventListener("DOMContentLoaded", () => {
+    if (!checkSessionSecurity()) return;
     initTabNavigation();
     initSecurityHandlers();
     initBackupHandlers();

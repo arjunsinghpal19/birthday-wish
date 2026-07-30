@@ -4145,6 +4145,7 @@ function initAdminSecurityModal() {
     // Strict master password comparison - Zero hardcoded passwords
     if (entered === currentPass) {
       sessionStorage.setItem("admin_authenticated", "true");
+      sessionStorage.setItem("admin_auth_timestamp", Date.now().toString());
       modal.classList.remove("open");
       loginPassInput.value = "";
       if (loginPassInput) loginPassInput.classList.remove("input-error");
@@ -4152,6 +4153,9 @@ function initAdminSecurityModal() {
       const fab = document.getElementById("customizer-toggle-btn");
       if (fab) fab.classList.add("admin-visible");
       showToast("👑 Admin Mode Activated!");
+      if (window.adminApp && typeof window.adminApp.logEvent === "function") {
+        window.adminApp.logEvent("ADMIN_LOGIN", "Admin authenticated via password entry");
+      }
       const customizerModal = document.getElementById("customizer-modal");
       if (customizerModal) customizerModal.classList.add("open");
     } else {

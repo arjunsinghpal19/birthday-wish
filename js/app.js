@@ -4145,6 +4145,7 @@ function initAdminSecurityModal() {
     const errorMsgEl = document.getElementById("admin-login-error");
 
     if (entered === currentPass || entered === "Arjun@123" || entered === "2001" || entered === CONFIG.adminPassword) {
+      sessionStorage.setItem("admin_authenticated", "true");
       modal.classList.remove("open");
       loginPassInput.value = "";
       if (loginPassInput) loginPassInput.classList.remove("input-error");

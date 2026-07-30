@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Birthday Wish Control Panel</title>
+  <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="css/admin.css">
+  
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-javascript@2"></script>
+</head>
+<body>
+
+  <div id="admin-app">
+
+    <!-- ==================== LEFT SIDEBAR ==================== -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">👑</div>
+        <div class="sidebar-brand">
+          <h1>Admin Control</h1>
+          <span>Birthday Suite v2.5</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <span class="icon">🏠</span> Dashboard
+        </button>
+        <button class="nav-item" data-tab="wishes">
+          <span class="icon">🎂</span> Wishes
+        </button>
+        <button class="nav-item" data-tab="media">
+          <span class="icon">🖼</span> Media Library
+        </button>
+        <button class="nav-item" data-tab="themes">
+          <span class="icon">🎨</span> Themes
+        </button>
+        <button class="nav-item" data-tab="plans">
+          <span class="icon">📦</span> Plans <span class="nav-badge soon">Soon</span>
+        </button>
+        <button class="nav-item" data-tab="coupons">
+          <span class="icon">🎟</span> Coupons <span class="nav-badge soon">Soon</span>
+        </button>
+        <button class="nav-item" data-tab="security">
+          <span class="icon">🔐</span> Security
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <span class="icon">⚙</span> Settings
+        </button>
+        <button class="nav-item" data-tab="backup">
+          <span class="icon">💾</span> Backup
+        </button>
+        <button class="nav-item" data-tab="logs">
+          <span class="icon">📄</span> Logs
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item logout-btn" id="admin-logout-btn">
+          <span class="icon">🚪</span> Logout Session
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+    <main class="admin-main">
+
+      <!-- TOP NAVBAR -->
+      <header class="admin-navbar">
+        <button class="mobile-toggle" id="mobile-sidebar-toggle">☰</button>
+
+        <div class="nav-search">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="global-admin-search" placeholder="Search wishes, UUIDs, media files...">
+        </div>
+
+        <div class="nav-actions">
+          <div class="status-indicator">
+            <span class="status-dot"></span> Supabase Connected
+          </div>
+          <a href="index.html" class="public-site-link" target="_blank">
+            <span>✨ Public Wish Page</span> ↗
+          </a>
+        </div>
+      </header>
+
+      <!-- VIEWPORT -->
+      <div class="admin-viewport">
+
+        <!-- 1. 🏠 DASHBOARD HOME -->
+        <section id="view-dashboard" class="tab-view active">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Dashboard Overview</h2>
+              <p>System metrics, wishes summary & media analytics</p>
+            </div>
+            <button class="btn-primary" id="btn-refresh-dashboard">🔄 Refresh Analytics</button>
+          </div>
+
+          <!-- KPI Cards Grid -->
+          <div class="metrics-grid">
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Total Wishes</span>
+                <span class="metric-icon">🎂</span>
+              </div>
+              <div class="metric-value" id="kpi-total-wishes">142</div>
+              <div class="metric-sub"><span class="trend">↑ +18%</span> vs last month</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Today's Wishes</span>
+                <span class="metric-icon">✨</span>
+              </div>
+              <div class="metric-value" id="kpi-today-wishes">12</div>
+              <div class="metric-sub"><span class="trend">↑ +4</span> created today</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Images Uploaded</span>
+                <span class="metric-icon">🖼</span>
+              </div>
+              <div class="metric-value" id="kpi-total-images">86</div>
+              <div class="metric-sub">Supabase Storage</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Videos Uploaded</span>
+                <span class="metric-icon">📹</span>
+              </div>
+              <div class="metric-value" id="kpi-total-videos">24</div>
+              <div class="metric-sub">Personal MP4 & YouTube</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Audio Notes</span>
+                <span class="metric-icon">🎙</span>
+              </div>
+              <div class="metric-value" id="kpi-total-audio">32</div>
+              <div class="metric-sub">Voice & Tunes</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Storage Used</span>
+                <span class="metric-icon">☁️</span>
+              </div>
+              <div class="metric-value" id="kpi-storage-used">184 MB</div>
+              <div class="metric-sub">Bucket: wish-media</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">System Version</span>
+                <span class="metric-icon">⚡</span>
+              </div>
+              <div class="metric-value" style="font-size:1.5rem;color:var(--gold);">v2.5 Pro</div>
+              <div class="metric-sub">UUID DB Pipeline</div>
+            </div>
+          </div>
+
+          <!-- Recent Wishes & Uploads Dual Panels -->
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+            <div class="glass-panel table-panel">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">Recent Wishes</h3>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Recipient</th>
+                    <th>Sender</th>
+                    <th>UUID</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-recent-wishes-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">System Activity</h3>
+              <ul id="dash-recent-activity-list" style="list-style:none;display:flex;flex-direction:column;gap:14px;font-size:0.85rem;">
+                <!-- Activity list -->
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. 🎂 WISHES MANAGER -->
+        <section id="view-wishes" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Wishes Management</h2>
+              <p>Search, inspect, copy UUID, edit or delete stored wishes</p>
+            </div>
+            <button class="btn-primary btn-gold" id="btn-create-new-wish-admin">➕ Create New Wish</button>
+          </div>
+
+          <div class="glass-panel table-panel">
+            <div class="table-toolbar">
+              <div class="table-search">
+                <span class="icon">🔍</span>
+                <input type="text" id="wishes-search-input" placeholder="Search by recipient, sender or UUID...">
+              </div>
+              <div class="table-filter-group">
+                <select class="filter-select" id="wishes-sort-select">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="name">Name (A-Z)</option>
+                </select>
+              </div>
+            </div>
+
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Recipient Name</th>
+                  <th>Sender</th>
+                  <th>Passcode</th>
+                  <th>UUID Link</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="wishes-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 3. 🖼 MEDIA LIBRARY -->
+        <section id="view-media" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Media Library</h2>
+              <p>Bucket wish-media uploads: images, videos & custom voice notes</p>
+            </div>
+            <button class="btn-primary" id="btn-upload-media-admin">☁️ Upload New Media</button>
+          </div>
+
+          <div class="media-tabs">
+            <button class="tab-btn active" data-mediatab="images">📸 Images (86)</button>
+            <button class="tab-btn" data-mediatab="videos">📹 Videos (24)</button>
+            <button class="tab-btn" data-mediatab="audio">🎙 Audio Notes (32)</button>
+          </div>
+
+          <div class="media-grid" id="media-grid-container">
+            <!-- Media cards rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- 4. 🎨 THEMES -->
+        <section id="view-themes" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Theme Presets & Styling</h2>
+              <p>Customize default aesthetics, colors, font families and canvas effects</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">Active Preset Theme</h3>
+              <div class="form-group">
+                <label>Default Letter Theme</label>
+                <select class="form-input" id="admin-theme-preset">
+                  <option value="default">✨ Golden Luxe (Default)</option>
+                  <option value="rosegold">🌹 Rose Gold Romance</option>
+                  <option value="galaxy">🌌 Cosmic Galaxy Night</option>
+                  <option value="emerald">💚 Emerald Luxury</option>
+                </select>
+              </div>
+              <button class="btn-primary" onclick="window.adminApp.showToast('Theme Preset Saved! 🎨')">💾 Save Theme Defaults</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. 📦 PLANS (COMING SOON) -->
+        <section id="view-plans" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Subscription & Pricing Plans</h2>
+              <p>Monetization architectures and wish limits</p>
+            </div>
+          </div>
+
+          <div class="glass-panel coming-soon-banner">
+            <h3>📦 Plans & Pricing Architecture</h3>
+            <p style="color:var(--text-muted);max-width:500px;margin:0 auto 16px auto;">Membership tiers, custom domains and paid wish customization settings will be configurable here in future releases.</p>
+            <span class="nav-badge soon" style="font-size:0.9rem;padding:6px 16px;">Feature Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- 6. 🎟 COUPONS (COMING SOON) -->
+        <section id="view-coupons" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Discount Coupons</h2>
+              <p>Promo code generator and gift card management</p>
+            </div>
+          </div>
+
+          <div class="glass-panel coming-soon-banner">
+            <h3>🎟 Gift Cards & Promo Coupons</h3>
+            <p style="color:var(--text-muted);max-width:500px;margin:0 auto 16px auto;">Create promotional discount codes and birthday surprise vouchers for your recipients.</p>
+            <span class="nav-badge soon" style="font-size:0.9rem;padding:6px 16px;">Feature Coming Soon</span>
+          </div>
+        </section>
+
+        <!-- 7. 🔐 SECURITY -->
+        <section id="view-security" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Security & Master Key Settings</h2>
+              <p>Manage admin authentication, master passcodes and recovery options</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🔑 Change Master Admin Password</h3>
+              <div class="form-group">
+                <label>Current Old Password</label>
+                <input type="password" class="form-input" id="sec-old-pass" placeholder="Enter current password">
+              </div>
+              <div class="form-group">
+                <label>New Admin Password (min 4 chars)</label>
+                <input type="password" class="form-input" id="sec-new-pass" placeholder="Enter new password">
+              </div>
+              <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" class="form-input" id="sec-confirm-pass" placeholder="Re-type new password">
+              </div>
+              <button class="btn-primary" id="sec-save-pass-btn">🔑 Save New Password</button>
+            </div>
+
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🛡 Password Recovery Settings</h3>
+              <div class="form-group">
+                <label>Master Security Question</label>
+                <input type="text" class="form-input" id="sec-recovery-question" placeholder="e.g. Master Secret Key">
+              </div>
+              <div class="form-group">
+                <label>Master Secret Answer / Answer Key</label>
+                <input type="password" class="form-input" id="sec-recovery-answer" placeholder="Enter secret answer">
+              </div>
+              <button class="btn-primary btn-gold" id="sec-save-recovery-btn">💾 Save Recovery Settings</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. ⚙ SETTINGS -->
+        <section id="view-settings" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Global Site Settings</h2>
+              <p>Site branding, SEO metadata, default music and share domain defaults</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🌐 Site Metadata & SEO</h3>
+              <div class="form-group">
+                <label>Site Title</label>
+                <input type="text" class="form-input" id="set-site-name" value="Birthday Surprise Wish Generator">
+              </div>
+              <div class="form-group">
+                <label>Default Share Base URL</label>
+                <input type="text" class="form-input" id="set-share-url" value="https://birthday-wish-arjun.vercel.app/">
+              </div>
+              <div class="form-group">
+                <label>Default Background Music Track</label>
+                <input type="text" class="form-input" id="set-default-music" value="assets/music/happy-birthday-song.mpeg">
+              </div>
+              <button class="btn-primary" onclick="window.adminApp.showToast('Global Settings Saved! ⚙️')">💾 Save Settings</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9. 💾 BACKUP -->
+        <section id="view-backup" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>Backup & Restore</h2>
+              <p>Export database records, download JSON archives and restore backups</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">📤 Export System Data</h3>
+              <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:18px;">Download full JSON backup of all stored wishes, media URLs and settings.</p>
+              <button class="btn-primary" id="btn-export-backup">💾 Export Wishes JSON Backup</button>
+            </div>
+
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">📥 Restore Backup</h3>
+              <p style="color:var(--text-muted);font-size:0.88rem;margin-bottom:18px;">Select a previously exported JSON backup file to restore wishes.</p>
+              <input type="file" id="import-backup-file" accept=".json" style="display:none;">
+              <button class="btn-primary btn-gold" onclick="document.getElementById('import-backup-file').click()">📂 Select Backup File</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 10. 📄 LOGS -->
+        <section id="view-logs" class="tab-view">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>System Audit Logs</h2>
+              <p>Real-time security events, wish creation & media upload log history</p>
+            </div>
+            <button class="btn-primary" id="btn-clear-logs">🗑 Clear Logs</button>
+          </div>
+
+          <div class="glass-panel table-panel">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Event Type</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="logs-tbody">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="admin-toast" class="admin-toast"></div>
+
+  <!-- Admin JavaScript Engine -->
+  <script src="js/supabase-config.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -4137,14 +4137,15 @@ function initAdminSecurityModal() {
     };
   });
 
-  // Tab 1: Unlock Submission
+  // Tab 1: Unlock Submission (Strict Master Password Validation)
   async function handleUnlock() {
     const entered = (loginPassInput.value || "").trim();
     showToast("⏳ Verifying Admin Password...");
     const currentPass = await getAdminPassword();
     const errorMsgEl = document.getElementById("admin-login-error");
 
-    if (entered === currentPass || entered === "Arjun@123" || entered === "2001" || entered === CONFIG.adminPassword) {
+    // Strict master password comparison - Zero hardcoded passwords
+    if (entered === currentPass) {
       sessionStorage.setItem("admin_authenticated", "true");
       modal.classList.remove("open");
       loginPassInput.value = "";
@@ -4189,7 +4190,7 @@ function initAdminSecurityModal() {
     });
   }
 
-  // Tab 2: Change Password Submission (with min 4 / max 10 validation)
+  // Tab 2: Change Password Submission
   if (changeSubmitBtn) {
     changeSubmitBtn.onclick = async () => {
       const oldVal = (oldPassInput.value || "").trim();
@@ -4197,7 +4198,7 @@ function initAdminSecurityModal() {
       const confirmVal = (confirmPassInput.value || "").trim();
       const currentPass = await getAdminPassword();
 
-      if (oldVal && oldVal !== currentPass && oldVal !== "Arjun@123" && oldVal !== "2001" && oldVal !== CONFIG.adminPassword && oldVal !== localStorage.getItem("custom_admin_password")) {
+      if (oldVal && oldVal !== currentPass) {
         showToast("Current Old Password is wrong ❌");
         return;
       }
@@ -4209,8 +4210,8 @@ function initAdminSecurityModal() {
         showToast("Password must be at least 4 characters! ⚠️");
         return;
       }
-      if (newVal.length > 10) {
-        showToast("Password cannot exceed 10 characters! ⚠️");
+      if (newVal.length > 15) {
+        showToast("Password cannot exceed 15 characters! ⚠️");
         return;
       }
       if (newVal !== confirmVal) {
@@ -4218,13 +4219,13 @@ function initAdminSecurityModal() {
         return;
       }
 
-      showToast("⏳ Syncing Admin Password to Cloud...");
+      showToast("⏳ Syncing Admin Password...");
       await syncAdminPasswordToCloud(newVal);
 
       oldPassInput.value = "";
       newPassInput.value = "";
       confirmPassInput.value = "";
-      showToast("🔑 Admin Password updated on all devices! ✅");
+      showToast("🔑 Admin Password updated! ✅");
 
       // Switch to unlock tab
       const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
@@ -4232,19 +4233,23 @@ function initAdminSecurityModal() {
     };
   }
 
-  // Tab 3: Forgot Password Submission (Step 1: Master Key Arjun@123 OR Secret Question Answer)
+  // Tab 3: Forgot Password Recovery (Supports ANY ONE of 3 recovery methods)
   if (resetSubmitBtn) {
     const handleRecovery = () => {
       const keyVal = (recoveryInput?.value || "").trim();
       const ansVal = (secretAnsInput?.value || "").trim().toLowerCase();
-      const expectedAns = (localStorage.getItem("custom_secret_answer") || "Arjun").trim().toLowerCase();
       const recErrEl = document.getElementById("admin-recovery-error");
 
-      // Check Master Key (Arjun@123 OR SHA-256 hash OR 2001 OR 1234)
-      const isMasterKey = (keyVal === "Arjun@123" || keyVal === "255ea3b51c4ca0814a74e3c1a2392fcf20edeeabcd1b1e6bbc705dde02686ebb" || keyVal === "2001" || keyVal === "1234");
-      const isSecretAns = (ansVal && ansVal === expectedAns);
+      const savedEmail = (localStorage.getItem("admin_recovery_email") || "admin@example.com").trim().toLowerCase();
+      const savedCode = (localStorage.getItem("admin_recovery_code") || "").trim();
+      const expectedAns = (localStorage.getItem("custom_secret_answer") || "").trim().toLowerCase();
 
-      if (isMasterKey || isSecretAns) {
+      // Verification of ANY ONE of the 3 configured methods grants recovery
+      const isEmailMatch = (keyVal && keyVal.toLowerCase() === savedEmail);
+      const isCodeMatch = (keyVal && keyVal.toUpperCase() === savedCode.toUpperCase());
+      const isSecretAnsMatch = (ansVal && expectedAns && ansVal === expectedAns);
+
+      if (isEmailMatch || isCodeMatch || isSecretAnsMatch) {
         if (recErrEl) recErrEl.style.display = "none";
         if (recoveryInput) recoveryInput.classList.remove("input-error");
         if (secretAnsInput) secretAnsInput.classList.remove("input-error");

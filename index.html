@@ -814,13 +814,13 @@
         <!-- STEP 1: VERIFY IDENTITY -->
         <div id="forgot-step-verify">
           <p style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-bottom:12px;line-height:1.4;">
-            🔐 Account Recovery ke liye <b>Master Key</b> ya <b>Secret Question Answer</b> me se koi EK dalei:
+            🔐 Account Recovery ke liye <b>Recovery Email</b>, <b>Emergency Code</b> ya <b>Secret Answer</b> me se koi EK enter karein:
           </p>
           
           <div class="form-group" style="margin-bottom:10px;">
-            <label for="admin-recovery-key" style="font-size:0.75rem;opacity:0.9;">Option A: Master Recovery Key</label>
+            <label for="admin-recovery-key" style="font-size:0.75rem;opacity:0.9;">Option A: Recovery Email or Emergency Code</label>
             <div class="pass-input-wrap">
-              <input type="password" id="admin-recovery-key" class="form-control" placeholder="Enter Master Key (e.g. Arjun@123)" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <input type="text" id="admin-recovery-key" class="form-control" placeholder="Enter Email or Code (e.g. BW-9F8A...)" maxlength="50" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
               <button type="button" class="eye-toggle" data-target="admin-recovery-key" aria-label="Toggle visibility">👁</button>
             </div>
           </div>
@@ -833,7 +833,7 @@
               <input type="password" id="admin-secret-answer" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
               <button type="button" class="eye-toggle" data-target="admin-secret-answer" aria-label="Toggle visibility">👁</button>
             </div>
-            <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Key or Secret Answer! Please try again.</div>
+            <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Email, Recovery Code or Secret Answer!</div>
           </div>
 
           <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Identity & Proceed</button>

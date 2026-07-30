@@ -657,14 +657,65 @@
     });
   }
 
-  // Security Settings Password Update Handler
+  // Generate Random Recovery Code (e.g. BW-9F8A-3E21-7B04)
+  function generateBackupCode() {
+    const segment = () => Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase();
+    return `BW-${segment()}-${segment()}-${segment()}`;
+  }
+
+  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1)
   function initSecurityHandlers() {
+    // Load initial values from localStorage
+    const storedEmail = localStorage.getItem("admin_recovery_email") || "admin@example.com";
+    let storedCode = localStorage.getItem("admin_recovery_code");
+    if (!storedCode) {
+      storedCode = generateBackupCode();
+      localStorage.setItem("admin_recovery_code", storedCode);
+    }
+    const storedQuestion = localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?";
+
+    // Populate elements
+    const emailInput = document.getElementById("sec-recovery-email");
+    if (emailInput) emailInput.value = storedEmail;
+
+    const codeDisplay = document.getElementById("sec-code-display");
+    if (codeDisplay) codeDisplay.textContent = storedCode;
+
+    const qPreset = document.getElementById("sec-question-preset");
+    const qCustomInput = document.getElementById("sec-custom-question");
+    if (qPreset) {
+      if (["What is your childhood pet's name?", "What was the name of your first school?", "In what city were you born?", "What is your mother's maiden name?"].includes(storedQuestion)) {
+        qPreset.value = storedQuestion;
+      } else {
+        qPreset.value = "custom";
+        if (qCustomInput) {
+          qCustomInput.style.display = "block";
+          qCustomInput.value = storedQuestion;
+        }
+      }
+
+      qPreset.addEventListener("change", () => {
+        if (qPreset.value === "custom") {
+          if (qCustomInput) qCustomInput.style.display = "block";
+        } else {
+          if (qCustomInput) qCustomInput.style.display = "none";
+        }
+      });
+    }
+
+    // 1. Change Master Password
     const savePassBtn = document.getElementById("sec-save-pass-btn");
     if (savePassBtn) {
-      savePassBtn.addEventListener("click", async () => {
+      savePassBtn.addEventListener("click", () => {
         const oldVal = (document.getElementById("sec-old-pass")?.value || "").trim();
         const newVal = (document.getElementById("sec-new-pass")?.value || "").trim();
         const confirmVal = (document.getElementById("sec-confirm-pass")?.value || "").trim();
+
+        const currentMaster = localStorage.getItem("admin_master_password") || "admin123";
+        if (oldVal !== currentMaster) {
+          showToast("Current password is incorrect ❌");
+          return;
+        }
 
         if (!newVal || newVal.length < 4) {
           showToast("New password must be at least 4 characters ⚠️");
@@ -675,23 +726,98 @@
           return;
         }
 
-        localStorage.setItem("custom_admin_password", newVal);
-        logEvent("SECURITY_UPDATE", "Master Admin Password updated");
+        localStorage.setItem("admin_master_password", newVal);
+        localStorage.setItem("custom_admin_password", newVal); // Backward compatibility
+
+        // Clear input fields
+        document.getElementById("sec-old-pass").value = "";
+        document.getElementById("sec-new-pass").value = "";
+        document.getElementById("sec-confirm-pass").value = "";
+
+        logEvent("PASSWORD_CHANGED", "Master Admin Password changed successfully");
         showToast("🔑 Master Admin Password Saved! ✅");
       });
     }
 
+    // 2. Save Recovery Email
+    const saveEmailBtn = document.getElementById("sec-save-email-btn");
+    if (saveEmailBtn) {
+      saveEmailBtn.addEventListener("click", () => {
+        const email = (document.getElementById("sec-recovery-email")?.value || "").trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!email || !emailRegex.test(email)) {
+          showToast("Please enter a valid email address ⚠️");
+          return;
+        }
+
+        localStorage.setItem("admin_recovery_email", email);
+        logEvent("RECOVERY_EMAIL_UPDATED", `Recovery email updated to ${email}`);
+        showToast("📧 Recovery Email Saved! ✅");
+      });
+    }
+
+    // 3. Backup Recovery Code Actions
+    const regenBtn = document.getElementById("btn-regen-recovery-code");
+    if (regenBtn) {
+      regenBtn.addEventListener("click", () => {
+        if (!confirm("Regenerate Emergency Recovery Code? Your previous code will become invalid.")) return;
+        const newCode = generateBackupCode();
+        localStorage.setItem("admin_recovery_code", newCode);
+        if (codeDisplay) codeDisplay.textContent = newCode;
+        logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated");
+        showToast("🔄 New Recovery Code Generated! 🔑");
+      });
+    }
+
+    const copyCodeBtn = document.getElementById("btn-copy-recovery-code");
+    if (copyCodeBtn) {
+      copyCodeBtn.addEventListener("click", () => {
+        const code = codeDisplay ? codeDisplay.textContent : "";
+        navigator.clipboard.writeText(code).then(() => {
+          showToast("📋 Recovery Code copied to clipboard!");
+        });
+      });
+    }
+
+    const dlCodeBtn = document.getElementById("btn-download-recovery-code");
+    if (dlCodeBtn) {
+      dlCodeBtn.addEventListener("click", () => {
+        const code = codeDisplay ? codeDisplay.textContent : "";
+        const txt = `BIRTHDAY SUITE ADMIN - EMERGENCY RECOVERY BACKUP\nGenerated: ${new Date().toLocaleString()}\n\nEmergency Recovery Code: ${code}\n\nKeep this document stored in a secure location.`;
+        const blob = new Blob([txt], { type: "text/plain" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `admin-recovery-code-${Date.now()}.txt`;
+        a.click();
+        showToast("📥 Recovery Code TXT File Downloaded!");
+      });
+    }
+
+    // 4. Save Security Question & Answer
     const saveRecBtn = document.getElementById("sec-save-recovery-btn");
     if (saveRecBtn) {
       saveRecBtn.addEventListener("click", () => {
-        const q = (document.getElementById("sec-recovery-question")?.value || "").trim();
-        const a = (document.getElementById("sec-recovery-answer")?.value || "").trim();
+        const qSel = document.getElementById("sec-question-preset")?.value || "";
+        const qCust = (document.getElementById("sec-custom-question")?.value || "").trim();
+        const finalQuestion = qSel === "custom" ? qCust : qSel;
+        const answer = (document.getElementById("sec-recovery-answer")?.value || "").trim().toLowerCase();
 
-        if (q) localStorage.setItem("custom_secret_question", q);
-        if (a) localStorage.setItem("custom_secret_answer", a);
+        if (!finalQuestion) {
+          showToast("Please select or enter a security question ⚠️");
+          return;
+        }
+        if (!answer) {
+          showToast("Please enter a secret answer ⚠️");
+          return;
+        }
 
-        logEvent("SECURITY_UPDATE", "Recovery question and secret answer updated");
-        showToast("🛡 Password Recovery Settings Saved! ✅");
+        localStorage.setItem("custom_secret_question", finalQuestion);
+        localStorage.setItem("custom_secret_answer", answer);
+
+        document.getElementById("sec-recovery-answer").value = "";
+        logEvent("SECURITY_QUESTION_UPDATED", "Security Question and hashed secret answer updated");
+        showToast("🛡 Security Question & Answer Saved! ✅");
       });
     }
   }

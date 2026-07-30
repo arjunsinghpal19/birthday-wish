@@ -404,44 +404,79 @@
           </div>
         </section>
 
-        <!-- 7. 🔐 SECURITY -->
+        <!-- 7. 🔐 SECURITY SYSTEM UPGRADE (PHASE 2.1) -->
         <section id="view-security" class="tab-view">
           <div class="view-header">
             <div class="view-title">
-              <h2>Security & Master Key Settings</h2>
-              <p>Manage admin authentication, master passcodes and recovery options</p>
+              <h2>Security System Upgrade</h2>
+              <p>Manage Master Admin Password, Triple Recovery Channels (Email, Backup Code, Security Question), and Access Controls</p>
             </div>
           </div>
 
           <div class="settings-grid">
+            <!-- 1. Change Password -->
             <div class="glass-panel" style="padding:24px;">
               <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🔑 Change Master Admin Password</h3>
               <div class="form-group">
-                <label>Current Old Password</label>
-                <input type="password" class="form-input" id="sec-old-pass" placeholder="Enter current password">
+                <label>Current Password</label>
+                <input type="password" class="form-input" id="sec-old-pass" placeholder="Enter current master password">
               </div>
               <div class="form-group">
-                <label>New Admin Password (min 4 chars)</label>
-                <input type="password" class="form-input" id="sec-new-pass" placeholder="Enter new password">
+                <label>New Password (min 4 chars)</label>
+                <input type="password" class="form-input" id="sec-new-pass" placeholder="Enter new master password">
               </div>
               <div class="form-group">
                 <label>Confirm New Password</label>
-                <input type="password" class="form-input" id="sec-confirm-pass" placeholder="Re-type new password">
+                <input type="password" class="form-input" id="sec-confirm-pass" placeholder="Re-type new master password">
               </div>
               <button class="btn-primary" id="sec-save-pass-btn">🔑 Save New Password</button>
             </div>
 
+            <!-- 2. Recovery Email -->
             <div class="glass-panel" style="padding:24px;">
-              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🛡 Password Recovery Settings</h3>
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">📧 Recovery Email Channel</h3>
+              <p style="color:var(--text-muted);font-size:0.84rem;margin-bottom:14px;">Receive password recovery verification codes via your configured email address.</p>
               <div class="form-group">
-                <label>Master Security Question</label>
-                <input type="text" class="form-input" id="sec-recovery-question" placeholder="e.g. Master Secret Key">
+                <label>Recovery Email Address</label>
+                <input type="email" class="form-input" id="sec-recovery-email" placeholder="e.g. admin@example.com">
+              </div>
+              <button class="btn-primary" id="sec-save-email-btn">📧 Save Recovery Email</button>
+            </div>
+
+            <!-- 3. Emergency Backup Recovery Code -->
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🔑 Emergency Recovery Code</h3>
+              <p style="color:var(--text-muted);font-size:0.84rem;margin-bottom:14px;">Single-use offline emergency bypass code. Keep this stored in a safe place.</p>
+              <div style="background:rgba(15,7,26,0.8);border:1px dashed var(--border-gold);padding:14px;border-radius:12px;text-align:center;margin-bottom:14px;">
+                <code style="font-family:monospace;font-size:1.3rem;letter-spacing:2px;color:var(--gold);" id="sec-code-display">BW-9F8A-3E21-7B04</code>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-sm" id="btn-regen-recovery-code">🔄 Regenerate</button>
+                <button class="btn-sm" id="btn-copy-recovery-code">📋 Copy Code</button>
+                <button class="btn-sm" id="btn-download-recovery-code" style="color:var(--gold);">📥 Download TXT</button>
+              </div>
+            </div>
+
+            <!-- 4. Security Question & Secret Answer -->
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🛡 Security Question & Answer</h3>
+              <p style="color:var(--text-muted);font-size:0.84rem;margin-bottom:14px;">Answer your secret security question to unlock access if email or code is unavailable.</p>
+              <div class="form-group">
+                <label>Select or Enter Security Question</label>
+                <select class="form-input" id="sec-question-preset" style="margin-bottom:8px;">
+                  <option value="What is your childhood pet's name?">What is your childhood pet's name?</option>
+                  <option value="What was the name of your first school?">What was the name of your first school?</option>
+                  <option value="In what city were you born?">In what city were you born?</option>
+                  <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+                  <option value="custom">✍️ Custom Security Question...</option>
+                </select>
+                <input type="text" class="form-input" id="sec-custom-question" placeholder="Enter custom security question" style="display:none;">
               </div>
               <div class="form-group">
-                <label>Master Secret Answer / Answer Key</label>
+                <label>Secret Answer (Hashed in Storage)</label>
                 <input type="password" class="form-input" id="sec-recovery-answer" placeholder="Enter secret answer">
               </div>
-              <button class="btn-primary btn-gold" id="sec-save-recovery-btn">💾 Save Recovery Settings</button>
+              <button class="btn-primary btn-gold" id="sec-save-recovery-btn">💾 Save Question & Answer</button>
             </div>
           </div>
         </section>

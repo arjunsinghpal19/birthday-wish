@@ -4085,6 +4085,15 @@ function initAdminSecurityModal() {
 
   if (!modal) return;
 
+  // Auto-open modal if URL contains ?login=admin or ?admin=1 query parameter
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("login") === "admin" || urlParams.get("admin") === "1" || urlParams.get("admin") === "true") {
+      modal.classList.add("open");
+      if (loginPassInput) setTimeout(() => loginPassInput.focus(), 300);
+    }
+  } catch(err) {}
+
   // Close modal
   if (closeBtn) closeBtn.onclick = () => modal.classList.remove("open");
   modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };

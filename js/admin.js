@@ -961,17 +961,23 @@
     }
   }
 
-  // Logout Handler
+  // Logout Handler (Complete Session Destruction)
   function initLogout() {
     const logoutBtn = document.getElementById("admin-logout-btn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", () => {
+        logEvent("ADMIN_LOGOUT", "Admin logged out - Session completely destroyed");
         sessionStorage.removeItem("admin_authenticated");
-        logEvent("ADMIN_LOGOUT", "Admin logged out");
+        sessionStorage.removeItem("admin_auth_timestamp");
+        sessionStorage.clear();
+
+        // Expire any authorization cookies
+        document.cookie = "admin_authenticated=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
         showToast("Logged out of Admin Session 🔒");
         setTimeout(() => {
-          window.location.href = "index.html";
-        }, 1000);
+          window.location.replace("index.html?login=admin");
+        }, 400);
       });
     }
   }
@@ -1007,22 +1013,25 @@
     showToast("Wish record duplicated 📋");
   }
 
-  // Session Validation & Expiry Check (24-Hour Limit)
+  // Session Validation & Route Guard (Strict Authentication Enforcement)
   function checkSessionSecurity() {
     const isAuth = sessionStorage.getItem("admin_authenticated") === "true";
     const authTime = parseInt(sessionStorage.getItem("admin_auth_timestamp") || "0", 10);
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-    if (isAuth && authTime > 0) {
-      if (Date.now() - authTime > TWENTY_FOUR_HOURS) {
-        sessionStorage.removeItem("admin_authenticated");
-        sessionStorage.removeItem("admin_auth_timestamp");
-        logEvent("SESSION_EXPIRED", "Admin session expired after 24 hours");
-        alert("Session Expired: Please log in again with your Master Admin Password.");
-        window.location.href = "index.html";
-        return false;
-      }
+    if (!isAuth) {
+      window.location.replace("index.html?login=admin");
+      return false;
     }
+
+    if (authTime > 0 && (Date.now() - authTime > TWENTY_FOUR_HOURS)) {
+      sessionStorage.clear();
+      logEvent("SESSION_EXPIRED", "Admin session expired after 24 hours");
+      alert("Session Expired: Please log in again with your Master Admin Password.");
+      window.location.replace("index.html?login=admin");
+      return false;
+    }
+
     return true;
   }
 

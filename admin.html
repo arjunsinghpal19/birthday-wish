@@ -7,8 +7,26 @@
   <link rel="icon" href="assets/images/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="css/admin.css">
   
+  <!-- Early Inline Security Route Guard (Strict Access Control) -->
+  <script>
+    (function () {
+      function checkGuard() {
+        var isAuth = sessionStorage.getItem("admin_authenticated") === "true";
+        if (!isAuth) {
+          window.location.replace("index.html?login=admin");
+        }
+      }
+      checkGuard();
+      window.addEventListener("pageshow", function (e) {
+        if (e.persisted || sessionStorage.getItem("admin_authenticated") !== "true") {
+          window.location.replace("index.html?login=admin");
+        }
+      });
+    })();
+  </script>
+
   <!-- Supabase CDN Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-javascript@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 

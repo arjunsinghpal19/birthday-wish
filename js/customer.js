@@ -84,19 +84,33 @@
     }
   }
 
-  // Customer Media Dataset
-  let customerMediaFiles = [];
+  // Get Active Customer Identity (Database Scoping)
+  function getCustomerSessionIdentity() {
+    const custId = sessionStorage.getItem("customer_id") || null;
+    const custEmail = sessionStorage.getItem("customer_email") || "customer@example.com";
+    return { id: custId, email: custEmail };
+  }
 
-  // Load Customer Specific Wishes Data
+  // Load Customer Specific Wishes Data (Database-Side Query Filtering)
   async function loadCustomerWishesData() {
     try {
       if (window.SupabaseModule) {
         const client = window.SupabaseModule.getClient();
         if (client) {
-          const { data, error } = await client.from("wishes").select("*").order("created_at", { ascending: false });
+          // Database-Side Filter: Exclude system rows & filter for customer at Database layer
+          let query = client.from("wishes")
+            .select("*")
+            .neq("id", "00000000-0000-0000-0000-000000000001")
+            .neq("recipient_name", "__SYSTEM_SECURITY_CONFIG__");
+
+          const customer = getCustomerSessionIdentity();
+          if (customer && customer.id) {
+            query = query.eq("user_id", customer.id);
+          }
+
+          const { data, error } = await query.order("created_at", { ascending: false });
           if (!error && Array.isArray(data)) {
-            // Scope wishes to user wishes (filter out system config)
-            customerWishes = data.filter(w => w.id !== "00000000-0000-0000-0000-000000000001" && w.recipient_name !== "__SYSTEM_SECURITY_CONFIG__");
+            customerWishes = data;
           }
         }
       }

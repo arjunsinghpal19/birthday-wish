@@ -3834,13 +3834,119 @@ function decodeWishData(token) {
   }
 }
 
-function parseQueryParams() {
+// ─── PHASE A: DATABASE LAYER (Cloud DB Storage Helper) ───
+function generateWishUUID() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+async function saveWishToDatabase(configObj) {
+  try {
+    const payload = {
+      n: configObj.name || "",
+      c: configObj.passcode?.code || "1234",
+      y: configObj.birthDate?.year || 2001,
+      m: configObj.birthDate?.month || 1,
+      d: configObj.birthDate?.day || 1,
+      f: configObj.from || "",
+      mem: configObj.memory || "",
+      cf: configObj.cakeFlavor || "default",
+      lf: configObj.letterFont || "default",
+      lt: configObj.letterTheme || "default",
+      gft: configObj.gift || {},
+      g: configObj.gallery || [],
+      l: configObj.letterLines || [],
+      r: configObj.reasons || [],
+      w: configObj.wishes || [],
+      t: configObj.timeline || [],
+      msc: configObj.music || {},
+      v: configObj.videoWish || {}
+    };
+
+    const res = await fetch("https://jsonblob.com/api/jsonBlob", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      const locationHeader = res.headers.get("Location");
+      if (locationHeader) {
+        const parts = locationHeader.split("/");
+        return parts[parts.length - 1]; // Return generated UUID / Blob ID
+      }
+    }
+  } catch (e) {
+    console.warn("Cloud DB save fallback:", e);
+  }
+  return null;
+}
+
+async function fetchWishFromDatabase(uuid) {
+  try {
+    if (!uuid) return null;
+    const res = await fetch(`https://jsonblob.com/api/jsonBlob/${uuid}`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (e) {
+    console.warn("Cloud DB fetch fallback:", e);
+  }
+  return null;
+}
+
+// ─── PHASE B: STORAGE INTEGRATION (Cloud Storage Helper for Custom Media) ───
+async function uploadMediaToCloud(file, folder = "media") {
+  try {
+    if (!file || !(file instanceof File || file instanceof Blob)) return null;
+    
+    // Free high-speed Cloudinary/ImgBB/Cloud storage adapter
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch("https://api.imgbb.com/1/upload?key=6d257f6977d64d8eac843ddf54b83ad3", {
+      method: "POST",
+      body: formData
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.data && json.data.url) {
+        return json.data.url; // Return public HTTPS CDN URL
+      }
+    }
+  } catch (e) {
+    console.warn("Cloud Storage upload fallback:", e);
+  }
+  return null;
+}
+
+async function parseQueryParams() {
   const params = new URLSearchParams(location.search);
   const nameParam = params.get("name");
-  const tokenParam = params.get("w") || params.get("wish");
+  const tokenParam = params.get("w") || params.get("wish") || params.get("id");
 
   if (tokenParam) {
-    const decoded = decodeWishData(tokenParam);
+    let decoded = null;
+
+    // Check if token is a Cloud DB UUID / Blob ID (e.g., contains hyphens or matches UUID/Blob pattern)
+    if (tokenParam.length >= 20 && (tokenParam.includes("-") || !tokenParam.match(/^[A-Za-z0-9_-]+$/))) {
+      const cloudData = await fetchWishFromDatabase(tokenParam);
+      if (cloudData) {
+        decoded = cloudData;
+      }
+    }
+
+    // Fallback to legacy Base64 decoding (Permanent Backward Compatibility)
+    if (!decoded) {
+      decoded = decodeWishData(tokenParam);
+    }
+
     if (decoded) {
       if (decoded.n) CONFIG.name = formatName(decoded.n);
       if (decoded.c) CONFIG.passcode.code = decoded.c.trim();
@@ -3864,23 +3970,23 @@ function parseQueryParams() {
         CONFIG.gallery = decoded.g.map((item, i) => {
           const defaultCard = (window.DEFAULT_CONFIG_BACKUP && window.DEFAULT_CONFIG_BACKUP.gallery && window.DEFAULT_CONFIG_BACKUP.gallery[i]) || (CONFIG.gallery && CONFIG.gallery[i]) || {};
           return {
-            image: item.img || defaultCard.image || `assets/images/polaroid-${(i % 6) + 1}.jpg`,
-            emoji: item.e || defaultCard.emoji || "🎈",
+            image: item.img || item.image || defaultCard.image || `assets/images/polaroid-${(i % 6) + 1}.jpg`,
+            emoji: item.e || item.emoji || defaultCard.emoji || "🎈",
             rot: ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
-            cap: item.c || defaultCard.cap || "Memory",
-            secretNote: item.n || defaultCard.secretNote || ""
+            cap: item.c || item.cap || defaultCard.cap || "Memory",
+            secretNote: item.n || item.secretNote || defaultCard.secretNote || ""
           };
         });
       }
 
       if (decoded.v) {
         CONFIG.videoWish = CONFIG.videoWish || {};
-        CONFIG.videoWish.url = decoded.v.u || "";
-        CONFIG.videoWish.startTime = decoded.v.t || "";
+        CONFIG.videoWish.url = decoded.v.u || decoded.v.url || "";
+        CONFIG.videoWish.startTime = decoded.v.t || decoded.v.startTime || "";
       }
 
       if (decoded.msc) {
-        CONFIG.music = { file: decoded.msc.f, startTime: decoded.msc.t || "" };
+        CONFIG.music = { file: decoded.msc.f || decoded.msc.file, startTime: decoded.msc.t || decoded.msc.startTime || "" };
       }
     }
   }
@@ -4302,9 +4408,9 @@ function checkAdminAccess() {
   });
 }
 
-function initCustomizerModal() {
+async function initCustomizerModal() {
 
-  parseQueryParams();
+  await parseQueryParams();
 
   checkAdminAccess();
 

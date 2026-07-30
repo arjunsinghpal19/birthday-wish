@@ -100,32 +100,50 @@
   // Active Event Dashboard Filter State
   let currentDashEventFilter = "all";
 
-  // Populate Dashboard Event Type Filter Dropdown
-  function initDashboardEventFilter() {
+  // Dynamic Data-Driven Event Type Filter Population
+  function updateDashboardEventFilterOptions() {
     const select = document.getElementById("dash-event-type-filter");
-    if (!select || select.dataset.initialized) return;
+    if (!select) return;
 
-    select.dataset.initialized = "true";
-    if (window.CONFIG && Array.isArray(window.CONFIG.EVENT_TYPES)) {
-      window.CONFIG.EVENT_TYPES.forEach(evt => {
-        const opt = document.createElement("option");
-        opt.value = evt.id;
-        opt.textContent = `${evt.icon} ${evt.name}`;
-        select.appendChild(opt);
+    // Collect all unique event_type strings from real wishes database data
+    const eventTypeSet = new Set();
+    wishesList.forEach(w => {
+      const et = (w.event_type || "birthday").toLowerCase().trim();
+      if (et) eventTypeSet.add(et);
+    });
+
+    // Default to birthday if dataset is empty
+    if (eventTypeSet.size === 0) eventTypeSet.add("birthday");
+
+    const currentVal = select.value || "all";
+    select.innerHTML = '<option value="all">🌐 All Event Types</option>';
+
+    eventTypeSet.forEach(etId => {
+      const eventMeta = (window.CONFIG && typeof window.CONFIG.getEventType === "function")
+        ? window.CONFIG.getEventType(etId)
+        : { id: etId, name: etId.charAt(0).toUpperCase() + etId.slice(1), icon: "✨" };
+
+      const opt = document.createElement("option");
+      opt.value = etId;
+      opt.textContent = `${eventMeta.icon || "✨"} ${eventMeta.name}`;
+      select.appendChild(opt);
+    });
+
+    select.value = (eventTypeSet.has(currentVal) || currentVal === "all") ? currentVal : "all";
+
+    if (!select.dataset.listenerAttached) {
+      select.dataset.listenerAttached = "true";
+      select.addEventListener("change", (e) => {
+        currentDashEventFilter = e.target.value;
+        loadDashboardData();
+        const selectedText = select.options[select.selectedIndex]?.text || "All Event Types";
+        showToast(`Switched Analytics to: ${selectedText} ✨`);
       });
     }
-
-    select.addEventListener("change", (e) => {
-      currentDashEventFilter = e.target.value;
-      loadDashboardData();
-      showToast(`Switched Analytics to: ${select.options[select.selectedIndex].text} ✨`);
-    });
   }
 
   // Render Dashboard KPI Cards & Recent Lists (Phase 3.1 Dynamic Event Analytics)
   async function loadDashboardData() {
-    initDashboardEventFilter();
-
     try {
       if (window.SupabaseModule) {
         const client = window.SupabaseModule.getClient();
@@ -141,10 +159,43 @@
       console.warn("Using local cached wishes data:", e);
     }
 
+    // Hydrate dynamic event type dropdown from real data
+    updateDashboardEventFilterOptions();
+
     // Filter wishes by active event type
     const activeWishes = currentDashEventFilter === "all"
       ? wishesList
       : wishesList.filter(w => (w.event_type || "birthday") === currentDashEventFilter);
+
+    // Dynamic Card Title Labels
+    let eventName = "";
+    if (currentDashEventFilter !== "all") {
+      const eventMeta = (window.CONFIG && typeof window.CONFIG.getEventType === "function")
+        ? window.CONFIG.getEventType(currentDashEventFilter)
+        : { name: currentDashEventFilter.charAt(0).toUpperCase() + currentDashEventFilter.slice(1) };
+      eventName = eventMeta.name;
+    }
+
+    const titleWishesEl = document.getElementById("title-kpi-wishes");
+    if (titleWishesEl) titleWishesEl.textContent = currentDashEventFilter === "all" ? "Total Wishes" : `Total ${eventName} Wishes`;
+
+    const titleTodayEl = document.getElementById("title-kpi-today");
+    if (titleTodayEl) titleTodayEl.textContent = currentDashEventFilter === "all" ? "Today's Wishes" : `Today's ${eventName} Wishes`;
+
+    const titleImagesEl = document.getElementById("title-kpi-images");
+    if (titleImagesEl) titleImagesEl.textContent = currentDashEventFilter === "all" ? "Images" : `${eventName} Images`;
+
+    const titleVideosEl = document.getElementById("title-kpi-videos");
+    if (titleVideosEl) titleVideosEl.textContent = currentDashEventFilter === "all" ? "Videos" : `${eventName} Videos`;
+
+    const titleAudioEl = document.getElementById("title-kpi-audio");
+    if (titleAudioEl) titleAudioEl.textContent = currentDashEventFilter === "all" ? "Audio" : `${eventName} Audio`;
+
+    const titleStorageEl = document.getElementById("title-kpi-storage");
+    if (titleStorageEl) titleStorageEl.textContent = currentDashEventFilter === "all" ? "Storage" : `${eventName} Storage`;
+
+    const titleRecentEl = document.getElementById("title-dash-recent-wishes");
+    if (titleRecentEl) titleRecentEl.textContent = currentDashEventFilter === "all" ? "Recent Wishes" : `Recent ${eventName} Wishes`;
 
     // 1. Total Wishes
     const totalWishesEl = document.getElementById("kpi-total-wishes");

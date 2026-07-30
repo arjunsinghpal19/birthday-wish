@@ -127,7 +127,7 @@
           <div class="metrics-grid">
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Total Wishes</span>
+                <span class="metric-title" id="title-kpi-wishes">Total Wishes</span>
                 <span class="metric-icon">🎂</span>
               </div>
               <div class="metric-value" id="kpi-total-wishes">0</div>
@@ -136,7 +136,7 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Today's Wishes</span>
+                <span class="metric-title" id="title-kpi-today">Today's Wishes</span>
                 <span class="metric-icon">✨</span>
               </div>
               <div class="metric-value" id="kpi-today-wishes">0</div>
@@ -145,7 +145,7 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Images</span>
+                <span class="metric-title" id="title-kpi-images">Images</span>
                 <span class="metric-icon">🖼</span>
               </div>
               <div class="metric-value" id="kpi-total-images">0</div>
@@ -154,7 +154,7 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Videos</span>
+                <span class="metric-title" id="title-kpi-videos">Videos</span>
                 <span class="metric-icon">📹</span>
               </div>
               <div class="metric-value" id="kpi-total-videos">0</div>
@@ -163,7 +163,7 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Audio</span>
+                <span class="metric-title" id="title-kpi-audio">Audio</span>
                 <span class="metric-icon">🎙</span>
               </div>
               <div class="metric-value" id="kpi-total-audio">0</div>
@@ -172,7 +172,7 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Storage</span>
+                <span class="metric-title" id="title-kpi-storage">Storage</span>
                 <span class="metric-icon">☁️</span>
               </div>
               <div class="metric-value" id="kpi-storage-used">0 B</div>
@@ -237,7 +237,7 @@
           <!-- Recent Wishes & Uploads Dual Panels -->
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
             <div class="glass-panel table-panel">
-              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">Recent Wishes</h3>
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;" id="title-dash-recent-wishes">Recent Wishes</h3>
               <table class="admin-table">
                 <thead>
                   <tr>

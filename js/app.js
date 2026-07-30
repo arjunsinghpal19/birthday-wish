@@ -5734,11 +5734,17 @@ function isHostedOnline() {
 
 }
 
-function buildRecipientShareUrl(overrideName) {
+async function buildRecipientShareUrl(overrideName) {
   const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
   let baseUrl = location.origin + location.pathname;
   if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
     baseUrl = location.href.split("?")[0];
+  }
+
+  // Try generating short UUID link via ShareModule
+  if (window.ShareModule) {
+    const uuidUrl = await window.ShareModule.buildShareUrl(CONFIG, nameVal);
+    if (uuidUrl) return uuidUrl;
   }
 
   const token = encodeWishData(CONFIG);
@@ -5764,8 +5770,8 @@ function buildRecipientShareUrl(overrideName) {
   return shareUrl;
 }
 
-function updateShareSection() {
-  const fullShareUrl = buildRecipientShareUrl();
+async function updateShareSection() {
+  const fullShareUrl = await buildRecipientShareUrl();
   const nameVal = (CONFIG.name || "").trim();
   let qrTargetUrl = fullShareUrl;
 

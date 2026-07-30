@@ -3904,22 +3904,20 @@ function parseQueryParams() {
   }
 }
 
-// --- PERMANENT GLOBAL CLOUD ADMIN PASSWORD SYNC ---
-const CLOUD_ADMIN_PASS_ID = "ff8081819f7e10ae019fb13f14824824";
+// --- UNLIMITED FAST CLOUD ADMIN PASSWORD SYNC ---
+const JSONBLOB_PASS_URL = "https://jsonblob.com/api/jsonBlob/019fb143-bcff-7b54-8228-9aefc0375c41";
 
 async function syncAdminPasswordToCloud(newPass) {
   try {
     if (!newPass) return false;
     window._globalAdminPassword = newPass;
     CONFIG.adminPassword = newPass;
+    localStorage.setItem("custom_admin_password", newPass);
 
-    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_ADMIN_PASS_ID}`, {
+    const res = await fetch(JSONBLOB_PASS_URL, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: "bday_admin_pass_arjun",
-        data: { pass: newPass, updatedAt: Date.now() }
-      })
+      body: JSON.stringify({ pass: newPass, updatedAt: Date.now() })
     });
     return res.ok;
   } catch (e) {
@@ -3929,18 +3927,19 @@ async function syncAdminPasswordToCloud(newPass) {
 
 async function fetchAdminPasswordFromCloud() {
   try {
-    const res = await fetch(`https://api.restful-api.dev/objects/${CLOUD_ADMIN_PASS_ID}`);
+    const res = await fetch(JSONBLOB_PASS_URL);
     if (res.ok) {
       const json = await res.json();
-      if (json && json.data && json.data.pass) {
-        window._globalAdminPassword = json.data.pass;
-        CONFIG.adminPassword = json.data.pass;
-        return json.data.pass;
+      if (json && json.pass) {
+        window._globalAdminPassword = json.pass;
+        CONFIG.adminPassword = json.pass;
+        localStorage.setItem("custom_admin_password", json.pass);
+        return json.pass;
       }
     }
   } catch (e) {}
 
-  return window._globalAdminPassword || CONFIG.adminPassword || "2001";
+  return window._globalAdminPassword || localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
 }
 
 async function getAdminPassword() {
@@ -4024,7 +4023,7 @@ function initAdminSecurityModal() {
     const currentPass = await getAdminPassword();
     const errorMsgEl = document.getElementById("admin-login-error");
 
-    if (entered === currentPass || entered === "Arjun@123" || entered === "2001") {
+    if (entered === currentPass || entered === "Arjun@123" || entered === "2001" || entered === CONFIG.adminPassword) {
       modal.classList.remove("open");
       loginPassInput.value = "";
       if (loginPassInput) loginPassInput.classList.remove("input-error");
@@ -4076,7 +4075,7 @@ function initAdminSecurityModal() {
       const confirmVal = (confirmPassInput.value || "").trim();
       const currentPass = await getAdminPassword();
 
-      if (oldVal !== currentPass && oldVal !== "Arjun@123" && oldVal !== "2001") {
+      if (oldVal && oldVal !== currentPass && oldVal !== "Arjun@123" && oldVal !== "2001" && oldVal !== CONFIG.adminPassword && oldVal !== localStorage.getItem("custom_admin_password")) {
         showToast("Current Old Password is wrong ❌");
         return;
       }

@@ -109,15 +109,21 @@
 
         <!-- 1. 🏠 DASHBOARD HOME -->
         <section id="view-dashboard" class="tab-view active">
-          <div class="view-header">
+          <div class="view-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
             <div class="view-title">
               <h2>Dashboard Overview</h2>
-              <p>System metrics, wishes summary & media analytics</p>
+              <p>Dynamic event analytics, wishes summary & media metrics</p>
             </div>
-            <button class="btn-primary" id="btn-refresh-dashboard">🔄 Refresh Analytics</button>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <select id="dash-event-type-filter" class="form-input" style="width:auto;min-width:180px;background:rgba(15,7,26,0.85);border:1px solid var(--border-gold);color:#fff;padding:8px 14px;border-radius:10px;font-size:0.88rem;cursor:pointer;">
+                <option value="all">🌐 All Event Types</option>
+                <!-- Populated dynamically from CONFIG.EVENT_TYPES -->
+              </select>
+              <button class="btn-primary" id="btn-refresh-dashboard">🔄 Refresh Analytics</button>
+            </div>
           </div>
 
-          <!-- Super Admin KPI Cards Grid (12 Metrics) -->
+          <!-- Dynamic Event KPI Cards Grid (12 Metrics - Layout Identical) -->
           <div class="metrics-grid">
             <div class="glass-card metric-card">
               <div class="metric-header">
@@ -125,7 +131,7 @@
                 <span class="metric-icon">🎂</span>
               </div>
               <div class="metric-value" id="kpi-total-wishes">0</div>
-              <div class="metric-sub">Across all event types</div>
+              <div class="metric-sub">For selected event</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -139,16 +145,16 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Images Uploaded</span>
+                <span class="metric-title">Images</span>
                 <span class="metric-icon">🖼</span>
               </div>
               <div class="metric-value" id="kpi-total-images">0</div>
-              <div class="metric-sub">Supabase Storage</div>
+              <div class="metric-sub">Event photos</div>
             </div>
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Videos Uploaded</span>
+                <span class="metric-title">Videos</span>
                 <span class="metric-icon">📹</span>
               </div>
               <div class="metric-value" id="kpi-total-videos">0</div>
@@ -157,29 +163,65 @@
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Audio Notes</span>
+                <span class="metric-title">Audio</span>
                 <span class="metric-icon">🎙</span>
               </div>
               <div class="metric-value" id="kpi-total-audio">0</div>
-              <div class="metric-sub">Voice & Music</div>
+              <div class="metric-sub">Voice & Tunes</div>
             </div>
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Storage Used</span>
+                <span class="metric-title">Storage</span>
                 <span class="metric-icon">☁️</span>
               </div>
               <div class="metric-value" id="kpi-storage-used">0 B</div>
-              <div class="metric-sub">Bucket: wish-media</div>
+              <div class="metric-sub">Wish media size</div>
             </div>
 
             <div class="glass-card metric-card">
               <div class="metric-header">
-                <span class="metric-title">Storage Available</span>
-                <span class="metric-icon">💾</span>
+                <span class="metric-title">Published</span>
+                <span class="metric-icon">🟢</span>
               </div>
-              <div class="metric-value" id="kpi-storage-available">500 MB</div>
-              <div class="metric-sub">Supabase Free Quota</div>
+              <div class="metric-value" style="color:#2ecc71;" id="kpi-event-published">0</div>
+              <div class="metric-sub">Active public wishes</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Drafts</span>
+                <span class="metric-icon">📝</span>
+              </div>
+              <div class="metric-value" style="color:#f39c12;" id="kpi-event-drafts">0</div>
+              <div class="metric-sub">In-progress wishes</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Scheduled</span>
+                <span class="metric-icon">⏳</span>
+              </div>
+              <div class="metric-value" style="color:#3498db;" id="kpi-event-scheduled">0</div>
+              <div class="metric-sub">Upcoming release</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Most Used Theme</span>
+                <span class="metric-icon">🎨</span>
+              </div>
+              <div class="metric-value" style="font-size:1.15rem;color:var(--gold);" id="kpi-most-used-theme">Default</div>
+              <div class="metric-sub">Top theme choice</div>
+            </div>
+
+            <div class="glass-card metric-card">
+              <div class="metric-header">
+                <span class="metric-title">Most Used Music</span>
+                <span class="metric-icon">🎵</span>
+              </div>
+              <div class="metric-value" style="font-size:1.15rem;color:var(--gold);" id="kpi-most-used-music">Default</div>
+              <div class="metric-sub">Top audio track</div>
             </div>
 
             <div class="glass-card metric-card">
@@ -187,44 +229,8 @@
                 <span class="metric-title">System Version</span>
                 <span class="metric-icon">⚡</span>
               </div>
-              <div class="metric-value" style="font-size:1.4rem;color:var(--gold);" id="kpi-system-version">v3.0 Super Admin</div>
-              <div class="metric-sub">Wish Studio Pipeline</div>
-            </div>
-
-            <div class="glass-card metric-card">
-              <div class="metric-header">
-                <span class="metric-title">Monthly Revenue</span>
-                <span class="metric-icon">💵</span>
-              </div>
-              <div class="metric-value" id="kpi-future-revenue">$0.00</div>
-              <div class="metric-sub">SaaS Billing Hook (Placeholder)</div>
-            </div>
-
-            <div class="glass-card metric-card">
-              <div class="metric-header">
-                <span class="metric-title">Active Customers</span>
-                <span class="metric-icon">👥</span>
-              </div>
-              <div class="metric-value" id="kpi-future-customers">0 Users</div>
-              <div class="metric-sub">Multi-Tenant Hook (Placeholder)</div>
-            </div>
-
-            <div class="glass-card metric-card">
-              <div class="metric-header">
-                <span class="metric-title">Active Plans</span>
-                <span class="metric-icon">📦</span>
-              </div>
-              <div class="metric-value" id="kpi-future-plans">Free Tier</div>
-              <div class="metric-sub">Subscription Hook (Placeholder)</div>
-            </div>
-
-            <div class="glass-card metric-card">
-              <div class="metric-header">
-                <span class="metric-title">Platform Security</span>
-                <span class="metric-icon">🛡️</span>
-              </div>
-              <div class="metric-value" style="font-size:1.3rem;color:#2ecc71;" id="kpi-security-status">Secured</div>
-              <div class="metric-sub">Triple Recovery Active</div>
+              <div class="metric-value" style="font-size:1.3rem;color:var(--gold);" id="kpi-system-version">v3.1 Studio</div>
+              <div class="metric-sub">Dynamic Analytics Pipeline</div>
             </div>
           </div>
 

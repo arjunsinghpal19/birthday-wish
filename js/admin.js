@@ -97,8 +97,35 @@
     }
   }
 
-  // Render Dashboard KPI Cards & Recent Lists (Phase 3.0 Super Admin)
+  // Active Event Dashboard Filter State
+  let currentDashEventFilter = "all";
+
+  // Populate Dashboard Event Type Filter Dropdown
+  function initDashboardEventFilter() {
+    const select = document.getElementById("dash-event-type-filter");
+    if (!select || select.dataset.initialized) return;
+
+    select.dataset.initialized = "true";
+    if (window.CONFIG && Array.isArray(window.CONFIG.EVENT_TYPES)) {
+      window.CONFIG.EVENT_TYPES.forEach(evt => {
+        const opt = document.createElement("option");
+        opt.value = evt.id;
+        opt.textContent = `${evt.icon} ${evt.name}`;
+        select.appendChild(opt);
+      });
+    }
+
+    select.addEventListener("change", (e) => {
+      currentDashEventFilter = e.target.value;
+      loadDashboardData();
+      showToast(`Switched Analytics to: ${select.options[select.selectedIndex].text} ✨`);
+    });
+  }
+
+  // Render Dashboard KPI Cards & Recent Lists (Phase 3.1 Dynamic Event Analytics)
   async function loadDashboardData() {
+    initDashboardEventFilter();
+
     try {
       if (window.SupabaseModule) {
         const client = window.SupabaseModule.getClient();
@@ -114,33 +141,76 @@
       console.warn("Using local cached wishes data:", e);
     }
 
+    // Filter wishes by active event type
+    const activeWishes = currentDashEventFilter === "all"
+      ? wishesList
+      : wishesList.filter(w => (w.event_type || "birthday") === currentDashEventFilter);
+
     // 1. Total Wishes
     const totalWishesEl = document.getElementById("kpi-total-wishes");
-    if (totalWishesEl) totalWishesEl.textContent = wishesList.length;
+    if (totalWishesEl) totalWishesEl.textContent = activeWishes.length;
 
     // 2. Today's Wishes
     const todayStr = new Date().toDateString();
-    const todaysWishesCount = wishesList.filter(w => w.created_at && new Date(w.created_at).toDateString() === todayStr).length;
+    const todaysWishesCount = activeWishes.filter(w => w.created_at && new Date(w.created_at).toDateString() === todayStr).length;
     const todayWishesEl = document.getElementById("kpi-today-wishes");
     if (todayWishesEl) todayWishesEl.textContent = todaysWishesCount;
 
-    // 3. System Version Badge
-    const sysVerEl = document.getElementById("kpi-system-version");
-    if (sysVerEl) sysVerEl.textContent = "v3.0 Super Admin";
+    // 3. Published / Drafts / Scheduled Status Counts
+    const publishedCount = activeWishes.filter(w => !w.status || w.status === "published" || w.status === "active").length;
+    const draftsCount = activeWishes.filter(w => w.status === "draft").length;
+    const scheduledCount = activeWishes.filter(w => w.status === "scheduled").length;
 
-    renderRecentWishesTable();
+    const publishedEl = document.getElementById("kpi-event-published");
+    if (publishedEl) publishedEl.textContent = publishedCount;
+
+    const draftsEl = document.getElementById("kpi-event-drafts");
+    if (draftsEl) draftsEl.textContent = draftsCount;
+
+    const scheduledEl = document.getElementById("kpi-event-scheduled");
+    if (scheduledEl) scheduledEl.textContent = scheduledCount;
+
+    // 4. Most Used Theme & Music Analytics
+    const themeCounts = {};
+    const musicCounts = {};
+    activeWishes.forEach(w => {
+      const theme = w.letter_theme || w.lt || "Default";
+      themeCounts[theme] = (themeCounts[theme] || 0) + 1;
+
+      const music = w.music_url || w.msc?.f || "Default";
+      musicCounts[music] = (musicCounts[music] || 0) + 1;
+    });
+
+    const topTheme = Object.keys(themeCounts).reduce((a, b) => themeCounts[a] > themeCounts[b] ? a : b, "Default");
+    const topMusic = Object.keys(musicCounts).reduce((a, b) => musicCounts[a] > musicCounts[b] ? a : b, "Default");
+
+    const topThemeEl = document.getElementById("kpi-most-used-theme");
+    if (topThemeEl) topThemeEl.textContent = topTheme.charAt(0).toUpperCase() + topTheme.slice(1);
+
+    const topMusicEl = document.getElementById("kpi-most-used-music");
+    if (topMusicEl) {
+      const musicName = topMusic.includes("happy-birthday") ? "Happy Birthday" : (topMusic.split('/').pop() || "Default");
+      topMusicEl.textContent = musicName.length > 15 ? musicName.substring(0, 12) + "..." : musicName;
+    }
+
+    // 5. System Version Badge
+    const sysVerEl = document.getElementById("kpi-system-version");
+    if (sysVerEl) sysVerEl.textContent = "v3.1 Studio";
+
+    renderRecentWishesTable(activeWishes);
     renderWishesTable();
     renderLogsTable();
     renderMediaGrid("images");
   }
 
   // Render Dashboard Recent Wishes
-  function renderRecentWishesTable() {
+  function renderRecentWishesTable(listToRender) {
     const tbody = document.getElementById("dash-recent-wishes-tbody");
     if (!tbody) return;
 
+    const list = Array.isArray(listToRender) ? listToRender : wishesList;
     tbody.innerHTML = "";
-    wishesList.slice(0, 4).forEach(w => {
+    list.slice(0, 4).forEach(w => {
       const tr = document.createElement("tr");
       const shortUuid = w.id ? (w.id.substring(0, 8) + "...") : "N/A";
       const fullUrl = `${location.origin}/?w=${w.id}`;

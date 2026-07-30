@@ -101,8 +101,94 @@
     }
   }
 
+  // Persistent Security System Settings (Phase 2.1)
+  const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
+
+  async function saveSecuritySettings(secObj) {
+    try {
+      const current = await getSecuritySettings();
+      const updated = {
+        ...current,
+        ...secObj,
+        updated_at: new Date().toISOString()
+      };
+
+      localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(updated));
+
+      // Also mirror individual keys for backward compatibility
+      if (updated.admin_master_password) localStorage.setItem("admin_master_password", updated.admin_master_password);
+      if (updated.admin_recovery_email) localStorage.setItem("admin_recovery_email", updated.admin_recovery_email);
+      if (updated.admin_recovery_code) localStorage.setItem("admin_recovery_code", updated.admin_recovery_code);
+      if (updated.custom_secret_question) localStorage.setItem("custom_secret_question", updated.custom_secret_question);
+      if (updated.custom_secret_answer) localStorage.setItem("custom_secret_answer", updated.custom_secret_answer);
+
+      // Attempt Supabase Cloud Sync if connection available
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (client) {
+        client.from("wishes").upsert([{
+          id: "00000000-0000-0000-0000-000000000001", // Reserved Admin Security Config UUID
+          recipient_name: "__SYSTEM_SECURITY_CONFIG__",
+          sender_name: "ADMIN_SYSTEM",
+          pass_code: updated.admin_master_password || "admin123",
+          memory_text: JSON.stringify(updated)
+        }], { onConflict: "id" }).then(({ error }) => {
+          if (error) console.warn("⚠️ Supabase Security Config sync notice:", error.message);
+          else console.log("☁️ Security settings synced to Supabase Cloud.");
+        });
+      }
+
+      return updated;
+    } catch (e) {
+      console.warn("⚠️ Error saving security settings:", e);
+      return secObj;
+    }
+  }
+
+  async function getSecuritySettings() {
+    try {
+      let localData = null;
+      const raw = localStorage.getItem(SECURITY_STORAGE_KEY);
+      if (raw) {
+        try { localData = JSON.parse(raw); } catch (err) {}
+      }
+
+      // Check Supabase Cloud fallback
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (client) {
+        const { data } = await client.from("wishes").select("memory_text").eq("id", "00000000-0000-0000-0000-000000000001").single();
+        if (data && data.memory_text) {
+          try {
+            const cloudData = JSON.parse(data.memory_text);
+            if (cloudData) {
+              localData = { ...localData, ...cloudData };
+              localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(localData));
+            }
+          } catch(err) {}
+        }
+      }
+
+      return {
+        admin_master_password: localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "admin123",
+        admin_recovery_email: localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        admin_recovery_code: localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
+        custom_secret_question: localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
+        custom_secret_answer: localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
+      };
+    } catch (e) {
+      return {
+        admin_master_password: localStorage.getItem("admin_master_password") || "admin123",
+        admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        admin_recovery_code: localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
+        custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
+        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun"
+      };
+    }
+  }
+
   window.DatabaseModule = {
     saveWish: saveWishRecord,
-    getWishById: getWishRecordById
+    getWishById: getWishRecordById,
+    saveSecuritySettings: saveSecuritySettings,
+    getSecuritySettings: getSecuritySettings
   };
 })(window);

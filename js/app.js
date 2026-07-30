@@ -4048,19 +4048,17 @@ async function syncAdminPasswordToCloud(newPass) {
 
 async function fetchAdminPasswordFromCloud() {
   try {
-    const res = await fetch(JSONBLOB_PASS_URL);
-    if (res.ok) {
-      const json = await res.json();
-      if (json && json.pass) {
-        window._globalAdminPassword = json.pass;
-        CONFIG.adminPassword = json.pass;
-        localStorage.setItem("custom_admin_password", json.pass);
-        return json.pass;
+    if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
+      const sec = await window.DatabaseModule.getSecuritySettings();
+      if (sec && sec.admin_master_password) {
+        window._globalAdminPassword = sec.admin_master_password;
+        CONFIG.adminPassword = sec.admin_master_password;
+        return sec.admin_master_password;
       }
     }
-  } catch (e) {}
+  } catch(e) {}
 
-  return window._globalAdminPassword || localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "2001";
+  return window._globalAdminPassword || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "admin123";
 }
 
 async function getAdminPassword() {
@@ -4315,9 +4313,20 @@ function initAdminSecurityModal() {
         return;
       }
 
-      showToast("⏳ Syncing Admin Password to Cloud...");
-      await syncAdminPasswordToCloud(newPass);
-      showToast("🔑 New Admin Password saved on all devices! ✅");
+      showToast("⏳ Persisting New Master Password...");
+      sessionStorage.removeItem("admin_authenticated"); // Invalidate previous active session
+      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
+        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newPass });
+      } else {
+        localStorage.setItem("admin_master_password", newPass);
+        localStorage.setItem("custom_admin_password", newPass);
+      }
+      showToast("🔑 New Admin Password Saved & Persisted! ✅");
+
+      // Log event if adminApp available
+      if (window.adminApp && typeof window.adminApp.logEvent === "function") {
+        window.adminApp.logEvent("PASSWORD_RESET", "Password reset successfully via recovery verification");
+      }
 
       // Unlock Customizer Panel
       modal.classList.remove("open");

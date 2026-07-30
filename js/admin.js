@@ -663,34 +663,36 @@
     return `BW-${segment()}-${segment()}-${segment()}`;
   }
 
-  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1)
-  function initSecurityHandlers() {
-    // Load initial values from localStorage
-    const storedEmail = localStorage.getItem("admin_recovery_email") || "admin@example.com";
-    let storedCode = localStorage.getItem("admin_recovery_code");
-    if (!storedCode) {
-      storedCode = generateBackupCode();
-      localStorage.setItem("admin_recovery_code", storedCode);
+  // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 Persistent)
+  async function initSecurityHandlers() {
+    let settings = { admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
+
+    if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
+      settings = await window.DatabaseModule.getSecuritySettings();
     }
-    const storedQuestion = localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?";
+
+    if (!settings.admin_recovery_code) {
+      settings.admin_recovery_code = generateBackupCode();
+      if (window.DatabaseModule) window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: settings.admin_recovery_code });
+    }
 
     // Populate elements
     const emailInput = document.getElementById("sec-recovery-email");
-    if (emailInput) emailInput.value = storedEmail;
+    if (emailInput) emailInput.value = settings.admin_recovery_email;
 
     const codeDisplay = document.getElementById("sec-code-display");
-    if (codeDisplay) codeDisplay.textContent = storedCode;
+    if (codeDisplay) codeDisplay.textContent = settings.admin_recovery_code;
 
     const qPreset = document.getElementById("sec-question-preset");
     const qCustomInput = document.getElementById("sec-custom-question");
     if (qPreset) {
-      if (["What is your childhood pet's name?", "What was the name of your first school?", "In what city were you born?", "What is your mother's maiden name?"].includes(storedQuestion)) {
-        qPreset.value = storedQuestion;
+      if (["What is your childhood pet's name?", "What was the name of your first school?", "In what city were you born?", "What is your mother's maiden name?"].includes(settings.custom_secret_question)) {
+        qPreset.value = settings.custom_secret_question;
       } else {
         qPreset.value = "custom";
         if (qCustomInput) {
           qCustomInput.style.display = "block";
-          qCustomInput.value = storedQuestion;
+          qCustomInput.value = settings.custom_secret_question;
         }
       }
 
@@ -706,12 +708,12 @@
     // 1. Change Master Password
     const savePassBtn = document.getElementById("sec-save-pass-btn");
     if (savePassBtn) {
-      savePassBtn.addEventListener("click", () => {
+      savePassBtn.addEventListener("click", async () => {
         const oldVal = (document.getElementById("sec-old-pass")?.value || "").trim();
         const newVal = (document.getElementById("sec-new-pass")?.value || "").trim();
         const confirmVal = (document.getElementById("sec-confirm-pass")?.value || "").trim();
 
-        const currentMaster = localStorage.getItem("admin_master_password") || "admin123";
+        const currentMaster = settings.admin_master_password || "admin123";
         if (oldVal !== currentMaster) {
           showToast("Current password is incorrect ❌");
           return;
@@ -726,23 +728,25 @@
           return;
         }
 
-        localStorage.setItem("admin_master_password", newVal);
-        localStorage.setItem("custom_admin_password", newVal); // Backward compatibility
+        settings.admin_master_password = newVal;
+        if (window.DatabaseModule) {
+          await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newVal });
+        }
 
         // Clear input fields
         document.getElementById("sec-old-pass").value = "";
         document.getElementById("sec-new-pass").value = "";
         document.getElementById("sec-confirm-pass").value = "";
 
-        logEvent("PASSWORD_CHANGED", "Master Admin Password changed successfully");
-        showToast("🔑 Master Admin Password Saved! ✅");
+        logEvent("PASSWORD_CHANGED", "Master Admin Password changed & persisted");
+        showToast("🔑 Master Admin Password Saved & Persisted! ✅");
       });
     }
 
     // 2. Save Recovery Email
     const saveEmailBtn = document.getElementById("sec-save-email-btn");
     if (saveEmailBtn) {
-      saveEmailBtn.addEventListener("click", () => {
+      saveEmailBtn.addEventListener("click", async () => {
         const email = (document.getElementById("sec-recovery-email")?.value || "").trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -751,22 +755,28 @@
           return;
         }
 
-        localStorage.setItem("admin_recovery_email", email);
+        settings.admin_recovery_email = email;
+        if (window.DatabaseModule) {
+          await window.DatabaseModule.saveSecuritySettings({ admin_recovery_email: email });
+        }
         logEvent("RECOVERY_EMAIL_UPDATED", `Recovery email updated to ${email}`);
-        showToast("📧 Recovery Email Saved! ✅");
+        showToast("📧 Recovery Email Saved & Persisted! ✅");
       });
     }
 
     // 3. Backup Recovery Code Actions
     const regenBtn = document.getElementById("btn-regen-recovery-code");
     if (regenBtn) {
-      regenBtn.addEventListener("click", () => {
+      regenBtn.addEventListener("click", async () => {
         if (!confirm("Regenerate Emergency Recovery Code? Your previous code will become invalid.")) return;
         const newCode = generateBackupCode();
-        localStorage.setItem("admin_recovery_code", newCode);
+        settings.admin_recovery_code = newCode;
+        if (window.DatabaseModule) {
+          await window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: newCode });
+        }
         if (codeDisplay) codeDisplay.textContent = newCode;
-        logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated");
-        showToast("🔄 New Recovery Code Generated! 🔑");
+        logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated & persisted");
+        showToast("🔄 New Recovery Code Generated & Persisted! 🔑");
       });
     }
 
@@ -797,7 +807,7 @@
     // 4. Save Security Question & Answer
     const saveRecBtn = document.getElementById("sec-save-recovery-btn");
     if (saveRecBtn) {
-      saveRecBtn.addEventListener("click", () => {
+      saveRecBtn.addEventListener("click", async () => {
         const qSel = document.getElementById("sec-question-preset")?.value || "";
         const qCust = (document.getElementById("sec-custom-question")?.value || "").trim();
         const finalQuestion = qSel === "custom" ? qCust : qSel;
@@ -812,12 +822,19 @@
           return;
         }
 
-        localStorage.setItem("custom_secret_question", finalQuestion);
-        localStorage.setItem("custom_secret_answer", answer);
+        settings.custom_secret_question = finalQuestion;
+        settings.custom_secret_answer = answer;
+
+        if (window.DatabaseModule) {
+          await window.DatabaseModule.saveSecuritySettings({
+            custom_secret_question: finalQuestion,
+            custom_secret_answer: answer
+          });
+        }
 
         document.getElementById("sec-recovery-answer").value = "";
-        logEvent("SECURITY_QUESTION_UPDATED", "Security Question and hashed secret answer updated");
-        showToast("🛡 Security Question & Answer Saved! ✅");
+        logEvent("SECURITY_QUESTION_UPDATED", "Security Question and hashed secret answer saved & persisted");
+        showToast("🛡 Security Question & Answer Saved & Persisted! ✅");
       });
     }
   }

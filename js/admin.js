@@ -100,46 +100,60 @@
   // Active Event Dashboard Filter State
   let currentDashEventFilter = "all";
 
-  // Dynamic Data-Driven Event Type Filter Population
+  // Dynamic Data-Driven Available Event Navigation Panel
   function updateDashboardEventFilterOptions() {
-    const select = document.getElementById("dash-event-type-filter");
-    if (!select) return;
+    const container = document.getElementById("dash-event-nav-panel");
+    if (!container) return;
 
-    // Collect all unique event_type strings from real wishes database data
-    const eventTypeSet = new Set();
+    // Calculate live counts per available event type in real wishes data
+    const eventCounts = {};
+    let totalCount = 0;
+
     wishesList.forEach(w => {
       const et = (w.event_type || "birthday").toLowerCase().trim();
-      if (et) eventTypeSet.add(et);
+      eventCounts[et] = (eventCounts[et] || 0) + 1;
+      totalCount++;
     });
 
-    // Default to birthday if dataset is empty
-    if (eventTypeSet.size === 0) eventTypeSet.add("birthday");
+    // Ensure 'birthday' is listed if dataset is completely empty
+    if (Object.keys(eventCounts).length === 0) {
+      eventCounts["birthday"] = 0;
+    }
 
-    const currentVal = select.value || "all";
-    select.innerHTML = '<option value="all">🌐 All Event Types</option>';
+    container.innerHTML = "";
 
-    eventTypeSet.forEach(etId => {
+    // 1. Master "All Events" Chip (Always First)
+    const allChip = document.createElement("button");
+    allChip.type = "button";
+    allChip.className = `event-nav-chip ${currentDashEventFilter === "all" ? "active" : ""}`;
+    allChip.innerHTML = `📊 All Events <span class="event-count-badge">${totalCount}</span>`;
+    allChip.addEventListener("click", () => {
+      if (currentDashEventFilter === "all") return;
+      currentDashEventFilter = "all";
+      loadDashboardData();
+      showToast("Switched Analytics to: 📊 All Events ✨");
+    });
+    container.appendChild(allChip);
+
+    // 2. Dynamic Chips ONLY for Available Events in Dataset
+    Object.keys(eventCounts).forEach(etId => {
+      const count = eventCounts[etId];
       const eventMeta = (window.CONFIG && typeof window.CONFIG.getEventType === "function")
         ? window.CONFIG.getEventType(etId)
         : { id: etId, name: etId.charAt(0).toUpperCase() + etId.slice(1), icon: "✨" };
 
-      const opt = document.createElement("option");
-      opt.value = etId;
-      opt.textContent = `${eventMeta.icon || "✨"} ${eventMeta.name}`;
-      select.appendChild(opt);
-    });
-
-    select.value = (eventTypeSet.has(currentVal) || currentVal === "all") ? currentVal : "all";
-
-    if (!select.dataset.listenerAttached) {
-      select.dataset.listenerAttached = "true";
-      select.addEventListener("change", (e) => {
-        currentDashEventFilter = e.target.value;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = `event-nav-chip ${currentDashEventFilter === etId ? "active" : ""}`;
+      chip.innerHTML = `${eventMeta.icon || "✨"} ${eventMeta.name} <span class="event-count-badge">${count}</span>`;
+      chip.addEventListener("click", () => {
+        if (currentDashEventFilter === etId) return;
+        currentDashEventFilter = etId;
         loadDashboardData();
-        const selectedText = select.options[select.selectedIndex]?.text || "All Event Types";
-        showToast(`Switched Analytics to: ${selectedText} ✨`);
+        showToast(`Switched Analytics to: ${eventMeta.icon || "✨"} ${eventMeta.name} ✨`);
       });
-    }
+      container.appendChild(chip);
+    });
   }
 
   // Render Dashboard KPI Cards & Recent Lists (Phase 3.1 Dynamic Event Analytics)

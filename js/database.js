@@ -29,11 +29,13 @@
         timeline_json: configObj.timeline || [],
         gift_json: configObj.gift || {},
         music_url: configObj.music?.file || null,
-        video_url: configObj.videoWish?.url || null,
+        video_url: configObj.videoWish?.url || configObj.videoWish?.file || null,
         cake_flavor: configObj.cakeFlavor || "default",
         letter_font: configObj.letterFont || "default",
         letter_theme: configObj.letterTheme || "default"
       };
+
+      console.log("💾 Database INSERT record music_url:", record.music_url, "video_url:", record.video_url);
 
       const { data, error } = await client
         .from(TABLE_NAME)
@@ -69,6 +71,8 @@
         console.warn("⚠️ Supabase DB Select Error:", error ? error.message : "Not found");
         return null;
       }
+
+      console.log("📥 Database SELECT record music_url:", data.music_url, "video_url:", data.video_url);
 
       // Format database record back to application config schema
       return {

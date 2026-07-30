@@ -1563,6 +1563,8 @@ const MusicEngine = (() => {
       else CONFIG.music = { file: fileOrUrl, startTime: "" };
     }
 
+    console.log("🎵 MusicEngine.play resolved CONFIG.music.file:", fileOrUrl);
+
     const ytId = extractYouTubeId(fileOrUrl);
 
     if (ytId) {
@@ -5713,39 +5715,36 @@ function renderVideoWishSection() {
   if (!section || !container) return;
 
   const file = CONFIG.videoWish?.file;
-  const url = CONFIG.videoWish?.url;
+  const url = CONFIG.videoWish?.url || file;
+  console.log("🎬 renderVideoWishSection CONFIG.videoWish:", JSON.stringify(CONFIG.videoWish), "Resolved video target:", url);
+
+  if (!url) {
+    console.log("🎬 renderVideoWishSection: No video URL -> Hiding video section.");
+    section.style.display = "none";
+    container.innerHTML = "";
+    return;
+  }
+
   const startSec = parseYouTubeStartSec(url, CONFIG.videoWish?.startTime);
   const startParam = startSec > 0 ? `&start=${startSec}` : "";
 
-  if (file) {
-    section.style.display = "flex";
-    container.innerHTML = `<video id="local-wish-video" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${file}"></video>`;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = typeof url === "string" ? url.match(regExp) : null;
+  const ytId = (match && match[2].length === 11) ? match[2] : null;
+
+  section.style.display = "flex";
+  if (ytId) {
+    console.log("🎬 renderVideoWishSection: YouTube URL detected -> Rendering iframe with ID:", ytId);
+    container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1${startParam}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
+  } else {
+    console.log("🎬 renderVideoWishSection: Direct video MP4/WebM URL detected -> Rendering native <video> element:", url);
+    container.innerHTML = `<video id="wish-video-element" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${url}"></video>`;
     if (startSec > 0) {
-      const vid = document.getElementById("local-wish-video");
+      const vid = document.getElementById("wish-video-element");
       if (vid) {
         vid.onloadedmetadata = () => { vid.currentTime = startSec; };
       }
     }
-  } else if (url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    const ytId = (match && match[2].length === 11) ? match[2] : null;
-
-    section.style.display = "flex";
-    if (ytId) {
-      container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1${startParam}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
-    } else {
-      container.innerHTML = `<video id="remote-wish-video" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${url}"></video>`;
-      if (startSec > 0) {
-        const vid = document.getElementById("remote-wish-video");
-        if (vid) {
-          vid.onloadedmetadata = () => { vid.currentTime = startSec; };
-        }
-      }
-    }
-  } else {
-    section.style.display = "none";
-    container.innerHTML = "";
   }
 }
 
@@ -6142,25 +6141,31 @@ function initMusicWidget() {
     CONFIG.videoWish = { url: "", startTime: "", file: null, fileName: null };
     renderVideoWishSection();
   } else {
-    // Shared wish link opened: Only restore from IndexedDB if stored for this session
-    try {
-      const savedAudioBlob = await AudioStorage.getAudio();
-      if (savedAudioBlob) {
-        const blobUrl = URL.createObjectURL(savedAudioBlob);
-        CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
-      }
-    } catch(e){}
+    // Shared wish link opened: Supabase Storage public HTTPS URLs are the ONE SOURCE OF TRUTH.
+    // Only check local IndexedDB if CONFIG.music.file or CONFIG.videoWish.url is not set.
+    if (!CONFIG.music?.file || CONFIG.music.file === "assets/music/happy-birthday-song.mpeg") {
+      try {
+        const savedAudioBlob = await AudioStorage.getAudio();
+        if (savedAudioBlob) {
+          const blobUrl = URL.createObjectURL(savedAudioBlob);
+          CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
+        }
+      } catch(e){}
+    }
 
-    try {
-      const savedVidBlob = await VideoStorage.getVideo();
-      if (savedVidBlob) {
-        const blobUrl = URL.createObjectURL(savedVidBlob);
-        CONFIG.videoWish = CONFIG.videoWish || {};
-        CONFIG.videoWish.file = blobUrl;
-        CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
-        renderVideoWishSection();
-      }
-    } catch(e){}
+    if (!CONFIG.videoWish?.url && !CONFIG.videoWish?.file) {
+      try {
+        const savedVidBlob = await VideoStorage.getVideo();
+        if (savedVidBlob) {
+          const blobUrl = URL.createObjectURL(savedVidBlob);
+          CONFIG.videoWish = CONFIG.videoWish || {};
+          CONFIG.videoWish.file = blobUrl;
+          CONFIG.videoWish.url = blobUrl;
+          CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
+          renderVideoWishSection();
+        }
+      } catch(e){}
+    }
   }
 
   // Audio / Voice Note file input listeners
@@ -6172,15 +6177,30 @@ function initMusicWidget() {
     audFileInput.addEventListener("change", async (e) => {
       const f = e.target.files[0];
       if (!f) return;
-      showToast("Saving audio/voice... ⏳");
-      const blobUrl = URL.createObjectURL(f);
-      CONFIG.music = { file: blobUrl, isBlob: true, fileName: f.name };
 
-      await AudioStorage.saveAudio(f);
+      console.log("🔊 STEP 1 - CONFIG.music BEFORE UPLOAD:", JSON.stringify(CONFIG.music));
+      showToast("Uploading audio to Supabase Storage... ☁️");
+
+      let cloudUrl = null;
+      if (window.StorageModule) {
+        cloudUrl = await window.StorageModule.uploadMedia(f, "audio");
+      }
+
+      console.log("☁️ STEP 1 - Storage upload audio public URL:", cloudUrl);
+
+      if (cloudUrl) {
+        CONFIG.music = { file: cloudUrl, isBlob: false, fileName: f.name };
+        showToast("Audio / Voice note uploaded & saved to Cloud! ☁️🎙️");
+      } else {
+        const blobUrl = URL.createObjectURL(f);
+        CONFIG.music = { file: blobUrl, isBlob: true, fileName: f.name };
+        showToast("Audio attached locally 🎙️");
+      }
+
+      console.log("🔊 STEP 1 - CONFIG.music AFTER UPLOAD & STORAGE:", JSON.stringify(CONFIG.music));
 
       if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
       if (audUploadText) audUploadText.textContent = `🎙️ Attached: ${f.name.substring(0, 18)}`;
-      showToast("Audio / Voice note attached! 🎙️");
     });
   }
 
@@ -6207,18 +6227,36 @@ function initMusicWidget() {
     vidFileInput.addEventListener("change", async (e) => {
       const f = e.target.files[0];
       if (!f) return;
-      showToast("Saving video... ⏳");
-      const blobUrl = URL.createObjectURL(f);
-      CONFIG.videoWish = CONFIG.videoWish || {};
-      CONFIG.videoWish.file = blobUrl;
-      CONFIG.videoWish.fileName = f.name;
 
-      await VideoStorage.saveVideo(f);
+      console.log("📹 STEP 2 - CONFIG.videoWish BEFORE UPLOAD:", JSON.stringify(CONFIG.videoWish));
+      showToast("Uploading video to Supabase Storage... ☁️");
+
+      let cloudUrl = null;
+      if (window.StorageModule) {
+        cloudUrl = await window.StorageModule.uploadMedia(f, "videos");
+      }
+
+      console.log("☁️ STEP 2 - Storage upload video public URL:", cloudUrl);
+
+      CONFIG.videoWish = CONFIG.videoWish || {};
+      if (cloudUrl) {
+        CONFIG.videoWish.url = cloudUrl;
+        CONFIG.videoWish.file = cloudUrl;
+        CONFIG.videoWish.fileName = f.name;
+        showToast("Video uploaded & saved to Cloud! ☁️📹");
+      } else {
+        const blobUrl = URL.createObjectURL(f);
+        CONFIG.videoWish.file = blobUrl;
+        CONFIG.videoWish.url = blobUrl;
+        CONFIG.videoWish.fileName = f.name;
+        showToast("Video attached locally 📹");
+      }
+
+      console.log("📹 STEP 2 - CONFIG.videoWish AFTER UPLOAD & STORAGE:", JSON.stringify(CONFIG.videoWish));
 
       if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
       if (vidUploadText) vidUploadText.textContent = `📹 Attached: ${f.name.substring(0, 18)}`;
       renderVideoWishSection();
-      showToast("Video attached & saved! 📹");
     });
   }
 

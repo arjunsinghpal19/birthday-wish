@@ -208,14 +208,7 @@
               <div class="form-group">
                 <label for="create-event-type">Event Category *</label>
                 <select id="create-event-type" class="form-input" style="background:rgba(10,5,20,0.8);">
-                  <option value="birthday">🎂 Birthday</option>
-                  <option value="anniversary">💍 Anniversary</option>
-                  <option value="wedding">💒 Wedding</option>
-                  <option value="proposal">💎 Proposal</option>
-                  <option value="graduation">🎓 Graduation</option>
-                  <option value="baby_shower">🍼 Baby Shower</option>
-                  <option value="festival">🪔 Festival</option>
-                  <option value="custom">✨ Custom Event</option>
+                  <!-- Dynamically populated from registered active event modules -->
                 </select>
               </div>
 
@@ -257,27 +250,9 @@
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;">
-            <div class="glass-card" style="border-color:var(--border-gold);">
-              <span style="font-size:2rem;">👑</span>
-              <h4 style="font-family:var(--font-heading);color:var(--gold);margin:10px 0 6px 0;">Royal Purple & Gold</h4>
-              <p style="font-size:0.8rem;color:var(--text-muted);">Luxury dark theme with floating gold dust particles.</p>
-              <span style="display:inline-block;margin-top:12px;padding:4px 10px;border-radius:12px;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:0.75rem;font-weight:600;">Active Default</span>
-            </div>
-
-            <div class="glass-card">
-              <span style="font-size:2rem;">🌸</span>
-              <h4 style="font-family:var(--font-heading);color:#ff7675;margin:10px 0 6px 0;">Rose Gold Romance</h4>
-              <p style="font-size:0.8rem;color:var(--text-muted);">Soft pink tones designed for anniversaries & proposals.</p>
-              <button class="btn-primary" style="margin-top:12px;padding:6px 14px;font-size:0.78rem;" onclick="window.customerApp.showToast('Theme selected! ✨')">Select Theme</button>
-            </div>
-
-            <div class="glass-card">
-              <span style="font-size:2rem;">🌌</span>
-              <h4 style="font-family:var(--font-heading);color:#74b9ff;margin:10px 0 6px 0;">Galaxy Night</h4>
-              <p style="font-size:0.8rem;color:var(--text-muted);">Deep midnight blue with glowing star constellations.</p>
-              <button class="btn-primary" style="margin-top:12px;padding:6px 14px;font-size:0.78rem;" onclick="window.customerApp.showToast('Theme selected! ✨')">Select Theme</button>
-            </div>
+          <!-- All Active Platform Themes Grid -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:20px;" id="cust-themes-grid-container">
+            <!-- Dynamically populated from CONFIG.THEMES_CATALOG -->
           </div>
         </section>
 

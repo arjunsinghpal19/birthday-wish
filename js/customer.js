@@ -263,10 +263,64 @@
     });
   }
 
+  // Dynamically Populate Event Category Dropdown from Registered Active Event Modules
+  function initCustomerCreateWishEvents() {
+    const select = document.getElementById("create-event-type");
+    if (!select) return;
+
+    const activeEventTypes = (window.CONFIG && Array.isArray(window.CONFIG.ACTIVE_EVENT_TYPES))
+      ? window.CONFIG.ACTIVE_EVENT_TYPES
+      : [{ id: "birthday", name: "Birthday", icon: "🎂" }];
+
+    select.innerHTML = "";
+    activeEventTypes.forEach(evt => {
+      const opt = document.createElement("option");
+      opt.value = evt.id;
+      opt.textContent = `${evt.icon} ${evt.name}`;
+      select.appendChild(opt);
+    });
+  }
+
+  // Render All Active Themes in Theme Gallery (All 4 Themes)
+  function renderCustomerThemesGallery() {
+    const container = document.getElementById("cust-themes-grid-container");
+    if (!container) return;
+
+    const themes = (window.CONFIG && Array.isArray(window.CONFIG.THEMES_CATALOG))
+      ? window.CONFIG.THEMES_CATALOG
+      : [
+          { id: "default", name: "Royal Purple & Gold", icon: "👑", desc: "Luxury dark theme with floating gold dust particles.", accent: "#ffd700", isDefault: true },
+          { id: "rosegold", name: "Rose Gold Romance", icon: "🌸", desc: "Soft pink tones designed for romantic wishes & anniversaries.", accent: "#ff7675" },
+          { id: "galaxy", name: "Cosmic Galaxy Night", icon: "🌌", desc: "Deep midnight blue with glowing star constellations.", accent: "#74b9ff" },
+          { id: "emerald", name: "Emerald Luxury", icon: "💎", desc: "Rich emerald green accent with subtle shimmering light effects.", accent: "#2ecc71" }
+        ];
+
+    container.innerHTML = "";
+    themes.forEach(t => {
+      const card = document.createElement("div");
+      card.className = "glass-card";
+      if (t.isDefault) card.style.borderColor = "var(--border-gold)";
+
+      const badgeOrBtn = t.isDefault
+        ? `<span style="display:inline-block;margin-top:12px;padding:4px 10px;border-radius:12px;background:rgba(46,204,113,0.15);color:#2ecc71;font-size:0.75rem;font-weight:600;">Active Default</span>`
+        : `<button class="btn-primary" style="margin-top:12px;padding:6px 14px;font-size:0.78rem;" onclick="window.customerApp.showToast('Theme ${t.name} selected! ✨')">Select Theme</button>`;
+
+      card.innerHTML = `
+        <span style="font-size:2rem;">${t.icon}</span>
+        <h4 style="font-family:var(--font-heading);color:${t.accent};margin:10px 0 6px 0;">${t.name}</h4>
+        <p style="font-size:0.8rem;color:var(--text-muted);">${t.desc}</p>
+        ${badgeOrBtn}
+      `;
+      container.appendChild(card);
+    });
+  }
+
   // Customer App Initialization
   document.addEventListener("DOMContentLoaded", () => {
     if (!checkCustomerSession()) return;
     initTabNavigation();
+    initCustomerCreateWishEvents();
+    renderCustomerThemesGallery();
     initCreateWishForm();
     loadCustomerWishesData();
 

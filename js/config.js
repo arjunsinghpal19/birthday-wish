@@ -138,6 +138,19 @@ const CONFIG = {
   letterTheme: "default",
   cakeFlavor: "default",
 
+  // Registered Active Event Modules in Platform (Currently Birthday Only)
+  ACTIVE_EVENT_TYPES: [
+    { id: "birthday", name: "Birthday", icon: "🎂", badgeColor: "#e74c3c" }
+  ],
+
+  // Platform Themes Catalog (All 4 Active Themes)
+  THEMES_CATALOG: [
+    { id: "default", name: "Royal Purple & Gold", icon: "👑", desc: "Luxury dark theme with floating gold dust particles.", accent: "#ffd700", isDefault: true },
+    { id: "rosegold", name: "Rose Gold Romance", icon: "🌸", desc: "Soft pink tones designed for romantic wishes & anniversaries.", accent: "#ff7675" },
+    { id: "galaxy", name: "Cosmic Galaxy Night", icon: "🌌", desc: "Deep midnight blue with glowing star constellations.", accent: "#74b9ff" },
+    { id: "emerald", name: "Emerald Luxury", icon: "💎", desc: "Rich emerald green accent with subtle shimmering light effects.", accent: "#2ecc71" }
+  ],
+
   // Phase 3.0 Super Admin Multi-Event Architecture Registry
   EVENT_TYPES: [
     { id: "birthday", name: "Birthday", icon: "🎂", badgeColor: "#e74c3c" },

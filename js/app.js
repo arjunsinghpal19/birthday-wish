@@ -4406,8 +4406,19 @@ function initAdminSecurityModal() {
 
     // ── METHOD 3: SECURITY QUESTION ──
     const verifyQuestBtn = document.getElementById("btn-verify-question-answer");
+    const questInput = document.getElementById("recovery-question-input");
+
+    if (questInput && verifyQuestBtn) {
+      questInput.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (verifyQuestBtn.onclick) verifyQuestBtn.onclick();
+        }
+      };
+    }
+
     if (verifyQuestBtn) {
-      verifyQuestBtn.addEventListener("click", async () => {
+      verifyQuestBtn.onclick = async () => {
         const inp = document.getElementById("recovery-question-input");
         const errEl = document.getElementById("question-answer-error");
         const ans = (inp?.value || "").trim();
@@ -4426,18 +4437,26 @@ function initAdminSecurityModal() {
             body: JSON.stringify({ action: "verify-question", answer: ans })
           });
           const data = await res.json();
-          if (res.ok && data.valid) {
-            if (errEl) errEl.style.display = "none";
+          if (res.ok && (data.valid === true || data.valid === "true")) {
+            if (errEl) {
+              errEl.style.display = "none";
+              errEl.textContent = "";
+            }
             showToast("✓ Secret Answer Verified! Enter your new Admin password:");
             showSubstep(stepNewPass);
-          } else {
-            if (errEl) { errEl.textContent = "❌ Invalid Secret Answer!"; errEl.style.display = "flex"; }
-            showToast("Invalid Secret Answer! ❌");
+            return;
           }
+
+          // Invalid answer branch
+          if (errEl) {
+            errEl.textContent = "❌ Invalid Secret Answer!";
+            errEl.style.display = "flex";
+          }
+          showToast("Invalid Secret Answer! ❌");
         } catch (e) {
           showToast("Network error verifying Secret Answer ❌");
         }
-      });
+      };
     }
 
     // ── STEP 2: SAVE NEW PASSWORD ──

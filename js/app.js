@@ -258,7 +258,7 @@ function populateContent() {
 
   const fromSlot = document.getElementById("from-slot");
 
-  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
+  if (fromSlot) fromSlot.textContent = (CONFIG.from && CONFIG.from.trim()) ? CONFIG.from : "your friends who adore you";
 
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
 
@@ -5144,7 +5144,7 @@ function reRenderPage() {
   if (slot2) slot2.textContent = displayName || "You";
 
   const fromSlot = document.getElementById("from-slot");
-  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
+  if (fromSlot) fromSlot.textContent = (CONFIG.from && CONFIG.from.trim()) ? CONFIG.from : "your friends who adore you";
 
   // Loading logo
   const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");

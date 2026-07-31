@@ -102,7 +102,7 @@
 
     function validate() {
       const val = (passInput.value || "").trim();
-      const isValid = /^\d{4}$/.test(val);
+      const isValid = val === "" || /^\d{4}$/.test(val);
 
       if (!isValid) {
         if (errorEl) errorEl.style.display = "block";
@@ -387,42 +387,72 @@
       if (!workingConfig.gift || !workingConfig.gift.message) {
         workingConfig.gift = JSON.parse(JSON.stringify(classic.gift || {}));
       }
-      if (!workingConfig.from) {
-        workingConfig.from = classic.from || "your friends who adore you";
-      }
       if (!workingConfig.birthDate) {
         workingConfig.birthDate = classic.birthDate || { year: 2001, month: 1, day: 1 };
       }
     }
-    document.getElementById("input-name").value = workingConfig.name || "";
-    document.getElementById("input-from").value = workingConfig.from || "";
-    document.getElementById("input-passcode").value = workingConfig.passcode?.code || workingConfig.pass_code || "1234";
+
+    // In CREATE Mode, Recipient Name, Sender Name, and Passcode input fields are EMPTY by default
+    if (!isEditMode) {
+      const nameIn = document.getElementById("input-name");
+      if (nameIn) nameIn.value = "";
+      const fromIn = document.getElementById("input-from");
+      if (fromIn) fromIn.value = "";
+      const passIn = document.getElementById("input-passcode");
+      if (passIn) passIn.value = "";
+    } else {
+      const nameIn = document.getElementById("input-name");
+      if (nameIn) nameIn.value = workingConfig.name || "";
+      const fromIn = document.getElementById("input-from");
+      if (fromIn) fromIn.value = workingConfig.from || "";
+      const passIn = document.getElementById("input-passcode");
+      if (passIn) passIn.value = workingConfig.pass_code || "";
+    }
 
     if (workingConfig.birthDate) {
       const y = workingConfig.birthDate.year || 2001;
       const m = String(workingConfig.birthDate.month || 1).padStart(2, "0");
       const d = String(workingConfig.birthDate.day || 1).padStart(2, "0");
-      document.getElementById("input-birthdate").value = `${y}-${m}-${d}`;
+      const bdateInput = document.getElementById("input-birthdate");
+      if (bdateInput) bdateInput.value = `${y}-${m}-${d}`;
     }
 
-    if (workingConfig.cakeFlavor) document.getElementById("input-cake-flavor").value = workingConfig.cakeFlavor;
-    if (workingConfig.letterTheme) document.getElementById("input-letter-theme").value = workingConfig.letterTheme;
-    if (workingConfig.letterFont) document.getElementById("input-letter-font").value = workingConfig.letterFont;
-    if (workingConfig.memory) document.getElementById("input-memory").value = workingConfig.memory;
+    if (workingConfig.cakeFlavor) {
+      const cakeSel = document.getElementById("input-cake-flavor");
+      if (cakeSel) cakeSel.value = workingConfig.cakeFlavor;
+    }
+    if (workingConfig.letterTheme) {
+      const themeSel = document.getElementById("input-letter-theme");
+      if (themeSel) themeSel.value = workingConfig.letterTheme;
+    }
+    if (workingConfig.letterFont) {
+      const fontSel = document.getElementById("input-letter-font");
+      if (fontSel) fontSel.value = workingConfig.letterFont;
+    }
+    if (workingConfig.memory) {
+      const memArea = document.getElementById("input-memory");
+      if (memArea) memArea.value = workingConfig.memory;
+    }
 
     if (workingConfig.gift) {
-      document.getElementById("input-gift-message").value = workingConfig.gift.message || "";
-      document.getElementById("input-gift-coupon").value = workingConfig.gift.coupon || "";
+      const giftMsg = document.getElementById("input-gift-message");
+      if (giftMsg) giftMsg.value = workingConfig.gift.message || "";
+      const giftCpn = document.getElementById("input-gift-coupon");
+      if (giftCpn) giftCpn.value = workingConfig.gift.coupon || "";
     }
 
     if (workingConfig.music) {
-      document.getElementById("input-music-url").value = workingConfig.music.url || workingConfig.music.file || "";
-      document.getElementById("input-music-start").value = workingConfig.music.start || "";
+      const musicUrl = document.getElementById("input-music-url");
+      if (musicUrl) musicUrl.value = workingConfig.music.url || workingConfig.music.file || "";
+      const musicStart = document.getElementById("input-music-start");
+      if (musicStart) musicStart.value = workingConfig.music.start || "";
     }
 
     if (workingConfig.videoWish) {
-      document.getElementById("input-video-url").value = workingConfig.videoWish.url || workingConfig.videoWish.file || "";
-      document.getElementById("input-video-start").value = workingConfig.videoWish.start || "";
+      const videoUrl = document.getElementById("input-video-url");
+      if (videoUrl) videoUrl.value = workingConfig.videoWish.url || workingConfig.videoWish.file || "";
+      const videoStart = document.getElementById("input-video-start");
+      if (videoStart) videoStart.value = workingConfig.videoWish.start || "";
     }
 
     renderLetterInputs();
@@ -438,7 +468,8 @@
     workingConfig.from = (document.getElementById("input-from")?.value || "").trim();
     workingConfig.eventType = document.getElementById("input-event-type")?.value || "birthday";
 
-    const passcodeVal = (document.getElementById("input-passcode")?.value || "").trim() || "1234";
+    const passInputVal = (document.getElementById("input-passcode")?.value || "").trim();
+    const passcodeVal = passInputVal || "1234";
     workingConfig.passcode = { code: passcodeVal };
     workingConfig.pass_code = passcodeVal;
 
@@ -524,8 +555,8 @@
         if (client) {
           const { data, error } = await client.from("wishes").select("*").eq("id", id).single();
           if (!error && data) {
-            workingConfig.name = data.recipient_name || workingConfig.name;
-            workingConfig.from = data.sender_name || workingConfig.from;
+            workingConfig.name = data.recipient_name || "";
+            workingConfig.from = data.sender_name || "";
             workingConfig.pass_code = data.pass_code || "1234";
             workingConfig.passcode = { code: data.pass_code || "1234" };
             workingConfig.eventType = data.event_type || "birthday";
@@ -558,36 +589,32 @@
   }
 
   // Save Record to Supabase
-  async function saveWishRecord() {
+  async function saveWishRecord(options = {}) {
+    const isSilent = options && options.isSilent;
     harvestInputs();
 
-    if (!workingConfig.name || !workingConfig.from) {
-      showToast("⚠️ Please enter Recipient Name and Sender Name!");
-      return;
+    const passCodeToSave = workingConfig.pass_code || "1234";
+    if (!/^\d{4}$/.test(passCodeToSave)) {
+      if (!isSilent) showToast("⚠️ Access Passcode must be exactly 4 numeric digits! (e.g. 1234)");
+      return null;
     }
 
-    if (!/^\d{4}$/.test(workingConfig.pass_code)) {
-      showToast("⚠️ Access Passcode must be exactly 4 numeric digits! (e.g. 1234)");
-      return;
-    }
-
-    showToast("⏳ Saving wish to database...");
+    if (!isSilent) showToast("⏳ Saving wish to database...");
 
     const payload = {
-      recipient_name: workingConfig.name,
-      sender_name: workingConfig.from,
+      recipient_name: workingConfig.name || "",
+      sender_name: workingConfig.from || "",
       event_type: workingConfig.eventType || "birthday",
-      template_name: document.getElementById("input-template-name")?.value || "classic",
-      pass_code: workingConfig.pass_code,
+      pass_code: passCodeToSave,
       status: "published",
       birth_date: workingConfig.birthDate || { year: 2001, month: 1, day: 1 },
-      letter_lines: workingConfig.letterLines || ["Wishing you joy and happiness!"],
-      memory_text: workingConfig.memory || "",
-      reasons_json: workingConfig.reasons || [],
-      wishes_json: workingConfig.wishes || [],
-      gallery_json: workingConfig.gallery || [],
-      timeline_json: workingConfig.timeline || [],
-      gift_json: workingConfig.gift || {},
+      letter_lines: (workingConfig.letterLines && workingConfig.letterLines.length > 0) ? workingConfig.letterLines : (getClassicTemplate().letterLines || []),
+      memory_text: workingConfig.memory || getClassicTemplate().memory || "",
+      reasons_json: (workingConfig.reasons && workingConfig.reasons.length > 0) ? workingConfig.reasons : (getClassicTemplate().reasons || []),
+      wishes_json: (workingConfig.wishes && workingConfig.wishes.length > 0) ? workingConfig.wishes : (getClassicTemplate().wishes || []),
+      gallery_json: (workingConfig.gallery && workingConfig.gallery.length > 0) ? workingConfig.gallery : (getClassicTemplate().gallery || []),
+      timeline_json: (workingConfig.timeline && workingConfig.timeline.length > 0) ? workingConfig.timeline : (getClassicTemplate().timeline || []),
+      gift_json: workingConfig.gift || getClassicTemplate().gift || {},
       music_url: workingConfig.music?.url || workingConfig.music?.file || null,
       video_url: workingConfig.videoWish?.url || workingConfig.videoWish?.file || null,
       cake_flavor: workingConfig.cakeFlavor || "default",
@@ -609,23 +636,25 @@
           }
 
           if (res.error) {
-            showToast(`❌ Database Error: ${res.error.message}`);
-            return;
+            if (!isSilent) showToast(`❌ Database Error: ${res.error.message}`);
+            return null;
           }
 
           if (res.data && res.data[0] && res.data[0].id) {
             currentWishId = res.data[0].id;
+            isEditMode = true;
           }
         }
       }
     } catch (err) {
       console.error("Save exception:", err);
+      if (!isSilent) showToast("❌ Save Error!");
+      return null;
     }
 
-    showToast("🎉 Wish saved and applied successfully!");
+    if (!isSilent) showToast("🎉 Wish saved and applied successfully!");
 
-    const previewBtn = document.getElementById("btn-preview-wish");
-    if (previewBtn) previewBtn.disabled = false;
+    return currentWishId;
   }
 
   // Bind Buttons & Events
@@ -660,8 +689,24 @@
     });
 
     // Save buttons
-    document.getElementById("customizer-save-btn")?.addEventListener("click", saveWishRecord);
-    document.getElementById("top-save-btn")?.addEventListener("click", saveWishRecord);
+    document.getElementById("customizer-save-btn")?.addEventListener("click", () => saveWishRecord());
+    document.getElementById("top-save-btn")?.addEventListener("click", () => saveWishRecord());
+
+    // Preview Button (Auto-saves draft if unsaved, then opens preview)
+    document.getElementById("btn-preview-wish")?.addEventListener("click", async () => {
+      if (!currentWishId) {
+        showToast("⏳ Saving draft preview...");
+        const savedId = await saveWishRecord({ isSilent: true });
+        if (savedId) {
+          window.open(`index.html?w=${savedId}`, "_blank");
+        } else {
+          showToast("❌ Could not save draft for preview!");
+        }
+      } else {
+        await saveWishRecord({ isSilent: true });
+        window.open(`index.html?w=${currentWishId}`, "_blank");
+      }
+    });
 
     // Share button
     document.getElementById("customizer-share-link-btn")?.addEventListener("click", () => {

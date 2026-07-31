@@ -692,7 +692,14 @@
           }
 
           if (res.error) {
-            if (!isSilent) showToast(`❌ Database Error: ${res.error.message}`);
+            console.error("Supabase Save Error:", res.error);
+            if (res.error.message && res.error.message.includes("permission denied")) {
+              if (!isSilent) showToast("⚠️ Supabase RLS Permission Denied: Run SQL policy in Supabase SQL Editor!");
+            } else {
+              if (!isSilent) showToast(`❌ Database Error: ${res.error.message}`);
+            }
+            // Save fallback for preview even if DB permission is denied
+            sessionStorage.setItem("preview_wish_config", JSON.stringify(workingConfig));
             return null;
           }
 

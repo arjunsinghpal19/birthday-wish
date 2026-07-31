@@ -814,35 +814,100 @@
         <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update Password</button>
       </div>
 
-      <!-- TAB 3: FORGOT PASSWORD -->
+      <!-- TAB 3: FORGOT PASSWORD (APPROVED MULTI-STEP RECOVERY FLOW) -->
       <div id="admin-tab-forgot" class="admin-tab-content" style="display:none;">
         
-        <!-- STEP 1: VERIFY IDENTITY -->
-        <div id="forgot-step-verify">
-          <p style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-bottom:12px;line-height:1.4;">
-            🔐 Account Recovery ke liye <b>Recovery Email</b>, <b>Emergency Code</b> ya <b>Secret Answer</b> me se koi EK enter karein:
+        <!-- STEP 1: CHOOSE RECOVERY METHOD -->
+        <div id="forgot-step-choose-method">
+          <div class="recovery-step-badge">📌 Step 1: Choose Recovery Method</div>
+          <p style="font-size:0.8rem;color:rgba(255,255,255,0.85);margin-bottom:10px;line-height:1.4;">
+            Apna account recover karne ke liye neeche me se koi EK method select karein:
           </p>
           
+          <div class="recovery-method-grid">
+            <!-- Method 1: Recovery Email -->
+            <div class="recovery-method-card" id="card-method-email" data-method="email">
+              <div class="recovery-method-icon">📧</div>
+              <div>
+                <div class="recovery-method-title">Recovery Email</div>
+                <div class="recovery-method-desc">Registered email par 6-digit OTP code praapt karein</div>
+              </div>
+            </div>
+
+            <!-- Method 2: Emergency Backup Code -->
+            <div class="recovery-method-card" id="card-method-backup" data-method="backup">
+              <div class="recovery-method-icon">🔑</div>
+              <div>
+                <div class="recovery-method-title">Emergency Backup Code</div>
+                <div class="recovery-method-desc">Apna 16-character offline emergency code enter karein</div>
+              </div>
+            </div>
+
+            <!-- Method 3: Security Question -->
+            <div class="recovery-method-card" id="card-method-question" data-method="question">
+              <div class="recovery-method-icon">❓</div>
+              <div>
+                <div class="recovery-method-title">Security Question</div>
+                <div class="recovery-method-desc">Apne secret security question ka jawab dein</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-STEP 1A: RECOVERY EMAIL FLOW -->
+        <div id="forgot-substep-email" class="recovery-flow-box" style="display:none;">
+          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+          <div class="recovery-step-badge">📧 Email OTP Verification</div>
+
           <div class="form-group" style="margin-bottom:10px;">
-            <label for="admin-recovery-key" style="font-size:0.75rem;opacity:0.9;">Option A: Recovery Email or Emergency Code</label>
+            <label for="recovery-email-input" style="font-size:0.75rem;opacity:0.9;">Registered Recovery Email</label>
             <div class="pass-input-wrap">
-              <input type="text" id="admin-recovery-key" class="form-control" placeholder="Enter Email or Code (e.g. BW-9F8A...)" maxlength="50" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="admin-recovery-key" aria-label="Toggle visibility">👁</button>
+              <input type="email" id="recovery-email-input" class="form-control" placeholder="Enter Recovery Email (e.g. admin@example.com)" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
             </div>
           </div>
 
-          <div style="text-align:center;font-size:0.72rem;opacity:0.6;margin:6px 0;">— OR —</div>
+          <button id="btn-send-email-otp" class="btn primary-btn" style="width:100%;margin-bottom:12px;" type="button">📨 Send Verification OTP</button>
 
-          <div class="form-group" style="margin-bottom:14px;">
-            <label for="admin-secret-answer" id="label-secret-question" style="font-size:0.75rem;opacity:0.9;">Option B: Secret Question Answer</label>
-            <div class="pass-input-wrap">
-              <input type="password" id="admin-secret-answer" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="admin-secret-answer" aria-label="Toggle visibility">👁</button>
+          <div id="otp-enter-group" style="display:none;margin-top:12px;">
+            <div class="form-group" style="margin-bottom:10px;">
+              <label for="recovery-otp-input" style="font-size:0.75rem;color:#c084fc;">Enter 6-Digit Verification Code</label>
+              <input type="text" id="recovery-otp-input" class="form-control" placeholder="6-Digit OTP (e.g. 123456)" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:bold;" />
             </div>
-            <div id="admin-recovery-error" class="admin-error-msg" style="display:none;">❌ Invalid Email, Recovery Code or Secret Answer!</div>
+            <button id="btn-verify-email-otp" class="btn primary-btn" style="width:100%;background:linear-gradient(135deg,#a855f7,#7e22ce);" type="button">✓ Verify OTP & Reset Password</button>
           </div>
+          <div id="email-otp-error" class="admin-error-msg" style="display:none;"></div>
+        </div>
 
-          <button id="admin-reset-submit-btn" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Identity & Proceed</button>
+        <!-- SUB-STEP 1B: BACKUP CODE FLOW -->
+        <div id="forgot-substep-backup" class="recovery-flow-box" style="display:none;">
+          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+          <div class="recovery-step-badge">🔑 Backup Code Verification</div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="recovery-backup-input" style="font-size:0.75rem;opacity:0.9;">Emergency Backup Code</label>
+            <div class="pass-input-wrap">
+              <input type="text" id="recovery-backup-input" class="form-control" placeholder="BW-XXXX-XXXX-XXXX" maxlength="20" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="recovery-backup-input" aria-label="Toggle visibility">👁</button>
+            </div>
+            <div id="backup-code-error" class="admin-error-msg" style="display:none;">❌ Invalid Emergency Backup Code!</div>
+          </div>
+          <button id="btn-verify-backup-code" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Code & Proceed</button>
+        </div>
+
+        <!-- SUB-STEP 1C: SECURITY QUESTION FLOW -->
+        <div id="forgot-substep-question" class="recovery-flow-box" style="display:none;">
+          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+          <div class="recovery-step-badge">❓ Security Question Verification</div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label id="forgot-question-label" style="font-size:0.8rem;color:var(--gold,#ffd700);margin-bottom:6px;display:block;">Question: What is your childhood pet's name?</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="recovery-question-input" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="recovery-question-input" aria-label="Toggle visibility">👁</button>
+            </div>
+            <div id="question-answer-error" class="admin-error-msg" style="display:none;">❌ Invalid Secret Answer!</div>
+          </div>
+          <button id="btn-verify-question-answer" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Answer & Proceed</button>
         </div>
 
         <!-- STEP 2: SET NEW PASSWORD -->

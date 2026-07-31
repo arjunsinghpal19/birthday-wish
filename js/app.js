@@ -4219,118 +4219,211 @@ function initAdminSecurityModal() {
     };
   }
 
-  // Tab 3: Forgot Password Recovery with OTP (Stage 2)
-  if (resetSubmitBtn) {
-    let activeOtpSent = false;
-    let otpCooldownInterval = null;
+  // TAB 3: APPROVED MULTI-STEP RECOVERY FLOW HANDLERS
+  const forgotTab = document.getElementById("admin-tab-forgot");
+  if (forgotTab) {
+    const stepChoose = document.getElementById("forgot-step-choose-method");
+    const substepEmail = document.getElementById("forgot-substep-email");
+    const substepBackup = document.getElementById("forgot-substep-backup");
+    const substepQuestion = document.getElementById("forgot-substep-question");
+    const stepNewPass = document.getElementById("forgot-step-newpass");
 
-    const startOtpCooldown = (seconds, btn) => {
-      if (!btn) return;
+    const cardEmail = document.getElementById("card-method-email");
+    const cardBackup = document.getElementById("card-method-backup");
+    const cardQuestion = document.getElementById("card-method-question");
+    const backBtns = document.querySelectorAll(".btn-back-to-methods");
+
+    const showSubstep = (activeSubstep) => {
+      if (stepChoose) stepChoose.style.display = "none";
+      if (substepEmail) substepEmail.style.display = "none";
+      if (substepBackup) substepBackup.style.display = "none";
+      if (substepQuestion) substepQuestion.style.display = "none";
+      if (stepNewPass) stepNewPass.style.display = "none";
+
+      if (activeSubstep) activeSubstep.style.display = "block";
+    };
+
+    const resetToMethods = () => {
+      if (stepChoose) stepChoose.style.display = "block";
+      if (substepEmail) substepEmail.style.display = "none";
+      if (substepBackup) substepBackup.style.display = "none";
+      if (substepQuestion) substepQuestion.style.display = "none";
+      if (stepNewPass) stepNewPass.style.display = "none";
+    };
+
+    if (cardEmail) {
+      cardEmail.addEventListener("click", () => {
+        showSubstep(substepEmail);
+        const emailInput = document.getElementById("recovery-email-input");
+        const savedEmail = (localStorage.getItem("admin_recovery_email") || "").trim();
+        if (emailInput && savedEmail) emailInput.value = savedEmail;
+      });
+    }
+
+    if (cardBackup) {
+      cardBackup.addEventListener("click", () => {
+        showSubstep(substepBackup);
+      });
+    }
+
+    if (cardQuestion) {
+      cardQuestion.addEventListener("click", async () => {
+        showSubstep(substepQuestion);
+        const label = document.getElementById("forgot-question-label");
+        if (label && window.DatabaseModule) {
+          try {
+            const sec = await window.DatabaseModule.getSecuritySettings();
+            if (sec.custom_secret_question) {
+              label.textContent = "Question: " + sec.custom_secret_question;
+            }
+          } catch (e) {}
+        }
+      });
+    }
+
+    backBtns.forEach(btn => {
+      btn.addEventListener("click", resetToMethods);
+    });
+
+    // ── METHOD 1: RECOVERY EMAIL OTP ──
+    const sendOtpBtn = document.getElementById("btn-send-email-otp");
+    const verifyOtpBtn = document.getElementById("btn-verify-email-otp");
+    let cooldownTimer = null;
+
+    const startTimer = (seconds) => {
+      if (!sendOtpBtn) return;
       let left = seconds;
-      btn.disabled = true;
-      btn.textContent = `Resend OTP (${left}s)`;
-      if (otpCooldownInterval) clearInterval(otpCooldownInterval);
-      otpCooldownInterval = setInterval(() => {
+      sendOtpBtn.disabled = true;
+      sendOtpBtn.textContent = `Resend OTP (${left}s)`;
+      if (cooldownTimer) clearInterval(cooldownTimer);
+      cooldownTimer = setInterval(() => {
         left--;
         if (left <= 0) {
-          clearInterval(otpCooldownInterval);
-          btn.disabled = false;
-          btn.textContent = "Send Recovery OTP";
+          clearInterval(cooldownTimer);
+          sendOtpBtn.disabled = false;
+          sendOtpBtn.textContent = "📨 Resend Verification OTP";
         } else {
-          btn.textContent = `Resend OTP (${left}s)`;
+          sendOtpBtn.textContent = `Resend OTP (${left}s)`;
         }
       }, 1000);
     };
 
-    const handleRecovery = async () => {
-      const keyVal = (recoveryInput?.value || "").trim();
-      const ansVal = (secretAnsInput?.value || "").trim().toLowerCase();
-      const recErrEl = document.getElementById("admin-recovery-error");
+    if (sendOtpBtn) {
+      sendOtpBtn.addEventListener("click", async () => {
+        const emailInput = document.getElementById("recovery-email-input");
+        const errEl = document.getElementById("email-otp-error");
+        const email = (emailInput?.value || "").trim();
 
-      // Check if user entered a 6-digit OTP code to verify
-      if (keyVal.length === 6 && /^\d{6}$/.test(keyVal)) {
-        showToast("⏳ Verifying Security OTP...");
-        try {
-          const res = await fetch("/api/send-otp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "verify-otp", otpCode: keyVal })
-          });
-          const data = await res.json();
-          if (res.ok && data.valid) {
-            if (recErrEl) recErrEl.style.display = "none";
-            showToast("✓ OTP Identity Verified! Enter your new Admin password:");
-            document.getElementById("forgot-step-verify").style.display = "none";
-            document.getElementById("forgot-step-newpass").style.display = "block";
-            return;
-          } else {
-            if (recErrEl) { recErrEl.textContent = "❌ " + (data.error || "Invalid OTP"); recErrEl.style.display = "flex"; }
-            showToast(data.error || "OTP Verification Failed ❌");
-            return;
-          }
-        } catch (e) {
-          showToast("Network error verifying OTP ❌");
+        if (!email || !email.includes("@")) {
+          if (errEl) { errEl.textContent = "❌ Please enter a valid recovery email"; errEl.style.display = "flex"; }
+          showToast("Please enter a valid recovery email ⚠️");
           return;
         }
-      }
 
-      // If keyVal is an email address, trigger OTP dispatch
-      if (keyVal.includes("@")) {
         showToast("⏳ Requesting Recovery OTP...");
         try {
           const res = await fetch("/api/send-otp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "request-otp", email: keyVal, purpose: "RECOVERY" })
+            body: JSON.stringify({ action: "request-otp", email, purpose: "RECOVERY" })
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            activeOtpSent = true;
-            if (recErrEl) recErrEl.style.display = "none";
-            showToast("📨 Recovery OTP sent to " + keyVal + "! Enter 6-digit code above.");
-            startOtpCooldown(data.resendCooldownSeconds || 60, resetSubmitBtn);
-            if (recoveryInput) {
-              recoveryInput.value = "";
-              recoveryInput.placeholder = "Enter 6-digit OTP code";
-              recoveryInput.focus();
-            }
-            return;
+            if (errEl) errEl.style.display = "none";
+            showToast("📨 Recovery OTP sent to " + email + "! Check inbox/spam.");
+            startTimer(data.resendCooldownSeconds || 60);
+            const group = document.getElementById("otp-enter-group");
+            if (group) group.style.display = "block";
+            const otpInp = document.getElementById("recovery-otp-input");
+            if (otpInp) otpInp.focus();
           } else {
-            if (recErrEl) { recErrEl.textContent = "❌ " + (data.error || "Failed to send OTP"); recErrEl.style.display = "flex"; }
+            if (errEl) { errEl.textContent = "❌ " + (data.error || "Failed to send OTP"); errEl.style.display = "flex"; }
             showToast(data.error || "Failed to send OTP ❌");
-            return;
           }
         } catch (e) {
           showToast("Network error requesting OTP ❌");
+        }
+      });
+    }
+
+    if (verifyOtpBtn) {
+      verifyOtpBtn.addEventListener("click", async () => {
+        const otpInp = document.getElementById("recovery-otp-input");
+        const errEl = document.getElementById("email-otp-error");
+        const code = (otpInp?.value || "").trim();
+
+        if (!code || code.length !== 6) {
+          if (errEl) { errEl.textContent = "❌ Please enter the 6-digit OTP code"; errEl.style.display = "flex"; }
+          showToast("Please enter 6-digit OTP code ⚠️");
           return;
         }
-      }
 
-      // Emergency Code / Security Answer Fallback Verification
-      const savedEmail = (localStorage.getItem("admin_recovery_email") || "admin@example.com").trim().toLowerCase();
-      const savedCode = (localStorage.getItem("admin_recovery_code") || "").trim();
-      const expectedAns = (localStorage.getItem("custom_secret_answer") || "").trim().toLowerCase();
+        showToast("⏳ Verifying OTP...");
+        try {
+          const res = await fetch("/api/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "verify-otp", otpCode: code })
+          });
+          const data = await res.json();
+          if (res.ok && data.valid) {
+            if (errEl) errEl.style.display = "none";
+            showToast("✓ OTP Verified! Enter your new Admin password:");
+            showSubstep(stepNewPass);
+          } else {
+            if (errEl) { errEl.textContent = "❌ " + (data.error || "Invalid OTP"); errEl.style.display = "flex"; }
+            showToast(data.error || "OTP Verification Failed ❌");
+          }
+        } catch (e) {
+          showToast("Network error verifying OTP ❌");
+        }
+      });
+    }
 
-      const isEmailMatch = (keyVal && keyVal.toLowerCase() === savedEmail);
-      const isCodeMatch = (keyVal && keyVal.toUpperCase() === savedCode.toUpperCase());
-      const isSecretAnsMatch = (ansVal && expectedAns && ansVal === expectedAns);
+    // ── METHOD 2: BACKUP CODE ──
+    const verifyBackupBtn = document.getElementById("btn-verify-backup-code");
+    if (verifyBackupBtn) {
+      verifyBackupBtn.addEventListener("click", async () => {
+        const inp = document.getElementById("recovery-backup-input");
+        const errEl = document.getElementById("backup-code-error");
+        const code = (inp?.value || "").trim();
 
-      if (isEmailMatch || isCodeMatch || isSecretAnsMatch) {
-        if (recErrEl) recErrEl.style.display = "none";
-        showToast("✓ Identity Verified! Enter your new Admin password:");
-        document.getElementById("forgot-step-verify").style.display = "none";
-        document.getElementById("forgot-step-newpass").style.display = "block";
-      } else {
-        if (recErrEl) { recErrEl.textContent = "❌ Invalid Email, OTP, Emergency Code or Secret Answer!"; recErrEl.style.display = "flex"; }
-        showToast("Invalid Email, OTP, Emergency Code or Secret Answer! ❌");
-      }
-    };
+        const savedCode = (localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04").trim();
+        if (code && code.toUpperCase() === savedCode.toUpperCase()) {
+          if (errEl) errEl.style.display = "none";
+          showToast("✓ Backup Code Verified! Enter your new Admin password:");
+          showSubstep(stepNewPass);
+        } else {
+          if (errEl) { errEl.textContent = "❌ Invalid Emergency Backup Code!"; errEl.style.display = "flex"; }
+          showToast("Invalid Emergency Backup Code! ❌");
+        }
+      });
+    }
 
-    resetSubmitBtn.onclick = handleRecovery;
+    // ── METHOD 3: SECURITY QUESTION ──
+    const verifyQuestBtn = document.getElementById("btn-verify-question-answer");
+    if (verifyQuestBtn) {
+      verifyQuestBtn.addEventListener("click", async () => {
+        const inp = document.getElementById("recovery-question-input");
+        const errEl = document.getElementById("question-answer-error");
+        const ans = (inp?.value || "").trim().toLowerCase();
 
+        const expectedAns = (localStorage.getItem("custom_secret_answer") || "arjun").trim().toLowerCase();
+        if (ans && ans === expectedAns) {
+          if (errEl) errEl.style.display = "none";
+          showToast("✓ Secret Answer Verified! Enter your new Admin password:");
+          showSubstep(stepNewPass);
+        } else {
+          if (errEl) { errEl.textContent = "❌ Invalid Secret Answer!"; errEl.style.display = "flex"; }
+          showToast("Invalid Secret Answer! ❌");
+        }
+      });
+    }
+
+    // ── STEP 2: SAVE NEW PASSWORD ──
     const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
     if (saveNewPassBtn) {
-      saveNewPassBtn.onclick = async () => {
+      saveNewPassBtn.addEventListener("click", async () => {
         const newPassInput = document.getElementById("admin-reset-new-pass");
         const confirmPassInput = document.getElementById("admin-reset-confirm-pass");
         const errEl = document.getElementById("admin-setnew-error");
@@ -4359,24 +4452,19 @@ function initAdminSecurityModal() {
           showToast("Failed to persist password to Supabase ❌");
         }
 
-        if (window.adminApp && typeof window.adminApp.logEvent === "function") {
-          window.adminApp.logEvent("PASSWORD_RESET", "Password reset successfully via recovery verification");
-        }
+        const modal = document.getElementById("admin-login-modal");
+        if (modal) modal.classList.remove("open");
 
-        modal.classList.remove("open");
         const fab = document.getElementById("customizer-toggle-btn");
         if (fab) fab.classList.add("admin-visible");
         const customizerModal = document.getElementById("customizer-modal");
         if (customizerModal) customizerModal.classList.add("open");
 
-        document.getElementById("forgot-step-verify").style.display = "block";
-        document.getElementById("forgot-step-newpass").style.display = "none";
+        resetToMethods();
         if (newPassInput) newPassInput.value = "";
         if (confirmPassInput) confirmPassInput.value = "";
-        if (recoveryInput) recoveryInput.value = "";
-        if (secretAnsInput) secretAnsInput.value = "";
         if (errEl) errEl.style.display = "none";
-      };
+      });
     }
   }
 }

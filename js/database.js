@@ -123,16 +123,25 @@
             .single();
 
           if (!error && data) {
+            // pass_code is the single canonical password
             let cloudPass = data.pass_code;
-            if (data.memory_text) {
-              try {
-                const parsed = JSON.parse(data.memory_text);
-                if (parsed && parsed.admin_master_password) cloudPass = parsed.admin_master_password;
-              } catch (e) {}
-            }
+
+            // If pass_code exists, cache it and use it as canonical truth
             if (cloudPass) {
               this._sessionPassword = cloudPass;
               return cloudPass;
+            }
+
+            // Fallback to memory_text if pass_code was empty
+            if (data.memory_text) {
+              try {
+                const parsed = JSON.parse(data.memory_text);
+                if (parsed && parsed.admin_master_password) {
+                  cloudPass = parsed.admin_master_password;
+                  this._sessionPassword = cloudPass;
+                  return cloudPass;
+                }
+              } catch (e) {}
             }
           }
         }
@@ -158,7 +167,7 @@
         return false;
       }
 
-      let payload = { updated_at: new Date().toISOString() };
+      let payload = {};
       try {
         const { data } = await client
           .from("wishes")
@@ -166,9 +175,14 @@
           .eq("id", "00000000-0000-0000-0000-000000000001")
           .single();
         if (data && data.memory_text) {
-          payload = { ...JSON.parse(data.memory_text), ...payload };
+          payload = JSON.parse(data.memory_text);
         }
       } catch (e) {}
+
+      // Synchronize BOTH pass_code and memory_text.admin_master_password together
+      payload.admin_master_password = cleanPass;
+      payload.updated_at = new Date().toISOString();
+
       const { error } = await client
         .from("wishes")
         .update({
@@ -183,7 +197,7 @@
       }
 
       this._sessionPassword = cleanPass;
-      console.log("🔑 Password successfully updated on Supabase & session memory.");
+      console.log("🔑 Password synchronized: pass_code & memory_text updated on Supabase & session memory.");
       return true;
     },
 

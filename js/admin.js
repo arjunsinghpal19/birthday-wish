@@ -751,24 +751,92 @@
       });
     }
 
-    // 2. Save Recovery Email
+    // 2. Recovery Email Setup with OTP Verification (Stage 1)
     const saveEmailBtn = document.getElementById("sec-save-email-btn");
+    const sendOtpBtn = document.getElementById("sec-send-otp-btn") || saveEmailBtn;
+    let cooldownInterval = null;
+
+    const startCooldownTimer = (seconds, btn) => {
+      if (!btn) return;
+      let left = seconds;
+      btn.disabled = true;
+      btn.textContent = `Resend OTP (${left}s)`;
+      if (cooldownInterval) clearInterval(cooldownInterval);
+      cooldownInterval = setInterval(() => {
+        left--;
+        if (left <= 0) {
+          clearInterval(cooldownInterval);
+          btn.disabled = false;
+          btn.textContent = "Send Verification OTP";
+        } else {
+          btn.textContent = `Resend OTP (${left}s)`;
+        }
+      }, 1000);
+    };
+
     if (saveEmailBtn) {
       saveEmailBtn.addEventListener("click", async () => {
         const email = (document.getElementById("sec-recovery-email")?.value || "").trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const otpBox = document.getElementById("sec-email-otp-box");
+        const otpInput = document.getElementById("sec-email-otp-input");
+        const verifyOtpBtn = document.getElementById("sec-verify-email-otp-btn");
 
         if (!email || !emailRegex.test(email)) {
           showToast("Please enter a valid email address ⚠️");
           return;
         }
 
-        settings.admin_recovery_email = email;
-        if (window.DatabaseModule) {
-          await window.DatabaseModule.saveSecuritySettings({ admin_recovery_email: email });
+        // Check if OTP input box is already open and user clicked verify
+        if (otpBox && otpBox.style.display !== "none" && otpInput && otpInput.value.trim().length === 6) {
+          showToast("⏳ Verifying OTP...");
+          try {
+            const res = await fetch("/api/send-otp", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "save-recovery-email", email, otpCode: otpInput.value.trim() })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              settings.admin_recovery_email = email;
+              settings.recovery_email_verified = true;
+              if (window.DatabaseModule) {
+                await window.DatabaseModule.saveSecuritySettings({ admin_recovery_email: email, recovery_email_verified: true });
+              }
+              showToast("📧 Recovery Email Verified & Saved! ✅");
+              if (otpBox) otpBox.style.display = "none";
+              if (otpInput) otpInput.value = "";
+              return;
+            } else {
+              showToast(data.error || "OTP verification failed ❌");
+              return;
+            }
+          } catch (e) {
+            showToast("Network error verifying OTP ❌");
+            return;
+          }
         }
-        logEvent("RECOVERY_EMAIL_UPDATED", `Recovery email updated to ${email}`);
-        showToast("📧 Recovery Email Saved & Persisted! ✅");
+
+        // Otherwise send OTP
+        showToast("⏳ Requesting Verification OTP...");
+        try {
+          const res = await fetch("/api/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "request-otp", email, purpose: "SETUP" })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            showToast("📨 Verification OTP sent to " + email + "! Check inbox/spam.");
+            startCooldownTimer(data.resendCooldownSeconds || 60, saveEmailBtn);
+            if (otpBox) otpBox.style.display = "flex";
+            if (otpInput) otpInput.focus();
+          } else {
+            showToast(data.error || "Failed to send OTP ❌");
+          }
+        } catch (e) {
+          showToast("Network error sending OTP ❌");
+        }
       });
     }
 

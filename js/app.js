@@ -4219,13 +4219,94 @@ function initAdminSecurityModal() {
     };
   }
 
-  // Tab 3: Forgot Password Recovery
+  // Tab 3: Forgot Password Recovery with OTP (Stage 2)
   if (resetSubmitBtn) {
-    const handleRecovery = () => {
+    let activeOtpSent = false;
+    let otpCooldownInterval = null;
+
+    const startOtpCooldown = (seconds, btn) => {
+      if (!btn) return;
+      let left = seconds;
+      btn.disabled = true;
+      btn.textContent = `Resend OTP (${left}s)`;
+      if (otpCooldownInterval) clearInterval(otpCooldownInterval);
+      otpCooldownInterval = setInterval(() => {
+        left--;
+        if (left <= 0) {
+          clearInterval(otpCooldownInterval);
+          btn.disabled = false;
+          btn.textContent = "Send Recovery OTP";
+        } else {
+          btn.textContent = `Resend OTP (${left}s)`;
+        }
+      }, 1000);
+    };
+
+    const handleRecovery = async () => {
       const keyVal = (recoveryInput?.value || "").trim();
       const ansVal = (secretAnsInput?.value || "").trim().toLowerCase();
       const recErrEl = document.getElementById("admin-recovery-error");
 
+      // Check if user entered a 6-digit OTP code to verify
+      if (keyVal.length === 6 && /^\d{6}$/.test(keyVal)) {
+        showToast("⏳ Verifying Security OTP...");
+        try {
+          const res = await fetch("/api/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "verify-otp", otpCode: keyVal })
+          });
+          const data = await res.json();
+          if (res.ok && data.valid) {
+            if (recErrEl) recErrEl.style.display = "none";
+            showToast("✓ OTP Identity Verified! Enter your new Admin password:");
+            document.getElementById("forgot-step-verify").style.display = "none";
+            document.getElementById("forgot-step-newpass").style.display = "block";
+            return;
+          } else {
+            if (recErrEl) { recErrEl.textContent = "❌ " + (data.error || "Invalid OTP"); recErrEl.style.display = "flex"; }
+            showToast(data.error || "OTP Verification Failed ❌");
+            return;
+          }
+        } catch (e) {
+          showToast("Network error verifying OTP ❌");
+          return;
+        }
+      }
+
+      // If keyVal is an email address, trigger OTP dispatch
+      if (keyVal.includes("@")) {
+        showToast("⏳ Requesting Recovery OTP...");
+        try {
+          const res = await fetch("/api/send-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "request-otp", email: keyVal, purpose: "RECOVERY" })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            activeOtpSent = true;
+            if (recErrEl) recErrEl.style.display = "none";
+            showToast("📨 Recovery OTP sent to " + keyVal + "! Enter 6-digit code above.");
+            startOtpCooldown(data.resendCooldownSeconds || 60, resetSubmitBtn);
+            if (recoveryInput) {
+              recoveryInput.value = "";
+              recoveryInput.placeholder = "Enter 6-digit OTP code";
+              recoveryInput.focus();
+            }
+            return;
+          } else {
+            if (recErrEl) { recErrEl.textContent = "❌ " + (data.error || "Failed to send OTP"); recErrEl.style.display = "flex"; }
+            showToast(data.error || "Failed to send OTP ❌");
+            return;
+          }
+        } catch (e) {
+          showToast("Network error requesting OTP ❌");
+          return;
+        }
+      }
+
+      // Emergency Code / Security Answer Fallback Verification
       const savedEmail = (localStorage.getItem("admin_recovery_email") || "admin@example.com").trim().toLowerCase();
       const savedCode = (localStorage.getItem("admin_recovery_code") || "").trim();
       const expectedAns = (localStorage.getItem("custom_secret_answer") || "").trim().toLowerCase();
@@ -4240,8 +4321,8 @@ function initAdminSecurityModal() {
         document.getElementById("forgot-step-verify").style.display = "none";
         document.getElementById("forgot-step-newpass").style.display = "block";
       } else {
-        if (recErrEl) recErrEl.style.display = "flex";
-        showToast("Invalid Email, Emergency Code or Secret Answer! ❌");
+        if (recErrEl) { recErrEl.textContent = "❌ Invalid Email, OTP, Emergency Code or Secret Answer!"; recErrEl.style.display = "flex"; }
+        showToast("Invalid Email, OTP, Emergency Code or Secret Answer! ❌");
       }
     };
 

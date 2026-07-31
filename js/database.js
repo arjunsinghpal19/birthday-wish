@@ -169,15 +169,13 @@
           payload = { ...JSON.parse(data.memory_text), ...payload };
         }
       } catch (e) {}
-      payload.admin_master_password = cleanPass;
-
-      const { error } = await client.from("wishes").upsert([{
-        id: "00000000-0000-0000-0000-000000000001",
-        recipient_name: "__SYSTEM_SECURITY_CONFIG__",
-        sender_name: "ADMIN_SYSTEM",
-        pass_code: cleanPass,
-        memory_text: JSON.stringify(payload)
-      }], { onConflict: "id" });
+      const { error } = await client
+        .from("wishes")
+        .update({
+          pass_code: cleanPass,
+          memory_text: JSON.stringify(payload)
+        })
+        .eq("id", "00000000-0000-0000-0000-000000000001");
 
       if (error) {
         console.error("❌ Password update failed on Supabase:", error.message);

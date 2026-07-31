@@ -4270,13 +4270,19 @@ function initAdminSecurityModal() {
       cardQuestion.addEventListener("click", async () => {
         showSubstep(substepQuestion);
         const label = document.getElementById("forgot-question-label");
-        if (label && window.DatabaseModule) {
-          try {
-            const sec = await window.DatabaseModule.getSecuritySettings();
-            if (sec.custom_secret_question) {
-              label.textContent = "Question: " + sec.custom_secret_question;
-            }
-          } catch (e) {}
+        if (label) {
+          let questionText = "Who is your best friend?";
+          if (window.DatabaseModule) {
+            try {
+              const sec = await window.DatabaseModule.getSecuritySettings();
+              if (sec && sec.custom_secret_question) {
+                questionText = sec.custom_secret_question;
+              }
+            } catch (e) {}
+          } else if (localStorage.getItem("custom_secret_question")) {
+            questionText = localStorage.getItem("custom_secret_question");
+          }
+          label.textContent = "Question: " + questionText;
         }
       });
     }
@@ -4371,8 +4377,8 @@ function initAdminSecurityModal() {
             showToast("✓ OTP Verified! Enter your new Admin password:");
             showSubstep(stepNewPass);
           } else {
-            if (errEl) { errEl.textContent = "❌ " + (data.error || "Invalid OTP"); errEl.style.display = "flex"; }
-            showToast(data.error || "OTP Verification Failed ❌");
+            if (errEl) { errEl.textContent = "❌ " + (data.error || "Invalid OTP code"); errEl.style.display = "flex"; }
+            showToast(data.error || "Invalid OTP code ❌");
           }
         } catch (e) {
           showToast("Network error verifying OTP ❌");
@@ -4408,7 +4414,18 @@ function initAdminSecurityModal() {
         const errEl = document.getElementById("question-answer-error");
         const ans = (inp?.value || "").trim().toLowerCase();
 
-        const expectedAns = (localStorage.getItem("custom_secret_answer") || "arjun").trim().toLowerCase();
+        let expectedAns = "shivam";
+        if (window.DatabaseModule) {
+          try {
+            const sec = await window.DatabaseModule.getSecuritySettings();
+            if (sec && sec.custom_secret_answer) {
+              expectedAns = sec.custom_secret_answer.trim().toLowerCase();
+            }
+          } catch (e) {}
+        } else if (localStorage.getItem("custom_secret_answer")) {
+          expectedAns = localStorage.getItem("custom_secret_answer").trim().toLowerCase();
+        }
+
         if (ans && ans === expectedAns) {
           if (errEl) errEl.style.display = "none";
           showToast("✓ Secret Answer Verified! Enter your new Admin password:");

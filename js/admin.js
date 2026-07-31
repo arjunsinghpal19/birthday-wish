@@ -665,7 +665,7 @@
 
   // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 Persistent)
   async function initSecurityHandlers() {
-    let settings = { admin_master_password: "admin123", admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
+    let settings = { admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
 
     if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
       settings = await window.DatabaseModule.getSecuritySettings();
@@ -705,7 +705,7 @@
       });
     }
 
-    // 1. Change Master Password
+    // 1. Change Master Password via PasswordService
     const savePassBtn = document.getElementById("sec-save-pass-btn");
     if (savePassBtn) {
       savePassBtn.addEventListener("click", async () => {
@@ -713,8 +713,13 @@
         const newVal = (document.getElementById("sec-new-pass")?.value || "").trim();
         const confirmVal = (document.getElementById("sec-confirm-pass")?.value || "").trim();
 
-        const currentMaster = settings.admin_master_password || "admin123";
-        if (oldVal !== currentMaster) {
+        if (!oldVal) {
+          showToast("Please enter your current password ⚠️");
+          return;
+        }
+
+        const isOldValid = window.PasswordService ? await window.PasswordService.verifyPassword(oldVal) : false;
+        if (!isOldValid) {
           showToast("Current password is incorrect ❌");
           return;
         }
@@ -728,18 +733,21 @@
           return;
         }
 
-        settings.admin_master_password = newVal;
-        if (window.DatabaseModule) {
-          await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newVal });
+        const success = window.PasswordService ? await window.PasswordService.updatePassword(newVal) : false;
+        if (success) {
+          const oldInput = document.getElementById("sec-old-pass");
+          const newInput = document.getElementById("sec-new-pass");
+          const confirmInput = document.getElementById("sec-confirm-pass");
+          if (oldInput) oldInput.value = "";
+          if (newInput) newInput.value = "";
+          if (confirmInput) confirmInput.value = "";
+          showToast("🔑 Master Password updated successfully on Supabase! ✅");
+          if (window.adminApp && typeof window.adminApp.logEvent === "function") {
+            window.adminApp.logEvent("PASSWORD_CHANGED", "Master Admin Password changed & persisted");
+          }
+        } else {
+          showToast("Failed to update password on Supabase ❌");
         }
-
-        // Clear input fields
-        document.getElementById("sec-old-pass").value = "";
-        document.getElementById("sec-new-pass").value = "";
-        document.getElementById("sec-confirm-pass").value = "";
-
-        logEvent("PASSWORD_CHANGED", "Master Admin Password changed & persisted");
-        showToast("🔑 Master Admin Password Saved & Persisted! ✅");
       });
     }
 

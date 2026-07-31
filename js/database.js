@@ -101,12 +101,127 @@
     }
   }
 
-  // Persistent Security System Settings (Phase 2.1 - Single Source of Truth: Supabase)
+  // ============================================================================
+  // SINGLE PASSWORD SERVICE (Supabase Single Source of Truth)
+  // Stores password ONLY in JS memory during active session (_sessionPassword).
+  // NEVER stores passwords in localStorage keys.
+  // ============================================================================
+  const PasswordService = {
+    _sessionPassword: null,
+
+    async getPassword(forceRefresh = false) {
+      if (!forceRefresh && this._sessionPassword) {
+        return this._sessionPassword;
+      }
+      try {
+        const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+        if (client) {
+          const { data, error } = await client
+            .from("wishes")
+            .select("pass_code, memory_text")
+            .eq("id", "00000000-0000-0000-0000-000000000001")
+            .single();
+
+          if (!error && data) {
+            let cloudPass = data.pass_code;
+            if (data.memory_text) {
+              try {
+                const parsed = JSON.parse(data.memory_text);
+                if (parsed && parsed.admin_master_password) cloudPass = parsed.admin_master_password;
+              } catch (e) {}
+            }
+            if (cloudPass) {
+              this._sessionPassword = cloudPass;
+              return cloudPass;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ PasswordService fetch notice:", err);
+      }
+      return this._sessionPassword;
+    },
+
+    async verifyPassword(inputPassword) {
+      if (!inputPassword) return false;
+      const actualPassword = await this.getPassword();
+      if (!actualPassword) return false;
+      return inputPassword.trim() === actualPassword.trim();
+    },
+
+    async updatePassword(newPassword) {
+      if (!newPassword || newPassword.trim().length < 4) return false;
+      const cleanPass = newPassword.trim();
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (!client) {
+        console.error("❌ Supabase connection unavailable for password update.");
+        return false;
+      }
+
+      let payload = { updated_at: new Date().toISOString() };
+      try {
+        const { data } = await client
+          .from("wishes")
+          .select("memory_text")
+          .eq("id", "00000000-0000-0000-0000-000000000001")
+          .single();
+        if (data && data.memory_text) {
+          payload = { ...JSON.parse(data.memory_text), ...payload };
+        }
+      } catch (e) {}
+      payload.admin_master_password = cleanPass;
+
+      const { error } = await client.from("wishes").upsert([{
+        id: "00000000-0000-0000-0000-000000000001",
+        recipient_name: "__SYSTEM_SECURITY_CONFIG__",
+        sender_name: "ADMIN_SYSTEM",
+        pass_code: cleanPass,
+        memory_text: JSON.stringify(payload)
+      }], { onConflict: "id" });
+
+      if (error) {
+        console.error("❌ Password update failed on Supabase:", error.message);
+        return false;
+      }
+
+      this._sessionPassword = cleanPass;
+      console.log("🔑 Password successfully updated on Supabase & session memory.");
+      return true;
+    },
+
+    initRealtime() {
+      try {
+        const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+        if (!client) return;
+
+        client
+          .channel("public:wishes:password_security")
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "wishes", filter: "id=eq.00000000-0000-0000-0000-000000000001" },
+            (payload) => {
+              console.log("⚡ Supabase Realtime Password Update received:", payload);
+              PasswordService.getPassword(true);
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn("⚠️ Realtime password subscription notice:", e);
+      }
+    }
+  };
+
+  window.PasswordService = PasswordService;
+
+  // Persistent Security Metadata Storage (Recovery Email, Security Q&A Metadata)
   const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
-  let _cachedSecuritySettings = null;
 
   async function saveSecuritySettings(secObj) {
     try {
+      if (secObj.admin_master_password) {
+        await PasswordService.updatePassword(secObj.admin_master_password);
+      }
+
       const current = await getSecuritySettings();
       const updated = {
         ...current,
@@ -114,37 +229,12 @@
         updated_at: new Date().toISOString()
       };
 
-      // 1. Primary Write: Supabase Cloud (Single Source of Truth)
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (client) {
-        const { error } = await client.from("wishes").upsert([{
-          id: "00000000-0000-0000-0000-000000000001", // Reserved Admin Security Config UUID
-          recipient_name: "__SYSTEM_SECURITY_CONFIG__",
-          sender_name: "ADMIN_SYSTEM",
-          pass_code: updated.admin_master_password || "admin123",
-          memory_text: JSON.stringify(updated)
-        }], { onConflict: "id" });
-
-        if (error) {
-          console.warn("⚠️ Supabase Security Config sync error:", error.message);
-        } else {
-          console.log("☁️ Security settings successfully synced to Supabase Cloud.");
-        }
-      }
-
-      // 2. Secondary Write: Local Cache Update
-      localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(updated));
-      if (updated.admin_master_password) {
-        localStorage.setItem("admin_master_password", updated.admin_master_password);
-        localStorage.setItem("custom_admin_password", updated.admin_master_password);
-      }
-      if (updated.admin_recovery_email) localStorage.setItem("admin_recovery_email", updated.admin_recovery_email);
-      if (updated.admin_recovery_code) localStorage.setItem("admin_recovery_code", updated.admin_recovery_code);
-      if (updated.custom_secret_question) localStorage.setItem("custom_secret_question", updated.custom_secret_question);
-      if (updated.custom_secret_answer) localStorage.setItem("custom_secret_answer", updated.custom_secret_answer);
-
-      // 3. Memory Cache Update
-      _cachedSecuritySettings = updated;
+      // Strip sensitive password strings from localStorage metadata cache
+      const metadataOnly = { ...updated };
+      delete metadataOnly.admin_master_password;
+      localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(metadataOnly));
+      localStorage.removeItem("admin_master_password");
+      localStorage.removeItem("custom_admin_password");
 
       return updated;
     } catch (e) {
@@ -154,60 +244,25 @@
   }
 
   async function getSecuritySettings(forceRefresh = false) {
-    // Return memory cache during active session unless explicit refresh requested
-    if (!forceRefresh && _cachedSecuritySettings) {
-      return _cachedSecuritySettings;
-    }
-
     try {
-      let cloudData = null;
+      const masterPass = await PasswordService.getPassword(forceRefresh);
 
-      // 1. Fetch from Supabase Cloud (Single Source of Truth)
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (client) {
-        try {
-          const { data } = await client.from("wishes").select("memory_text, pass_code").eq("id", "00000000-0000-0000-0000-000000000001").single();
-          if (data) {
-            if (data.memory_text) {
-              try { cloudData = JSON.parse(data.memory_text); } catch (err) {}
-            }
-            if (!cloudData && data.pass_code) {
-              cloudData = { admin_master_password: data.pass_code };
-            }
-          }
-        } catch (err) {
-          console.warn("⚠️ Supabase Cloud fetch notice:", err);
-        }
-      }
-
-      // 2. Read local cache fallback
       let localData = null;
       const raw = localStorage.getItem(SECURITY_STORAGE_KEY);
       if (raw) {
         try { localData = JSON.parse(raw); } catch (err) {}
       }
 
-      // 3. Supabase Cloud takes absolute priority over Local Cache
-      const finalPass = cloudData?.admin_master_password || localData?.admin_master_password || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "admin123";
-
-      const merged = {
-        admin_master_password: finalPass,
-        admin_recovery_email: cloudData?.admin_recovery_email || localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
-        admin_recovery_code: cloudData?.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
-        custom_secret_question: cloudData?.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: cloudData?.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
+      return {
+        admin_master_password: masterPass,
+        admin_recovery_email: localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        admin_recovery_code: localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
+        custom_secret_question: localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
+        custom_secret_answer: localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
       };
-
-      // 4. Update local cache automatically with latest cloud data
-      localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(merged));
-      localStorage.setItem("admin_master_password", merged.admin_master_password);
-      localStorage.setItem("custom_admin_password", merged.admin_master_password);
-
-      _cachedSecuritySettings = merged;
-      return merged;
     } catch (e) {
       return {
-        admin_master_password: localStorage.getItem("admin_master_password") || "admin123",
+        admin_master_password: await PasswordService.getPassword(),
         admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
         admin_recovery_code: localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
         custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
@@ -216,37 +271,11 @@
     }
   }
 
-  function initSecurityRealtime() {
-    try {
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) return;
-
-      client
-        .channel("public:wishes:security_config")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "wishes", filter: "id=eq.00000000-0000-0000-0000-000000000001" },
-          (payload) => {
-            console.log("⚡ Supabase Realtime Security Update received across devices:", payload);
-            getSecuritySettings(true).then((sec) => {
-              if (sec && sec.admin_master_password) {
-                window._globalAdminPassword = sec.admin_master_password;
-                if (window.CONFIG) window.CONFIG.adminPassword = sec.admin_master_password;
-              }
-            });
-          }
-        )
-        .subscribe();
-    } catch (e) {
-      console.warn("⚠️ Realtime subscription notice:", e);
-    }
-  }
-
   window.DatabaseModule = {
     saveWish: saveWishRecord,
     getWishById: getWishRecordById,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,
-    initSecurityRealtime: initSecurityRealtime
+    initSecurityRealtime: () => PasswordService.initRealtime()
   };
 })(window);

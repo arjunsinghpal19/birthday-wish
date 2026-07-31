@@ -4025,31 +4025,19 @@ async function parseQueryParams() {
   }
 }
 
-// --- SUPABASE CLOUD ADMIN PASSWORD SYNC ---
-async function fetchAdminPasswordFromCloud(forceRefresh = false) {
-  try {
-    if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
-      const sec = await window.DatabaseModule.getSecuritySettings(forceRefresh);
-      if (sec && sec.admin_master_password) {
-        window._globalAdminPassword = sec.admin_master_password;
-        if (CONFIG) CONFIG.adminPassword = sec.admin_master_password;
-        return sec.admin_master_password;
-      }
-    }
-  } catch(e) {}
-
-  const fallback = window._globalAdminPassword || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || CONFIG?.adminPassword || "admin123";
-  window._globalAdminPassword = fallback;
-  if (CONFIG) CONFIG.adminPassword = fallback;
-  return fallback;
-}
-
+// --- SUPABASE SINGLE SOURCE OF TRUTH PASSWORD SERVICE PROXY ---
 async function getAdminPassword(forceRefresh = false) {
-  return await fetchAdminPasswordFromCloud(forceRefresh);
+  if (window.PasswordService && typeof window.PasswordService.getPassword === "function") {
+    return await window.PasswordService.getPassword(forceRefresh);
+  }
+  return null;
 }
 
 function initAdminSecurityModal() {
-  fetchAdminPasswordFromCloud();
+  if (window.PasswordService && typeof window.PasswordService.initRealtime === "function") {
+    window.PasswordService.initRealtime();
+  }
+
   const modal = document.getElementById("admin-login-modal");
   const closeBtn = document.getElementById("admin-modal-close-btn");
   const tabBtns = document.querySelectorAll(".admin-tab-btn");
@@ -4118,15 +4106,15 @@ function initAdminSecurityModal() {
     };
   });
 
-  // Tab 1: Unlock Submission (Strict Master Password Validation)
+  // Tab 1: Unlock Submission (Strict Supabase Password Validation)
   async function handleUnlock() {
     const entered = (loginPassInput.value || "").trim();
     showToast("⏳ Verifying Admin Password...");
-    const currentPass = await getAdminPassword();
     const errorMsgEl = document.getElementById("admin-login-error");
 
-    // Strict master password comparison - Zero hardcoded passwords
-    if (entered === currentPass) {
+    const isValid = window.PasswordService ? await window.PasswordService.verifyPassword(entered) : false;
+
+    if (isValid) {
       sessionStorage.setItem("admin_authenticated", "true");
       modal.classList.remove("open");
       loginPassInput.value = "";
@@ -4138,22 +4126,19 @@ function initAdminSecurityModal() {
       const customizerModal = document.getElementById("customizer-modal");
       if (customizerModal) customizerModal.classList.add("open");
     } else {
-      // Trigger Red Input Border
       if (loginPassInput) {
         loginPassInput.classList.add("input-error");
         loginPassInput.focus();
         loginPassInput.select();
       }
 
-      // Trigger Modal Shake Effect
       const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
       if (modalCard) {
         modalCard.classList.remove("shake-error");
-        void modalCard.offsetWidth; // Trigger reflow
+        void modalCard.offsetWidth;
         modalCard.classList.add("shake-error");
       }
 
-      // Show Red Text Error Message
       if (errorMsgEl) {
         errorMsgEl.style.display = "flex";
       }
@@ -4171,25 +4156,21 @@ function initAdminSecurityModal() {
     });
   }
 
-  // Initialize Supabase Realtime Listener for cross-device instant sync
-  if (window.DatabaseModule && typeof window.DatabaseModule.initSecurityRealtime === "function") {
-    window.DatabaseModule.initSecurityRealtime();
-  }
-
   // Tab 2: Change Password Submission
   if (changeSubmitBtn) {
     changeSubmitBtn.onclick = async () => {
       const oldVal = (oldPassInput.value || "").trim();
       const newVal = (newPassInput.value || "").trim();
       const confirmVal = (confirmPassInput.value || "").trim();
-      const currentPass = await getAdminPassword();
 
       if (!oldVal) {
         showToast("Please enter your Current / Old Password! ⚠️");
         if (oldPassInput) oldPassInput.focus();
         return;
       }
-      if (oldVal !== currentPass) {
+
+      const isOldCorrect = window.PasswordService ? await window.PasswordService.verifyPassword(oldVal) : false;
+      if (!isOldCorrect) {
         showToast("Current Old Password is wrong ❌");
         if (oldPassInput) {
           oldPassInput.classList.add("input-error");
@@ -4222,24 +4203,23 @@ function initAdminSecurityModal() {
       }
 
       showToast("⏳ Syncing Admin Password to Supabase...");
-      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
-        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newVal });
+      const success = window.PasswordService ? await window.PasswordService.updatePassword(newVal) : false;
+
+      if (success) {
+        oldPassInput.value = "";
+        newPassInput.value = "";
+        confirmPassInput.value = "";
+        showToast("🔑 Admin Password updated successfully on Supabase! ✅");
+
+        const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
+        if (loginTabBtn) loginTabBtn.click();
+      } else {
+        showToast("Failed to update password on Supabase ❌");
       }
-
-      await fetchAdminPasswordFromCloud(true);
-
-      oldPassInput.value = "";
-      newPassInput.value = "";
-      confirmPassInput.value = "";
-      showToast("🔑 Admin Password updated successfully across all devices! ✅");
-
-      // Switch to unlock tab
-      const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
-      if (loginTabBtn) loginTabBtn.click();
     };
   }
 
-  // Tab 3: Forgot Password Recovery (Supports ANY ONE of 3 recovery methods)
+  // Tab 3: Forgot Password Recovery
   if (resetSubmitBtn) {
     const handleRecovery = () => {
       const keyVal = (recoveryInput?.value || "").trim();
@@ -4250,108 +4230,73 @@ function initAdminSecurityModal() {
       const savedCode = (localStorage.getItem("admin_recovery_code") || "").trim();
       const expectedAns = (localStorage.getItem("custom_secret_answer") || "").trim().toLowerCase();
 
-      // Verification of ANY ONE of the 3 configured methods grants recovery
       const isEmailMatch = (keyVal && keyVal.toLowerCase() === savedEmail);
       const isCodeMatch = (keyVal && keyVal.toUpperCase() === savedCode.toUpperCase());
       const isSecretAnsMatch = (ansVal && expectedAns && ansVal === expectedAns);
 
       if (isEmailMatch || isCodeMatch || isSecretAnsMatch) {
         if (recErrEl) recErrEl.style.display = "none";
-        if (recoveryInput) recoveryInput.classList.remove("input-error");
-        if (secretAnsInput) secretAnsInput.classList.remove("input-error");
-
-        // Transition to Step 2: Set New Password Form
+        showToast("✓ Identity Verified! Enter your new Admin password:");
         document.getElementById("forgot-step-verify").style.display = "none";
         document.getElementById("forgot-step-newpass").style.display = "block";
-        showToast("✓ Identity Verified! Set your new password.");
       } else {
-        if (recoveryInput) recoveryInput.classList.add("input-error");
-        if (secretAnsInput) secretAnsInput.classList.add("input-error");
-
-        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
-        if (modalCard) {
-          modalCard.classList.remove("shake-error");
-          void modalCard.offsetWidth;
-          modalCard.classList.add("shake-error");
-        }
-
         if (recErrEl) recErrEl.style.display = "flex";
-        showToast("Incorrect Master Key or Secret Answer ❌");
+        showToast("Invalid Email, Emergency Code or Secret Answer! ❌");
       }
     };
 
     resetSubmitBtn.onclick = handleRecovery;
-    if (recoveryInput) {
-      recoveryInput.onkeydown = (e) => { if (e.key === "Enter") handleRecovery(); };
-      recoveryInput.addEventListener("input", () => {
-        if (recoveryInput) recoveryInput.classList.remove("input-error");
-        const recErrEl = document.getElementById("admin-recovery-error");
-        if (recErrEl) recErrEl.style.display = "none";
-      });
+
+    const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
+    if (saveNewPassBtn) {
+      saveNewPassBtn.onclick = async () => {
+        const newPassInput = document.getElementById("admin-reset-new-pass");
+        const confirmPassInput = document.getElementById("admin-reset-confirm-pass");
+        const errEl = document.getElementById("admin-setnew-error");
+
+        const newPass = (newPassInput?.value || "").trim();
+        const confirmPass = (confirmPassInput?.value || "").trim();
+
+        if (!newPass || newPass.length < 4) {
+          if (errEl) { errEl.textContent = "❌ Password must be at least 4 characters!"; errEl.style.display = "flex"; }
+          showToast("Password must be at least 4 characters! ⚠️");
+          return;
+        }
+        if (newPass !== confirmPass) {
+          if (errEl) { errEl.textContent = "❌ Passwords do not match!"; errEl.style.display = "flex"; }
+          showToast("Passwords do not match! ❌");
+          return;
+        }
+
+        showToast("⏳ Persisting New Master Password to Supabase...");
+        sessionStorage.removeItem("admin_authenticated");
+        
+        const success = window.PasswordService ? await window.PasswordService.updatePassword(newPass) : false;
+        if (success) {
+          showToast("🔑 New Admin Password Saved & Persisted on Supabase! ✅");
+        } else {
+          showToast("Failed to persist password to Supabase ❌");
+        }
+
+        if (window.adminApp && typeof window.adminApp.logEvent === "function") {
+          window.adminApp.logEvent("PASSWORD_RESET", "Password reset successfully via recovery verification");
+        }
+
+        modal.classList.remove("open");
+        const fab = document.getElementById("customizer-toggle-btn");
+        if (fab) fab.classList.add("admin-visible");
+        const customizerModal = document.getElementById("customizer-modal");
+        if (customizerModal) customizerModal.classList.add("open");
+
+        document.getElementById("forgot-step-verify").style.display = "block";
+        document.getElementById("forgot-step-newpass").style.display = "none";
+        if (newPassInput) newPassInput.value = "";
+        if (confirmPassInput) confirmPassInput.value = "";
+        if (recoveryInput) recoveryInput.value = "";
+        if (secretAnsInput) secretAnsInput.value = "";
+        if (errEl) errEl.style.display = "none";
+      };
     }
-    if (secretAnsInput) {
-      secretAnsInput.onkeydown = (e) => { if (e.key === "Enter") handleRecovery(); };
-      secretAnsInput.addEventListener("input", () => {
-        if (secretAnsInput) secretAnsInput.classList.remove("input-error");
-        const recErrEl = document.getElementById("admin-recovery-error");
-        if (recErrEl) recErrEl.style.display = "none";
-      });
-    }
-  }
-
-  // Step 2: Save New Password & Unlock Admin Button
-  const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
-  if (saveNewPassBtn) {
-    saveNewPassBtn.onclick = async () => {
-      const newPassInput = document.getElementById("admin-reset-new-pass");
-      const confirmPassInput = document.getElementById("admin-reset-confirm-pass");
-      const errEl = document.getElementById("admin-setnew-error");
-
-      const newPass = (newPassInput?.value || "").trim();
-      const confirmPass = (confirmPassInput?.value || "").trim();
-
-      if (!newPass || newPass.length < 4) {
-        if (errEl) { errEl.textContent = "❌ Password must be at least 4 characters!"; errEl.style.display = "flex"; }
-        showToast("Password must be at least 4 characters! ⚠️");
-        return;
-      }
-      if (newPass !== confirmPass) {
-        if (errEl) { errEl.textContent = "❌ Passwords do not match!"; errEl.style.display = "flex"; }
-        showToast("Passwords do not match! ❌");
-        return;
-      }
-
-      showToast("⏳ Persisting New Master Password...");
-      sessionStorage.removeItem("admin_authenticated"); // Invalidate previous active session
-      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
-        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newPass });
-      } else {
-        localStorage.setItem("admin_master_password", newPass);
-        localStorage.setItem("custom_admin_password", newPass);
-      }
-      showToast("🔑 New Admin Password Saved & Persisted! ✅");
-
-      // Log event if adminApp available
-      if (window.adminApp && typeof window.adminApp.logEvent === "function") {
-        window.adminApp.logEvent("PASSWORD_RESET", "Password reset successfully via recovery verification");
-      }
-
-      // Unlock Customizer Panel
-      modal.classList.remove("open");
-      const fab = document.getElementById("customizer-toggle-btn");
-      if (fab) fab.classList.add("admin-visible");
-      const customizerModal = document.getElementById("customizer-modal");
-      if (customizerModal) customizerModal.classList.add("open");
-
-      // Reset Step 1 / Step 2 UI for next time
-      document.getElementById("forgot-step-verify").style.display = "block";
-      document.getElementById("forgot-step-newpass").style.display = "none";
-      if (newPassInput) newPassInput.value = "";
-      if (confirmPassInput) confirmPassInput.value = "";
-      if (recoveryInput) recoveryInput.value = "";
-      if (secretAnsInput) secretAnsInput.value = "";
-      if (errEl) errEl.style.display = "none";
-    };
   }
 }
 
@@ -4359,8 +4304,6 @@ function initAdminSecurityModal() {
 window.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === "a" || e.key === "A" || e.key === "r" || e.key === "R")) {
     e.preventDefault();
-    localStorage.removeItem("custom_admin_password");
-    if (typeof CONFIG !== "undefined") CONFIG.adminPassword = "2001";
     showToast("⚡ Emergency Developer Reset Triggered! Admin Unlocked 🔓");
     const fab = document.getElementById("customizer-toggle-btn");
     if (fab) fab.classList.add("admin-visible");

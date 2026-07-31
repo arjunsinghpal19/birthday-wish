@@ -3,6 +3,7 @@
  * VERCEL SERVERLESS OTP & RECOVERY EMAIL SERVICE (api/send-otp.js)
  * Executes OTP generation, SHA-256 salted hashing, 5-min expiry, 
  * 60s cooldown, max 5 attempts, 15-min lockout, and Resend email delivery.
+ * Supports pre-migration and post-migration schema fallbacks.
  * ============================================================================
  */
 
@@ -39,23 +40,30 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || "https://dvacxeooaqxwldszqpek.supabase.co";
-  const supabaseKey = process.env.SUPABASE_ANON_KEY || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+  const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
+  const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
   const resendApiKey = process.env.RESEND_API_KEY || "";
 
   try {
     const { action, email, otpCode, newPassword, purpose } = req.body || {};
 
-    // 1. Fetch current security state from Supabase reserved row 00000000-0000-0000-0000-000000000001
-    const fetchRes = await fetch(
+    // Fetch current security state from Supabase reserved row 00000000-0000-0000-0000-000000000001
+    let fetchRes = await fetch(
       `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=recovery_email,otp_hash,otp_salt,otp_expiry,otp_attempts,otp_locked_until,memory_text`,
       {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`
-        }
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       }
     );
+
+    // Fallback to basic columns if dedicated columns do not exist yet (pre-migration)
+    if (!fetchRes.ok) {
+      fetchRes = await fetch(
+        `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=pass_code,memory_text`,
+        {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        }
+      );
+    }
 
     if (!fetchRes.ok) {
       return res.status(500).json({ error: "Failed to read security configuration" });
@@ -76,11 +84,20 @@ export default async function handler(req, res) {
       }
     }
 
+    // Read recovery email from dedicated column or memory_text fallback
+    let currentRecoveryEmail = secRow.recovery_email;
+    if (!currentRecoveryEmail && secRow.memory_text) {
+      try {
+        const parsed = JSON.parse(secRow.memory_text);
+        if (parsed.admin_recovery_email) currentRecoveryEmail = parsed.admin_recovery_email;
+      } catch (e) {}
+    }
+
     // ────────────────────────────────────────────────────────────────────────
     // ACTION 1: REQUEST / SEND OTP
     // ────────────────────────────────────────────────────────────────────────
     if (action === "request-otp") {
-      const targetEmail = (email || secRow.recovery_email || "").trim().toLowerCase();
+      const targetEmail = (email || currentRecoveryEmail || "").trim().toLowerCase();
       if (!targetEmail || !targetEmail.includes("@")) {
         return res.status(400).json({ error: "Valid email address is required" });
       }
@@ -100,8 +117,16 @@ export default async function handler(req, res) {
       const saltedHash = hashOtp(rawOtp, otpSalt);
       const expiryTimestamp = new Date(now.getTime() + OTP_EXPIRY_MS).toISOString();
 
+      let payload = {};
+      if (secRow.memory_text) {
+        try { payload = JSON.parse(secRow.memory_text); } catch (e) {}
+      }
+      payload.temp_otp_hash = saltedHash;
+      payload.temp_otp_salt = otpSalt;
+      payload.temp_otp_expiry = expiryTimestamp;
+
       // Update Supabase with new hashed OTP & expiry
-      const updateRes = await fetch(
+      let updateRes = await fetch(
         `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
         {
           method: "PATCH",
@@ -116,10 +141,30 @@ export default async function handler(req, res) {
             otp_expiry: expiryTimestamp,
             otp_attempts: 0,
             otp_locked_until: null,
+            memory_text: JSON.stringify(payload),
             updated_at: now.toISOString()
           })
         }
       );
+
+      // Pre-migration fallback
+      if (!updateRes.ok) {
+        updateRes = await fetch(
+          `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              memory_text: JSON.stringify(payload),
+              updated_at: now.toISOString()
+            })
+          }
+        );
+      }
 
       if (!updateRes.ok) {
         return res.status(500).json({ error: "Failed to store OTP in security record" });
@@ -172,24 +217,37 @@ export default async function handler(req, res) {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // ACTION 2: VERIFY OTP
+    // ACTION 2: VERIFY OTP / SAVE EMAIL / RESET PASSWORD
     // ────────────────────────────────────────────────────────────────────────
     if (action === "verify-otp" || action === "save-recovery-email" || action === "reset-password-otp") {
       if (!otpCode || otpCode.trim().length !== 6) {
         return res.status(400).json({ error: "Please enter the 6-digit OTP code" });
       }
 
-      if (!secRow.otp_hash || !secRow.otp_salt || !secRow.otp_expiry) {
+      let activeHash = secRow.otp_hash;
+      let activeSalt = secRow.otp_salt;
+      let activeExpiry = secRow.otp_expiry;
+
+      if (!activeHash && secRow.memory_text) {
+        try {
+          const parsed = JSON.parse(secRow.memory_text);
+          activeHash = parsed.temp_otp_hash;
+          activeSalt = parsed.temp_otp_salt;
+          activeExpiry = parsed.temp_otp_expiry;
+        } catch (e) {}
+      }
+
+      if (!activeHash || !activeSalt || !activeExpiry) {
         return res.status(400).json({ error: "No active OTP found. Please request a new code." });
       }
 
-      const expiryDate = new Date(secRow.otp_expiry);
+      const expiryDate = new Date(activeExpiry);
       if (now > expiryDate) {
         return res.status(400).json({ error: "OTP has expired. Please request a new code." });
       }
 
-      const inputHash = hashOtp(otpCode.trim(), secRow.otp_salt);
-      const isMatch = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(secRow.otp_hash));
+      const inputHash = hashOtp(otpCode.trim(), activeSalt);
+      const isMatch = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(activeHash));
 
       if (!isMatch) {
         const newAttempts = (secRow.otp_attempts || 0) + 1;
@@ -216,23 +274,19 @@ export default async function handler(req, res) {
 
       // OTP Verified Successfully!
       if (action === "verify-otp") {
-        await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
-          method: "PATCH",
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ otp_attempts: 0, otp_hash: null, updated_at: now.toISOString() })
-        });
         return res.status(200).json({ valid: true, message: "OTP Verified!" });
       }
 
       // Save Recovery Email (Stage 1)
       if (action === "save-recovery-email") {
-        const cleanEmail = (email || secRow.recovery_email || "").trim().toLowerCase();
+        const cleanEmail = (email || currentRecoveryEmail || "").trim().toLowerCase();
         let payload = {};
         if (secRow.memory_text) {
           try { payload = JSON.parse(secRow.memory_text); } catch (e) {}
         }
         payload.admin_recovery_email = cleanEmail;
         payload.recovery_email_verified = true;
+        delete payload.temp_otp_hash;
         payload.updated_at = now.toISOString();
 
         await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
@@ -266,6 +320,7 @@ export default async function handler(req, res) {
           try { payload = JSON.parse(secRow.memory_text); } catch (e) {}
         }
         payload.admin_master_password = cleanNewPass;
+        delete payload.temp_otp_hash;
         payload.updated_at = now.toISOString();
 
         await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {

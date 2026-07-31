@@ -3,14 +3,14 @@
  * VERCEL SERVERLESS AUTHENTICATION & CRYPTOGRAPHY API (api/auth.js)
  * Executes PBKDF2-HMAC-SHA256 password hashing & verification server-side.
  * Never exposes salts or hashing mechanics to the browser client.
+ * Supports graceful fallback before or after database migration.
  * ============================================================================
  */
 
 import crypto from "crypto";
 
-// PBKDF2 Configuration (OWASP Standard)
 const ITERATIONS = 600000;
-const KEY_LEN = 32; // 256 bits
+const KEY_LEN = 32;
 const DIGEST = "sha256";
 
 function pbkdf2Async(password, salt) {
@@ -39,22 +39,29 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || "https://dvacxeooaqxwldszqpek.supabase.co";
-  const supabaseKey = process.env.SUPABASE_ANON_KEY || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+  const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
+  const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
 
   try {
     const { action, password, newPassword } = req.body || {};
 
-    // Fetch reserved system configuration row from Supabase
-    const fetchRes = await fetch(
+    // 1. Try querying dedicated security columns first
+    let fetchRes = await fetch(
       `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=admin_password_hash,admin_password_salt,pass_code,memory_text`,
       {
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`
-        }
+        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       }
     );
+
+    // 2. Fallback to basic columns if dedicated columns do not exist yet (pre-migration compatibility)
+    if (!fetchRes.ok) {
+      fetchRes = await fetch(
+        `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=pass_code,memory_text`,
+        {
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
+        }
+      );
+    }
 
     if (!fetchRes.ok) {
       return res.status(500).json({ error: "Failed to query database security configuration" });
@@ -84,14 +91,14 @@ export default async function handler(req, res) {
 
       const inputClean = password.trim();
 
-      // If stored hash exists, verify using PBKDF2-HMAC-SHA256
+      // If stored hash & salt exist, verify using PBKDF2-HMAC-SHA256
       if (storedHash && storedSalt) {
         const inputHash = await pbkdf2Async(inputClean, storedSalt);
         const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedHash));
         return res.status(200).json({ valid: isValid });
       }
 
-      // Backward compatibility fallback to canonical pass_code
+      // Pre-migration fallback: Compare with canonical pass_code
       const isValid = (actualPass && inputClean === actualPass.trim());
       return res.status(200).json({ valid: isValid });
     }
@@ -115,16 +122,15 @@ export default async function handler(req, res) {
       payload.admin_master_password = cleanNewPass;
       payload.updated_at = new Date().toISOString();
 
-      // Update dedicated columns admin_password_hash, admin_password_salt, pass_code, and memory_text together
-      const updateBody = {
-        admin_password_hash: newHash,
-        admin_password_salt: newSalt,
+      // Build update body with fallback for pre-migration schema
+      let updateBody = {
         pass_code: cleanNewPass,
         memory_text: JSON.stringify(payload),
         updated_at: new Date().toISOString()
       };
 
-      const updateRes = await fetch(
+      // Try updating with dedicated columns
+      let updateRes = await fetch(
         `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
         {
           method: "PATCH",
@@ -133,9 +139,29 @@ export default async function handler(req, res) {
             Authorization: `Bearer ${supabaseKey}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(updateBody)
+          body: JSON.stringify({
+            ...updateBody,
+            admin_password_hash: newHash,
+            admin_password_salt: newSalt
+          })
         }
       );
+
+      // Fallback if dedicated columns do not exist yet
+      if (!updateRes.ok) {
+        updateRes = await fetch(
+          `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: supabaseKey,
+              Authorization: `Bearer ${supabaseKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(updateBody)
+          }
+        );
+      }
 
       if (!updateRes.ok) {
         const errTxt = await updateRes.text();

@@ -4069,19 +4069,37 @@ function initAdminSecurityModal() {
   // Public visitor engine: Admin security authentication is isolated cleanly inside admin.html
 }
 
+// ─── RESTORED HIDDEN SHORTCUTS ───
+// 1. Ctrl + Shift + E -> Open Wish Editor
+window.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.shiftKey && (e.key === "e" || e.key === "E")) {
+    e.preventDefault();
+    window.location.href = "editor.html";
+  }
+});
+
+// 2. Double-Tap "Happy Birthday" -> Admin Security
+(function initDoubleTapAdmin() {
+  let lastTapTime = 0;
+  document.addEventListener("DOMContentLoaded", () => {
+    const targets = document.querySelectorAll("#loading-logo-glow, .hero-title, .logo-glow, .pc-title");
+    targets.forEach(el => {
+      el.addEventListener("click", () => {
+        const now = Date.now();
+        if (now - lastTapTime < 400) {
+          window.location.href = "admin.html";
+        }
+        lastTapTime = now;
+      });
+    });
+  });
+})();
+
 // ─── EMERGENCY DEVELOPER SHORTCUT (Ctrl + Shift + Alt + A) ───
 window.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === "a" || e.key === "A" || e.key === "r" || e.key === "R")) {
     e.preventDefault();
-    localStorage.removeItem("custom_admin_password");
-    if (typeof CONFIG !== "undefined") CONFIG.adminPassword = "2001";
-    showToast("⚡ Emergency Developer Reset Triggered! Admin Unlocked 🔓");
-    const fab = document.getElementById("customizer-toggle-btn");
-    if (fab) fab.classList.add("admin-visible");
-    const adminModal = document.getElementById("admin-login-modal");
-    if (adminModal) adminModal.classList.remove("open");
-    const customizerModal = document.getElementById("customizer-modal");
-    if (customizerModal) customizerModal.classList.add("open");
+    window.location.href = "admin.html";
   }
 });
 

@@ -2,32 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wish Editor | Wish Studio</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Full Wish Editor | Wish Studio</title>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Nunito+Sans:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=block" rel="stylesheet">
 
-  <!-- Stylesheets -->
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
+
   <style>
-    /* Dedicated Editor Specific Custom Enhancements */
-    .editor-container {
-      max-width: 900px;
-      margin: 30px auto;
-      padding: 0 20px 60px 20px;
+    /* Dedicated Page Wrapper for Full Customizer */
+    body {
+      background: #09040e;
+      color: #fff;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-body, 'Outfit', sans-serif);
     }
-    .editor-header {
+    .full-editor-page {
+      max-width: 920px;
+      margin: 24px auto;
+      padding: 0 16px 60px 16px;
+    }
+    .full-editor-header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
-      gap: 16px;
+      margin-bottom: 20px;
+      gap: 12px;
       flex-wrap: wrap;
     }
-    .editor-title-wrap h2 {
+    .full-editor-title h2 {
       font-family: var(--font-heading, 'Outfit', sans-serif);
       font-weight: 800;
       font-size: 1.8rem;
@@ -36,36 +46,27 @@
       -webkit-text-fill-color: transparent;
       margin: 0;
     }
-    .editor-title-wrap p {
-      color: var(--text-dim, rgba(255, 255, 255, 0.6));
-      font-size: 0.88rem;
+    .full-editor-title p {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
       margin: 4px 0 0 0;
     }
-    .editor-actions {
+    .full-editor-toolbar {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
     }
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
+    /* Override card height for dedicated editor page */
+    .customizer-card {
+      max-width: 100% !important;
+      max-height: none !important;
+      position: relative !important;
+      transform: none !important;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5) !important;
     }
-    @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-    .full-width {
-      grid-column: 1 / -1;
-    }
-    .form-section-title {
-      font-family: var(--font-heading, 'Outfit', sans-serif);
-      font-size: 1.1rem;
-      color: var(--gold, #ffd700);
-      margin: 20px 0 12px 0;
-      padding-bottom: 6px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    .editor-body {
+      max-height: none !important;
+      overflow-y: visible !important;
     }
     .toast-msg {
       position: fixed;
@@ -93,127 +94,341 @@
   <!-- Supabase CDN Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body style="background:#09040e;color:#fff;min-height:100vh;">
+<body>
 
-  <div class="editor-container">
+  <div class="full-editor-page">
     
-    <!-- Editor Header Toolbar -->
-    <header class="editor-header">
-      <div class="editor-title-wrap">
-        <h2 id="editor-page-title">✨ Create New Wish</h2>
-        <p id="editor-page-subtitle">Build a personalized, interactive surprise wish page</p>
+    <!-- Top Action Bar -->
+    <header class="full-editor-header-bar">
+      <div class="full-editor-title">
+        <h2 id="page-title">✨ Customize Birthday Wish</h2>
+        <p id="page-subtitle">Full-featured editor — edit any section below (pre-filled with current defaults)</p>
       </div>
-      <div class="editor-actions">
+      <div class="full-editor-toolbar">
         <button type="button" class="btn-primary" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);" id="btn-back-dashboard">
           ← Back
         </button>
         <button type="button" class="btn-primary" style="background:rgba(155,89,182,0.3);border:1px solid rgba(155,89,182,0.5);" id="btn-preview-wish" disabled>
           👁️ Preview Page
         </button>
-        <button type="submit" form="editor-wish-form" class="btn-primary" id="btn-save-wish">
-          ✨ Save Wish
+        <button type="button" class="btn-primary" id="top-save-btn">
+          💾 Save & Apply
         </button>
       </div>
     </header>
 
-    <!-- Main Editor Form Panel -->
-    <main class="glass-card">
-      <form id="editor-wish-form">
-        
-        <!-- SECTION 1: ESSENTIAL DETAILS -->
-        <div class="form-section-title">👤 Recipient & Sender Details</div>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="edit-recipient-name">Recipient Name *</label>
-            <input type="text" id="edit-recipient-name" class="form-input" placeholder="e.g. Pooja, Bestie" required>
-          </div>
+    <!-- ORIGINAL LIVE CUSTOMIZER MODAL CONTAINER -->
+    <div class="customizer-card glass">
 
-          <div class="form-group">
-            <label for="edit-sender-name">Your Name / Sender *</label>
-            <input type="text" id="edit-sender-name" class="form-input" placeholder="e.g. Arjun" required>
+      <!-- HEADER -->
+      <div class="editor-header">
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:8px;">
+          <div>
+            <h3 class="modal-title">✨ Full Interactive Editor</h3>
+            <p class="modal-sub">Customize recipient, letter, font, memory, timeline, gallery, gift, music & video</p>
           </div>
-
-          <div class="form-group">
-            <label for="edit-event-type">Event Category *</label>
-            <select id="edit-event-type" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
-              <!-- Dynamically populated from registered event modules -->
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-passcode">Access Passcode (4 Digits) *</label>
-            <input type="text" id="edit-passcode" class="form-input" value="1234" maxlength="4" pattern="[0-9]{4}" placeholder="e.g. 1234" required>
-            <small id="edit-passcode-error" style="display:none;color:#ff7675;font-size:0.78rem;margin-top:4px;font-weight:600;">⚠️ Passcode must be exactly 4 numeric digits (e.g. 1234)</small>
-          </div>
+          <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
         </div>
+      </div>
 
-        <!-- SECTION 2: PERSONALIZED CONTENT -->
-        <div class="form-section-title">💌 Letter Lines & Memories</div>
-        
-        <div class="form-grid">
-          <div class="form-group full-width">
-            <label for="edit-letter-lines">Letter Message Lines (One line per paragraph)</label>
-            <textarea id="edit-letter-lines" class="form-input" rows="4" style="resize:vertical;" placeholder="Wishing you joy, health and endless happiness today!&#10;May this year bring you all the love and success you deserve."></textarea>
-          </div>
+      <!-- SCROLLABLE BODY -->
+      <div class="editor-body" id="editor-body">
 
-          <div class="form-group full-width">
-            <label for="edit-memory-text">Special Memories & Secret Note</label>
-            <textarea id="edit-memory-text" class="form-input" rows="3" style="resize:vertical;" placeholder="Remember when we laughed all night long..."></textarea>
-          </div>
-        </div>
-
-        <!-- SECTION 3: THEME & MEDIA CUSTOMIZATION -->
-        <div class="form-section-title">🎨 Theme & Media Links</div>
-
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="edit-letter-theme">Visual Theme Style</label>
-            <select id="edit-letter-theme" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
-              <option value="default">✨ Default Sparkle (Gold & Purple)</option>
-              <option value="dark">🌙 Dark Velvet</option>
-              <option value="romantic">💖 Romantic Rose</option>
-              <option value="celebration">🎉 Festive Fiesta</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-cake-flavor">Cake Flavor Option</label>
-            <select id="edit-cake-flavor" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
-              <option value="default">🎂 Classic Chocolate Truffle</option>
-              <option value="vanilla">🧁 Velvet Vanilla</option>
-              <option value="strawberry">🍓 Strawberry Delight</option>
-              <option value="butterscotch">🍯 Royal Butterscotch</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="edit-music-url">Background Music URL (Optional)</label>
-            <input type="url" id="edit-music-url" class="form-input" placeholder="e.g. https://.../song.mp3">
-          </div>
-
-          <div class="form-group">
-            <label for="edit-video-url">Video Wish Link (Optional)</label>
-            <input type="url" id="edit-video-url" class="form-input" placeholder="e.g. https://.../video.mp4">
-          </div>
-        </div>
-
-        <!-- SAVE BUTTON -->
-        <div style="margin-top:28px;">
-          <button type="submit" class="btn-primary" style="width:100%;padding:14px;font-size:1.05rem;" id="btn-save-wish-bottom">
-            ✨ Save & Publish Wish Page
+        <!-- ═══ SECTION 1: BASIC INFO ═══ -->
+        <div class="editor-section" data-section="basic">
+          <button class="editor-section-header active" type="button">
+            <span>👤 Basic Info</span><span class="chevron">▾</span>
           </button>
+          <div class="editor-section-body open">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="basic" title="Reset Basic Info to defaults">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label for="input-name">Recipient Name *</label>
+              <small class="field-hint">Jisko wish karna hai uska naam</small>
+              <input type="text" id="input-name" placeholder="e.g. Pooja">
+            </div>
+            <div class="form-group">
+              <label for="input-event-type">Event Category *</label>
+              <select id="input-event-type" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="input-birthdate">📅 Birth Date (Select Date from Calendar)</label>
+              <small class="field-hint">Click calendar icon 📅 to pick exact Day, Month & Year (1950 - Future)</small>
+              <input type="date" id="input-birthdate" class="form-control luxury-date-picker" min="1950-01-01" max="2100-12-31">
+            </div>
+            <div class="form-group row">
+              <div>
+                <label for="input-cake-flavor">🎂 Cake Theme / Flavor</label>
+                <select id="input-cake-flavor" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                  <option value="default" style="background:#2a162b;color:#fff;">💖 Classic Pink & Gold (Default)</option>
+                  <option value="strawberry" style="background:#2a162b;color:#fff;">🍓 Pink Strawberry Gold</option>
+                  <option value="chocolate" style="background:#2a162b;color:#fff;">🍫 Dark Chocolate Velvet</option>
+                  <option value="vanilla" style="background:#2a162b;color:#fff;">✨ Royal Golden Vanilla</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="input-passcode">🔑 Secret Birthday Key (4 Digits) *</label>
+              <small class="field-hint">Recipient ko yeh code dena padega unlock karne ke liye (Exactly 4 numeric digits)</small>
+              <input type="text" id="input-passcode" placeholder="1234" maxlength="4">
+              <small id="input-passcode-error" style="display:none;color:#ff7675;font-size:0.78rem;margin-top:4px;font-weight:600;">⚠️ Passcode must be exactly 4 numeric digits (e.g. 1234)</small>
+            </div>
+          </div>
         </div>
 
-      </form>
-    </main>
+        <!-- ═══ SECTION 2: SENDER ═══ -->
+        <div class="editor-section" data-section="sender">
+          <button class="editor-section-header" type="button">
+            <span>💌 Sender Info</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="sender" title="Reset Sender Info to default">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label for="input-from">From (Sender Name) *</label>
+              <small class="field-hint">Page ke sabse last signature ("Made with ❤️ by...") aur Insta Story Image me dikhega</small>
+              <input type="text" id="input-from" placeholder="e.g. Arjun">
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 3: LETTER ═══ -->
+        <div class="editor-section" data-section="letter">
+          <button class="editor-section-header" type="button">
+            <span>📝 Birthday Letter & Font Style</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="letter" title="Reset Letter & Font to defaults">🔄 Reset Section</button>
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="input-letter-theme">💌 Envelope & Letter Theme</label>
+              <small class="field-hint">Letter aur Envelope ka luxury color theme chuney</small>
+              <select id="input-letter-theme" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Theme (Classic Gold & Parchment)</option>
+                <option value="royalgold" style="background:#2a162b;color:#fff;">👑 Vintage Royal Gold (Antique Gold Foil & Dark Parchment)</option>
+                <option value="galaxy" style="background:#2a162b;color:#fff;">🌌 Midnight Galaxy Glow (Neon Purple & Cosmic Glow)</option>
+                <option value="rosegold" style="background:#2a162b;color:#fff;">🌸 Rose Gold Pastel (Soft Pearl Pink & Rose Gold Accents)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="input-letter-font">🖋️ Letter Font Style</label>
+              <small class="field-hint">Birthday Letter aur Wishes ka font mood ke hisab se chuney</small>
+              <select id="input-letter-font" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="default" style="background:#2a162b;color:#fff;">✨ Default Original Font (Sacramento Cursive)</option>
+                <option value="cursive" style="background:#2a162b;color:#fff;">✍️ Romantic Cursive (Sacramento)</option>
+                <option value="serif" style="background:#2a162b;color:#fff;">📜 Classic Royal Serif (Playfair / Cinzel)</option>
+                <option value="script" style="background:#2a162b;color:#fff;">🎨 Playful Script (Caveat)</option>
+                <option value="poppins" style="background:#2a162b;color:#fff;">✨ Clean & Modern (Poppins)</option>
+                <option value="nunito" style="background:#2a162b;color:#fff;">🌸 Soft & Friendly (Nunito Sans)</option>
+                <option value="sans" style="background:#2a162b;color:#fff;">⚡ Modern Sleek (Outfit)</option>
+              </select>
+            </div>
+            <div id="letter-inputs-container">
+              <!-- JS renders letter line textareas here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 4: MEMORY ═══ -->
+        <div class="editor-section" data-section="memory">
+          <button class="editor-section-header" type="button">
+            <span>💭 Special Memory</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="memory" title="Reset Memory to default">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label for="input-memory">A Cherished Memory</label>
+              <small class="field-hint">Ek khaas yaad jo "A moment I keep coming back to" section me dikhegi</small>
+              <textarea id="input-memory" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 5: REASONS ═══ -->
+        <div class="editor-section" data-section="reasons">
+          <button class="editor-section-header" type="button">
+            <span>⭐ Reasons You're Special</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh cards "Reasons you're so special" section me dikhenge</small>
+              <button type="button" class="reset-section-btn" data-reset="reasons" title="Reset Reasons to defaults">🔄 Reset Section</button>
+            </div>
+            <div id="reasons-inputs-container">
+              <!-- JS renders reason input groups here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-reason-btn">+ Add Reason</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 6: WISHES ═══ -->
+        <div class="editor-section" data-section="wishes">
+          <button class="editor-section-header" type="button">
+            <span>✨ Birthday Wishes</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh quotes "Another wish" button dabane par rotate honge</small>
+              <button type="button" class="reset-section-btn" data-reset="wishes" title="Reset Wishes to defaults">🔄 Reset Section</button>
+            </div>
+            <div id="wishes-inputs-container">
+              <!-- JS renders wish textareas here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-wish-btn">+ Add Wish</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 7: GALLERY ═══ -->
+        <div class="editor-section" data-section="gallery">
+          <button class="editor-section-header" type="button">
+            <span>📸 Photo Gallery</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Gallery ke polaroid cards — photo upload karo ya emoji rakhdo</small>
+              <button type="button" class="reset-section-btn" data-reset="gallery" title="Reset Photo Gallery to defaults">🔄 Reset Section</button>
+            </div>
+            <div id="gallery-inputs-container">
+              <!-- JS renders gallery input groups with image upload here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-gallery-btn">+ Add Photo</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 8: TIMELINE ═══ -->
+        <div class="editor-section" data-section="timeline">
+          <button class="editor-section-header" type="button">
+            <span>🕐 Timeline Milestones</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <small class="field-hint" style="margin-bottom:0;">Yeh events "A little timeline" section me dikhenge</small>
+              <button type="button" class="reset-section-btn" data-reset="timeline" title="Reset Timeline to defaults">🔄 Reset Section</button>
+            </div>
+            <div id="timeline-inputs-container">
+              <!-- JS renders timeline input groups here -->
+            </div>
+            <button type="button" class="editor-add-btn" id="add-timeline-btn">+ Add Milestone</button>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 9: GIFT ═══ -->
+        <div class="editor-section" data-section="gift">
+          <button class="editor-section-header" type="button">
+            <span>🎁 Gift Message</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="gift" title="Reset Gift Message to defaults">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label for="input-gift-message">Gift Box Message</label>
+              <small class="field-hint">Gift box kholne par yeh message dikhega</small>
+              <textarea id="input-gift-message" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="input-gift-coupon">Gift Coupon / Voucher Text</label>
+              <small class="field-hint">Special coupon ya promise likho</small>
+              <textarea id="input-gift-coupon" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 10: MUSIC & VOICE NOTE ═══ -->
+        <div class="editor-section" data-section="music">
+          <button class="editor-section-header" type="button">
+            <span>🎵 Background Music / Voice Note</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="music" title="Reset Music to default melody">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label style="font-size:0.75rem;opacity:0.85;">Option A: Upload Voice Note / Audio Song from Device</label>
+              <div class="audio-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="audio-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                  <span id="audio-upload-text">🎙️ Select Audio / Voice Note</span>
+                  <input type="file" id="input-audio-file" accept="audio/*" style="display:none;">
+                </label>
+                <button type="button" id="remove-audio-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Audio</button>
+              </div>
+              <small class="field-hint">Apni voice recording ya audio song file select karein.</small>
+            </div>
+            <div class="form-group" style="margin-top:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <label for="input-music-url" style="margin-bottom:0;">Option B: Or Paste YouTube Song Link</label>
+                <button type="button" id="clear-music-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
+              </div>
+              <small class="field-hint">Apni pasand ka YouTube video link paste karein. Khaali chhodne par default birthday tune bajega.</small>
+              <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label for="input-music-start">YouTube Start Time (Optional, e.g. 30 or 1:15)</label>
+              <small class="field-hint">Song kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
+              <input type="text" id="input-music-start" placeholder="e.g. 30 or 1:15">
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ SECTION 11: PERSONAL VIDEO WISH ═══ -->
+        <div class="editor-section" data-section="videowish">
+          <button class="editor-section-header" type="button">
+            <span>📹 Personal Video Wish (Upload or YouTube)</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" class="reset-section-btn" data-reset="videowish" title="Reset Video Wish">🔄 Reset Section</button>
+            </div>
+            <div class="form-group">
+              <label style="font-size:0.75rem;opacity:0.85;">Option A: Select Video File from Device Gallery</label>
+              <div class="video-upload-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                <label id="video-upload-label" style="background:rgba(255,215,0,0.1);border:1px dashed var(--gold, #ffd700);color:var(--gold,#ffd700);padding:8px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                  <span id="video-upload-text">📹 Select Video from Device</span>
+                  <input type="file" id="input-video-file" accept="video/*" style="display:none;">
+                </label>
+                <button type="button" id="remove-video-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Video</button>
+              </div>
+              <small class="field-hint">Apne mobile/laptop gallery se recorded video select karein.</small>
+            </div>
+            <div class="form-group" style="margin-top:14px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <label for="input-video-url" style="margin-bottom:0;">Option B: Or Paste YouTube / Shorts Link</label>
+                <button type="button" id="clear-video-url-btn" class="clear-input-btn" title="Clear Link">✕ Clear Link</button>
+              </div>
+              <input type="text" id="input-video-url" placeholder="https://youtu.be/... or Shorts link">
+              <small class="field-hint">Agar gallery video nahi hai to YouTube/Shorts ka link paste kar sakte hain.</small>
+            </div>
+            <div class="form-group" style="margin-top:12px;">
+              <label for="input-video-start">Video Start Time (Optional, e.g. 30 or 1:15)</label>
+              <small class="field-hint">Video kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
+              <input type="text" id="input-video-start" placeholder="e.g. 30 or 1:15">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- STICKY FOOTER -->
+      <div class="editor-footer" style="display:flex;gap:12px;padding:16px 24px;">
+        <button id="customizer-save-btn" class="btn" style="flex:1;">💾 Save & Apply</button>
+        <button id="customizer-share-link-btn" class="btn btn-ghost" style="flex:1;">🔗 Shareable Link</button>
+      </div>
+
+    </div>
 
   </div>
 
   <!-- Toast Notification element -->
   <div id="editor-toast" class="toast-msg"></div>
 
-  <!-- Scripts -->
+  <!-- Modular Scripts -->
   <script src="/api/env.js"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>

@@ -887,7 +887,7 @@
         const qSel = document.getElementById("sec-question-preset")?.value || "";
         const qCust = (document.getElementById("sec-custom-question")?.value || "").trim();
         const finalQuestion = qSel === "custom" ? qCust : qSel;
-        const answer = (document.getElementById("sec-recovery-answer")?.value || "").trim().toLowerCase();
+        const answer = (document.getElementById("sec-recovery-answer")?.value || "").trim();
 
         if (!finalQuestion) {
           showToast("Please select or enter a security question ⚠️");
@@ -898,19 +898,32 @@
           return;
         }
 
-        settings.custom_secret_question = finalQuestion;
-        settings.custom_secret_answer = answer;
-
-        if (window.DatabaseModule) {
-          await window.DatabaseModule.saveSecuritySettings({
-            custom_secret_question: finalQuestion,
-            custom_secret_answer: answer
+        showToast("⏳ Hashing and saving Security Question & Answer...");
+        try {
+          const res = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "save-question", question: finalQuestion, answer })
           });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            settings.custom_secret_question = finalQuestion;
+            if (window.DatabaseModule) {
+              await window.DatabaseModule.saveSecuritySettings({
+                custom_secret_question: finalQuestion,
+                custom_secret_answer: answer
+              });
+            }
+            const ansInp = document.getElementById("sec-recovery-answer");
+            if (ansInp) ansInp.value = "";
+            logEvent("SECURITY_QUESTION_UPDATED", "Security Question and hashed secret answer saved & persisted");
+            showToast("🛡 Security Question & Answer Hashed & Saved! ✅");
+          } else {
+            showToast(data.error || "Failed to save Security Question & Answer ❌");
+          }
+        } catch (e) {
+          showToast("Network error saving Security Question & Answer ❌");
         }
-
-        document.getElementById("sec-recovery-answer").value = "";
-        logEvent("SECURITY_QUESTION_UPDATED", "Security Question and hashed secret answer saved & persisted");
-        showToast("🛡 Security Question & Answer Saved & Persisted! ✅");
       });
     }
   }

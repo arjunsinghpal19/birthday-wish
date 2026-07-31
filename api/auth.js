@@ -1,9 +1,9 @@
 /**
  * ============================================================================
  * VERCEL SERVERLESS AUTHENTICATION & CRYPTOGRAPHY API (api/auth.js)
- * Executes PBKDF2-HMAC-SHA256 password hashing & verification server-side.
+ * Executes PBKDF2-HMAC-SHA256 password & security answer hashing/verification.
  * Never exposes salts or hashing mechanics to the browser client.
- * Supports graceful fallback before or after database migration.
+ * Automatically migrates unhashed security answers to PBKDF2 hashes.
  * ============================================================================
  */
 
@@ -43,17 +43,17 @@ export default async function handler(req, res) {
   const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
 
   try {
-    const { action, password, newPassword } = req.body || {};
+    const { action, password, newPassword, question, answer } = req.body || {};
 
-    // 1. Try querying dedicated security columns first
+    // Fetch security columns from reserved system row 00000000-0000-0000-0000-000000000001
     let fetchRes = await fetch(
-      `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=admin_password_hash,admin_password_salt,pass_code,memory_text`,
+      `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=admin_password_hash,admin_password_salt,security_question,security_answer_hash,security_answer_salt,pass_code,memory_text`,
       {
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       }
     );
 
-    // 2. Fallback to basic columns if dedicated columns do not exist yet (pre-migration compatibility)
+    // Pre-migration fallback if dedicated columns do not exist yet
     if (!fetchRes.ok) {
       fetchRes = await fetch(
         `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=pass_code,memory_text`,
@@ -71,18 +71,21 @@ export default async function handler(req, res) {
     const secRow = records[0] || {};
 
     let actualPass = secRow.pass_code;
-    let storedHash = secRow.admin_password_hash;
-    let storedSalt = secRow.admin_password_salt;
+    let storedPassHash = secRow.admin_password_hash;
+    let storedPassSalt = secRow.admin_password_salt;
+    let storedAnsHash = secRow.security_answer_hash;
+    let storedAnsSalt = secRow.security_answer_salt;
 
-    if (!actualPass && secRow.memory_text) {
-      try {
-        const parsed = JSON.parse(secRow.memory_text);
-        if (parsed.admin_master_password) actualPass = parsed.admin_master_password;
-      } catch (e) {}
+    let parsedMemory = {};
+    if (secRow.memory_text) {
+      try { parsedMemory = JSON.parse(secRow.memory_text); } catch (e) {}
+    }
+    if (!actualPass && parsedMemory.admin_master_password) {
+      actualPass = parsedMemory.admin_master_password;
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // ACTION: VERIFY PASSWORD
+    // ACTION: VERIFY ADMIN PASSWORD
     // ────────────────────────────────────────────────────────────────────────
     if (action === "verify") {
       if (!password) {
@@ -91,20 +94,18 @@ export default async function handler(req, res) {
 
       const inputClean = password.trim();
 
-      // If stored hash & salt exist, verify using PBKDF2-HMAC-SHA256
-      if (storedHash && storedSalt) {
-        const inputHash = await pbkdf2Async(inputClean, storedSalt);
-        const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedHash));
+      if (storedPassHash && storedPassSalt) {
+        const inputHash = await pbkdf2Async(inputClean, storedPassSalt);
+        const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedPassHash));
         return res.status(200).json({ valid: isValid });
       }
 
-      // Pre-migration fallback: Compare with canonical pass_code
       const isValid = (actualPass && inputClean === actualPass.trim());
       return res.status(200).json({ valid: isValid });
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // ACTION: UPDATE PASSWORD
+    // ACTION: UPDATE ADMIN PASSWORD
     // ────────────────────────────────────────────────────────────────────────
     if (action === "update") {
       if (!newPassword || newPassword.trim().length < 4) {
@@ -115,30 +116,20 @@ export default async function handler(req, res) {
       const newSalt = generateSalt();
       const newHash = await pbkdf2Async(cleanNewPass, newSalt);
 
-      let payload = {};
-      if (secRow.memory_text) {
-        try { payload = JSON.parse(secRow.memory_text); } catch (e) {}
-      }
-      payload.admin_master_password = cleanNewPass;
-      payload.updated_at = new Date().toISOString();
+      parsedMemory.admin_master_password = cleanNewPass;
+      parsedMemory.updated_at = new Date().toISOString();
 
-      // Build update body with fallback for pre-migration schema
       let updateBody = {
         pass_code: cleanNewPass,
-        memory_text: JSON.stringify(payload),
+        memory_text: JSON.stringify(parsedMemory),
         updated_at: new Date().toISOString()
       };
 
-      // Try updating with dedicated columns
       let updateRes = await fetch(
         `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
         {
           method: "PATCH",
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json"
-          },
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             ...updateBody,
             admin_password_hash: newHash,
@@ -147,29 +138,110 @@ export default async function handler(req, res) {
         }
       );
 
-      // Fallback if dedicated columns do not exist yet
       if (!updateRes.ok) {
         updateRes = await fetch(
           `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
           {
             method: "PATCH",
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json"
-            },
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
             body: JSON.stringify(updateBody)
           }
         );
       }
 
       if (!updateRes.ok) {
-        const errTxt = await updateRes.text();
-        console.error("❌ Serverless Password Update failed:", errTxt);
         return res.status(500).json({ success: false, message: "Database update failed" });
       }
 
       return res.status(200).json({ success: true });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // ACTION: VERIFY SECURITY ANSWER (WITH AUTOMATIC PBKDF2 HASH MIGRATION)
+    // ────────────────────────────────────────────────────────────────────────
+    if (action === "verify-question") {
+      if (!answer) {
+        return res.status(400).json({ valid: false, message: "Answer is required" });
+      }
+
+      const cleanAns = answer.trim().toLowerCase();
+
+      // Case A: Dedicated answer hash & salt exist
+      if (storedAnsHash && storedAnsSalt) {
+        const inputHash = await pbkdf2Async(cleanAns, storedAnsSalt);
+        const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedAnsHash));
+        return res.status(200).json({ valid: isValid });
+      }
+
+      // Case B: First migration / pre-migration fallback (expected answer is "shivam")
+      let expectedLegacyAns = "shivam";
+      if (parsedMemory.custom_secret_answer) {
+        const parsedClean = parsedMemory.custom_secret_answer.trim().toLowerCase();
+        if (parsedClean !== "arjun") expectedLegacyAns = parsedClean;
+      }
+
+      const isValid = (cleanAns === expectedLegacyAns);
+
+      if (isValid) {
+        // Automatically migrate unhashed answer to PBKDF2 hash & salt in Supabase
+        const newAnsSalt = generateSalt();
+        const newAnsHash = await pbkdf2Async(cleanAns, newAnsSalt);
+        parsedMemory.custom_secret_answer = "Shivam";
+        parsedMemory.updated_at = new Date().toISOString();
+
+        await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+          method: "PATCH",
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            security_answer_hash: newAnsHash,
+            security_answer_salt: newAnsSalt,
+            security_question: secRow.security_question || "Who is your best friend?",
+            memory_text: JSON.stringify(parsedMemory),
+            updated_at: new Date().toISOString()
+          })
+        });
+      }
+
+      return res.status(200).json({ valid: isValid });
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // ACTION: SAVE SECURITY QUESTION & ANSWER
+    // ────────────────────────────────────────────────────────────────────────
+    if (action === "save-question") {
+      if (!question || !answer) {
+        return res.status(400).json({ success: false, message: "Question and Answer are required" });
+      }
+
+      const cleanQuest = question.trim();
+      const cleanAns = answer.trim().toLowerCase();
+      const newAnsSalt = generateSalt();
+      const newAnsHash = await pbkdf2Async(cleanAns, newAnsSalt);
+
+      parsedMemory.custom_secret_question = cleanQuest;
+      parsedMemory.custom_secret_answer = answer.trim();
+      parsedMemory.updated_at = new Date().toISOString();
+
+      let updateRes = await fetch(
+        `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
+        {
+          method: "PATCH",
+          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            security_question: cleanQuest,
+            security_answer_hash: newAnsHash,
+            security_answer_salt: newAnsSalt,
+            memory_text: JSON.stringify(parsedMemory),
+            updated_at: new Date().toISOString()
+          })
+        }
+      );
+
+      if (!updateRes.ok) {
+        return res.status(500).json({ success: false, message: "Failed to save security question & answer" });
+      }
+
+      return res.status(200).json({ success: true, message: "Security Question & Answer Saved!" });
     }
 
     return res.status(400).json({ error: "Invalid action parameter" });

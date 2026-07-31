@@ -4099,9 +4099,7 @@ function initAdminSecurityModal() {
         targetContent.style.display = "block";
       }
       if (tabName === "forgot") {
-        updateQuestionLabel();
-        document.getElementById("forgot-step-verify").style.display = "block";
-        document.getElementById("forgot-step-newpass").style.display = "none";
+        if (typeof resetToMethods === "function") resetToMethods();
       }
     };
   });
@@ -4412,27 +4410,32 @@ function initAdminSecurityModal() {
       verifyQuestBtn.addEventListener("click", async () => {
         const inp = document.getElementById("recovery-question-input");
         const errEl = document.getElementById("question-answer-error");
-        const ans = (inp?.value || "").trim().toLowerCase();
+        const ans = (inp?.value || "").trim();
 
-        let expectedAns = "shivam";
-        if (window.DatabaseModule) {
-          try {
-            const sec = await window.DatabaseModule.getSecuritySettings();
-            if (sec && sec.custom_secret_answer) {
-              expectedAns = sec.custom_secret_answer.trim().toLowerCase();
-            }
-          } catch (e) {}
-        } else if (localStorage.getItem("custom_secret_answer")) {
-          expectedAns = localStorage.getItem("custom_secret_answer").trim().toLowerCase();
+        if (!ans) {
+          if (errEl) { errEl.textContent = "❌ Please enter a secret answer!"; errEl.style.display = "flex"; }
+          showToast("Please enter secret answer ⚠️");
+          return;
         }
 
-        if (ans && ans === expectedAns) {
-          if (errEl) errEl.style.display = "none";
-          showToast("✓ Secret Answer Verified! Enter your new Admin password:");
-          showSubstep(stepNewPass);
-        } else {
-          if (errEl) { errEl.textContent = "❌ Invalid Secret Answer!"; errEl.style.display = "flex"; }
-          showToast("Invalid Secret Answer! ❌");
+        showToast("⏳ Verifying Secret Answer...");
+        try {
+          const res = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "verify-question", answer: ans })
+          });
+          const data = await res.json();
+          if (res.ok && data.valid) {
+            if (errEl) errEl.style.display = "none";
+            showToast("✓ Secret Answer Verified! Enter your new Admin password:");
+            showSubstep(stepNewPass);
+          } else {
+            if (errEl) { errEl.textContent = "❌ Invalid Secret Answer!"; errEl.style.display = "flex"; }
+            showToast("Invalid Secret Answer! ❌");
+          }
+        } catch (e) {
+          showToast("Network error verifying Secret Answer ❌");
         }
       });
     }

@@ -1777,22 +1777,47 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
 
+.modal-backdrop,
 #admin-login-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 10005;
-  background: rgba(10, 4, 18, 0.88);
-  backdrop-filter: blur(15px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  inset: 0 !important;
+  z-index: 9999999 !important;
+  background: rgba(10, 4, 18, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease !important;
+  padding: 16px !important;
 }
+
+.modal-backdrop.open,
 #admin-login-modal.open {
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.modal-backdrop .modal-content,
+#admin-login-modal .modal-content {
+  transform: scale(0.92);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(168, 85, 247, 0.3);
+}
+
+.modal-backdrop.open .modal-content,
+#admin-login-modal.open .modal-content {
+  transform: scale(1);
 }
 
 /* Password Input Wrapper with Eye Toggle */

@@ -118,30 +118,25 @@
         if (client) {
           const { data, error } = await client
             .from("wishes")
-            .select("pass_code, memory_text")
+            .select("admin_password, pass_code, memory_text")
             .eq("id", "00000000-0000-0000-0000-000000000001")
             .single();
 
           if (!error && data) {
-            // pass_code is the single canonical password
-            let cloudPass = data.pass_code;
+            // Dedicated column admin_password takes primary precedence
+            let cloudPass = data.admin_password || data.pass_code;
 
-            // If pass_code exists, cache it and use it as canonical truth
+            // Fallback to memory_text if both dedicated columns are unpopulated
+            if (!cloudPass && data.memory_text) {
+              try {
+                const parsed = JSON.parse(data.memory_text);
+                if (parsed && parsed.admin_master_password) cloudPass = parsed.admin_master_password;
+              } catch (e) {}
+            }
+
             if (cloudPass) {
               this._sessionPassword = cloudPass;
               return cloudPass;
-            }
-
-            // Fallback to memory_text if pass_code was empty
-            if (data.memory_text) {
-              try {
-                const parsed = JSON.parse(data.memory_text);
-                if (parsed && parsed.admin_master_password) {
-                  cloudPass = parsed.admin_master_password;
-                  this._sessionPassword = cloudPass;
-                  return cloudPass;
-                }
-              } catch (e) {}
             }
           }
         }
@@ -179,16 +174,20 @@
         }
       } catch (e) {}
 
-      // Synchronize BOTH pass_code and memory_text.admin_master_password together
       payload.admin_master_password = cleanPass;
       payload.updated_at = new Date().toISOString();
 
+      // Synchronize dedicated column admin_password, pass_code, and memory_text together
+      const updatePayload = {
+        admin_password: cleanPass,
+        pass_code: cleanPass,
+        memory_text: JSON.stringify(payload),
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await client
         .from("wishes")
-        .update({
-          pass_code: cleanPass,
-          memory_text: JSON.stringify(payload)
-        })
+        .update(updatePayload)
         .eq("id", "00000000-0000-0000-0000-000000000001");
 
       if (error) {
@@ -197,7 +196,7 @@
       }
 
       this._sessionPassword = cleanPass;
-      console.log("🔑 Password synchronized: pass_code & memory_text updated on Supabase & session memory.");
+      console.log("🔑 Phase 2A Password synchronized to dedicated column admin_password & cloud record.");
       return true;
     },
 
@@ -225,7 +224,7 @@
 
   window.PasswordService = PasswordService;
 
-  // Persistent Security Metadata Storage (Recovery Email, Security Q&A Metadata)
+  // Persistent Security Metadata Storage
   const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
 
   async function saveSecuritySettings(secObj) {
@@ -241,7 +240,20 @@
         updated_at: new Date().toISOString()
       };
 
-      // Strip sensitive password strings from localStorage metadata cache
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (client) {
+        const cloudFields = {
+          recovery_email: updated.admin_recovery_email,
+          recovery_email_verified: updated.recovery_email_verified || false,
+          backup_code: updated.admin_recovery_code,
+          security_question: updated.custom_secret_question,
+          security_answer: updated.custom_secret_answer,
+          memory_text: JSON.stringify(updated),
+          updated_at: new Date().toISOString()
+        };
+        await client.from("wishes").update(cloudFields).eq("id", "00000000-0000-0000-0000-000000000001");
+      }
+
       const metadataOnly = { ...updated };
       delete metadataOnly.admin_master_password;
       localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(metadataOnly));
@@ -258,6 +270,19 @@
   async function getSecuritySettings(forceRefresh = false) {
     try {
       const masterPass = await PasswordService.getPassword(forceRefresh);
+      let cloudData = null;
+
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (client) {
+        try {
+          const { data } = await client
+            .from("wishes")
+            .select("recovery_email, recovery_email_verified, backup_code, security_question, security_answer, memory_text")
+            .eq("id", "00000000-0000-0000-0000-000000000001")
+            .single();
+          if (data) cloudData = data;
+        } catch (err) {}
+      }
 
       let localData = null;
       const raw = localStorage.getItem(SECURITY_STORAGE_KEY);
@@ -265,17 +290,24 @@
         try { localData = JSON.parse(raw); } catch (err) {}
       }
 
+      let parsedMemory = {};
+      if (cloudData?.memory_text) {
+        try { parsedMemory = JSON.parse(cloudData.memory_text); } catch (e) {}
+      }
+
       return {
         admin_master_password: masterPass,
-        admin_recovery_email: localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
-        admin_recovery_code: localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
-        custom_secret_question: localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
+        admin_recovery_email: cloudData?.recovery_email || parsedMemory.admin_recovery_email || localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        recovery_email_verified: cloudData?.recovery_email_verified ?? parsedMemory.recovery_email_verified ?? false,
+        admin_recovery_code: cloudData?.backup_code || parsedMemory.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
+        custom_secret_question: cloudData?.security_question || parsedMemory.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
+        custom_secret_answer: cloudData?.security_answer || parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
       };
     } catch (e) {
       return {
         admin_master_password: await PasswordService.getPassword(),
         admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        recovery_email_verified: false,
         admin_recovery_code: localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
         custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
         custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun"

@@ -4025,44 +4025,27 @@ async function parseQueryParams() {
   }
 }
 
-// --- UNLIMITED FAST CLOUD ADMIN PASSWORD SYNC ---
-const JSONBLOB_PASS_URL = "https://jsonblob.com/api/jsonBlob/019fb143-bcff-7b54-8228-9aefc0375c41";
-
-async function syncAdminPasswordToCloud(newPass) {
-  try {
-    if (!newPass) return false;
-    window._globalAdminPassword = newPass;
-    CONFIG.adminPassword = newPass;
-    localStorage.setItem("custom_admin_password", newPass);
-
-    const res = await fetch(JSONBLOB_PASS_URL, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pass: newPass, updatedAt: Date.now() })
-    });
-    return res.ok;
-  } catch (e) {
-    return false;
-  }
-}
-
-async function fetchAdminPasswordFromCloud() {
+// --- SUPABASE CLOUD ADMIN PASSWORD SYNC ---
+async function fetchAdminPasswordFromCloud(forceRefresh = false) {
   try {
     if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
-      const sec = await window.DatabaseModule.getSecuritySettings();
+      const sec = await window.DatabaseModule.getSecuritySettings(forceRefresh);
       if (sec && sec.admin_master_password) {
         window._globalAdminPassword = sec.admin_master_password;
-        CONFIG.adminPassword = sec.admin_master_password;
+        if (CONFIG) CONFIG.adminPassword = sec.admin_master_password;
         return sec.admin_master_password;
       }
     }
   } catch(e) {}
 
-  return window._globalAdminPassword || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || CONFIG.adminPassword || "admin123";
+  const fallback = window._globalAdminPassword || localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || CONFIG?.adminPassword || "admin123";
+  window._globalAdminPassword = fallback;
+  if (CONFIG) CONFIG.adminPassword = fallback;
+  return fallback;
 }
 
-async function getAdminPassword() {
-  return await fetchAdminPasswordFromCloud();
+async function getAdminPassword(forceRefresh = false) {
+  return await fetchAdminPasswordFromCloud(forceRefresh);
 }
 
 function initAdminSecurityModal() {
@@ -4188,6 +4171,11 @@ function initAdminSecurityModal() {
     });
   }
 
+  // Initialize Supabase Realtime Listener for cross-device instant sync
+  if (window.DatabaseModule && typeof window.DatabaseModule.initSecurityRealtime === "function") {
+    window.DatabaseModule.initSecurityRealtime();
+  }
+
   // Tab 2: Change Password Submission
   if (changeSubmitBtn) {
     changeSubmitBtn.onclick = async () => {
@@ -4196,34 +4184,54 @@ function initAdminSecurityModal() {
       const confirmVal = (confirmPassInput.value || "").trim();
       const currentPass = await getAdminPassword();
 
-      if (oldVal && oldVal !== currentPass) {
+      if (!oldVal) {
+        showToast("Please enter your Current / Old Password! ⚠️");
+        if (oldPassInput) oldPassInput.focus();
+        return;
+      }
+      if (oldVal !== currentPass) {
         showToast("Current Old Password is wrong ❌");
+        if (oldPassInput) {
+          oldPassInput.classList.add("input-error");
+          oldPassInput.focus();
+        }
         return;
       }
       if (!newVal) {
         showToast("New Password cannot be empty! ⚠️");
+        if (newPassInput) newPassInput.focus();
         return;
       }
       if (newVal.length < 4) {
         showToast("Password must be at least 4 characters! ⚠️");
+        if (newPassInput) newPassInput.focus();
         return;
       }
-      if (newVal.length > 15) {
-        showToast("Password cannot exceed 15 characters! ⚠️");
+      if (newVal.length > 20) {
+        showToast("Password cannot exceed 20 characters! ⚠️");
+        if (newPassInput) newPassInput.focus();
         return;
       }
       if (newVal !== confirmVal) {
         showToast("New Passwords do not match! ❌");
+        if (confirmPassInput) {
+          confirmPassInput.classList.add("input-error");
+          confirmPassInput.focus();
+        }
         return;
       }
 
-      showToast("⏳ Syncing Admin Password...");
-      await syncAdminPasswordToCloud(newVal);
+      showToast("⏳ Syncing Admin Password to Supabase...");
+      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
+        await window.DatabaseModule.saveSecuritySettings({ admin_master_password: newVal });
+      }
+
+      await fetchAdminPasswordFromCloud(true);
 
       oldPassInput.value = "";
       newPassInput.value = "";
       confirmPassInput.value = "";
-      showToast("🔑 Admin Password updated! ✅");
+      showToast("🔑 Admin Password updated successfully across all devices! ✅");
 
       // Switch to unlock tab
       const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');

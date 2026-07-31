@@ -469,9 +469,15 @@
               <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
-              <label for="input-birthdate">📅 Birth Date (Select Date from Calendar)</label>
-              <small class="field-hint">Click calendar icon 📅 to pick exact Day, Month & Year (1950 - Future)</small>
-              <input type="date" id="input-birthdate" class="form-control luxury-date-picker" min="1950-01-01" max="2100-12-31">
+              <label for="input-birthdate-display">📅 Birth Date (Type or Select from Calendar)</label>
+              <small class="field-hint">Type date (e.g. 08/17/2023 or 17-Aug-2001) or click calendar icon</small>
+              <div id="material-input-container" style="position:relative;display:flex;align-items:center;">
+                <input type="text" id="input-birthdate-display" class="form-control luxury-date-picker-input" placeholder="MM/DD/YYYY" style="width:100%;padding:11px 48px 11px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.35);color:#fff;font-size:0.95rem;transition:all 0.3s ease;">
+                <button type="button" id="open-material-datepicker-btn" title="Open Calendar" aria-label="Open Calendar" style="position:absolute;right:8px;background:rgba(168,85,247,0.25);border:1px solid rgba(255,215,0,0.4);border-radius:10px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:all 0.2s ease;z-index:5;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </button>
+                <input type="hidden" id="input-birthdate" value="2001-01-01">
+              </div>
             </div>
             <div class="form-group row">
               <div>
@@ -867,6 +873,63 @@
   </div>
 
 
+
+  <!-- MATERIAL DESIGN DATE PICKER MODAL (EXACT IMAGE 2 REPLICATION) -->
+  <div id="material-date-picker-modal" class="customizer-modal-backdrop" style="display:none;z-index:999999;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);">
+    <div id="material-dp-card" style="max-width:340px;width:92%;margin:auto;padding:20px;border-radius:24px;background:#f3eef8;box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(147,51,234,0.3);color:#2d213d;font-family:'Outfit', sans-serif;position:relative;">
+      
+      <!-- Top Navigation Header (Image 2 Style: Separate Month & Year controls) -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        
+        <!-- Month Selector Group (< Month ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="mdp-prev-month" aria-label="Previous Month" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">‹</button>
+          <select id="mdp-month-select" style="background:none;border:none;color:#2d213d;font-size:0.95rem;font-weight:700;cursor:pointer;padding:2px 4px;outline:none;">
+            <option value="0">Jan</option>
+            <option value="1">Feb</option>
+            <option value="2">Mar</option>
+            <option value="3">Apr</option>
+            <option value="4">May</option>
+            <option value="5">Jun</option>
+            <option value="6">Jul</option>
+            <option value="7">Aug</option>
+            <option value="8">Sep</option>
+            <option value="9">Oct</option>
+            <option value="10">Nov</option>
+            <option value="11">Dec</option>
+          </select>
+          <button type="button" id="mdp-next-month" aria-label="Next Month" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">›</button>
+        </div>
+
+        <!-- Year Selector Group (< Year ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="mdp-prev-year" aria-label="Previous Year" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">‹</button>
+          <select id="mdp-year-select" style="background:none;border:none;color:#2d213d;font-size:0.95rem;font-weight:700;cursor:pointer;padding:2px 4px;outline:none;">
+            <!-- Dynamic 1950 to 2100 -->
+          </select>
+          <button type="button" id="mdp-next-year" aria-label="Next Year" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">›</button>
+        </div>
+
+      </div>
+
+      <!-- Days Header Row (Image 2: S M T W T F S) -->
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-size:0.85rem;font-weight:600;color:#785a9c;margin-bottom:10px;">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+
+      <!-- Calendar Days Grid -->
+      <div id="mdp-days-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;text-align:center;min-height:210px;">
+        <!-- Dynamic day buttons -->
+      </div>
+
+      <!-- Bottom Action Bar (Image 2: Cancel OK) -->
+      <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06);">
+        <button type="button" id="mdp-cancel-btn" style="background:none;border:none;color:#6b4c8a;font-size:0.9rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:12px;transition:background 0.2s;">Cancel</button>
+        <button type="button" id="mdp-ok-btn" style="background:none;border:none;color:#7c3aed;font-size:0.9rem;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:12px;transition:background 0.2s;">OK</button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- PHOTO LIGHTBOX MODAL (ZOOM VIEW) -->
   <div id="photo-lightbox" class="photo-lightbox-modal" aria-hidden="true">

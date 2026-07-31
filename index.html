@@ -469,11 +469,11 @@
               <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
-              <label for="input-birthdate-display">📅 Birth Date (Select Date from Calendar)</label>
-              <small class="field-hint">Click calendar icon 📅 to pick exact Day, Month & Year (1950 - Future)</small>
-              <div style="position:relative;">
+              <label for="input-birthdate-display" style="cursor:pointer;">📅 Birth Date (Select Date from Calendar)</label>
+              <small class="field-hint">Click anywhere in the box or 📅 calendar icon to pick exact Date</small>
+              <div id="input-birthdate-wrapper" style="position:relative;cursor:pointer;">
                 <input type="text" id="input-birthdate-display" readonly class="form-control luxury-date-picker" placeholder="Select Birth Date 📅" style="padding-right:42px;cursor:pointer;">
-                <span id="open-material-datepicker-icon" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.2rem;cursor:pointer;user-select:none;">📅</span>
+                <span id="open-material-datepicker-icon" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.2rem;cursor:pointer;user-select:none;pointer-events:auto;">📅</span>
                 <input type="hidden" id="input-birthdate" value="2001-01-01">
               </div>
             </div>

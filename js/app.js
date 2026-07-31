@@ -6442,8 +6442,14 @@ function initMusicWidget() {
       modal.style.display = "none";
     }
 
+    const wrapper = document.getElementById("input-birthdate-wrapper");
+    const label = document.querySelector('label[for="input-birthdate-display"]');
+
     if (displayInput) displayInput.addEventListener("click", openPicker);
     if (triggerIcon) triggerIcon.addEventListener("click", openPicker);
+    if (wrapper) wrapper.addEventListener("click", openPicker);
+    if (label) label.addEventListener("click", openPicker);
+
     if (cancelBtn) cancelBtn.addEventListener("click", closePicker);
     modal.addEventListener("click", (e) => {
       if (e.target === modal) closePicker();

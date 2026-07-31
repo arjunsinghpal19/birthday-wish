@@ -326,8 +326,8 @@
         admin_recovery_email: cloudData?.recovery_email || parsedMemory.admin_recovery_email || localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
         recovery_email_verified: cloudData?.recovery_email_verified ?? parsedMemory.recovery_email_verified ?? false,
         admin_recovery_code: parsedMemory.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
-        custom_secret_question: cloudData?.security_question || parsedMemory.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
+        custom_secret_question: cloudData?.security_question || parsedMemory.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "Who is your best friend?",
+        custom_secret_answer: parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "Shivam"
       };
     } catch (e) {
       return {
@@ -335,8 +335,8 @@
         admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
         recovery_email_verified: false,
         admin_recovery_code: localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
-        custom_secret_question: localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "arjun"
+        custom_secret_question: localStorage.getItem("custom_secret_question") || "Who is your best friend?",
+        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "Shivam"
       };
     }
   }

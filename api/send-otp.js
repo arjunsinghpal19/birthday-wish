@@ -3,7 +3,7 @@
  * VERCEL SERVERLESS OTP & RECOVERY EMAIL SERVICE (api/send-otp.js)
  * Executes OTP generation, SHA-256 salted hashing, 5-min expiry, 
  * 60s cooldown, max 5 attempts, 15-min lockout, and Resend email delivery.
- * Supports pre-migration and post-migration schema fallbacks.
+ * Displays explicit error if RESEND_API_KEY is missing or Resend API rejects.
  * ============================================================================
  */
 
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
   const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
-  const resendApiKey = process.env.RESEND_API_KEY || "";
+  const resendApiKey = (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) || "";
 
   try {
     const { action, email, otpCode, newPassword, purpose } = req.body || {};
@@ -100,6 +100,13 @@ export default async function handler(req, res) {
       const targetEmail = (email || currentRecoveryEmail || "").trim().toLowerCase();
       if (!targetEmail || !targetEmail.includes("@")) {
         return res.status(400).json({ error: "Valid email address is required" });
+      }
+
+      // Explicit check if RESEND_API_KEY is configured
+      if (!resendApiKey) {
+        return res.status(400).json({
+          error: "Resend API Key is not configured in Vercel Environment Variables. Please set RESEND_API_KEY in Vercel Dashboard."
+        });
       }
 
       // Check 60s Resend Cooldown
@@ -171,46 +178,47 @@ export default async function handler(req, res) {
       }
 
       // Send Email via Resend API
-      if (resendApiKey) {
-        try {
-          const emailSubject = purpose === "SETUP" ? "Verify Admin Recovery Email - Birthday Suite" : "Admin Password Reset OTP - Birthday Suite";
-          const resendResponse = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendApiKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              from: "Birthday Suite Security <onboarding@resend.dev>",
-              to: [targetEmail],
-              subject: emailSubject,
-              html: `
-                <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; borderRadius: 12px;">
-                  <h2 style="color: #fbbf24; margin-bottom: 8px;">🔐 Birthday Suite Security Code</h2>
-                  <p style="font-size: 14px; color: #94a3b8;">Your 6-digit verification code is:</p>
-                  <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #38bdf8; background: #1e293b; padding: 16px; border-radius: 8px; text-align: center; margin: 16px 0;">
-                    ${rawOtp}
-                  </div>
-                  <p style="font-size: 12px; color: #64748b;">This code expires in <strong>5 minutes</strong>. Do not share this code with anyone.</p>
+      try {
+        const emailSubject = purpose === "SETUP" ? "Verify Admin Recovery Email - Birthday Suite" : "Admin Password Reset OTP - Birthday Suite";
+        const resendResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            from: "Birthday Suite Security <onboarding@resend.dev>",
+            to: [targetEmail],
+            subject: emailSubject,
+            html: `
+              <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 480px; margin: 0 auto; border: 1px solid #334155;">
+                <h2 style="color: #fbbf24; margin-bottom: 8px; font-size: 20px;">🔐 Birthday Suite Security Code</h2>
+                <p style="font-size: 14px; color: #94a3b8;">Your 6-digit verification code is:</p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #38bdf8; background: #1e293b; padding: 16px; border-radius: 8px; text-align: center; margin: 16px 0; border: 1px solid #475569;">
+                  ${rawOtp}
                 </div>
-              `
-            })
-          });
+                <p style="font-size: 12px; color: #64748b;">This code expires in <strong>5 minutes</strong>. Do not share this code with anyone.</p>
+              </div>
+            `
+          })
+        });
 
-          if (!resendResponse.ok) {
-            const resendErr = await resendResponse.text();
-            console.warn("⚠️ Resend Email Delivery Notice:", resendErr);
-          }
-        } catch (e) {
-          console.warn("⚠️ Resend API Dispatch Exception:", e);
+        if (!resendResponse.ok) {
+          const resendErrText = await resendResponse.text();
+          let detail = resendErrText;
+          try {
+            const parsedErr = JSON.parse(resendErrText);
+            if (parsedErr.message) detail = parsedErr.message;
+          } catch (e) {}
+          return res.status(400).json({ error: `Resend Email Delivery Error: ${detail}` });
         }
-      } else {
-        console.log(`ℹ️ [TESTING MODE] Generated OTP for ${targetEmail}: ${rawOtp}`);
+      } catch (e) {
+        return res.status(500).json({ error: `Resend API Connection Error: ${e.message}` });
       }
 
       return res.status(200).json({
         success: true,
-        message: "OTP sent successfully!",
+        message: "OTP sent successfully via Resend!",
         expiresInSeconds: 300,
         resendCooldownSeconds: 60
       });

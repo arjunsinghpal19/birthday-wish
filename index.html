@@ -732,7 +732,76 @@
           </div>
         </div>
 
-      </div>
+        <!-- ═══ SECTION: SECURITY & RECOVERY SETTINGS ═══ -->
+        <div class="editor-section" data-section="security">
+          <button class="editor-section-header" type="button">
+            <span>🛡 Security & Account Recovery Settings</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            
+            <!-- 1. Recovery Email Setup -->
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;margin-bottom:14px;">
+              <div style="display:flex;justify-style:space-between;align-items:center;margin-bottom:8px;">
+                <label for="sec-recovery-email" style="font-size:0.82rem;font-weight:700;color:#fff;margin:0;">📧 Recovery Email Address</label>
+                <span id="sec-email-status-badge" style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(234,179,8,0.15);color:#facc15;border:1px solid rgba(234,179,8,0.4);font-weight:600;">Unverified ⚠️</span>
+              </div>
+              <small class="field-hint" style="margin-bottom:8px;display:block;">Password reset ke liye OTP iss email par bheja jayega.</small>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                <input type="email" id="sec-recovery-email" placeholder="admin@example.com" style="flex:1;min-width:180px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;" />
+                <button type="button" id="sec-save-email-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Send Verification OTP</button>
+              </div>
+              <div id="sec-email-otp-box" style="display:none;gap:8px;margin-top:8px;align-items:center;">
+                <input type="text" id="sec-email-otp-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="width:140px;padding:6px 10px;border-radius:6px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;font-size:0.85rem;text-align:center;font-weight:bold;" />
+                <button type="button" id="sec-verify-email-otp-btn" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">Verify & Save</button>
+              </div>
+            </div>
+
+            <!-- 2. Emergency Backup Code -->
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;margin-bottom:14px;">
+              <label style="font-size:0.82rem;font-weight:700;color:#fff;margin-bottom:4px;display:block;">🔑 Emergency Backup Code</label>
+              <small class="field-hint" style="margin-bottom:10px;display:block;">Offline account recovery ke liye 16-character backup code.</small>
+              <div style="background:rgba(0,0,0,0.3);border:1px dashed var(--gold,#ffd700);padding:10px 14px;border-radius:8px;text-align:center;margin-bottom:10px;">
+                <span id="sec-backup-code-display" style="font-family:monospace;font-size:1.1rem;font-weight:bold;letter-spacing:2px;color:var(--gold,#ffd700);">BW-9F8A-3E21-7B04</span>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button type="button" id="btn-copy-recovery-code" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">📋 Copy</button>
+                <button type="button" id="btn-download-recovery-code" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">📥 Download</button>
+                <button type="button" id="btn-regen-recovery-code" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">🔄 Regenerate</button>
+              </div>
+            </div>
+
+            <!-- 3. Security Question Customization -->
+            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;">
+              <label style="font-size:0.82rem;font-weight:700;color:#fff;margin-bottom:4px;display:block;">❓ Secret Security Question & Answer</label>
+              <small class="field-hint" style="margin-bottom:10px;display:block;">Custom security question aur hashed secret answer setup karein.</small>
+              
+              <div class="form-group" style="margin-bottom:10px;">
+                <label for="sec-question-preset" style="font-size:0.75rem;">Security Question</label>
+                <select id="sec-question-preset" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;">
+                  <option value="Who is your best friend?" style="background:#2a162b;color:#fff;">Who is your best friend?</option>
+                  <option value="What is your childhood pet's name?" style="background:#2a162b;color:#fff;">What is your childhood pet's name?</option>
+                  <option value="What is your favorite book?" style="background:#2a162b;color:#fff;">What is your favorite book?</option>
+                  <option value="custom" style="background:#2a162b;color:#fff;">➕ Write Custom Question...</option>
+                </select>
+              </div>
+
+              <div id="sec-custom-question-group" class="form-group" style="display:none;margin-bottom:10px;">
+                <input type="text" id="sec-custom-question" placeholder="Type custom security question..." style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;" />
+              </div>
+
+              <div class="form-group" style="margin-bottom:12px;">
+                <label for="sec-recovery-answer" style="font-size:0.75rem;">Secret Answer</label>
+                <div class="pass-input-wrap">
+                  <input type="password" id="sec-recovery-answer" placeholder="Enter Secret Answer (e.g. Shivam)" style="width:100%;padding:8px 40px 8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;" />
+                  <button type="button" class="eye-toggle" data-target="sec-recovery-answer" aria-label="Toggle visibility">👁</button>
+                </div>
+              </div>
+
+              <button type="button" id="sec-save-recovery-btn" style="width:100%;background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">💾 Save Question & Answer</button>
+            </div>
+
+          </div>
+        </div>
 
       <!-- STICKY FOOTER -->
       <div class="editor-footer-wrap" style="padding:14px 20px;background:rgba(20,10,25,0.95);border-top:1px solid rgba(255,255,255,0.1);border-radius:0 0 20px 20px;">

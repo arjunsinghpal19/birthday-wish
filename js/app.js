@@ -4829,6 +4829,7 @@ function initDateDropdowns() {
       const m = String(CONFIG.birthDate.month || 1).padStart(2, "0");
       const d = String(CONFIG.birthDate.day || 1).padStart(2, "0");
       bDateInput.value = `${y}-${m}-${d}`;
+      if (typeof window.syncDatePickerDisplay === "function") window.syncDatePickerDisplay();
     }
 
     document.getElementById("input-name").value = CONFIG.name || "";
@@ -6309,6 +6310,216 @@ function initMusicWidget() {
       showToast("Video link & start time cleared ✨");
     });
   }
+
+  // ─── MATERIAL DESIGN LUXURY DATE PICKER ───
+  function initMaterialDatePicker() {
+    const modal = document.getElementById("material-date-picker-modal");
+    const displayInput = document.getElementById("input-birthdate-display");
+    const hiddenInput = document.getElementById("input-birthdate");
+    const triggerIcon = document.getElementById("open-material-datepicker-icon");
+
+    if (!modal || !hiddenInput) return;
+
+    const headerYear = document.getElementById("mdp-header-year");
+    const headerDate = document.getElementById("mdp-header-date");
+    const prevBtn = document.getElementById("mdp-prev-month");
+    const nextBtn = document.getElementById("mdp-next-month");
+    const monthSelect = document.getElementById("mdp-month-select");
+    const yearSelect = document.getElementById("mdp-year-select");
+    const daysGrid = document.getElementById("mdp-days-grid");
+    const todayBtn = document.getElementById("mdp-today-btn");
+    const cancelBtn = document.getElementById("mdp-cancel-btn");
+    const okBtn = document.getElementById("mdp-ok-btn");
+
+    // Populate Years 1950 - 2100
+    if (yearSelect && yearSelect.options.length === 0) {
+      for (let y = 1950; y <= 2100; y++) {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        opt.style.background = "#2a162b";
+        opt.style.color = "#fff";
+        yearSelect.appendChild(opt);
+      }
+    }
+
+    const MONTH_NAMES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const DAY_NAMES_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    let activeYear = 2001;
+    let activeMonth = 0; // 0-indexed (0 = Jan)
+    let activeDay = 15;
+    let tempSelectedDate = new Date(2001, 0, 15);
+
+    function parseInputValue() {
+      const val = hiddenInput.value || "2001-01-01";
+      const parts = val.split("-");
+      if (parts.length === 3) {
+        const y = parseInt(parts[0]) || 2001;
+        const m = (parseInt(parts[1]) || 1) - 1;
+        const d = parseInt(parts[2]) || 1;
+        tempSelectedDate = new Date(y, m, d);
+        activeYear = y;
+        activeMonth = m;
+        activeDay = d;
+      }
+    }
+
+    function updateDisplayFormatted() {
+      const val = hiddenInput.value || "2001-01-01";
+      const parts = val.split("-");
+      if (parts.length === 3) {
+        const y = parts[0];
+        const mIdx = (parseInt(parts[1]) || 1) - 1;
+        const d = String(parseInt(parts[2]) || 1).padStart(2, "0");
+        const mName = MONTH_NAMES_SHORT[mIdx] || "Jan";
+        if (displayInput) {
+          displayInput.value = `${d}-${mName}-${y}`;
+        }
+      }
+    }
+
+    function renderCalendar() {
+      if (monthSelect) monthSelect.value = activeMonth;
+      if (yearSelect) yearSelect.value = activeYear;
+
+      if (headerYear) headerYear.textContent = activeYear;
+
+      const dayOfWeek = DAY_NAMES_SHORT[tempSelectedDate.getDay()] || "";
+      const monthName = MONTH_NAMES_SHORT[tempSelectedDate.getMonth()] || "";
+      if (headerDate) headerDate.textContent = `${dayOfWeek}, ${monthName} ${tempSelectedDate.getDate()}`;
+
+      if (!daysGrid) return;
+      daysGrid.innerHTML = "";
+
+      const firstDayOfMonth = new Date(activeYear, activeMonth, 1).getDay();
+      const daysInMonth = new Date(activeYear, activeMonth + 1, 0).getDate();
+
+      // Previous month filler cells
+      const prevMonthDays = new Date(activeYear, activeMonth, 0).getDate();
+      for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "mdp-day-cell other-month";
+        btn.textContent = prevMonthDays - i;
+        daysGrid.appendChild(btn);
+      }
+
+      const todayObj = new Date();
+
+      // Current month days
+      for (let d = 1; d <= daysInMonth; d++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "mdp-day-cell";
+        btn.textContent = d;
+
+        if (activeYear === todayObj.getFullYear() && activeMonth === todayObj.getMonth() && d === todayObj.getDate()) {
+          btn.classList.add("today");
+        }
+
+        if (activeYear === tempSelectedDate.getFullYear() && activeMonth === tempSelectedDate.getMonth() && d === tempSelectedDate.getDate()) {
+          btn.classList.add("selected");
+        }
+
+        btn.addEventListener("click", () => {
+          tempSelectedDate = new Date(activeYear, activeMonth, d);
+          activeDay = d;
+          renderCalendar();
+        });
+
+        daysGrid.appendChild(btn);
+      }
+    }
+
+    function openPicker() {
+      parseInputValue();
+      renderCalendar();
+      modal.style.display = "flex";
+    }
+
+    function closePicker() {
+      modal.style.display = "none";
+    }
+
+    if (displayInput) displayInput.addEventListener("click", openPicker);
+    if (triggerIcon) triggerIcon.addEventListener("click", openPicker);
+    if (cancelBtn) cancelBtn.addEventListener("click", closePicker);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closePicker();
+    });
+
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        activeMonth--;
+        if (activeMonth < 0) {
+          activeMonth = 11;
+          activeYear--;
+        }
+        renderCalendar();
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        activeMonth++;
+        if (activeMonth > 11) {
+          activeMonth = 0;
+          activeYear++;
+        }
+        renderCalendar();
+      });
+    }
+
+    if (monthSelect) {
+      monthSelect.addEventListener("change", (e) => {
+        activeMonth = parseInt(e.target.value);
+        renderCalendar();
+      });
+    }
+
+    if (yearSelect) {
+      yearSelect.addEventListener("change", (e) => {
+        activeYear = parseInt(e.target.value);
+        renderCalendar();
+      });
+    }
+
+    if (todayBtn) {
+      todayBtn.addEventListener("click", () => {
+        const now = new Date();
+        activeYear = now.getFullYear();
+        activeMonth = now.getMonth();
+        activeDay = now.getDate();
+        tempSelectedDate = new Date(activeYear, activeMonth, activeDay);
+        renderCalendar();
+      });
+    }
+
+    if (okBtn) {
+      okBtn.addEventListener("click", () => {
+        const y = String(tempSelectedDate.getFullYear()).padStart(4, "0");
+        const m = String(tempSelectedDate.getMonth() + 1).padStart(2, "0");
+        const d = String(tempSelectedDate.getDate()).padStart(2, "0");
+        hiddenInput.value = `${y}-${m}-${d}`;
+        updateDisplayFormatted();
+        closePicker();
+      });
+    }
+
+    // Keyboard support: Esc closes picker, Enter confirms
+    window.addEventListener("keydown", (e) => {
+      if (modal.style.display === "flex") {
+        if (e.key === "Escape") closePicker();
+        if (e.key === "Enter") okBtn?.click();
+      }
+    });
+
+    updateDisplayFormatted();
+    window.syncDatePickerDisplay = updateDisplayFormatted;
+  }
+
+  initMaterialDatePicker();
 
   initMusicWidget();
 

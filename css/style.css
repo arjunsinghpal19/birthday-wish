@@ -719,6 +719,40 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   opacity: 1;
 }
 
+/* Material Design Date Picker Styles */
+.mdp-day-cell {
+  width: 36px;
+  height: 36px;
+  margin: auto;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.mdp-day-cell:hover {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+}
+.mdp-day-cell.selected {
+  background: linear-gradient(135deg, #ffd700, #ff69b4) !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+.mdp-day-cell.today {
+  border: 1px solid rgba(255, 215, 0, 0.6);
+}
+.mdp-day-cell.other-month {
+  opacity: 0.25;
+}
+
 /* Dynamic Item Groups (Reasons, Timeline, Gallery, Wishes) */
 .editor-item-group{
   position:relative; padding:14px; margin-bottom:12px; border-radius:12px;

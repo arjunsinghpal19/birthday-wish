@@ -678,8 +678,8 @@
     // Restore Default Messages button
     document.getElementById("reset-default-messages-btn")?.addEventListener("click", () => {
       if (confirm("Restore all text, reasons, wishes & timeline back to default template messages?")) {
-        const defaults = JSON.parse(JSON.stringify(window.CONFIG || {}));
-        Object.assign(workingConfig, defaults);
+        const defaults = JSON.parse(JSON.stringify(getClassicTemplate()));
+        workingConfig = Object.assign({}, defaults);
         populateFormFields();
         showToast("🔄 All messages restored to original defaults!");
       }
@@ -689,7 +689,7 @@
     document.querySelectorAll(".reset-section-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const sec = btn.dataset.reset;
-        const defaults = JSON.parse(JSON.stringify(window.CONFIG || {}));
+        const defaults = JSON.parse(JSON.stringify(getClassicTemplate()));
         if (sec && defaults[sec] !== undefined) {
           workingConfig[sec] = defaults[sec];
           populateFormFields();

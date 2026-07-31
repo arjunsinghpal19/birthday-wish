@@ -673,6 +673,24 @@
               </div>
               <button class="btn-primary" onclick="window.adminApp.showToast('Global Settings Saved! ⚙️')">💾 Save Settings</button>
             </div>
+
+            <div class="glass-panel" style="padding:24px;">
+              <h3 style="font-family:var(--font-heading);font-size:1.15rem;margin-bottom:16px;">🛡 Super Admin Security & Password</h3>
+              <div class="form-group">
+                <label>Current Super Admin Password</label>
+                <input type="password" class="form-input" id="set-super-curr-pass" placeholder="Current Password">
+              </div>
+              <div class="form-group">
+                <label>New Super Admin Password</label>
+                <input type="password" class="form-input" id="set-super-new-pass" placeholder="New Password">
+              </div>
+              <div class="form-group">
+                <label>Confirm New Password</label>
+                <input type="password" class="form-input" id="set-super-confirm-pass" placeholder="Confirm New Password">
+              </div>
+              <small id="set-super-pass-error" style="display:none;color:#ff7675;font-size:0.78rem;margin-bottom:8px;font-weight:600;"></small>
+              <button class="btn-primary" id="btn-save-super-pass">🔑 Update Super Admin Password</button>
+            </div>
           </div>
         </section>
 
@@ -731,6 +749,19 @@
       </div>
     </main>
 
+  </div>
+
+  <!-- SUPER ADMIN 1-MINUTE INACTIVITY WARNING MODAL -->
+  <div id="admin-session-warning-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:999999;align-items:center;justify-content:center;">
+    <div class="glass-panel" style="max-width:400px;width:90%;padding:24px;text-align:center;border:1px solid rgba(255,215,0,0.4);box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+      <div style="font-size:2.5rem;margin-bottom:10px;">⏰</div>
+      <h3 style="font-family:var(--font-heading);font-size:1.25rem;color:var(--gold);margin:0 0 8px 0;">Session Expiring Soon</h3>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:20px;">Your Super Admin session will expire in <strong style="color:#ff7675;">1 minute</strong> due to inactivity.</p>
+      <div style="display:flex;gap:10px;">
+        <button id="btn-stay-logged-in" type="button" class="btn-primary" style="flex:1;">Stay Logged In</button>
+        <button id="btn-logout-now" type="button" class="btn-primary" style="flex:1;background:rgba(255,0,80,0.2);border-color:rgba(255,0,80,0.4);color:#ff6b9d;">Logout Now</button>
+      </div>
+    </div>
   </div>
 
   <!-- TOAST NOTIFICATION -->

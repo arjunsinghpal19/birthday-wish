@@ -6050,33 +6050,204 @@ function initMusicWidget() {
     });
   }
 
+  // ADMIN SECURITY ACCESS MODAL & SHORTCUTS (DUAL MODE: QUICK EDITOR & SUPER ADMIN)
+  function initAdminSecurityModal() {
+    const modal = document.getElementById("admin-security-modal");
+    if (!modal) return;
+
+    const title = document.getElementById("admin-security-title");
+    const subtitle = document.getElementById("admin-security-subtitle");
+    const passInput = document.getElementById("admin-passcode-input");
+    const errorEl = document.getElementById("admin-passcode-error");
+    const unlockBtn = document.getElementById("admin-unlock-btn");
+    const switchSuperBtn = document.getElementById("admin-switch-super-btn");
+    const closeBtn = document.getElementById("admin-security-close-btn");
+
+    const loginView = document.getElementById("admin-sec-login-view");
+    const changeView = document.getElementById("admin-sec-change-view");
+    const changeLink = document.getElementById("admin-change-pass-link");
+    const forgotLink = document.getElementById("admin-forgot-pass-link");
+
+    let accessMode = "editor"; // "editor" or "superadmin"
+
+    function setMode(mode) {
+      accessMode = mode;
+      if (passInput) passInput.value = "";
+      if (errorEl) errorEl.style.display = "none";
+      if (loginView) loginView.style.display = "block";
+      if (changeView) changeView.style.display = "none";
+
+      if (mode === "superadmin") {
+        if (title) title.textContent = "🛡 Super Admin Access";
+        if (subtitle) subtitle.textContent = "Enter Super Admin master password to log into admin.html (default: admin123)";
+        if (unlockBtn) unlockBtn.textContent = "🛡 Log Into Super Admin";
+        if (switchSuperBtn) switchSuperBtn.textContent = "📝 Switch to Quick Editor";
+        if (passInput) passInput.placeholder = "Enter Super Admin Password (default: admin123)";
+      } else {
+        if (title) title.textContent = "🔐 Admin Security Access";
+        if (subtitle) subtitle.textContent = "Enter Quick Editor passcode to unlock editor (default: 1234)";
+        if (unlockBtn) unlockBtn.textContent = "📝 Unlock Editor";
+        if (switchSuperBtn) switchSuperBtn.textContent = "🛡 Switch to Super Admin";
+        if (passInput) passInput.placeholder = "Enter Quick Editor Password (default: 1234)";
+      }
+    }
+
+    function openModal(mode = "editor") {
+      setMode(mode);
+      modal.style.display = "flex";
+      setTimeout(() => passInput?.focus(), 100);
+    }
+
+    function closeModal() {
+      modal.style.display = "none";
+      if (passInput) passInput.value = "";
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    if (switchSuperBtn) {
+      switchSuperBtn.addEventListener("click", () => {
+        setMode(accessMode === "editor" ? "superadmin" : "editor");
+      });
+    }
+
+    // Unlock / Login handler
+    if (unlockBtn) {
+      unlockBtn.addEventListener("click", () => {
+        const inputVal = (passInput?.value || "").trim();
+        if (accessMode === "superadmin") {
+          const validPass = localStorage.getItem("super_admin_password") || "admin123";
+          if (inputVal === validPass) {
+            sessionStorage.setItem("super_admin_session", "active");
+            sessionStorage.setItem("super_admin_login_time", Date.now().toString());
+            closeModal();
+            window.location.href = "admin.html";
+          } else {
+            if (errorEl) {
+              errorEl.textContent = "⚠️ Incorrect Super Admin Password!";
+              errorEl.style.display = "block";
+            }
+          }
+        } else {
+          const validPass = localStorage.getItem("quick_editor_password") || "1234";
+          if (inputVal === validPass) {
+            sessionStorage.setItem("quick_editor_session", "active");
+            sessionStorage.setItem("quick_editor_login_time", Date.now().toString());
+            closeModal();
+            window.location.href = "editor.html";
+          } else {
+            if (errorEl) {
+              errorEl.textContent = "⚠️ Incorrect Quick Editor Passcode!";
+              errorEl.style.display = "block";
+            }
+          }
+        }
+      });
+    }
+
+    // Enter key submit inside password input
+    if (passInput) {
+      passInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          unlockBtn?.click();
+        }
+      });
+    }
+
+    // Change Password View toggle
+    if (changeLink) {
+      changeLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (loginView) loginView.style.display = "none";
+        if (changeView) changeView.style.display = "block";
+      });
+    }
+
+    const cancelChangeBtn = document.getElementById("cancel-change-pass-btn");
+    if (cancelChangeBtn) {
+      cancelChangeBtn.addEventListener("click", () => {
+        if (changeView) changeView.style.display = "none";
+        if (loginView) loginView.style.display = "block";
+      });
+    }
+
+    // Save New Password handler
+    const saveNewPassBtn = document.getElementById("save-new-pass-btn");
+    if (saveNewPassBtn) {
+      saveNewPassBtn.addEventListener("click", () => {
+        const currPass = (document.getElementById("change-curr-pass")?.value || "").trim();
+        const newPass = (document.getElementById("change-new-pass")?.value || "").trim();
+        const confirmPass = (document.getElementById("change-confirm-pass")?.value || "").trim();
+        const errEl = document.getElementById("change-pass-error");
+
+        const actualCurr = localStorage.getItem("quick_editor_password") || "1234";
+
+        if (currPass !== actualCurr) {
+          if (errEl) { errEl.textContent = "⚠️ Current Password is incorrect!"; errEl.style.display = "block"; }
+          return;
+        }
+        if (!newPass) {
+          if (errEl) { errEl.textContent = "⚠️ New Password cannot be empty!"; errEl.style.display = "block"; }
+          return;
+        }
+        if (newPass !== confirmPass) {
+          if (errEl) { errEl.textContent = "⚠️ New Password & Confirm Password do not match!"; errEl.style.display = "block"; }
+          return;
+        }
+
+        localStorage.setItem("quick_editor_password", newPass);
+        if (errEl) errEl.style.display = "none";
+        showToast("🎉 Quick Editor Password updated successfully!");
+        if (changeView) changeView.style.display = "none";
+        if (loginView) loginView.style.display = "block";
+      });
+    }
+
+    if (forgotLink) {
+      forgotLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        alert("🔑 Quick Editor Default Passcode is '1234'.\n🛡 Super Admin Default Password is 'admin123'.");
+      });
+    }
+
+    // ─── SHORTCUT HANDLERS ───
+    window.addEventListener("keydown", (e) => {
+      // Ctrl + Shift + E -> Quick Editor Access
+      if (e.ctrlKey && e.shiftKey && (e.key === "E" || e.key === "e")) {
+        e.preventDefault();
+        openModal("editor");
+      }
+      // Ctrl + Shift + A -> Super Admin Access
+      if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+        e.preventDefault();
+        openModal("superadmin");
+      }
+    });
+
+    // Double-click "Happy Birthday" title -> Open Security Access Modal
+    document.querySelectorAll(".final-title, #signature, .eyebrow").forEach(el => {
+      el.addEventListener("dblclick", () => openModal("editor"));
+    });
+  }
+
+  initAdminSecurityModal();
   initMusicWidget();
-
   initShare();
-
   initCustomizerModal();
-
   initReveal();
-
   runLoadingSequence();
-
   initGyro();
 
-  // progressive enhancement — never blocks the experience, hard failsafe below
-
   const enhancementTimeout = new Promise((res) => setTimeout(res, 4500));
-
   await Promise.race([loadEnhancements(), enhancementTimeout]);
 
   if (hasGSAP) {
-
     document.querySelectorAll(".reveal").forEach((el) => {
-
       gsap.set(el, { clearProps: "transform,opacity,filter" });
-
     });
-
   }
-
 })();
 

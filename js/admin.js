@@ -1336,6 +1336,84 @@
         window.location.href = "editor.html";
       });
     }
+
+    // ─── SUPER ADMIN CHANGE PASSWORD HANDLER ───
+    const saveSuperPassBtn = document.getElementById("btn-save-super-pass");
+    if (saveSuperPassBtn) {
+      saveSuperPassBtn.addEventListener("click", () => {
+        const currPass = (document.getElementById("set-super-curr-pass")?.value || "").trim();
+        const newPass = (document.getElementById("set-super-new-pass")?.value || "").trim();
+        const confirmPass = (document.getElementById("set-super-confirm-pass")?.value || "").trim();
+        const errEl = document.getElementById("set-super-pass-error");
+
+        const actualCurr = localStorage.getItem("super_admin_password") || "admin123";
+
+        if (currPass !== actualCurr) {
+          if (errEl) { errEl.textContent = "⚠️ Current Super Admin Password is incorrect!"; errEl.style.display = "block"; }
+          return;
+        }
+        if (!newPass) {
+          if (errEl) { errEl.textContent = "⚠️ New Password cannot be empty!"; errEl.style.display = "block"; }
+          return;
+        }
+        if (newPass !== confirmPass) {
+          if (errEl) { errEl.textContent = "⚠️ New Password & Confirm Password do not match!"; errEl.style.display = "block"; }
+          return;
+        }
+
+        localStorage.setItem("super_admin_password", newPass);
+        if (errEl) errEl.style.display = "none";
+        showToast("🔑 Super Admin Password updated successfully!");
+        
+        const currInput = document.getElementById("set-super-curr-pass");
+        const newPassInput = document.getElementById("set-super-new-pass");
+        const confirmInput = document.getElementById("set-super-confirm-pass");
+        if (currInput) currInput.value = "";
+        if (newPassInput) newPassInput.value = "";
+        if (confirmInput) confirmInput.value = "";
+      });
+    }
+
+    // ─── SUPER ADMIN INACTIVITY SESSION TRACKER (15 MINS) ───
+    let lastActivityTime = Date.now();
+    const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 Minutes
+    const WARNING_TIME_MS = 14 * 60 * 1000;    // 14 Minutes (1 Min Warning)
+    let warningShown = false;
+
+    function resetActivityTimer() {
+      lastActivityTime = Date.now();
+      if (warningShown) {
+        warningShown = false;
+        const warningModal = document.getElementById("admin-session-warning-modal");
+        if (warningModal) warningModal.style.display = "none";
+      }
+    }
+
+    ["mousemove", "click", "keydown", "scroll", "touchstart"].forEach(evt => {
+      window.addEventListener(evt, resetActivityTimer, { passive: true });
+    });
+
+    document.getElementById("btn-stay-logged-in")?.addEventListener("click", resetActivityTimer);
+    document.getElementById("btn-logout-now")?.addEventListener("click", () => {
+      sessionStorage.removeItem("super_admin_session");
+      window.location.href = "index.html";
+    });
+
+    setInterval(() => {
+      const elapsed = Date.now() - lastActivityTime;
+      const warningModal = document.getElementById("admin-session-warning-modal");
+
+      if (elapsed >= WARNING_TIME_MS && elapsed < INACTIVITY_LIMIT_MS) {
+        if (!warningShown && warningModal) {
+          warningShown = true;
+          warningModal.style.display = "flex";
+        }
+      } else if (elapsed >= INACTIVITY_LIMIT_MS) {
+        sessionStorage.removeItem("super_admin_session");
+        alert("🔒 Your Super Admin session has expired due to 15 minutes of inactivity.");
+        window.location.href = "index.html";
+      }
+    }, 5000);
   });
 
   // Export Global API

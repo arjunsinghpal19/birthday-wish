@@ -927,6 +927,27 @@
       if (pageSubtitle) pageSubtitle.textContent = "Full-featured editor — pre-filled with default templates";
       populateFormFields();
     }
+
+    // ─── QUICK EDITOR INACTIVITY SESSION TRACKER (30 MINS) ───
+    let lastEditorActivity = Date.now();
+    const EDITOR_INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 Minutes
+
+    function resetEditorActivity() {
+      lastEditorActivity = Date.now();
+    }
+
+    ["mousemove", "click", "keydown", "scroll", "touchstart"].forEach(evt => {
+      window.addEventListener(evt, resetEditorActivity, { passive: true });
+    });
+
+    setInterval(() => {
+      const elapsed = Date.now() - lastEditorActivity;
+      if (elapsed >= EDITOR_INACTIVITY_LIMIT) {
+        sessionStorage.removeItem("quick_editor_session");
+        alert("🔒 Your Quick Editor session has expired due to 30 minutes of inactivity.");
+        window.location.href = "index.html";
+      }
+    }, 10000);
   });
 
 })(window);

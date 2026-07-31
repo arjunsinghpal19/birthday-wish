@@ -765,6 +765,59 @@
     </div>
   </div>
 
+  <!-- ADMIN SECURITY ACCESS MODAL (DUAL MODE: QUICK EDITOR & SUPER ADMIN) -->
+  <div id="admin-security-modal" class="customizer-modal-backdrop" style="display:none;z-index:99999;">
+    <div class="glass" style="max-width:440px;width:90%;margin:auto;padding:24px;border-radius:20px;border:1px solid rgba(255,215,0,0.4);box-shadow:0 20px 50px rgba(0,0,0,0.8);position:relative;">
+      <button id="admin-security-close-btn" type="button" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">✕</button>
+      
+      <div style="text-align:center;margin-bottom:18px;">
+        <h3 id="admin-security-title" style="font-size:1.4rem;color:var(--gold,#ffd700);margin:0 0 6px 0;">🔐 Admin Security Access</h3>
+        <p id="admin-security-subtitle" style="font-size:0.82rem;color:rgba(255,255,255,0.7);margin:0;">Enter passcode to unlock Quick Editor or switch to Super Admin</p>
+      </div>
+
+      <!-- Password Input View -->
+      <div id="admin-sec-login-view">
+        <div class="form-group" style="margin-bottom:14px;">
+          <input type="password" id="admin-passcode-input" placeholder="Enter Passcode (default: 1234)" style="width:100%;padding:12px;border-radius:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.4);color:#fff;font-size:1rem;text-align:center;letter-spacing:0.1em;">
+          <small id="admin-passcode-error" style="display:none;color:#ff7675;font-size:0.78rem;margin-top:6px;text-align:center;font-weight:600;">⚠️ Incorrect Passcode!</small>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
+          <button type="button" id="admin-unlock-btn" class="btn" style="width:100%;padding:10px;font-weight:600;">📝 Unlock Editor</button>
+          <button type="button" id="admin-switch-super-btn" class="btn btn-ghost" style="width:100%;padding:8px;font-size:0.85rem;border:1px solid rgba(255,215,0,0.3);color:var(--gold,#ffd700);">🛡 Switch to Super Admin</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:0.78rem;">
+          <a href="#" id="admin-change-pass-link" style="color:var(--gold,#ffd700);text-decoration:none;">🔑 Change Password</a>
+          <a href="#" id="admin-forgot-pass-link" style="color:rgba(255,255,255,0.6);text-decoration:none;">❓ Forgot Password</a>
+        </div>
+      </div>
+
+      <!-- Change Password View -->
+      <div id="admin-sec-change-view" style="display:none;">
+        <h4 style="font-size:1rem;color:var(--gold,#ffd700);margin:0 0 12px 0;text-align:center;">🔑 Change Quick Editor Password</h4>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label style="font-size:0.75rem;">Current Password</label>
+          <input type="password" id="change-curr-pass" placeholder="Current Password" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label style="font-size:0.75rem;">New Password</label>
+          <input type="password" id="change-new-pass" placeholder="New Password" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="font-size:0.75rem;">Confirm New Password</label>
+          <input type="password" id="change-confirm-pass" placeholder="Confirm New Password" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;">
+        </div>
+        <small id="change-pass-error" style="display:none;color:#ff7675;font-size:0.75rem;margin-bottom:8px;font-weight:600;"></small>
+        <div style="display:flex;gap:10px;">
+          <button type="button" id="save-new-pass-btn" class="btn" style="flex:1;">Save Password</button>
+          <button type="button" id="cancel-change-pass-btn" class="btn btn-ghost" style="flex:1;">Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Supabase JS SDK & Modular Architecture Scripts -->
   <script src="/api/env.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

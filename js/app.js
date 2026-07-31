@@ -6442,13 +6442,54 @@ function initMusicWidget() {
       modal.style.display = "none";
     }
 
-    const wrapper = document.getElementById("input-birthdate-wrapper");
-    const label = document.querySelector('label[for="input-birthdate-display"]');
+    function syncTypedDateToHidden() {
+      const val = (displayInput?.value || "").trim();
+      if (!val) return;
 
-    if (displayInput) displayInput.addEventListener("click", openPicker);
-    if (triggerIcon) triggerIcon.addEventListener("click", openPicker);
-    if (wrapper) wrapper.addEventListener("click", openPicker);
-    if (label) label.addEventListener("click", openPicker);
+      // 1. YYYY-MM-DD
+      let match = val.match(/^(\d{4})[-\/\.](\d{1,2})[-\/\.](\d{1,2})$/);
+      if (match) {
+        const y = match[1];
+        const m = String(match[2]).padStart(2, "0");
+        const d = String(match[3]).padStart(2, "0");
+        hiddenInput.value = `${y}-${m}-${d}`;
+        return;
+      }
+
+      // 2. DD-MM-YYYY or DD/MM/YYYY or DD.MM.YYYY
+      match = val.match(/^(\d{1,2})[-\/\.](\d{1,2})[-\/\.](\d{4})$/);
+      if (match) {
+        const d = String(match[1]).padStart(2, "0");
+        const m = String(match[2]).padStart(2, "0");
+        const y = match[3];
+        hiddenInput.value = `${y}-${m}-${d}`;
+        return;
+      }
+
+      // 3. DD-MMM-YYYY (e.g. 15-Jan-2001 or 15 Jan 2001)
+      const MONTHS_MAP = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06", jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
+      match = val.match(/^(\d{1,2})[-\s\/]+([a-zA-Z]{3,})[-\s\/]+(\d{4})$/);
+      if (match) {
+        const d = String(match[1]).padStart(2, "0");
+        const mStr = match[2].toLowerCase().substring(0, 3);
+        const m = MONTHS_MAP[mStr];
+        const y = match[3];
+        if (m) hiddenInput.value = `${y}-${m}-${d}`;
+      }
+    }
+
+    if (displayInput) {
+      displayInput.addEventListener("input", syncTypedDateToHidden);
+      displayInput.addEventListener("blur", syncTypedDateToHidden);
+    }
+
+    if (triggerIcon) {
+      triggerIcon.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPicker();
+      });
+    }
 
     if (cancelBtn) cancelBtn.addEventListener("click", closePicker);
     modal.addEventListener("click", (e) => {

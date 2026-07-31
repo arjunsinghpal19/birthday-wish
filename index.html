@@ -469,11 +469,11 @@
               <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
-              <label for="input-birthdate-display" style="cursor:pointer;">📅 Birth Date (Select Date from Calendar)</label>
-              <small class="field-hint">Click anywhere in the box or 📅 calendar icon to pick exact Date</small>
-              <div id="input-birthdate-wrapper" style="position:relative;cursor:pointer;">
-                <input type="text" id="input-birthdate-display" readonly class="form-control luxury-date-picker" placeholder="Select Birth Date 📅" style="padding-right:42px;cursor:pointer;">
-                <span id="open-material-datepicker-icon" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:1.2rem;cursor:pointer;user-select:none;pointer-events:auto;">📅</span>
+              <label for="input-birthdate-display">📅 Birth Date (Type or Pick from Calendar)</label>
+              <small class="field-hint">Type date manually (e.g. 15-01-2001) or click 📅 icon to open calendar</small>
+              <div id="input-birthdate-wrapper" style="position:relative;">
+                <input type="text" id="input-birthdate-display" class="form-control luxury-date-picker" placeholder="e.g. 15-01-2001 or 15 Jan 2001 📅" style="padding-right:44px;">
+                <button type="button" id="open-material-datepicker-icon" title="Open Calendar" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:4px 8px;font-size:1.1rem;cursor:pointer;line-height:1;color:#fff;z-index:10;">📅</button>
                 <input type="hidden" id="input-birthdate" value="2001-01-01">
               </div>
             </div>

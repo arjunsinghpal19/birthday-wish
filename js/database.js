@@ -148,19 +148,55 @@
 
     async verifyPassword(inputPassword) {
       if (!inputPassword) return false;
+      const cleanInput = inputPassword.trim();
+
+      // Try Serverless API verification (PBKDF2-HMAC-SHA256)
+      try {
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify", password: cleanInput })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return !!data.valid;
+        }
+      } catch (err) {
+        console.warn("⚠️ Serverless Auth verification notice:", err);
+      }
+
+      // Local session memory fallback
       const actualPassword = await this.getPassword();
       if (!actualPassword) return false;
-      return inputPassword.trim() === actualPassword.trim();
+      return cleanInput === actualPassword.trim();
     },
 
     async updatePassword(newPassword) {
       if (!newPassword || newPassword.trim().length < 4) return false;
       const cleanPass = newPassword.trim();
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) {
-        console.error("❌ Supabase connection unavailable for password update.");
-        return false;
+
+      // Try Serverless API password update (PBKDF2-HMAC-SHA256 + 16-byte salt)
+      try {
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update", newPassword: cleanPass })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            this._sessionPassword = cleanPass;
+            console.log("🔑 Password hashed (PBKDF2-HMAC-SHA256) & updated via Serverless API.");
+            return true;
+          }
+        }
+      } catch (err) {
+        console.warn("⚠️ Serverless Auth update notice:", err);
       }
+
+      // Supabase direct fallback if serverless unavailable
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (!client) return false;
 
       let payload = {};
       try {
@@ -177,25 +213,18 @@
       payload.admin_master_password = cleanPass;
       payload.updated_at = new Date().toISOString();
 
-      // Synchronize canonical pass_code and memory_text together for Phase 2A
-      const updatePayload = {
-        pass_code: cleanPass,
-        memory_text: JSON.stringify(payload),
-        updated_at: new Date().toISOString()
-      };
-
       const { error } = await client
         .from("wishes")
-        .update(updatePayload)
+        .update({
+          pass_code: cleanPass,
+          memory_text: JSON.stringify(payload),
+          updated_at: new Date().toISOString()
+        })
         .eq("id", "00000000-0000-0000-0000-000000000001");
 
-      if (error) {
-        console.error("❌ Password update failed on Supabase:", error.message);
-        return false;
-      }
+      if (error) return false;
 
       this._sessionPassword = cleanPass;
-      console.log("🔑 Phase 2A Password synchronized to pass_code & memory_text cloud record.");
       return true;
     },
 

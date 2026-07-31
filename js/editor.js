@@ -14,8 +14,11 @@
   let currentWishId = null;
   let isEditMode = false;
 
-  // Local working copy of config for live editing
-  const workingConfig = JSON.parse(JSON.stringify(window.CONFIG || {}));
+  // Local working copy initialized from Golden Version Classic Template
+  const classicTemplate = (window.CONFIG && window.CONFIG.templates && window.CONFIG.templates.classic)
+    ? window.CONFIG.templates.classic
+    : (window.CONFIG || {});
+  const workingConfig = JSON.parse(JSON.stringify(classicTemplate));
 
   // Toast Notification Helper
   function showToast(message) {
@@ -506,6 +509,7 @@
       recipient_name: workingConfig.name,
       sender_name: workingConfig.from,
       event_type: workingConfig.eventType || "birthday",
+      template_name: document.getElementById("input-template-name")?.value || "classic",
       pass_code: workingConfig.pass_code,
       status: "published",
       birth_date: workingConfig.birthDate || { year: 2001, month: 1, day: 1 },

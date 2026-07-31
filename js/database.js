@@ -118,15 +118,15 @@
         if (client) {
           const { data, error } = await client
             .from("wishes")
-            .select("admin_password, pass_code, memory_text")
+            .select("admin_password_hash, admin_password, pass_code, memory_text")
             .eq("id", "00000000-0000-0000-0000-000000000001")
             .single();
 
           if (!error && data) {
-            // Dedicated column admin_password takes primary precedence
-            let cloudPass = data.admin_password || data.pass_code;
+            // Production column admin_password_hash / admin_password / pass_code takes primary precedence
+            let cloudPass = data.admin_password_hash || data.admin_password || data.pass_code;
 
-            // Fallback to memory_text if both dedicated columns are unpopulated
+            // Fallback to memory_text if all dedicated columns are unpopulated
             if (!cloudPass && data.memory_text) {
               try {
                 const parsed = JSON.parse(data.memory_text);
@@ -177,8 +177,9 @@
       payload.admin_master_password = cleanPass;
       payload.updated_at = new Date().toISOString();
 
-      // Synchronize dedicated column admin_password, pass_code, and memory_text together
+      // Synchronize production column admin_password_hash, pass_code, and memory_text together
       const updatePayload = {
+        admin_password_hash: cleanPass,
         admin_password: cleanPass,
         pass_code: cleanPass,
         memory_text: JSON.stringify(payload),
@@ -196,7 +197,7 @@
       }
 
       this._sessionPassword = cleanPass;
-      console.log("🔑 Phase 2A Password synchronized to dedicated column admin_password & cloud record.");
+      console.log("🔑 Phase 2A Password synchronized to dedicated column admin_password_hash & cloud record.");
       return true;
     },
 
@@ -245,9 +246,9 @@
         const cloudFields = {
           recovery_email: updated.admin_recovery_email,
           recovery_email_verified: updated.recovery_email_verified || false,
-          backup_code: updated.admin_recovery_code,
+          backup_code_hash: updated.admin_recovery_code,
           security_question: updated.custom_secret_question,
-          security_answer: updated.custom_secret_answer,
+          security_answer_hash: updated.custom_secret_answer,
           memory_text: JSON.stringify(updated),
           updated_at: new Date().toISOString()
         };
@@ -277,7 +278,7 @@
         try {
           const { data } = await client
             .from("wishes")
-            .select("recovery_email, recovery_email_verified, backup_code, security_question, security_answer, memory_text")
+            .select("recovery_email, recovery_email_verified, backup_code_hash, backup_code, security_question, security_answer_hash, security_answer, memory_text")
             .eq("id", "00000000-0000-0000-0000-000000000001")
             .single();
           if (data) cloudData = data;
@@ -299,9 +300,9 @@
         admin_master_password: masterPass,
         admin_recovery_email: cloudData?.recovery_email || parsedMemory.admin_recovery_email || localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
         recovery_email_verified: cloudData?.recovery_email_verified ?? parsedMemory.recovery_email_verified ?? false,
-        admin_recovery_code: cloudData?.backup_code || parsedMemory.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
+        admin_recovery_code: cloudData?.backup_code_hash || cloudData?.backup_code || parsedMemory.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04",
         custom_secret_question: cloudData?.security_question || parsedMemory.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "What is your childhood pet's name?",
-        custom_secret_answer: cloudData?.security_answer || parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
+        custom_secret_answer: cloudData?.security_answer_hash || cloudData?.security_answer || parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "arjun"
       };
     } catch (e) {
       return {

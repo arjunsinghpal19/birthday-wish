@@ -14,11 +14,20 @@
   let currentWishId = null;
   let isEditMode = false;
 
-  // Local working copy initialized from Golden Version Classic Template
-  const classicTemplate = (window.CONFIG && window.CONFIG.templates && window.CONFIG.templates.classic)
-    ? window.CONFIG.templates.classic
-    : (window.CONFIG || {});
-  const workingConfig = JSON.parse(JSON.stringify(classicTemplate));
+  // Helper to fetch Golden Version Classic Template
+  function getClassicTemplate() {
+    const cfg = (typeof window !== "undefined" && window.CONFIG) ? window.CONFIG : (typeof CONFIG !== "undefined" ? CONFIG : null);
+    if (cfg && cfg.templates && cfg.templates.classic) {
+      return cfg.templates.classic;
+    }
+    if (cfg) {
+      return cfg;
+    }
+    return {};
+  }
+
+  // Local working copy initialized dynamically from Golden Version Classic Template
+  let workingConfig = JSON.parse(JSON.stringify(getClassicTemplate()));
 
   // Toast Notification Helper
   function showToast(message) {
@@ -115,7 +124,10 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const lines = Array.isArray(workingConfig.letterLines) ? workingConfig.letterLines : ["Wishing you a wonderful birthday!"];
+    const lines = (Array.isArray(workingConfig.letterLines) && workingConfig.letterLines.length > 0)
+      ? workingConfig.letterLines
+      : (getClassicTemplate().letterLines || []);
+
     lines.forEach((line, i) => {
       const group = document.createElement("div");
       group.className = "form-group";
@@ -133,10 +145,14 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const reasons = Array.isArray(workingConfig.reasons) ? workingConfig.reasons : [];
+    const reasons = (Array.isArray(workingConfig.reasons) && workingConfig.reasons.length > 0)
+      ? workingConfig.reasons
+      : (getClassicTemplate().reasons || []);
+
     reasons.forEach((r, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
+      const descVal = r.text || r.desc || "";
       group.innerHTML = `
         <div class="item-header">
           <span class="item-label">Reason Card ${i + 1}</span>
@@ -156,7 +172,7 @@
         </div>
         <div class="form-group">
           <label>Description</label>
-          <textarea class="reason-desc" rows="2" data-index="${i}">${r.desc || ''}</textarea>
+          <textarea class="reason-desc" rows="2" data-index="${i}">${descVal}</textarea>
         </div>
       `;
       container.appendChild(group);
@@ -176,7 +192,10 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const wishes = Array.isArray(workingConfig.wishes) ? workingConfig.wishes : [];
+    const wishes = (Array.isArray(workingConfig.wishes) && workingConfig.wishes.length > 0)
+      ? workingConfig.wishes
+      : (getClassicTemplate().wishes || []);
+
     wishes.forEach((w, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
@@ -207,10 +226,15 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const gallery = Array.isArray(workingConfig.gallery) ? workingConfig.gallery : [];
+    const gallery = (Array.isArray(workingConfig.gallery) && workingConfig.gallery.length > 0)
+      ? workingConfig.gallery
+      : (getClassicTemplate().gallery || []);
+
     gallery.forEach((g, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
+      const noteVal = g.secretNote || g.note || "";
+      const capVal = g.cap || g.caption || "";
       group.innerHTML = `
         <div class="item-header">
           <span class="item-label">Photo Tile ${i + 1}</span>
@@ -234,13 +258,13 @@
             </div>
             <div class="text-input">
               <label>Caption</label>
-              <input type="text" class="gallery-cap" value="${g.cap || ''}" data-index="${i}">
+              <input type="text" class="gallery-cap" value="${capVal}" data-index="${i}">
             </div>
           </div>
         </div>
         <div class="form-group">
           <label>Secret Note (Back of card)</label>
-          <input type="text" class="gallery-note" value="${g.secretNote || ''}" data-index="${i}">
+          <input type="text" class="gallery-note" value="${noteVal}" data-index="${i}">
         </div>
       `;
       container.appendChild(group);
@@ -282,10 +306,14 @@
     if (!container) return;
     container.innerHTML = "";
 
-    const timeline = Array.isArray(workingConfig.timeline) ? workingConfig.timeline : [];
+    const timeline = (Array.isArray(workingConfig.timeline) && workingConfig.timeline.length > 0)
+      ? workingConfig.timeline
+      : (getClassicTemplate().timeline || []);
+
     timeline.forEach((t, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
+      const dateVal = t.date || t.year || "";
       group.innerHTML = `
         <div class="item-header">
           <span class="item-label">Milestone ${i + 1}</span>
@@ -293,9 +321,9 @@
         </div>
         <div class="form-group">
           <div class="emoji-text-row">
-            <div style="width:70px;">
-              <label>Year</label>
-              <input type="text" class="timeline-year" value="${t.year || ''}" data-index="${i}">
+            <div style="width:110px;">
+              <label>Date / Period</label>
+              <input type="text" class="timeline-year" value="${dateVal}" data-index="${i}">
             </div>
             <div class="emoji-input-wrap" style="width:50px;">
               <label>Emoji</label>

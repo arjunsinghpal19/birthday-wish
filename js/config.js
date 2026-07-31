@@ -221,6 +221,10 @@ const CONFIG = {
   }
 };
 
+if (typeof window !== "undefined") {
+  window.CONFIG = CONFIG;
+}
+
 /* ==========================================================================
    CDN LOADER WITH AUTOMATIC MULTI-SOURCE FALLBACK
    If every source fails (blocked network, offline, etc.) the site

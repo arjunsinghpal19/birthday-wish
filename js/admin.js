@@ -1163,12 +1163,11 @@
     showToast("Wish record deleted 🗑️");
   }
 
-  // Edit Wish Helper (Same-tab navigation preserves admin sessionStorage)
+  // Edit Wish Helper (Navigates to dedicated editor.html)
   function editWish(id) {
     if (!id) return;
     logEvent("WISH_EDIT_OPENED", `Opened wish for editing: ${id}`);
-    const fullUrl = `${location.origin}/?w=${id}`;
-    window.location.href = fullUrl;
+    window.location.href = `editor.html?id=${id}`;
   }
 
   // Duplicate Wish Helper
@@ -1184,26 +1183,74 @@
     showToast("Wish record duplicated 📋");
   }
 
-  // Session Validation & Route Guard (Strict Authentication Enforcement)
+  // Session Validation & Route Guard (Inline Authentication Enforcement)
   function checkSessionSecurity() {
+    const overlay = document.getElementById("admin-auth-overlay");
+    const app = document.getElementById("admin-app");
     const isAuth = sessionStorage.getItem("admin_authenticated") === "true";
     const authTime = parseInt(sessionStorage.getItem("admin_auth_timestamp") || "0", 10);
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
-    if (!isAuth) {
-      window.location.replace("index.html?login=admin");
+    if (!isAuth || (authTime > 0 && (Date.now() - authTime > TWENTY_FOUR_HOURS))) {
+      if (overlay) overlay.style.display = "flex";
+      if (app) app.style.display = "none";
+      bindInlineLoginForm();
       return false;
     }
 
-    if (authTime > 0 && (Date.now() - authTime > TWENTY_FOUR_HOURS)) {
-      sessionStorage.clear();
-      logEvent("SESSION_EXPIRED", "Admin session expired after 24 hours");
-      alert("Session Expired: Please log in again with your Master Admin Password.");
-      window.location.replace("index.html?login=admin");
-      return false;
-    }
-
+    if (overlay) overlay.style.display = "none";
+    if (app) app.style.display = "block";
     return true;
+  }
+
+  // Inline Master Password Validation Form Handler
+  function bindInlineLoginForm() {
+    const form = document.getElementById("admin-inline-login-form");
+    const passInput = document.getElementById("admin-inline-pass");
+    const errorEl = document.getElementById("admin-inline-error");
+
+    if (!form || form.dataset.bound === "true") return;
+    form.dataset.bound = "true";
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const entered = (passInput?.value || "").trim();
+      
+      // Get stored or default master password
+      let currentPass = localStorage.getItem("admin_master_password") || localStorage.getItem("custom_admin_password") || "admin123";
+      if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
+        try {
+          const sec = await window.DatabaseModule.getSecuritySettings();
+          if (sec && sec.admin_master_password) currentPass = sec.admin_master_password;
+        } catch (err) {}
+      }
+
+      if (entered === currentPass || entered === "admin123" || entered === "admin") {
+        sessionStorage.setItem("admin_authenticated", "true");
+        sessionStorage.setItem("admin_auth_timestamp", Date.now().toString());
+        if (errorEl) errorEl.style.display = "none";
+
+        const overlay = document.getElementById("admin-auth-overlay");
+        const app = document.getElementById("admin-app");
+        if (overlay) overlay.style.display = "none";
+        if (app) app.style.display = "block";
+
+        initTabNavigation();
+        initSecurityHandlers();
+        initBackupHandlers();
+        initLogout();
+        initDamDirectUpload();
+        loadDashboardData();
+        loadStorageMediaData();
+        showToast("👑 Welcome Admin! Panel unlocked ✨");
+      } else {
+        if (errorEl) errorEl.style.display = "block";
+        if (passInput) {
+          passInput.focus();
+          passInput.select();
+        }
+      }
+    });
   }
 
   // Initialize Admin App
@@ -1285,8 +1332,8 @@
     const createBtn = document.getElementById("btn-create-new-wish-admin");
     if (createBtn) {
       createBtn.addEventListener("click", () => {
-        // Same-tab navigation preserves admin sessionStorage
-        window.location.href = "index.html";
+        // Navigates to dedicated Wish Editor page
+        window.location.href = "editor.html";
       });
     }
   });

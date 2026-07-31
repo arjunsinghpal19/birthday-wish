@@ -58,6 +58,11 @@
         const tabId = btn.dataset.tab;
         if (!tabId) return;
 
+        if (tabId === "create") {
+          window.location.href = "editor.html";
+          return;
+        }
+
         navButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
@@ -240,6 +245,7 @@
         <td>
           <div style="display:flex;gap:6px;">
             <button class="btn-icon" title="Copy Link" onclick="window.customerApp.copyWishUrl('${fullUrl}')">📋</button>
+            <button class="btn-icon" title="Edit Wish" onclick="window.location.href='editor.html?id=${w.id}'">✏️</button>
             <a class="btn-icon" href="${fullUrl}" target="_blank" title="Preview Wish">👁️</a>
             <button class="btn-icon danger" title="Delete Wish" onclick="window.customerApp.deleteCustomerWish('${w.id}')">🗑️</button>
           </div>

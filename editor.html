@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wish Editor | Wish Studio</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/dashboard.css">
+  <style>
+    /* Dedicated Editor Specific Custom Enhancements */
+    .editor-container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px 60px 20px;
+    }
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .editor-title-wrap h2 {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #fff 0%, #d4af37 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+    }
+    .editor-title-wrap p {
+      color: var(--text-dim, rgba(255, 255, 255, 0.6));
+      font-size: 0.88rem;
+      margin: 4px 0 0 0;
+    }
+    .editor-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .form-section-title {
+      font-family: var(--font-heading, 'Outfit', sans-serif);
+      font-size: 1.1rem;
+      color: var(--gold, #ffd700);
+      margin: 20px 0 12px 0;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(15, 8, 25, 0.95);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(15px);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast-msg.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+
+  <!-- Supabase CDN Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="background:#09040e;color:#fff;min-height:100vh;">
+
+  <div class="editor-container">
+    
+    <!-- Editor Header Toolbar -->
+    <header class="editor-header">
+      <div class="editor-title-wrap">
+        <h2 id="editor-page-title">✨ Create New Wish</h2>
+        <p id="editor-page-subtitle">Build a personalized, interactive surprise wish page</p>
+      </div>
+      <div class="editor-actions">
+        <button type="button" class="btn-primary" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);" id="btn-back-dashboard">
+          ← Back
+        </button>
+        <button type="button" class="btn-primary" style="background:rgba(155,89,182,0.3);border:1px solid rgba(155,89,182,0.5);" id="btn-preview-wish" disabled>
+          👁️ Preview Page
+        </button>
+        <button type="submit" form="editor-wish-form" class="btn-primary" id="btn-save-wish">
+          ✨ Save Wish
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Editor Form Panel -->
+    <main class="glass-card">
+      <form id="editor-wish-form">
+        
+        <!-- SECTION 1: ESSENTIAL DETAILS -->
+        <div class="form-section-title">👤 Recipient & Sender Details</div>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="edit-recipient-name">Recipient Name *</label>
+            <input type="text" id="edit-recipient-name" class="form-input" placeholder="e.g. Pooja, Bestie" required>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-sender-name">Your Name / Sender *</label>
+            <input type="text" id="edit-sender-name" class="form-input" placeholder="e.g. Arjun" required>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-event-type">Event Category *</label>
+            <select id="edit-event-type" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
+              <!-- Dynamically populated from registered event modules -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-passcode">Access Passcode (4 Digits) *</label>
+            <input type="text" id="edit-passcode" class="form-input" value="1234" maxlength="4" pattern="[0-9]{4}" placeholder="e.g. 1234" required>
+            <small id="edit-passcode-error" style="display:none;color:#ff7675;font-size:0.78rem;margin-top:4px;font-weight:600;">⚠️ Passcode must be exactly 4 numeric digits (e.g. 1234)</small>
+          </div>
+        </div>
+
+        <!-- SECTION 2: PERSONALIZED CONTENT -->
+        <div class="form-section-title">💌 Letter Lines & Memories</div>
+        
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label for="edit-letter-lines">Letter Message Lines (One line per paragraph)</label>
+            <textarea id="edit-letter-lines" class="form-input" rows="4" style="resize:vertical;" placeholder="Wishing you joy, health and endless happiness today!&#10;May this year bring you all the love and success you deserve."></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="edit-memory-text">Special Memories & Secret Note</label>
+            <textarea id="edit-memory-text" class="form-input" rows="3" style="resize:vertical;" placeholder="Remember when we laughed all night long..."></textarea>
+          </div>
+        </div>
+
+        <!-- SECTION 3: THEME & MEDIA CUSTOMIZATION -->
+        <div class="form-section-title">🎨 Theme & Media Links</div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="edit-letter-theme">Visual Theme Style</label>
+            <select id="edit-letter-theme" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
+              <option value="default">✨ Default Sparkle (Gold & Purple)</option>
+              <option value="dark">🌙 Dark Velvet</option>
+              <option value="romantic">💖 Romantic Rose</option>
+              <option value="celebration">🎉 Festive Fiesta</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-cake-flavor">Cake Flavor Option</label>
+            <select id="edit-cake-flavor" class="form-input" style="background:rgba(10,5,20,0.8);color:#fff;">
+              <option value="default">🎂 Classic Chocolate Truffle</option>
+              <option value="vanilla">🧁 Velvet Vanilla</option>
+              <option value="strawberry">🍓 Strawberry Delight</option>
+              <option value="butterscotch">🍯 Royal Butterscotch</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-music-url">Background Music URL (Optional)</label>
+            <input type="url" id="edit-music-url" class="form-input" placeholder="e.g. https://.../song.mp3">
+          </div>
+
+          <div class="form-group">
+            <label for="edit-video-url">Video Wish Link (Optional)</label>
+            <input type="url" id="edit-video-url" class="form-input" placeholder="e.g. https://.../video.mp4">
+          </div>
+        </div>
+
+        <!-- SAVE BUTTON -->
+        <div style="margin-top:28px;">
+          <button type="submit" class="btn-primary" style="width:100%;padding:14px;font-size:1.05rem;" id="btn-save-wish-bottom">
+            ✨ Save & Publish Wish Page
+          </button>
+        </div>
+
+      </form>
+    </main>
+
+  </div>
+
+  <!-- Toast Notification element -->
+  <div id="editor-toast" class="toast-msg"></div>
+
+  <!-- Scripts -->
+  <script src="/api/env.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/editor.js"></script>
+</body>
+</html>

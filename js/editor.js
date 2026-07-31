@@ -244,6 +244,9 @@
       group.className = "editor-item-group";
       const noteVal = g.secretNote || g.note || "";
       const capVal = g.cap || g.caption || "";
+      const imgVal = g.image || "";
+      const isHttp = imgVal.startsWith("http");
+
       group.innerHTML = `
         <div class="item-header">
           <span class="item-label">Photo Tile ${i + 1}</span>
@@ -256,7 +259,12 @@
               📸 Choose File
               <input type="file" class="gallery-file-input" accept="image/*" data-index="${i}" style="display:none;">
             </label>
-            <input type="url" class="gallery-url-input" placeholder="Paste Image Link (https://...)" value="${g.image || ''}" data-index="${i}" style="flex:1;min-width:180px;font-size:0.8rem;">
+            <input type="url" class="gallery-url-input" placeholder="Paste Image Link (https://...)" value="${isHttp ? imgVal : ''}" data-index="${i}" style="flex:1;min-width:180px;font-size:0.8rem;">
+          </div>
+          <div class="gallery-img-preview-row" style="display:${imgVal ? 'flex' : 'none'};align-items:center;gap:10px;margin-top:6px;background:rgba(255,255,255,0.05);padding:6px 10px;border-radius:8px;border:1px solid rgba(255,215,0,0.2);">
+            <img class="gallery-preview-thumb" src="${imgVal}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,215,0,0.5);">
+            <span style="font-size:0.75rem;color:var(--gold,#ffd700);flex:1;word-break:break-all;">${imgVal ? (imgVal.startsWith('data:') ? '📸 Photo File Selected' : imgVal) : ''}</span>
+            <button type="button" class="remove-gallery-img-btn" data-index="${i}" style="background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:4px 8px;border-radius:6px;font-size:0.7rem;cursor:pointer;">✕ Remove</button>
           </div>
         </div>
         <div class="form-group">
@@ -293,19 +301,29 @@
         const file = e.target.files[0];
         if (!file) return;
         const idx = parseInt(input.dataset.index);
-        showToast("⏳ Processing photo...");
+        showToast("⏳ Processing photo thumbnail...");
 
         try {
           const reader = new FileReader();
           reader.onload = (evt) => {
             workingConfig.gallery[idx].image = evt.target.result;
             renderGalleryInputs();
-            showToast(`Photo loaded into Tile ${idx + 1}! 📸`);
+            showToast(`Photo thumbnail loaded into Tile ${idx + 1}! 📸`);
           };
           reader.readAsDataURL(file);
         } catch (err) {
           console.error(err);
         }
+      });
+    });
+
+    // Image Remove Listener
+    container.querySelectorAll(".remove-gallery-img-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = parseInt(btn.dataset.index);
+        workingConfig.gallery[idx].image = "";
+        renderGalleryInputs();
+        showToast(`Photo removed from Tile ${idx + 1}!`);
       });
     });
   }
@@ -392,19 +410,19 @@
       }
     }
 
-    // In CREATE Mode, Recipient Name, Sender Name, and Passcode input fields are EMPTY by default
+    // In CREATE Mode, Recipient Name is EMPTY (placeholder e.g. Arjun), Sender Name is pre-filled ("your friends who adore you"), Passcode is EMPTY (placeholder 1234)
     if (!isEditMode) {
       const nameIn = document.getElementById("input-name");
       if (nameIn) nameIn.value = "";
       const fromIn = document.getElementById("input-from");
-      if (fromIn) fromIn.value = "";
+      if (fromIn) fromIn.value = workingConfig.from || "your friends who adore you";
       const passIn = document.getElementById("input-passcode");
       if (passIn) passIn.value = "";
     } else {
       const nameIn = document.getElementById("input-name");
       if (nameIn) nameIn.value = workingConfig.name || "";
       const fromIn = document.getElementById("input-from");
-      if (fromIn) fromIn.value = workingConfig.from || "";
+      if (fromIn) fromIn.value = workingConfig.from || "your friends who adore you";
       const passIn = document.getElementById("input-passcode");
       if (passIn) passIn.value = workingConfig.pass_code || "";
     }
@@ -441,18 +459,48 @@
       if (giftCpn) giftCpn.value = workingConfig.gift.coupon || "";
     }
 
-    if (workingConfig.music) {
-      const musicUrl = document.getElementById("input-music-url");
-      if (musicUrl) musicUrl.value = workingConfig.music.url || workingConfig.music.file || "";
-      const musicStart = document.getElementById("input-music-start");
-      if (musicStart) musicStart.value = workingConfig.music.start || "";
+    // Default Music URL: keep text input EMPTY by default, do NOT expose assets/music/happy-birthday-song.mpeg
+    const musicUrlEl = document.getElementById("input-music-url");
+    if (musicUrlEl) {
+      const rawUrl = workingConfig.music?.url || workingConfig.music?.file || "";
+      if (rawUrl === "assets/music/happy-birthday-song.mpeg") {
+        musicUrlEl.value = "";
+      } else {
+        musicUrlEl.value = rawUrl;
+      }
+    }
+    const musicStartEl = document.getElementById("input-music-start");
+    if (musicStartEl) musicStartEl.value = workingConfig.music?.start || "";
+
+    // Audio file preview update
+    if (workingConfig.music?.file && workingConfig.music.file.startsWith("data:")) {
+      const audioContainer = document.getElementById("audio-preview-container");
+      const audioNameEl = document.getElementById("audio-file-name");
+      const audioPlayer = document.getElementById("audio-preview-player");
+      const removeAudioBtn = document.getElementById("remove-audio-file-btn");
+
+      if (audioContainer) audioContainer.style.display = "block";
+      if (audioNameEl) audioNameEl.textContent = `🎙️ ${workingConfig.music.name || 'Custom Audio Voice Note'}`;
+      if (audioPlayer) audioPlayer.src = workingConfig.music.file;
+      if (removeAudioBtn) removeAudioBtn.style.display = "inline-flex";
     }
 
-    if (workingConfig.videoWish) {
-      const videoUrl = document.getElementById("input-video-url");
-      if (videoUrl) videoUrl.value = workingConfig.videoWish.url || workingConfig.videoWish.file || "";
-      const videoStart = document.getElementById("input-video-start");
-      if (videoStart) videoStart.value = workingConfig.videoWish.start || "";
+    const videoUrlEl = document.getElementById("input-video-url");
+    if (videoUrlEl) videoUrlEl.value = workingConfig.videoWish?.url || workingConfig.videoWish?.file || "";
+    const videoStartEl = document.getElementById("input-video-start");
+    if (videoStartEl) videoStartEl.value = workingConfig.videoWish?.start || "";
+
+    // Video file preview update
+    if (workingConfig.videoWish?.file && workingConfig.videoWish.file.startsWith("data:")) {
+      const videoContainer = document.getElementById("video-preview-container");
+      const videoNameEl = document.getElementById("video-file-name");
+      const videoPlayer = document.getElementById("video-preview-player");
+      const removeVideoBtn = document.getElementById("remove-video-file-btn");
+
+      if (videoContainer) videoContainer.style.display = "block";
+      if (videoNameEl) videoNameEl.textContent = `📹 ${workingConfig.videoWish.name || 'Custom Recorded Video'}`;
+      if (videoPlayer) videoPlayer.src = workingConfig.videoWish.file;
+      if (removeVideoBtn) removeVideoBtn.style.display = "inline-flex";
     }
 
     renderLetterInputs();
@@ -465,7 +513,7 @@
   // Read Inputs from DOM into workingConfig
   function harvestInputs() {
     workingConfig.name = (document.getElementById("input-name")?.value || "").trim();
-    workingConfig.from = (document.getElementById("input-from")?.value || "").trim();
+    workingConfig.from = (document.getElementById("input-from")?.value || "").trim() || "your friends who adore you";
     workingConfig.eventType = document.getElementById("input-event-type")?.value || "birthday";
 
     const passInputVal = (document.getElementById("input-passcode")?.value || "").trim();
@@ -539,11 +587,19 @@
     // Harvest music & video
     const musicUrl = (document.getElementById("input-music-url")?.value || "").trim();
     const musicStart = (document.getElementById("input-music-start")?.value || "").trim();
-    workingConfig.music = { file: musicUrl || null, url: musicUrl || null, start: musicStart };
+    if (musicUrl) {
+      workingConfig.music = { file: musicUrl, url: musicUrl, start: musicStart };
+    } else if (!workingConfig.music?.file) {
+      workingConfig.music = { file: null, url: null, start: musicStart };
+    }
 
     const videoUrl = (document.getElementById("input-video-url")?.value || "").trim();
     const videoStart = (document.getElementById("input-video-start")?.value || "").trim();
-    workingConfig.videoWish = { file: videoUrl || null, url: videoUrl || null, start: videoStart };
+    if (videoUrl) {
+      workingConfig.videoWish = { file: videoUrl, url: videoUrl, start: videoStart };
+    } else if (!workingConfig.videoWish?.file) {
+      workingConfig.videoWish = { file: null, url: null, start: videoStart };
+    }
   }
 
   // Load Existing Remote Wish for Editing
@@ -556,7 +612,7 @@
           const { data, error } = await client.from("wishes").select("*").eq("id", id).single();
           if (!error && data) {
             workingConfig.name = data.recipient_name || "";
-            workingConfig.from = data.sender_name || "";
+            workingConfig.from = data.sender_name || "your friends who adore you";
             workingConfig.pass_code = data.pass_code || "1234";
             workingConfig.passcode = { code: data.pass_code || "1234" };
             workingConfig.eventType = data.event_type || "birthday";
@@ -603,7 +659,7 @@
 
     const payload = {
       recipient_name: workingConfig.name || "",
-      sender_name: workingConfig.from || "",
+      sender_name: workingConfig.from || "your friends who adore you",
       event_type: workingConfig.eventType || "birthday",
       pass_code: passCodeToSave,
       status: "published",
@@ -688,23 +744,112 @@
       renderTimelineInputs();
     });
 
+    // Audio file upload listener
+    const audioInput = document.getElementById("input-audio-file");
+    if (audioInput) {
+      audioInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        showToast("⏳ Reading audio file...");
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          workingConfig.music = { file: dataUrl, url: dataUrl, name: file.name };
+
+          const container = document.getElementById("audio-preview-container");
+          const nameEl = document.getElementById("audio-file-name");
+          const player = document.getElementById("audio-preview-player");
+          const removeBtn = document.getElementById("remove-audio-file-btn");
+
+          if (container) container.style.display = "block";
+          if (nameEl) nameEl.textContent = `🎙️ ${file.name}`;
+          if (player) player.src = dataUrl;
+          if (removeBtn) removeBtn.style.display = "inline-flex";
+
+          showToast("🎙️ Audio file loaded!");
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Remove audio listener
+    document.getElementById("remove-audio-file-btn")?.addEventListener("click", () => {
+      workingConfig.music = { file: null, url: null, name: "" };
+      const container = document.getElementById("audio-preview-container");
+      const player = document.getElementById("audio-preview-player");
+      const removeBtn = document.getElementById("remove-audio-file-btn");
+      const audioInput = document.getElementById("input-audio-file");
+
+      if (container) container.style.display = "none";
+      if (player) player.src = "";
+      if (removeBtn) removeBtn.style.display = "none";
+      if (audioInput) audioInput.value = "";
+      showToast("🗑️ Audio file removed!");
+    });
+
+    // Video file upload listener
+    const videoInput = document.getElementById("input-video-file");
+    if (videoInput) {
+      videoInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        showToast("⏳ Reading video file...");
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const dataUrl = evt.target.result;
+          workingConfig.videoWish = { file: dataUrl, url: dataUrl, name: file.name };
+
+          const container = document.getElementById("video-preview-container");
+          const nameEl = document.getElementById("video-file-name");
+          const player = document.getElementById("video-preview-player");
+          const removeBtn = document.getElementById("remove-video-file-btn");
+
+          if (container) container.style.display = "block";
+          if (nameEl) nameEl.textContent = `📹 ${file.name}`;
+          if (player) player.src = dataUrl;
+          if (removeBtn) removeBtn.style.display = "inline-flex";
+
+          showToast("📹 Video file loaded!");
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Remove video listener
+    document.getElementById("remove-video-file-btn")?.addEventListener("click", () => {
+      workingConfig.videoWish = { file: null, url: null, name: "" };
+      const container = document.getElementById("video-preview-container");
+      const player = document.getElementById("video-preview-player");
+      const removeBtn = document.getElementById("remove-video-file-btn");
+      const videoInput = document.getElementById("input-video-file");
+
+      if (container) container.style.display = "none";
+      if (player) player.src = "";
+      if (removeBtn) removeBtn.style.display = "none";
+      if (videoInput) videoInput.value = "";
+      showToast("🗑️ Video file removed!");
+    });
+
     // Save buttons
     document.getElementById("customizer-save-btn")?.addEventListener("click", () => saveWishRecord());
     document.getElementById("top-save-btn")?.addEventListener("click", () => saveWishRecord());
 
     // Preview Button (Auto-saves draft if unsaved, then opens preview)
     document.getElementById("btn-preview-wish")?.addEventListener("click", async () => {
-      if (!currentWishId) {
-        showToast("⏳ Saving draft preview...");
+      harvestInputs();
+      sessionStorage.setItem("preview_wish_config", JSON.stringify(workingConfig));
+
+      if (currentWishId) {
+        saveWishRecord({ isSilent: true });
+        window.open(`index.html?w=${currentWishId}`, "_blank");
+      } else {
+        showToast("⏳ Opening preview...");
         const savedId = await saveWishRecord({ isSilent: true });
         if (savedId) {
           window.open(`index.html?w=${savedId}`, "_blank");
         } else {
-          showToast("❌ Could not save draft for preview!");
+          window.open(`index.html?preview=1`, "_blank");
         }
-      } else {
-        await saveWishRecord({ isSilent: true });
-        window.open(`index.html?w=${currentWishId}`, "_blank");
       }
     });
 
@@ -762,25 +907,17 @@
 
     const pageTitle = document.getElementById("page-title");
     const pageSubtitle = document.getElementById("page-subtitle");
-    const previewBtn = document.getElementById("btn-preview-wish");
 
     if (wishId) {
       currentWishId = wishId;
       isEditMode = true;
       if (pageTitle) pageTitle.textContent = "✏️ Edit Wish Record";
       if (pageSubtitle) pageSubtitle.textContent = `Full customizer — wish ID: ${wishId}`;
-      if (previewBtn) {
-        previewBtn.disabled = false;
-        previewBtn.addEventListener("click", () => {
-          window.open(`index.html?w=${currentWishId}`, "_blank");
-        });
-      }
       loadRemoteWish(wishId);
     } else {
       isEditMode = false;
       if (pageTitle) pageTitle.textContent = "✨ Customize New Birthday Wish";
       if (pageSubtitle) pageSubtitle.textContent = "Full-featured editor — pre-filled with default templates";
-      if (previewBtn) previewBtn.disabled = true;
       populateFormFields();
     }
   });

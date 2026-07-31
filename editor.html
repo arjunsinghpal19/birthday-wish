@@ -152,7 +152,7 @@
             <div class="form-group">
               <label for="input-name">Recipient Name *</label>
               <small class="field-hint">Jisko wish karna hai uska naam</small>
-              <input type="text" id="input-name" placeholder="e.g. Pooja">
+              <input type="text" id="input-name" placeholder="e.g. Arjun">
             </div>
             <div class="form-group">
               <label for="input-event-type">Event Category *</label>
@@ -197,7 +197,7 @@
             <div class="form-group">
               <label for="input-from">From (Sender Name) *</label>
               <small class="field-hint">Page ke sabse last signature ("Made with ❤️ by...") aur Insta Story Image me dikhega</small>
-              <input type="text" id="input-from" placeholder="e.g. Arjun">
+              <input type="text" id="input-from" value="your friends who adore you" placeholder="e.g. Arjun">
             </div>
           </div>
         </div>
@@ -365,6 +365,10 @@
                 </label>
                 <button type="button" id="remove-audio-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Audio</button>
               </div>
+              <div id="audio-preview-container" style="display:none;margin-top:8px;background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;border:1px solid rgba(255,215,0,0.2);">
+                <div id="audio-file-name" style="font-size:0.8rem;color:var(--gold,#ffd700);margin-bottom:6px;font-weight:600;"></div>
+                <audio id="audio-preview-player" controls style="width:100%;height:36px;"></audio>
+              </div>
               <small class="field-hint">Apni voice recording ya audio song file select karein.</small>
             </div>
             <div class="form-group" style="margin-top:14px;">
@@ -400,6 +404,10 @@
                   <input type="file" id="input-video-file" accept="video/*" style="display:none;">
                 </label>
                 <button type="button" id="remove-video-file-btn" style="display:none;background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Video</button>
+              </div>
+              <div id="video-preview-container" style="display:none;margin-top:8px;background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;border:1px solid rgba(255,215,0,0.2);">
+                <div id="video-file-name" style="font-size:0.8rem;color:var(--gold,#ffd700);margin-bottom:6px;font-weight:600;"></div>
+                <video id="video-preview-player" controls style="width:100%;max-height:200px;border-radius:8px;"></video>
               </div>
               <small class="field-hint">Apne mobile/laptop gallery se recorded video select karein.</small>
             </div>

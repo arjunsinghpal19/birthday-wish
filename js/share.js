@@ -44,6 +44,15 @@
     const nameParam = params.get("name");
     const tokenParam = params.get("w") || params.get("wish") || params.get("id");
 
+    if (params.get("preview") === "1") {
+      try {
+        const stored = sessionStorage.getItem("preview_wish_config");
+        if (stored) return JSON.parse(stored);
+      } catch (e) {
+        console.warn("Preview route parse exception:", e);
+      }
+    }
+
     if (!tokenParam) {
       if (nameParam && typeof window.formatName === "function") {
         configObj.name = window.formatName(nameParam);

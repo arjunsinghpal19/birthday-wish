@@ -14,20 +14,25 @@
   let currentWishId = null;
   let isEditMode = false;
 
-  // Helper to fetch Golden Version Classic Template
+  // Helper to fetch Golden Version Classic Template reliably
   function getClassicTemplate() {
-    const cfg = (typeof window !== "undefined" && window.CONFIG) ? window.CONFIG : (typeof CONFIG !== "undefined" ? CONFIG : null);
-    if (cfg && cfg.templates && cfg.templates.classic) {
-      return cfg.templates.classic;
+    if (typeof window !== "undefined" && window.CONFIG && window.CONFIG.templates && window.CONFIG.templates.classic) {
+      return window.CONFIG.templates.classic;
     }
-    if (cfg) {
-      return cfg;
+    if (typeof window !== "undefined" && window.CONFIG) {
+      return window.CONFIG;
+    }
+    if (typeof CONFIG !== "undefined" && CONFIG.templates && CONFIG.templates.classic) {
+      return CONFIG.templates.classic;
+    }
+    if (typeof CONFIG !== "undefined") {
+      return CONFIG;
     }
     return {};
   }
 
   // Local working copy initialized dynamically from Golden Version Classic Template
-  let workingConfig = JSON.parse(JSON.stringify(getClassicTemplate()));
+  let workingConfig = JSON.parse(JSON.stringify(getClassicTemplate() || {}));
 
   // Toast Notification Helper
   function showToast(message) {
@@ -124,9 +129,10 @@
     if (!container) return;
     container.innerHTML = "";
 
+    const classic = getClassicTemplate();
     const lines = (Array.isArray(workingConfig.letterLines) && workingConfig.letterLines.length > 0)
       ? workingConfig.letterLines
-      : (getClassicTemplate().letterLines || []);
+      : (classic.letterLines || []);
 
     lines.forEach((line, i) => {
       const group = document.createElement("div");
@@ -145,9 +151,10 @@
     if (!container) return;
     container.innerHTML = "";
 
+    const classic = getClassicTemplate();
     const reasons = (Array.isArray(workingConfig.reasons) && workingConfig.reasons.length > 0)
       ? workingConfig.reasons
-      : (getClassicTemplate().reasons || []);
+      : (classic.reasons || []);
 
     reasons.forEach((r, i) => {
       const group = document.createElement("div");
@@ -192,9 +199,10 @@
     if (!container) return;
     container.innerHTML = "";
 
+    const classic = getClassicTemplate();
     const wishes = (Array.isArray(workingConfig.wishes) && workingConfig.wishes.length > 0)
       ? workingConfig.wishes
-      : (getClassicTemplate().wishes || []);
+      : (classic.wishes || []);
 
     wishes.forEach((w, i) => {
       const group = document.createElement("div");
@@ -226,9 +234,10 @@
     if (!container) return;
     container.innerHTML = "";
 
+    const classic = getClassicTemplate();
     const gallery = (Array.isArray(workingConfig.gallery) && workingConfig.gallery.length > 0)
       ? workingConfig.gallery
-      : (getClassicTemplate().gallery || []);
+      : (classic.gallery || []);
 
     gallery.forEach((g, i) => {
       const group = document.createElement("div");
@@ -306,9 +315,10 @@
     if (!container) return;
     container.innerHTML = "";
 
+    const classic = getClassicTemplate();
     const timeline = (Array.isArray(workingConfig.timeline) && workingConfig.timeline.length > 0)
       ? workingConfig.timeline
-      : (getClassicTemplate().timeline || []);
+      : (classic.timeline || []);
 
     timeline.forEach((t, i) => {
       const group = document.createElement("div");
@@ -354,6 +364,36 @@
 
   // Populate All Form Fields from workingConfig
   function populateFormFields() {
+    const classic = getClassicTemplate();
+    if (classic) {
+      if (!workingConfig.letterLines || workingConfig.letterLines.length === 0) {
+        workingConfig.letterLines = JSON.parse(JSON.stringify(classic.letterLines || []));
+      }
+      if (!workingConfig.memory) {
+        workingConfig.memory = classic.memory || "";
+      }
+      if (!workingConfig.reasons || workingConfig.reasons.length === 0) {
+        workingConfig.reasons = JSON.parse(JSON.stringify(classic.reasons || []));
+      }
+      if (!workingConfig.wishes || workingConfig.wishes.length === 0) {
+        workingConfig.wishes = JSON.parse(JSON.stringify(classic.wishes || []));
+      }
+      if (!workingConfig.gallery || workingConfig.gallery.length === 0) {
+        workingConfig.gallery = JSON.parse(JSON.stringify(classic.gallery || []));
+      }
+      if (!workingConfig.timeline || workingConfig.timeline.length === 0) {
+        workingConfig.timeline = JSON.parse(JSON.stringify(classic.timeline || []));
+      }
+      if (!workingConfig.gift || !workingConfig.gift.message) {
+        workingConfig.gift = JSON.parse(JSON.stringify(classic.gift || {}));
+      }
+      if (!workingConfig.from) {
+        workingConfig.from = classic.from || "your friends who adore you";
+      }
+      if (!workingConfig.birthDate) {
+        workingConfig.birthDate = classic.birthDate || { year: 2001, month: 1, day: 1 };
+      }
+    }
     document.getElementById("input-name").value = workingConfig.name || "";
     document.getElementById("input-from").value = workingConfig.from || "";
     document.getElementById("input-passcode").value = workingConfig.passcode?.code || workingConfig.pass_code || "1234";

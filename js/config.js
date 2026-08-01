@@ -1,3 +1,10 @@
+/**
+ * ============================================================================
+ * GLOBAL BIRTHDAY WISH CONFIGURATION SCHEMA (js/config.js)
+ * Core configuration object containing recipient defaults, letter text,
+ * theme options, milestone timeline items, and media references.
+ * ============================================================================
+ */
 const CONFIG = {
   // For each new wish, change these two values first.
   name: "", // Person receiving the wish (leave blank for default "Happy Birthday")

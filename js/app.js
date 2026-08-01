@@ -4265,7 +4265,15 @@ function initAdminSecurityModal() {
     }
 
     if (cardQuestion) {
-      cardQuestion.addEventListener("click", async () => {
+      cardQuestion.onclick = async () => {
+        const errEl = document.getElementById("question-answer-error");
+        if (errEl) {
+          errEl.style.display = "none";
+          errEl.textContent = "";
+        }
+        const qInp = document.getElementById("recovery-question-input");
+        if (qInp) qInp.value = "";
+
         showSubstep(substepQuestion);
         const label = document.getElementById("forgot-question-label");
         if (label) {
@@ -4282,7 +4290,7 @@ function initAdminSecurityModal() {
           }
           label.textContent = "Question: " + questionText;
         }
-      });
+      };
     }
 
     backBtns.forEach(btn => {
@@ -4387,7 +4395,7 @@ function initAdminSecurityModal() {
     // ── METHOD 2: BACKUP CODE ──
     const verifyBackupBtn = document.getElementById("btn-verify-backup-code");
     if (verifyBackupBtn) {
-      verifyBackupBtn.addEventListener("click", async () => {
+      verifyBackupBtn.addEventListener("click", () => {
         const inp = document.getElementById("recovery-backup-input");
         const errEl = document.getElementById("backup-code-error");
         const code = (inp?.value || "").trim();
@@ -4438,12 +4446,28 @@ function initAdminSecurityModal() {
           });
           const data = await res.json();
           if (res.ok && (data.valid === true || data.valid === "true")) {
+            console.log("API VALID", data);
+            console.log("stepNewPass =", stepNewPass);
+            console.log("showSubstep start");
+
             if (errEl) {
               errEl.style.display = "none";
               errEl.textContent = "";
             }
+
+            try {
+              showSubstep(stepNewPass);
+              console.log("showSubstep complete");
+            } catch (substepErr) {
+              console.error("❌ Exception during showSubstep:", substepErr);
+            }
+
+            const targetNewPass = stepNewPass || document.getElementById("forgot-step-newpass");
+            if (targetNewPass) {
+              targetNewPass.style.display = "block";
+            }
+
             showToast("✓ Secret Answer Verified! Enter your new Admin password:");
-            showSubstep(stepNewPass);
             return;
           }
 
@@ -4454,6 +4478,7 @@ function initAdminSecurityModal() {
           }
           showToast("Invalid Secret Answer! ❌");
         } catch (e) {
+          console.error("❌ Exception during Security Question verification:", e);
           showToast("Network error verifying Secret Answer ❌");
         }
       };

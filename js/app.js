@@ -4626,6 +4626,310 @@ function checkAdminAccess() {
   });
 }
 
+// ─── WISH STUDIO LUXURY POPUP CALENDAR CONTROLLER ───
+function initWishStudioCalendar() {
+  const modal = document.getElementById("material-date-picker-modal");
+  const openBtn = document.getElementById("open-material-datepicker-btn");
+  const displayInput = document.getElementById("input-birthdate-display");
+  const hiddenInput = document.getElementById("input-birthdate");
+
+  if (!modal || !displayInput || !hiddenInput) return;
+
+  const monthSelect = document.getElementById("mdp-month-select");
+  const yearSelect = document.getElementById("mdp-year-select");
+  const prevMonthBtn = document.getElementById("mdp-prev-month");
+  const nextMonthBtn = document.getElementById("mdp-next-month");
+  const prevYearBtn = document.getElementById("mdp-prev-year");
+  const nextYearBtn = document.getElementById("mdp-next-year");
+  const daysGrid = document.getElementById("mdp-days-grid");
+  const todayBtn = document.getElementById("mdp-today-btn");
+  const cancelBtn = document.getElementById("mdp-cancel-btn");
+  const okBtn = document.getElementById("mdp-ok-btn");
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  let selectedDate = new Date(2001, 0, 1);
+  let viewDate = new Date(2001, 0, 1);
+
+  // Populate Year Select (1900 to Current Year + 10)
+  if (yearSelect && yearSelect.options.length === 0) {
+    const curYear = new Date().getFullYear();
+    const maxYr = curYear + 10;
+    for (let y = maxYr; y >= 1900; y--) {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      opt.style.background = "#1B1530";
+      opt.style.color = "#fff";
+      yearSelect.appendChild(opt);
+    }
+  }
+
+  // Formatting Helpers
+  function formatUserDisplay(dateObj) {
+    const d = String(dateObj.getDate()).padStart(2, "0");
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const y = dateObj.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+
+  function formatInternalStored(dateObj) {
+    const d = String(dateObj.getDate()).padStart(2, "0");
+    const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const y = dateObj.getFullYear();
+    return `${d}-${m}-${y}`;
+  }
+
+  function isValidCalendarDate(year, monthIndex, day) {
+    if (isNaN(year) || isNaN(monthIndex) || isNaN(day)) return false;
+    const curYear = new Date().getFullYear();
+    if (year < 1900 || year > curYear + 10) return false;
+    if (monthIndex < 0 || monthIndex > 11) return false;
+    if (day < 1) return false;
+    const maxDays = new Date(year, monthIndex + 1, 0).getDate();
+    return day <= maxDays;
+  }
+
+  function parseTypedDate(str) {
+    if (!str) return null;
+    str = str.trim();
+
+    // Check DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+    const numMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (numMatch) {
+      const day = parseInt(numMatch[1], 10);
+      const monthIdx = parseInt(numMatch[2], 10) - 1;
+      const year = parseInt(numMatch[3], 10);
+      if (isValidCalendarDate(year, monthIdx, day)) {
+        return new Date(year, monthIdx, day);
+      }
+      return null;
+    }
+
+    // Check YYYY-MM-DD
+    const isoMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})$/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const monthIdx = parseInt(isoMatch[2], 10) - 1;
+      const day = parseInt(isoMatch[3], 10);
+      if (isValidCalendarDate(year, monthIdx, day)) {
+        return new Date(year, monthIdx, day);
+      }
+    }
+
+    return null;
+  }
+
+  window.syncDatePickerDisplay = function() {
+    let curVal = hiddenInput.value || displayInput.value;
+    let parsed = parseTypedDate(curVal);
+    if (!parsed && CONFIG.birthDate) {
+      parsed = new Date(CONFIG.birthDate.year || 2001, (CONFIG.birthDate.month || 1) - 1, CONFIG.birthDate.day || 1);
+    }
+    if (!parsed) parsed = new Date(2001, 0, 1);
+    selectedDate = new Date(parsed);
+    viewDate = new Date(parsed);
+    displayInput.value = formatUserDisplay(selectedDate);
+    hiddenInput.value = formatInternalStored(selectedDate);
+    displayInput.classList.remove("input-error");
+    if (typeof updateBirthdayCard === "function") updateBirthdayCard();
+    if (typeof updateAgeCounter === "function") updateAgeCounter();
+  };
+
+  function renderGrid() {
+    if (!daysGrid) return;
+    daysGrid.innerHTML = "";
+
+    const yr = viewDate.getFullYear();
+    const mo = viewDate.getMonth();
+
+    if (monthSelect) monthSelect.value = mo;
+    if (yearSelect) yearSelect.value = yr;
+
+    const firstDayIndex = new Date(yr, mo, 1).getDay();
+    const totalDays = new Date(yr, mo + 1, 0).getDate();
+    const prevMonthDays = new Date(yr, mo, 0).getDate();
+
+    const today = new Date();
+
+    // Render Prev Month Days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = prevMonthDays - i;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mdp-day-btn prev-month";
+      btn.textContent = dayNum;
+      btn.style.cssText = "background:none;border:none;color:rgba(255,255,255,0.25);font-size:0.85rem;padding:8px 0;border-radius:10px;cursor:pointer;";
+      btn.addEventListener("click", () => {
+        viewDate.setMonth(mo - 1);
+        viewDate.setDate(dayNum);
+        selectedDate = new Date(viewDate);
+        renderGrid();
+      });
+      daysGrid.appendChild(btn);
+    }
+
+    // Render Current Month Days
+    for (let d = 1; d <= totalDays; d++) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mdp-day-btn";
+      btn.textContent = d;
+
+      const isSelected = selectedDate.getFullYear() === yr && selectedDate.getMonth() === mo && selectedDate.getDate() === d;
+      const isToday = today.getFullYear() === yr && today.getMonth() === mo && today.getDate() === d;
+
+      let style = "background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:0.85rem;font-weight:600;padding:8px 0;border-radius:10px;cursor:pointer;transition:all 0.2s;";
+
+      if (isSelected) {
+        style = "background:linear-gradient(135deg, #F7C94A, #e5b630);border:1px solid #ffd700;color:#120D24;font-size:0.85rem;font-weight:800;padding:8px 0;border-radius:10px;cursor:pointer;box-shadow:0 0 15px rgba(247,201,74,0.6);transform:scale(1.05);";
+      } else if (isToday) {
+        style = "background:rgba(168,85,247,0.2);border:1px solid rgba(247,201,74,0.6);color:#ffd700;font-size:0.85rem;font-weight:700;padding:8px 0;border-radius:10px;cursor:pointer;";
+      }
+
+      btn.style.cssText = style;
+
+      btn.addEventListener("click", () => {
+        selectedDate = new Date(yr, mo, d);
+        viewDate = new Date(yr, mo, d);
+        displayInput.value = formatUserDisplay(selectedDate);
+        hiddenInput.value = formatInternalStored(selectedDate);
+        displayInput.classList.remove("input-error");
+
+        if (CONFIG.birthDate) {
+          CONFIG.birthDate.year = yr;
+          CONFIG.birthDate.month = mo + 1;
+          CONFIG.birthDate.day = d;
+        }
+
+        if (typeof updateBirthdayCard === "function") updateBirthdayCard();
+        if (typeof updateAgeCounter === "function") updateAgeCounter();
+
+        closeCalendar();
+      });
+
+      daysGrid.appendChild(btn);
+    }
+  }
+
+  function openCalendar() {
+    window.syncDatePickerDisplay();
+    renderGrid();
+    modal.style.display = "flex";
+    modal.classList.add("open");
+  }
+
+  function closeCalendar() {
+    modal.style.display = "none";
+    modal.classList.remove("open");
+  }
+
+  // Triggers
+  if (openBtn) openBtn.addEventListener("click", (e) => { e.preventDefault(); openCalendar(); });
+
+  // Restrict keydown to numbers and navigation keys
+  displayInput.addEventListener("keydown", (e) => {
+    if (
+      ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+      e.ctrlKey || e.metaKey
+    ) {
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  });
+
+  function syncTypedValue() {
+    let digits = displayInput.value.replace(/\D/g, "").slice(0, 8);
+    let masked = "";
+    if (digits.length > 0) {
+      if (digits.length <= 2) {
+        masked = digits;
+      } else if (digits.length <= 4) {
+        masked = digits.slice(0, 2) + "/" + digits.slice(2);
+      } else {
+        masked = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4, 8);
+      }
+    }
+    displayInput.value = masked;
+
+    if (digits.length === 8) {
+      const typed = parseTypedDate(masked);
+      if (typed) {
+        selectedDate = typed;
+        viewDate = new Date(typed);
+        hiddenInput.value = formatInternalStored(selectedDate);
+        displayInput.classList.remove("input-error");
+        if (CONFIG.birthDate) {
+          CONFIG.birthDate.year = typed.getFullYear();
+          CONFIG.birthDate.month = typed.getMonth() + 1;
+          CONFIG.birthDate.day = typed.getDate();
+        }
+        if (typeof updateBirthdayCard === "function") updateBirthdayCard();
+        if (typeof updateAgeCounter === "function") updateAgeCounter();
+      } else {
+        displayInput.classList.add("input-error");
+      }
+    } else {
+      displayInput.classList.remove("input-error");
+    }
+  }
+
+  // Manual Typing Parser on Input & Blur
+  displayInput.addEventListener("input", syncTypedValue);
+
+  displayInput.addEventListener("blur", () => {
+    syncTypedValue();
+    const typed = parseTypedDate(displayInput.value.trim());
+    if (typed) {
+      displayInput.value = formatUserDisplay(typed);
+    }
+  });
+
+  // Month / Year Navigation
+  if (prevMonthBtn) prevMonthBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() - 1); renderGrid(); });
+  if (nextMonthBtn) nextMonthBtn.addEventListener("click", () => { viewDate.setMonth(viewDate.getMonth() + 1); renderGrid(); });
+  if (prevYearBtn) prevYearBtn.addEventListener("click", () => { viewDate.setFullYear(viewDate.getFullYear() - 1); renderGrid(); });
+  if (nextYearBtn) nextYearBtn.addEventListener("click", () => { viewDate.setFullYear(viewDate.getFullYear() + 1); renderGrid(); });
+
+  if (monthSelect) monthSelect.addEventListener("change", (e) => { viewDate.setMonth(parseInt(e.target.value)); renderGrid(); });
+  if (yearSelect) yearSelect.addEventListener("change", (e) => { viewDate.setFullYear(parseInt(e.target.value)); renderGrid(); });
+
+  if (todayBtn) todayBtn.addEventListener("click", () => {
+    selectedDate = new Date();
+    viewDate = new Date();
+    displayInput.value = formatUserDisplay(selectedDate);
+    hiddenInput.value = formatInternalStored(selectedDate);
+    if (CONFIG.birthDate) {
+      CONFIG.birthDate.year = selectedDate.getFullYear();
+      CONFIG.birthDate.month = selectedDate.getMonth() + 1;
+      CONFIG.birthDate.day = selectedDate.getDate();
+    }
+    if (typeof updateBirthdayCard === "function") updateBirthdayCard();
+    if (typeof updateAgeCounter === "function") updateAgeCounter();
+    closeCalendar();
+  });
+
+  if (cancelBtn) cancelBtn.addEventListener("click", closeCalendar);
+  if (okBtn) okBtn.addEventListener("click", closeCalendar);
+
+  // Close on Backdrop Click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeCalendar();
+  });
+
+  // ESC key listener
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display !== "none") {
+      closeCalendar();
+    }
+  });
+
+  // Initial sync
+  window.syncDatePickerDisplay();
+}
+
 async function initCustomizerModal() {
 
   await parseQueryParams();
@@ -4972,51 +5276,15 @@ async function initCustomizerModal() {
     });
   }
 
-function initDateDropdowns() {
-  const daySelect = document.getElementById("input-day");
-  const monthSelect = document.getElementById("input-month");
-  const yearSelect = document.getElementById("input-year");
-  if (!daySelect || !monthSelect || !yearSelect) return;
-
-  daySelect.innerHTML = "";
-  for (let d = 1; d <= 31; d++) {
-    const opt = document.createElement("option");
-    opt.value = d;
-    opt.textContent = String(d).padStart(2, "0");
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
-    daySelect.appendChild(opt);
-  }
-
-  const months = ["Jan (01)", "Feb (02)", "Mar (03)", "Apr (04)", "May (05)", "Jun (06)", "Jul (07)", "Aug (08)", "Sep (09)", "Oct (10)", "Nov (11)", "Dec (12)"];
-  monthSelect.innerHTML = "";
-  months.forEach((m, idx) => {
-    const opt = document.createElement("option");
-    opt.value = idx + 1;
-    opt.textContent = m;
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
-    monthSelect.appendChild(opt);
-  });
-
-  const curYr = new Date().getFullYear();
-  const maxYr = curYr + 10;
-  yearSelect.innerHTML = "";
-  for (let y = maxYr; y >= 1950; y--) {
-    const opt = document.createElement("option");
-    opt.value = y;
-    opt.textContent = y;
-    opt.style.background = "#2a162b"; opt.style.color = "#fff";
-    yearSelect.appendChild(opt);
-  }
-}
-
   // ─── POPULATE ALL FIELDS ───
   function populateEditorFields() {
+    initWishStudioCalendar();
     const bDateInput = document.getElementById("input-birthdate");
     if (bDateInput && CONFIG.birthDate) {
       const y = String(CONFIG.birthDate.year || 2001).padStart(4, "0");
       const m = String(CONFIG.birthDate.month || 1).padStart(2, "0");
       const d = String(CONFIG.birthDate.day || 1).padStart(2, "0");
-      bDateInput.value = `${y}-${m}-${d}`;
+      bDateInput.value = `${d}-${m}-${y}`;
       if (typeof window.syncDatePickerDisplay === "function") window.syncDatePickerDisplay();
     }
 
@@ -5096,9 +5364,15 @@ function initDateDropdowns() {
     if (bDateVal) {
       const parts = bDateVal.split("-");
       if (parts.length === 3) {
-        yVal = parseInt(parts[0]) || 2001;
-        mVal = parseInt(parts[1]) || 1;
-        dVal = parseInt(parts[2]) || 1;
+        if (parseInt(parts[0]) > 1000) { // YYYY-MM-DD
+          yVal = parseInt(parts[0]) || 2001;
+          mVal = parseInt(parts[1]) || 1;
+          dVal = parseInt(parts[2]) || 1;
+        } else { // DD-MM-YYYY
+          dVal = parseInt(parts[0]) || 1;
+          mVal = parseInt(parts[1]) || 1;
+          yVal = parseInt(parts[2]) || 2001;
+        }
       }
     }
 
@@ -6330,6 +6604,7 @@ function initMusicWidget() {
   initGiftbox();
   initCake();
   initWishingStar();
+  initWishStudioCalendar();
   initPhotoLightbox();
   renderVideoWishSection();
 

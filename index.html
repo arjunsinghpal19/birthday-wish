@@ -478,11 +478,11 @@
             </div>
             <div class="form-group">
               <label for="input-birthdate-display">📅 Birth Date (Type or Select from Calendar)</label>
-              <small class="field-hint">Type date (e.g. 08/17/2023 or 17-Aug-2001) or click calendar icon</small>
+              <small class="field-hint">Type date (e.g. 17/08/2001) or click calendar icon</small>
               <div id="material-input-container" style="position:relative;display:flex;align-items:center;">
-                <input type="text" id="input-birthdate-display" class="form-control luxury-date-picker-input" placeholder="MM/DD/YYYY" style="width:100%;padding:11px 48px 11px 14px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.35);color:#fff;font-size:0.95rem;transition:all 0.3s ease;">
-                <button type="button" id="open-material-datepicker-btn" title="Open Calendar" aria-label="Open Calendar" style="position:absolute;right:8px;background:rgba(168,85,247,0.25);border:1px solid rgba(255,215,0,0.4);border-radius:10px;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:all 0.2s ease;z-index:5;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <input type="text" id="input-birthdate-display" class="form-control luxury-date-picker-input" placeholder="DD/MM/YYYY" maxlength="10" autocomplete="off" style="width:100%;padding:11px 44px 11px 14px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.35);color:#fff;font-size:0.95rem;transition:all 0.3s ease;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+                <button type="button" id="open-material-datepicker-btn" title="Open Calendar" aria-label="Open Calendar" style="position:absolute;right:12px;background:none;border:none;padding:0;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;outline:none;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F7C94A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 </button>
                 <input type="hidden" id="input-birthdate" value="2001-01-01">
               </div>
@@ -740,109 +740,8 @@
           </div>
         </div>
 
-        <!-- ═══ SECTION: SECURITY & RECOVERY SETTINGS ═══ -->
-        <div class="editor-section" data-section="security">
-          <button class="editor-section-header" type="button">
-            <span>🛡 Security & Account Recovery Settings</span><span class="chevron">▾</span>
-          </button>
-          <div class="editor-section-body">
-            
-            <!-- 1. Recovery Email Setup -->
-            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;margin-bottom:14px;">
-              <div style="display:flex;justify-style:space-between;align-items:center;margin-bottom:8px;">
-                <label for="sec-recovery-email" style="font-size:0.82rem;font-weight:700;color:#fff;margin:0;">📧 Recovery Email Address</label>
-                <span id="sec-email-status-badge" style="font-size:0.7rem;padding:2px 8px;border-radius:4px;background:rgba(234,179,8,0.15);color:#facc15;border:1px solid rgba(234,179,8,0.4);font-weight:600;">Unverified ⚠️</span>
-              </div>
-              <small class="field-hint" style="margin-bottom:8px;display:block;">Password reset ke liye OTP iss email par bheja jayega.</small>
-              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-                <input type="email" id="sec-recovery-email" placeholder="admin@example.com" style="flex:1;min-width:180px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;" />
-                <button type="button" id="sec-save-email-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Send OTP</button>
-              </div>
-              <div id="sec-email-otp-box" style="display:none;gap:8px;margin-top:8px;align-items:center;">
-                <input type="text" id="sec-email-otp-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="width:140px;padding:6px 10px;border-radius:6px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;font-size:0.85rem;text-align:center;font-weight:bold;" />
-                <button type="button" id="sec-verify-email-otp-btn" style="background:#22c55e;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">Verify & Save</button>
-              </div>
-            </div>
-
-            <!-- 2. Emergency Backup Code Experience -->
-            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:16px;margin-bottom:14px;box-sizing:border-box;">
-              
-              <!-- Section 1: Information Card -->
-              <div class="glass-info-card" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-                <div style="font-size:0.9rem;font-weight:700;color:#F7C94A;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-                  <span>🛟</span> <span>Emergency Recovery Code</span>
-                </div>
-                <div style="font-size:0.76rem;font-weight:600;color:#E2E8F0;margin-bottom:6px;">
-                  Use this code ONLY if you cannot access your recovery email.
-                </div>
-                <div style="font-size:0.73rem;color:#94A3B8;line-height:1.5;">
-                  <div>• Email OTP unavailable</div>
-                  <div>• Lost access to recovery email</div>
-                  <div>• Last recovery option</div>
-                </div>
-              </div>
-
-              <!-- Section 2: Backup Code Card -->
-              <div id="sec-backup-card-wrapper" class="backup-code-card" style="background:rgba(18,13,36,0.7);border:1px dashed #F7C94A;border-radius:12px;padding:16px 14px;text-align:center;margin-bottom:12px;box-shadow:0 0 20px rgba(247,201,74,0.15);transition:all 0.3s ease;">
-                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-bottom:6px;">Your Emergency Code</div>
-                <div id="sec-backup-code-display" style="font-family:'Courier New',Courier,monospace;font-size:1.35rem;font-weight:800;letter-spacing:3px;color:#F7C94A;text-shadow:0 0 10px rgba(247,201,74,0.3);word-break:break-all;">WS-9F8A-3E21-7B04</div>
-                <div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;letter-spacing:0.3px;">Copy or download to keep in a secure location</div>
-              </div>
-
-              <!-- Section 3: Recovery Actions (Responsive 2x2 Grid) -->
-              <div class="backup-actions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
-                <button type="button" id="btn-copy-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">📋 Copy Code</button>
-                <button type="button" id="btn-download-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">⬇ Download TXT</button>
-                <button type="button" id="btn-print-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🖨 Print Code</button>
-                <button type="button" id="btn-regen-recovery-code" class="btn-backup-act" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🔄 Generate New Code</button>
-              </div>
-
-              <!-- Section 4: Security Warning Card -->
-              <div class="security-warning-card" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:10px;padding:10px 12px;font-size:0.73rem;color:#FDE047;line-height:1.5;">
-                <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.78rem;">
-                  <span>⚠</span> <span>Store this code safely.</span>
-                </div>
-                <div>• Never share it with anyone.</div>
-                <div>• Generating a new backup code permanently invalidates the old one.</div>
-              </div>
-
-            </div>
-
-            <!-- 3. Security Question Customization -->
-            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;">
-              <label style="font-size:0.82rem;font-weight:700;color:#fff;margin-bottom:4px;display:block;">❓ Secret Security Question & Answer</label>
-              <small class="field-hint" style="margin-bottom:10px;display:block;">Custom security question aur hashed secret answer setup karein.</small>
-              
-              <div class="form-group" style="margin-bottom:10px;">
-                <label for="sec-question-preset" style="font-size:0.75rem;">Security Question</label>
-                <select id="sec-question-preset" style="width:100%;padding:8px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;">
-                  <option value="Who is your best friend?" style="background:#2a162b;color:#fff;">Who is your best friend?</option>
-                  <option value="What city were you born in?" style="background:#2a162b;color:#fff;">What city were you born in?</option>
-                  <option value="What is your favorite book?" style="background:#2a162b;color:#fff;">What is your favorite book?</option>
-                  <option value="custom" style="background:#2a162b;color:#fff;">➕ Write Custom Question...</option>
-                </select>
-              </div>
-
-              <div id="sec-custom-question-group" class="form-group" style="display:none;margin-bottom:10px;">
-                <input type="text" id="sec-custom-question" placeholder="Type custom security question..." style="width:100%;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;" />
-              </div>
-
-              <div class="form-group" style="margin-bottom:12px;">
-                <label for="sec-recovery-answer" style="font-size:0.75rem;">Secret Answer</label>
-                <div class="pass-input-wrap">
-                  <input type="password" id="sec-recovery-answer" placeholder="Enter Secret Answer (e.g. Shivam)" style="width:100%;padding:8px 40px 8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.82rem;" />
-                  <button type="button" class="eye-toggle" data-target="sec-recovery-answer" aria-label="Toggle visibility">👁</button>
-                </div>
-              </div>
-
-              <button type="button" id="sec-save-recovery-btn" style="width:100%;background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.82rem;font-weight:600;cursor:pointer;">💾 Save Question & Answer</button>
-            </div>
-
-          </div>
-        </div>
-
       <!-- STICKY FOOTER -->
-      <div class="editor-footer-wrap" style="padding:14px 20px;background:rgba(20,10,25,0.95);border-top:1px solid rgba(255,255,255,0.1);border-radius:0 0 20px 20px;">
+      <div class="editor-footer-wrap">
         <div id="inline-share-options" class="inline-share-bar" style="display:none;padding:12px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.3);margin-bottom:10px;border-radius:12px;animation:fadeIn 0.3s ease;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <span style="font-size:0.8rem;color:var(--gold);font-weight:600;">✅ Link Copied! Share Birthday Wish:</span>
@@ -858,9 +757,9 @@
           </div>
         </div>
 
-        <div class="editor-footer" style="display:flex;gap:12px;">
-          <button id="customizer-save-btn" class="btn" style="flex:1;">💾 Save & Apply</button>
-          <button id="customizer-share-link-btn" class="btn btn-ghost" style="flex:1;">🔗 Shareable Link</button>
+        <div class="editor-footer">
+          <button id="customizer-save-btn" class="btn">💾 Save & Apply</button>
+          <button id="customizer-share-link-btn" class="btn btn-ghost">🔗 Shareable Link</button>
         </div>
       </div>
 
@@ -1090,58 +989,61 @@
 
 
 
-  <!-- MATERIAL DESIGN DATE PICKER MODAL (EXACT IMAGE 2 REPLICATION) -->
-  <div id="material-date-picker-modal" class="customizer-modal-backdrop" style="display:none;z-index:999999;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);">
-    <div id="material-dp-card" style="max-width:340px;width:92%;margin:auto;padding:20px;border-radius:24px;background:#f3eef8;box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(147,51,234,0.3);color:#2d213d;font-family:'Outfit', sans-serif;position:relative;">
+  <!-- WISH STUDIO LUXURY POPUP CALENDAR MODAL -->
+  <div id="material-date-picker-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:999999;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);">
+    <div id="material-dp-card" class="glass" style="max-width:350px;width:92%;margin:auto;padding:22px;border-radius:20px;background:#1B1530;border:1px solid rgba(247,201,74,0.4);box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(247,201,74,0.25);color:#fff;font-family:'Outfit', sans-serif;position:relative;">
       
-      <!-- Top Navigation Header (Image 2 Style: Separate Month & Year controls) -->
+      <!-- Top Navigation Header: Month & Year Controls -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         
         <!-- Month Selector Group (< Month ▾ >) -->
         <div style="display:flex;align-items:center;gap:4px;">
-          <button type="button" id="mdp-prev-month" aria-label="Previous Month" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">‹</button>
-          <select id="mdp-month-select" style="background:none;border:none;color:#2d213d;font-size:0.95rem;font-weight:700;cursor:pointer;padding:2px 4px;outline:none;">
-            <option value="0">Jan</option>
-            <option value="1">Feb</option>
-            <option value="2">Mar</option>
-            <option value="3">Apr</option>
-            <option value="4">May</option>
-            <option value="5">Jun</option>
-            <option value="6">Jul</option>
-            <option value="7">Aug</option>
-            <option value="8">Sep</option>
-            <option value="9">Oct</option>
-            <option value="10">Nov</option>
-            <option value="11">Dec</option>
+          <button type="button" id="mdp-prev-month" aria-label="Previous Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">‹</button>
+          <select id="mdp-month-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
+            <option value="0" style="background:#1B1530;color:#fff;">Jan</option>
+            <option value="1" style="background:#1B1530;color:#fff;">Feb</option>
+            <option value="2" style="background:#1B1530;color:#fff;">Mar</option>
+            <option value="3" style="background:#1B1530;color:#fff;">Apr</option>
+            <option value="4" style="background:#1B1530;color:#fff;">May</option>
+            <option value="5" style="background:#1B1530;color:#fff;">Jun</option>
+            <option value="6" style="background:#1B1530;color:#fff;">Jul</option>
+            <option value="7" style="background:#1B1530;color:#fff;">Aug</option>
+            <option value="8" style="background:#1B1530;color:#fff;">Sep</option>
+            <option value="9" style="background:#1B1530;color:#fff;">Oct</option>
+            <option value="10" style="background:#1B1530;color:#fff;">Nov</option>
+            <option value="11" style="background:#1B1530;color:#fff;">Dec</option>
           </select>
-          <button type="button" id="mdp-next-month" aria-label="Next Month" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">›</button>
+          <button type="button" id="mdp-next-month" aria-label="Next Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">›</button>
         </div>
 
         <!-- Year Selector Group (< Year ▾ >) -->
         <div style="display:flex;align-items:center;gap:4px;">
-          <button type="button" id="mdp-prev-year" aria-label="Previous Year" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">‹</button>
-          <select id="mdp-year-select" style="background:none;border:none;color:#2d213d;font-size:0.95rem;font-weight:700;cursor:pointer;padding:2px 4px;outline:none;">
-            <!-- Dynamic 1950 to 2100 -->
+          <button type="button" id="mdp-prev-year" aria-label="Previous Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">‹</button>
+          <select id="mdp-year-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
+            <!-- Dynamic 1900 to 2100 -->
           </select>
-          <button type="button" id="mdp-next-year" aria-label="Next Year" style="background:none;border:none;color:#5b407a;font-size:1.1rem;cursor:pointer;padding:4px 6px;border-radius:50%;transition:background 0.2s;">›</button>
+          <button type="button" id="mdp-next-year" aria-label="Next Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">›</button>
         </div>
 
       </div>
 
-      <!-- Days Header Row (Image 2: S M T W T F S) -->
-      <div style="display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-size:0.85rem;font-weight:600;color:#785a9c;margin-bottom:10px;">
+      <!-- Days Header Row (S M T W T F S) -->
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-size:0.8rem;font-weight:700;color:var(--gold,#ffd700);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
         <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
       </div>
 
       <!-- Calendar Days Grid -->
-      <div id="mdp-days-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:4px;text-align:center;min-height:210px;">
+      <div id="mdp-days-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:5px;text-align:center;min-height:220px;">
         <!-- Dynamic day buttons -->
       </div>
 
-      <!-- Bottom Action Bar (Image 2: Cancel OK) -->
-      <div style="display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06);">
-        <button type="button" id="mdp-cancel-btn" style="background:none;border:none;color:#6b4c8a;font-size:0.9rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:12px;transition:background 0.2s;">Cancel</button>
-        <button type="button" id="mdp-ok-btn" style="background:none;border:none;color:#7c3aed;font-size:0.9rem;font-weight:700;cursor:pointer;padding:6px 14px;border-radius:12px;transition:background 0.2s;">OK</button>
+      <!-- Bottom Action Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+        <button type="button" id="mdp-today-btn" style="background:rgba(247,201,74,0.15);border:1px solid rgba(247,201,74,0.3);color:#ffd700;font-size:0.8rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:10px;transition:all 0.2s;">Today</button>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="mdp-cancel-btn" style="background:rgba(255,255,255,0.08);border:none;color:#cbd5e1;font-size:0.85rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;transition:all 0.2s;">Cancel</button>
+          <button type="button" id="mdp-ok-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);border:1px solid rgba(247,201,74,0.4);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;padding:6px 16px;border-radius:10px;box-shadow:0 4px 12px rgba(168,85,247,0.3);transition:all 0.2s;">OK</button>
+        </div>
       </div>
 
     </div>

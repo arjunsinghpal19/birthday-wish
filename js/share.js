@@ -9,6 +9,13 @@
 (function (window) {
   "use strict";
 
+  /**
+   * Generates a shareable URL for a custom wish payload.
+   * Attempts primary save via Supabase Database API, falling back to legacy Base64 parameters.
+   * @param {Object} configObj - Current application wish configuration object.
+   * @param {string} [overrideName] - Optional override recipient name.
+   * @returns {Promise<string>} Fully formatted public share URL.
+   */
   async function generateShareableUrl(configObj, overrideName) {
     const nameVal = (overrideName !== undefined ? overrideName : (configObj.name || "")).trim();
     let baseUrl = location.origin + location.pathname;
@@ -39,6 +46,11 @@
     return nameVal ? `${baseUrl}?name=${encodeURIComponent(nameVal)}` : baseUrl;
   }
 
+  /**
+   * Parses URL query parameters to retrieve a wish payload from Supabase DB or legacy Base64 data.
+   * @param {Object} configObj - Target configuration object to hydrate.
+   * @returns {Promise<Object|null>} Resolved wish data payload object or null if unspecified.
+   */
   async function parseWishRoute(configObj) {
     const params = new URLSearchParams(location.search);
     const nameParam = params.get("name");

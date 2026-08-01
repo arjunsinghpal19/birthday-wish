@@ -9,6 +9,11 @@
 (function (window) {
   "use strict";
 
+  /**
+   * Safely retrieves an environment variable from window.ENV, process.env, or localStorage.
+   * @param {string} key - Environment variable key name.
+   * @returns {string|null} Resolved variable string or null if unconfigured.
+   */
   function getEnvVariable(key) {
     if (window.ENV && window.ENV[key]) return window.ENV[key];
     if (window.process && window.process.env && window.process.env[key]) return window.process.env[key];
@@ -19,6 +24,10 @@
     return null;
   }
 
+  /**
+   * Initializes and returns a singleton Supabase client instance.
+   * @returns {Object|null} Initialized Supabase client instance or null for local fallback.
+   */
   function initSupabaseClient() {
     const supabaseUrl = getEnvVariable("SUPABASE_URL");
     const supabaseAnonKey = getEnvVariable("SUPABASE_ANON_KEY");

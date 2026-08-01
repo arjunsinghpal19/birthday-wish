@@ -257,6 +257,11 @@
   // Persistent Security Metadata Storage
   const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
 
+  /**
+   * Persists updated security metadata and configuration options to cloud DB & localStorage.
+   * @param {Object} secObj - Security metadata configuration payload.
+   * @returns {Promise<Object>} Resolved updated security settings object.
+   */
   async function saveSecuritySettings(secObj) {
     try {
       if (secObj.admin_master_password) {
@@ -295,6 +300,11 @@
     }
   }
 
+  /**
+   * Retrieves security configuration metadata from cloud DB or local storage fallbacks.
+   * @param {boolean} [forceRefresh=false] - If true, bypasses in-memory session cache.
+   * @returns {Promise<Object>} Resolved security configuration metadata object.
+   */
   async function getSecuritySettings(forceRefresh = false) {
     try {
       const masterPass = await PasswordService.getPassword(forceRefresh);

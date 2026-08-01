@@ -1808,11 +1808,135 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
 
 .modal-backdrop .modal-content,
 #admin-login-modal .modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 440px !important;
+  max-height: calc(100vh - 32px) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  border: none !important;
+  outline: 1px solid rgba(255, 255, 255, 0.15) !important;
   transform: scale(0.92);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  max-height: 90vh;
-  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(168, 85, 247, 0.3);
+  margin: auto !important;
+}
+
+#admin-login-modal .modal-content::before {
+  inset: 0 !important;
+}
+
+#admin-login-modal *,
+#admin-login-modal *::before,
+#admin-login-modal *::after {
+  box-sizing: border-box !important;
+}
+
+#admin-login-modal .admin-tab-nav {
+  display: flex !important;
+  gap: 6px !important;
+  margin-bottom: 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  padding-bottom: 10px !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#admin-login-modal .admin-tab-btn {
+  flex: 1 1 auto !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+#admin-login-modal .admin-tab-content {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Premium Security Module Buttons & SVG Icons */
+#admin-login-modal .btn,
+#admin-login-modal button.primary-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  min-height: 42px !important;
+  padding: 10px 18px !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+  border-radius: 10px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%) !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 15px rgba(126, 34, 206, 0.35) !important;
+}
+
+#admin-login-modal .btn .btn-icon,
+#admin-login-modal button.primary-btn .btn-icon,
+#admin-login-modal .admin-tab-btn .btn-icon {
+  width: 18px !important;
+  height: 18px !important;
+  stroke: #ffffff !important;
+  stroke-width: 2 !important;
+  opacity: 1 !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+#admin-login-modal .admin-tab-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+#admin-login-modal .btn:hover,
+#admin-login-modal button.primary-btn:hover {
+  background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.45) !important;
+}
+
+.btn-backup-act:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(247, 201, 74, 0.5) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.btn-backup-act:active {
+  transform: translateY(0) !important;
+}
+
+#admin-login-modal .btn:active,
+#admin-login-modal button.primary-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(126, 34, 206, 0.4) !important;
+}
+
+#admin-login-modal .btn-back-link {
+  font-size: 0.78rem !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  background: none !important;
+  border: none !important;
+  padding: 4px 0 !important;
+  margin-bottom: 10px !important;
+  cursor: pointer !important;
+  transition: color 0.2s ease !important;
+}
+
+#admin-login-modal .btn-back-link:hover {
+  color: #ffd700 !important;
 }
 
 .modal-backdrop.open .modal-content,

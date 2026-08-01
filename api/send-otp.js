@@ -179,7 +179,7 @@ export default async function handler(req, res) {
 
       // Send Email via Resend API
       try {
-        const emailSubject = purpose === "SETUP" ? "Verify Admin Recovery Email - Birthday Suite" : "Admin Password Reset OTP - Birthday Suite";
+        const emailSubject = "Wish Studio Security Verification Code";
         const resendResponse = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -187,18 +187,113 @@ export default async function handler(req, res) {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            from: "Birthday Suite Security <onboarding@resend.dev>",
+            from: "Wish Studio Security <onboarding@resend.dev>",
             to: [targetEmail],
             subject: emailSubject,
             html: `
-              <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; border-radius: 12px; max-width: 480px; margin: 0 auto; border: 1px solid #334155;">
-                <h2 style="color: #fbbf24; margin-bottom: 8px; font-size: 20px;">🔐 Birthday Suite Security Code</h2>
-                <p style="font-size: 14px; color: #94a3b8;">Your 6-digit verification code is:</p>
-                <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #38bdf8; background: #1e293b; padding: 16px; border-radius: 8px; text-align: center; margin: 16px 0; border: 1px solid #475569;">
-                  ${rawOtp}
-                </div>
-                <p style="font-size: 12px; color: #64748b;">This code expires in <strong>5 minutes</strong>. Do not share this code with anyone.</p>
-              </div>
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Wish Studio Security Verification</title>
+              </head>
+              <body style="margin: 0; padding: 0; background-color: #0F0A1C; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+                <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0F0A1C; padding: 36px 12px;">
+                  <tr>
+                    <td align="center">
+                      <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 500px; background-color: #1B1530; border: 1px solid rgba(247, 201, 74, 0.25); border-radius: 18px; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);">
+                        
+                        <!-- Header Banner -->
+                        <tr>
+                          <td style="padding: 32px 24px 22px 24px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: linear-gradient(180deg, rgba(247, 201, 74, 0.08) 0%, rgba(27, 21, 48, 0) 100%);" align="center">
+                            <div style="margin-bottom: 8px;">
+                              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#F7C94A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                                <rect x="3" y="8" width="18" height="13" rx="2" ry="2"/>
+                                <path d="M12 8v13"/>
+                                <path d="M3 12h18"/>
+                                <path d="M12 8C9.5 8 7 5.5 8.5 3.5 10 1.5 12 5 12 8z"/>
+                                <path d="M12 8C14.5 8 17 5.5 15.5 3.5 14 1.5 12 5 12 8z"/>
+                              </svg>
+                            </div>
+                            <div style="font-size: 22px; font-weight: 800; color: #F7C94A; letter-spacing: 0.5px; margin-top: 4px;">Wish Studio</div>
+                            <div style="font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.6); margin-top: 4px;">Premium Unforgettable Celebration Experiences</div>
+                          </td>
+                        </tr>
+
+                        <!-- Security Title & Intro -->
+                        <tr>
+                          <td style="padding: 28px 28px 14px 28px;" align="center">
+                            <h1 style="margin: 0 0 10px 0; font-size: 19px; font-weight: 700; color: #FFFFFF; text-align: center;">🔐 Admin Security Verification</h1>
+                            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #CBD5E1; text-align: center;">
+                              An admin security verification code was requested for your account session. Enter the code below to proceed:
+                            </p>
+                          </td>
+                        </tr>
+
+                        <!-- Large OTP Card -->
+                        <tr>
+                          <td style="padding: 6px 28px 20px 28px;" align="center">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #120D24; border: 1px dashed #F7C94A; border-radius: 12px; padding: 20px 18px;">
+                              <tr>
+                                <td align="center">
+                                  <div style="font-size: 44px; font-weight: 800; letter-spacing: 10px; color: #F7C94A; font-family: 'Courier New', Courier, monospace; text-shadow: 0 0 10px rgba(247, 201, 74, 0.2);">
+                                    ${rawOtp}
+                                  </div>
+                                  <div style="font-size: 11px; color: #94A3B8; margin-top: 8px; letter-spacing: 0.3px;">Copy this code into the verification screen.</div>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!-- Expiry Notice Card Pill -->
+                        <tr>
+                          <td style="padding: 0 28px 20px 28px;" align="center">
+                            <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="background-color: rgba(247, 201, 74, 0.1); border: 1px solid #F7C94A; border-radius: 20px; padding: 6px 18px; box-shadow: 0 0 12px rgba(247, 201, 74, 0.25);">
+                              <tr>
+                                <td style="font-size: 12px; font-weight: 600; color: #FDE047; text-align: center;">
+                                  ⏱ Expires in 5 minutes
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!-- Security Advisory Box -->
+                        <tr>
+                          <td style="padding: 0 28px 24px 28px;">
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 16px;">
+                              <tr>
+                                <td>
+                                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94A3B8; margin-bottom: 10px;">Security Advisory:</div>
+                                  <div style="font-size: 12px; line-height: 1.8; color: #CBD5E1;">
+                                    <div style="margin-bottom: 4px;">🛡 Never share this code.</div>
+                                    <div style="margin-bottom: 4px;">🛡 Wish Studio will never ask for your OTP.</div>
+                                    <div>🛡 Ignore this email if you didn't request it.</div>
+                                  </div>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                          <td style="padding: 22px 24px; background-color: #120D24; border-top: 1px solid rgba(255, 255, 255, 0.08); text-align: center;" align="center">
+                            <div style="font-size: 12px; font-weight: 700; color: #F7C94A;">Wish Studio</div>
+                            <div style="font-size: 10px; color: #64748B; margin-top: 3px;">Premium Unforgettable Celebration Experiences</div>
+                            <div style="font-size: 11px; color: #94A3B8; margin-top: 10px; line-height: 1.5;">This is an automated security email.<br>Please do not reply.</div>
+                            <div style="font-size: 10px; color: #475569; margin-top: 10px;">© 2026 Wish Studio. All rights reserved.</div>
+                          </td>
+                        </tr>
+
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </body>
+              </html>
             `
           })
         });

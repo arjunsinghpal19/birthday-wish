@@ -4302,20 +4302,21 @@ function initAdminSecurityModal() {
     const verifyOtpBtn = document.getElementById("btn-verify-email-otp");
     let cooldownTimer = null;
 
+    const refreshSvg = `<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
     const startTimer = (seconds) => {
       if (!sendOtpBtn) return;
       let left = seconds;
       sendOtpBtn.disabled = true;
-      sendOtpBtn.textContent = `Resend OTP (${left}s)`;
+      sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP (${left}s)</span>`;
       if (cooldownTimer) clearInterval(cooldownTimer);
       cooldownTimer = setInterval(() => {
         left--;
         if (left <= 0) {
           clearInterval(cooldownTimer);
           sendOtpBtn.disabled = false;
-          sendOtpBtn.textContent = "📨 Resend Verification OTP";
+          sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP</span>`;
         } else {
-          sendOtpBtn.textContent = `Resend OTP (${left}s)`;
+          sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP (${left}s)</span>`;
         }
       }, 1000);
     };
@@ -4334,7 +4335,8 @@ function initAdminSecurityModal() {
 
         showToast("⏳ Requesting Recovery OTP...");
         try {
-          const res = await fetch("/api/send-otp", {
+          const apiUrl = window.getApiUrl ? window.getApiUrl("/api/send-otp") : "/api/send-otp";
+          const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "request-otp", email, purpose: "RECOVERY" })
@@ -4372,7 +4374,8 @@ function initAdminSecurityModal() {
 
         showToast("⏳ Verifying OTP...");
         try {
-          const res = await fetch("/api/send-otp", {
+          const apiUrl = window.getApiUrl ? window.getApiUrl("/api/send-otp") : "/api/send-otp";
+          const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "verify-otp", otpCode: code })
@@ -4400,7 +4403,7 @@ function initAdminSecurityModal() {
         const errEl = document.getElementById("backup-code-error");
         const code = (inp?.value || "").trim();
 
-        const savedCode = (localStorage.getItem("admin_recovery_code") || "BW-9F8A-3E21-7B04").trim();
+        const savedCode = (localStorage.getItem("admin_recovery_code") || "WS-9F8A-3E21-7B04").trim();
         if (code && code.toUpperCase() === savedCode.toUpperCase()) {
           if (errEl) errEl.style.display = "none";
           showToast("✓ Backup Code Verified! Enter your new Admin password:");
@@ -4439,7 +4442,8 @@ function initAdminSecurityModal() {
 
         showToast("⏳ Verifying Secret Answer...");
         try {
-          const res = await fetch("/api/auth", {
+          const apiUrl = window.getApiUrl ? window.getApiUrl("/api/auth") : "/api/auth";
+          const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "verify-question", answer: ans })

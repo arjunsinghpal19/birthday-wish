@@ -217,14 +217,21 @@ async function loadEnhancements() {
       }
       requestAnimationFrame(raf);
       if (hasGSAP && window.ScrollTrigger) {
-        lenis.on("scroll", ScrollTrigger.update);
-        gsap.ticker.add((time) => {
-          lenis.raf(time * 1000);
-        });
-        gsap.ticker.lagSmoothing(0);
       }
     } catch (e) {
       hasLenis = false;
     }
   }
 }
+
+// Universal API endpoint router (Handles local Live Server 127.0.0.1:5500 & Vercel production seamlessly)
+window.getApiUrl = function(endpoint) {
+  if (typeof window !== "undefined" && window.location) {
+    const host = window.location.hostname;
+    const port = window.location.port;
+    if ((host === "127.0.0.1" || host === "localhost") && (port === "5500" || port === "5501" || port === "5502" || port === "8080")) {
+      return `https://birthday-wish-arjun.vercel.app${endpoint}`;
+    }
+  }
+  return endpoint;
+};

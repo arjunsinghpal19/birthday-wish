@@ -6,23 +6,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Happy Birthday ❤️</title>
 
-  <!-- Favicon Assets (v2) -->
-  <link rel="icon" type="image/x-icon" href="favicon-v2.ico?v=2">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-v2-32x32.png?v=2">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-v2-16x16.png?v=2">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-v2.png?v=2">
+  <!-- Favicon Assets -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=2">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
 
   <!-- Open Graph / WhatsApp Rich Link Preview Meta Tags -->
+  <meta name="description" content="Wish Studio — Premium Unforgettable Celebration Experiences. A special interactive birthday surprise created just for you! ✨">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Wish Studio — Premium Unforgettable Celebration Experiences">
   <meta property="og:title" id="og-title" content="Happy Birthday! 🎉❤️">
-  <meta property="og:description" id="og-desc" content="A special interactive birthday surprise created just for you! ✨ Tap the link below to open your wish 🎁">
+  <meta property="og:description" id="og-desc" content="Wish Studio — Premium Unforgettable Celebration Experiences. Tap the link below to open your wish 🎁">
   <meta property="og:image" id="og-image" content="assets/photos/og-preview.png">
   <meta property="og:url" id="og-url" content="https://birthday-wish-arjun.vercel.app">
 
   <!-- Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" id="tw-title" content="Happy Birthday! 🎉❤️">
-  <meta name="twitter:description" id="tw-desc" content="A special interactive birthday surprise created just for you! ✨ Tap the link below to open your wish 🎁">
+  <meta name="twitter:description" id="tw-desc" content="Wish Studio — Premium Unforgettable Celebration Experiences. Tap the link below to open your wish 🎁">
   <meta name="twitter:image" id="tw-image" content="assets/photos/og-preview.png">
   <link rel="canonical" id="canonical-url" href="https://birthday-wish-arjun.vercel.app">
 
@@ -754,7 +756,7 @@
               <small class="field-hint" style="margin-bottom:8px;display:block;">Password reset ke liye OTP iss email par bheja jayega.</small>
               <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
                 <input type="email" id="sec-recovery-email" placeholder="admin@example.com" style="flex:1;min-width:180px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);font-size:0.85rem;" />
-                <button type="button" id="sec-save-email-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Send Verification OTP</button>
+                <button type="button" id="sec-save-email-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Send OTP</button>
               </div>
               <div id="sec-email-otp-box" style="display:none;gap:8px;margin-top:8px;align-items:center;">
                 <input type="text" id="sec-email-otp-input" placeholder="Enter 6-Digit OTP" maxlength="6" style="width:140px;padding:6px 10px;border-radius:6px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;font-size:0.85rem;text-align:center;font-weight:bold;" />
@@ -762,18 +764,48 @@
               </div>
             </div>
 
-            <!-- 2. Emergency Backup Code -->
-            <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px;margin-bottom:14px;">
-              <label style="font-size:0.82rem;font-weight:700;color:#fff;margin-bottom:4px;display:block;">🔑 Emergency Backup Code</label>
-              <small class="field-hint" style="margin-bottom:10px;display:block;">Offline account recovery ke liye 16-character backup code.</small>
-              <div style="background:rgba(0,0,0,0.3);border:1px dashed var(--gold,#ffd700);padding:10px 14px;border-radius:8px;text-align:center;margin-bottom:10px;">
-                <span id="sec-backup-code-display" style="font-family:monospace;font-size:1.1rem;font-weight:bold;letter-spacing:2px;color:var(--gold,#ffd700);">BW-9F8A-3E21-7B04</span>
+            <!-- 2. Emergency Backup Code Experience -->
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:16px;margin-bottom:14px;box-sizing:border-box;">
+              
+              <!-- Section 1: Information Card -->
+              <div class="glass-info-card" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+                <div style="font-size:0.9rem;font-weight:700;color:#F7C94A;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                  <span>🛟</span> <span>Emergency Recovery Code</span>
+                </div>
+                <div style="font-size:0.76rem;font-weight:600;color:#E2E8F0;margin-bottom:6px;">
+                  Use this code ONLY if you cannot access your recovery email.
+                </div>
+                <div style="font-size:0.73rem;color:#94A3B8;line-height:1.5;">
+                  <div>• Email OTP unavailable</div>
+                  <div>• Lost access to recovery email</div>
+                  <div>• Last recovery option</div>
+                </div>
               </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button type="button" id="btn-copy-recovery-code" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">📋 Copy</button>
-                <button type="button" id="btn-download-recovery-code" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">📥 Download</button>
-                <button type="button" id="btn-regen-recovery-code" style="flex:1;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:6px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">🔄 Regenerate</button>
+
+              <!-- Section 2: Backup Code Card -->
+              <div id="sec-backup-card-wrapper" class="backup-code-card" style="background:rgba(18,13,36,0.7);border:1px dashed #F7C94A;border-radius:12px;padding:16px 14px;text-align:center;margin-bottom:12px;box-shadow:0 0 20px rgba(247,201,74,0.15);transition:all 0.3s ease;">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-bottom:6px;">Your Emergency Code</div>
+                <div id="sec-backup-code-display" style="font-family:'Courier New',Courier,monospace;font-size:1.35rem;font-weight:800;letter-spacing:3px;color:#F7C94A;text-shadow:0 0 10px rgba(247,201,74,0.3);word-break:break-all;">WS-9F8A-3E21-7B04</div>
+                <div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;letter-spacing:0.3px;">Copy or download to keep in a secure location</div>
               </div>
+
+              <!-- Section 3: Recovery Actions (Responsive 2x2 Grid) -->
+              <div class="backup-actions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+                <button type="button" id="btn-copy-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">📋 Copy Code</button>
+                <button type="button" id="btn-download-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">⬇ Download TXT</button>
+                <button type="button" id="btn-print-recovery-code" class="btn-backup-act" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🖨 Print Code</button>
+                <button type="button" id="btn-regen-recovery-code" class="btn-backup-act" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🔄 Generate New Code</button>
+              </div>
+
+              <!-- Section 4: Security Warning Card -->
+              <div class="security-warning-card" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:10px;padding:10px 12px;font-size:0.73rem;color:#FDE047;line-height:1.5;">
+                <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.78rem;">
+                  <span>⚠</span> <span>Store this code safely.</span>
+                </div>
+                <div>• Never share it with anyone.</div>
+                <div>• Generating a new backup code permanently invalidates the old one.</div>
+              </div>
+
             </div>
 
             <!-- 3. Security Question Customization -->
@@ -838,7 +870,7 @@
 
   <!-- ==================== ADMIN SECURITY MODAL ==================== -->
   <div id="admin-login-modal" class="modal-backdrop">
-    <div class="modal-content glass card-glow-border" style="max-width:440px;width:90%;padding:28px 24px;border-radius:20px;text-align:left;position:relative;">
+    <div class="modal-content glass card-glow-border" style="max-width:440px;width:100%;box-sizing:border-box;padding:24px 20px;border-radius:20px;text-align:left;position:relative;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
         <h3 style="font-family:var(--font-hand);font-size:1.6rem;color:var(--gold);margin:0;">🔒 Admin Security Access</h3>
         <button id="admin-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;" type="button">✕</button>
@@ -846,7 +878,7 @@
 
       <!-- Admin Tabs -->
       <div class="admin-tab-nav" style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;flex-wrap:wrap;">
-        <button class="admin-tab-btn active" data-tab="login" type="button">Unlock Editor</button>
+        <button class="admin-tab-btn active" data-tab="login" type="button">👑 Unlock Editor</button>
         <button class="admin-tab-btn" data-tab="change" type="button">🔑 Change Password</button>
         <button class="admin-tab-btn" data-tab="forgot" type="button">❓ Forgot Password</button>
       </div>
@@ -942,32 +974,75 @@
             </div>
           </div>
 
-          <button id="btn-send-email-otp" class="btn primary-btn" style="width:100%;margin-bottom:12px;" type="button">📨 Send Verification OTP</button>
+          <button id="btn-send-email-otp" class="btn primary-btn" style="width:100%;margin-bottom:12px;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send OTP</span></button>
 
           <div id="otp-enter-group" style="display:none;margin-top:12px;">
             <div class="form-group" style="margin-bottom:10px;">
               <label for="recovery-otp-input" style="font-size:0.75rem;color:#c084fc;">Enter 6-Digit Verification Code</label>
               <input type="text" id="recovery-otp-input" class="form-control" placeholder="6-Digit OTP (e.g. 123456)" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:bold;" />
             </div>
-            <button id="btn-verify-email-otp" class="btn primary-btn" style="width:100%;background:linear-gradient(135deg,#a855f7,#7e22ce);" type="button">✓ Verify OTP & Reset Password</button>
+            <button id="btn-verify-email-otp" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify OTP</span></button>
           </div>
           <div id="email-otp-error" class="admin-error-msg" style="display:none;"></div>
         </div>
 
-        <!-- SUB-STEP 1B: BACKUP CODE FLOW -->
+        <!-- SUB-STEP 1B: BACKUP CODE MANAGEMENT & VERIFICATION FLOW -->
         <div id="forgot-substep-backup" class="recovery-flow-box" style="display:none;">
           <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
-          <div class="recovery-step-badge">🔑 Backup Code Verification</div>
+          <div class="recovery-step-badge">🔑 Emergency Backup Code & Verification</div>
 
-          <div class="form-group" style="margin-bottom:12px;">
-            <label for="recovery-backup-input" style="font-size:0.75rem;opacity:0.9;">Emergency Backup Code</label>
-            <div class="pass-input-wrap">
-              <input type="text" id="recovery-backup-input" class="form-control" placeholder="BW-XXXX-XXXX-XXXX" maxlength="20" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="recovery-backup-input" aria-label="Toggle visibility">👁</button>
+          <!-- Section 1: Information Card -->
+          <div class="glass-info-card" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+            <div style="font-size:0.88rem;font-weight:700;color:#F7C94A;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+              <span>🛟</span> <span>Emergency Recovery Code</span>
             </div>
-            <div id="backup-code-error" class="admin-error-msg" style="display:none;">❌ Invalid Emergency Backup Code!</div>
+            <div style="font-size:0.75rem;font-weight:600;color:#E2E8F0;margin-bottom:6px;">
+              Use this code ONLY if you cannot access your recovery email.
+            </div>
+            <div style="font-size:0.72rem;color:#94A3B8;line-height:1.5;">
+              <div>• Email OTP unavailable</div>
+              <div>• Lost access to recovery email</div>
+              <div>• Last recovery option</div>
+            </div>
           </div>
-          <button id="btn-verify-backup-code" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Code & Proceed</button>
+
+          <!-- Section 2: Backup Code Card -->
+          <div id="forgot-backup-card-wrapper" class="backup-code-card" style="background:rgba(18,13,36,0.7);border:1px dashed #F7C94A;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;box-shadow:0 0 20px rgba(247,201,74,0.15);transition:all 0.3s ease;">
+            <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-bottom:6px;">Your Current Emergency Code</div>
+            <div id="forgot-backup-code-display" class="sec-backup-code-val" style="font-family:'Courier New',Courier,monospace;font-size:1.3rem;font-weight:800;letter-spacing:3px;color:#F7C94A;text-shadow:0 0 10px rgba(247,201,74,0.3);word-break:break-all;">WS-9F8A-3E21-7B04</div>
+            <div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;">Copy, download, or enter this code below</div>
+          </div>
+
+          <!-- Section 3: Recovery Actions (2x2 Grid) -->
+          <div class="backup-actions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+            <button type="button" class="btn-backup-act btn-copy-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">📋 Copy Code</button>
+            <button type="button" class="btn-backup-act btn-download-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">⬇ Download TXT</button>
+            <button type="button" class="btn-backup-act btn-print-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🖨 Print Code</button>
+            <button type="button" class="btn-backup-act btn-regen-code-action" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🔄 Generate New Code</button>
+          </div>
+
+          <!-- Section 4: Security Warning Card -->
+          <div class="security-warning-card" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:10px;padding:10px 12px;font-size:0.73rem;color:#FDE047;line-height:1.5;margin-bottom:14px;">
+            <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.78rem;">
+              <span>⚠</span> <span>Store this code safely.</span>
+            </div>
+            <div>• Never share it with anyone.</div>
+            <div>• Generating a new backup code permanently invalidates the old one.</div>
+          </div>
+
+          <!-- Section 5: Verify Existing Backup Code Below -->
+          <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:12px;">
+            <div style="font-size:0.8rem;font-weight:700;color:#c084fc;margin-bottom:8px;">🔑 Verify Existing Backup Code</div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label for="recovery-backup-input" style="font-size:0.75rem;opacity:0.9;">Enter 16-Character Emergency Code</label>
+              <div class="pass-input-wrap">
+                <input type="text" id="recovery-backup-input" class="form-control" placeholder="WS-XXXX-XXXX-XXXX" maxlength="20" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+                <button type="button" class="eye-toggle" data-target="recovery-backup-input" aria-label="Toggle visibility">👁</button>
+              </div>
+              <div id="backup-code-error" class="admin-error-msg" style="display:none;">❌ Invalid Emergency Backup Code!</div>
+            </div>
+            <button id="btn-verify-backup-code" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Code & Proceed</span></button>
+          </div>
         </div>
 
         <!-- SUB-STEP 1C: SECURITY QUESTION FLOW -->
@@ -983,7 +1058,7 @@
             </div>
             <div id="question-answer-error" class="admin-error-msg" style="display:none;">❌ Invalid Secret Answer!</div>
           </div>
-          <button id="btn-verify-question-answer" class="btn primary-btn" style="width:100%;" type="button">🔍 Verify Answer & Proceed</button>
+          <button id="btn-verify-question-answer" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Answer & Proceed</span></button>
         </div>
 
         <!-- STEP 2: SET NEW PASSWORD -->
@@ -1081,14 +1156,27 @@
     </div>
   </div>
 
+  <!-- Section 5: Regenerate Backup Code Confirmation Modal -->
+  <div id="regen-confirm-modal" class="modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:9999999; align-items:center; justify-content:center;">
+    <div class="modal-content glass" style="max-width:380px; width:90%; padding:24px; border-radius:18px; border:1px solid rgba(247,201,74,0.4); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.8); background:#1B1530;">
+      <div style="font-size:2.2rem; margin-bottom:8px;">⚠️</div>
+      <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px;">Generate New Backup Code?</h3>
+      <p style="font-size:0.8rem; color:#CBD5E1; margin-bottom:20px; line-height:1.5;">Your existing backup code will stop working permanently.</p>
+      <div style="display:flex; gap:10px;">
+        <button type="button" id="btn-regen-cancel" class="btn" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Cancel</button>
+        <button type="button" id="btn-regen-confirm" class="btn" style="flex:1; background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(239,68,68,0.4);">Generate New Code</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Supabase JS SDK & Modular Architecture Scripts -->
-  <script src="/api/env.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/database.js"></script>
   <script src="js/share.js"></script>
+  <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
 </body>
 

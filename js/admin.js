@@ -120,7 +120,7 @@
     renderRecentWishesTable();
     renderWishesTable();
     renderLogsTable();
-    renderMediaGrid("images");
+    if (typeof renderDamGrid === "function") renderDamGrid();
   }
 
   // Render Dashboard Recent Wishes
@@ -657,15 +657,15 @@
     });
   }
 
-  // Generate Random Recovery Code (e.g. BW-9F8A-3E21-7B04)
+  // Generate Random Recovery Code (e.g. WS-9F8A-3E21-7B04)
   function generateBackupCode() {
     const segment = () => Math.floor(1000 + Math.random() * 9000).toString(16).toUpperCase();
-    return `BW-${segment()}-${segment()}-${segment()}`;
+    return `WS-${segment()}-${segment()}-${segment()}`;
   }
 
   // Security Settings & Triple Recovery Channel Handlers (Phase 2.1 Persistent)
   async function initSecurityHandlers() {
-    let settings = { admin_recovery_email: "admin@example.com", admin_recovery_code: "BW-9F8A-3E21-7B04", custom_secret_question: "What is your childhood pet's name?", custom_secret_answer: "arjun" };
+    let settings = { admin_recovery_email: "admin@example.com", admin_recovery_code: "WS-9F8A-3E21-7B04", custom_secret_question: "Who is your best friend?", custom_secret_answer: "Shivam" };
 
     if (window.DatabaseModule && typeof window.DatabaseModule.getSecuritySettings === "function") {
       settings = await window.DatabaseModule.getSecuritySettings();
@@ -791,7 +791,8 @@
         if (otpBox && otpBox.style.display !== "none" && otpInput && otpInput.value.trim().length === 6) {
           showToast("⏳ Verifying OTP...");
           try {
-            const res = await fetch("/api/send-otp", {
+            const apiUrl = window.getApiUrl ? window.getApiUrl("/api/send-otp") : "/api/send-otp";
+            const res = await fetch(apiUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ action: "save-recovery-email", email, otpCode: otpInput.value.trim() })
@@ -820,7 +821,8 @@
         // Otherwise send OTP
         showToast("⏳ Requesting Verification OTP...");
         try {
-          const res = await fetch("/api/send-otp", {
+          const apiUrl = window.getApiUrl ? window.getApiUrl("/api/send-otp") : "/api/send-otp";
+          const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "request-otp", email, purpose: "SETUP" })
@@ -840,43 +842,170 @@
       });
     }
 
-    // 3. Backup Recovery Code Actions
-    const regenBtn = document.getElementById("btn-regen-recovery-code");
-    if (regenBtn) {
-      regenBtn.addEventListener("click", async () => {
-        if (!confirm("Regenerate Emergency Recovery Code? Your previous code will become invalid.")) return;
-        const newCode = generateBackupCode();
-        settings.admin_recovery_code = newCode;
-        if (window.DatabaseModule) {
-          await window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: newCode });
-        }
-        if (codeDisplay) codeDisplay.textContent = newCode;
-        logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated & persisted");
-        showToast("🔄 New Recovery Code Generated & Persisted! 🔑");
-      });
-    }
-
-    const copyCodeBtn = document.getElementById("btn-copy-recovery-code");
-    if (copyCodeBtn) {
-      copyCodeBtn.addEventListener("click", () => {
-        const code = codeDisplay ? codeDisplay.textContent : "";
-        navigator.clipboard.writeText(code).then(() => {
-          showToast("📋 Recovery Code copied to clipboard!");
+    function updateAllBackupCodeDisplays(code) {
+      localStorage.setItem("admin_recovery_code", code);
+      if (window.DatabaseModule && typeof window.DatabaseModule.saveSecuritySettings === "function") {
+        window.DatabaseModule.saveSecuritySettings({ admin_recovery_code: code });
+      }
+      const selectors = [
+        "#sec-code-display",
+        "#sec-backup-code-display",
+        "#forgot-backup-code-display",
+        ".sec-backup-code-val"
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          el.textContent = code;
         });
       });
     }
 
-    const dlCodeBtn = document.getElementById("btn-download-recovery-code");
-    if (dlCodeBtn) {
-      dlCodeBtn.addEventListener("click", () => {
-        const code = codeDisplay ? codeDisplay.textContent : "";
-        const txt = `BIRTHDAY SUITE ADMIN - EMERGENCY RECOVERY BACKUP\nGenerated: ${new Date().toLocaleString()}\n\nEmergency Recovery Code: ${code}\n\nKeep this document stored in a secure location.`;
-        const blob = new Blob([txt], { type: "text/plain" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `admin-recovery-code-${Date.now()}.txt`;
-        a.click();
-        showToast("📥 Recovery Code TXT File Downloaded!");
+    if (codeDisplay) {
+      updateAllBackupCodeDisplays(settings.admin_recovery_code);
+    } else {
+      updateAllBackupCodeDisplays(settings.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "WS-9F8A-3E21-7B04");
+    }
+
+    // Attach Global Delegated Event Listeners for Backup Code Actions
+    if (!window.__backupCodeActionsBound) {
+      window.__backupCodeActionsBound = true;
+
+      document.addEventListener("click", async (e) => {
+        // 1. COPY CODE
+        const copyBtn = e.target.closest("#btn-copy-recovery-code, .btn-copy-code-action");
+        if (copyBtn) {
+          e.preventDefault();
+          const code = (localStorage.getItem("admin_recovery_code") || document.getElementById("sec-backup-code-display")?.textContent || "WS-9F8A-3E21-7B04").trim();
+          try {
+            await navigator.clipboard.writeText(code);
+            const origText = copyBtn.innerHTML;
+            copyBtn.innerHTML = "✓ Copied!";
+            copyBtn.style.background = "rgba(34, 197, 94, 0.2)";
+            copyBtn.style.borderColor = "#22c55e";
+            setTimeout(() => {
+              copyBtn.innerHTML = origText;
+              copyBtn.style.background = "rgba(255, 255, 255, 0.08)";
+              copyBtn.style.borderColor = "rgba(255, 255, 255, 0.2)";
+            }, 1500);
+            if (typeof showToast === "function") showToast("📋 Backup code copied to clipboard!");
+          } catch (err) {
+            console.error("Clipboard copy error:", err);
+          }
+          return;
+        }
+
+        // 2. DOWNLOAD TXT (WishStudio-Backup-Code.txt)
+        const dlBtn = e.target.closest("#btn-download-recovery-code, .btn-download-code-action");
+        if (dlBtn) {
+          e.preventDefault();
+          const code = (localStorage.getItem("admin_recovery_code") || document.getElementById("sec-backup-code-display")?.textContent || "WS-9F8A-3E21-7B04").trim();
+          const formattedDate = new Date().toLocaleString("en-US", {
+            dateStyle: "full",
+            timeStyle: "short"
+          });
+          const txt = `Wish Studio\n\nEmergency Backup Code\n\nGenerated:\n${formattedDate}\n\nBackup Code:\n${code}\n\nKeep this code secure.`;
+          const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "WishStudio-Backup-Code.txt";
+          a.click();
+          if (typeof showToast === "function") showToast("📥 WishStudio-Backup-Code.txt downloaded!");
+          return;
+        }
+
+        // 3. PRINT CODE
+        const printBtn = e.target.closest("#btn-print-recovery-code, .btn-print-code-action");
+        if (printBtn) {
+          e.preventDefault();
+          const code = (localStorage.getItem("admin_recovery_code") || document.getElementById("sec-backup-code-display")?.textContent || "WS-9F8A-3E21-7B04").trim();
+          const printWindow = window.open("", "_blank");
+          if (printWindow) {
+            printWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Wish Studio Emergency Backup Code</title>
+                <style>
+                  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; color: #0F0A1C; text-align: center; }
+                  .card { border: 2px dashed #F7C94A; padding: 32px 24px; border-radius: 16px; max-width: 440px; margin: 20px auto; background: #1B1530; color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+                  .title { font-size: 24px; font-weight: 800; color: #F7C94A; margin-bottom: 4px; }
+                  .sub { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.7); margin-bottom: 24px; }
+                  .code { font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #F7C94A; margin: 20px 0; background: #120D24; padding: 18px; border-radius: 10px; border: 1px solid #F7C94A; }
+                  .warn { font-size: 12px; color: #FDE047; margin-top: 20px; }
+                </style>
+              </head>
+              <body>
+                <div class="card">
+                  <div class="title">👑 Wish Studio</div>
+                  <div class="sub">Emergency Backup Code</div>
+                  <div class="code">${code}</div>
+                  <div style="font-size:12px; color:#CBD5E1;">Generated: ${new Date().toLocaleString()}</div>
+                  <div class="warn">⚠ Store this code safely. Never share it with anyone.</div>
+                </div>
+                <script>window.onload = function() { window.print(); };</script>
+              </body>
+              </html>
+            `);
+            printWindow.document.close();
+          }
+          return;
+        }
+
+        // 4. GENERATE NEW CODE (Show Confirmation Modal)
+        const regenBtn = e.target.closest("#btn-regen-recovery-code, .btn-regen-code-action");
+        if (regenBtn) {
+          e.preventDefault();
+          const regenModal = document.getElementById("regen-confirm-modal");
+          if (regenModal) {
+            regenModal.classList.add("open");
+            regenModal.style.display = "flex";
+          }
+          return;
+        }
+
+        // 5. REGENERATE CANCEL
+        const regenCancel = e.target.closest("#btn-regen-cancel");
+        if (regenCancel) {
+          e.preventDefault();
+          const regenModal = document.getElementById("regen-confirm-modal");
+          if (regenModal) {
+            regenModal.classList.remove("open");
+            regenModal.style.display = "none";
+          }
+          return;
+        }
+
+        // 6. REGENERATE CONFIRM
+        const regenConfirm = e.target.closest("#btn-regen-confirm");
+        if (regenConfirm) {
+          e.preventDefault();
+          const regenModal = document.getElementById("regen-confirm-modal");
+          if (regenModal) {
+            regenModal.classList.remove("open");
+            regenModal.style.display = "none";
+          }
+
+          const newCode = (typeof generateBackupCode === "function") ? generateBackupCode() : ("WS-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase() + "-" + Math.random().toString(36).substring(2, 6).toUpperCase());
+          
+          updateAllBackupCodeDisplays(newCode);
+
+          // Section 6: Glow & Scale Success Animation
+          const backupWrappers = document.querySelectorAll("#sec-backup-card-wrapper, #forgot-backup-card-wrapper");
+          backupWrappers.forEach(bw => {
+            bw.style.transform = "scale(1.03)";
+            bw.style.boxShadow = "0 0 30px rgba(247, 201, 74, 0.6), 0 0 15px rgba(168, 85, 247, 0.4)";
+            bw.style.borderColor = "#22c55e";
+            setTimeout(() => {
+              bw.style.transform = "scale(1)";
+              bw.style.boxShadow = "0 0 20px rgba(247, 201, 74, 0.15)";
+              bw.style.borderColor = "#F7C94A";
+            }, 1200);
+          });
+
+          if (typeof logEvent === "function") logEvent("RECOVERY_CODE_REGENERATED", "Emergency Recovery Code regenerated & persisted");
+          if (typeof showToast === "function") showToast("✓ New Backup Code Created");
+          return;
+        }
       });
     }
 
@@ -900,7 +1029,8 @@
 
         showToast("⏳ Hashing and saving Security Question & Answer...");
         try {
-          const res = await fetch("/api/auth", {
+          const apiUrl = window.getApiUrl ? window.getApiUrl("/api/auth") : "/api/auth";
+          const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ action: "save-question", question: finalQuestion, answer })

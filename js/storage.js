@@ -11,6 +11,12 @@
 
   const BUCKET_NAME = "wish-media";
 
+  /**
+   * Uploads a user media file (File or Blob) to the designated Supabase Storage folder.
+   * @param {File|Blob|string} file - Media binary payload or asset reference.
+   * @param {string} [folderName="photos"] - Target storage folder ("photos", "videos", "audio").
+   * @returns {Promise<string|null>} Resolved public HTTPS URL or null on error.
+   */
   async function uploadMediaFile(file, folderName = "photos") {
     try {
       if (!file || !(file instanceof File || file instanceof Blob)) return null;
@@ -49,6 +55,10 @@
     }
   }
 
+  /**
+   * Lists all media items across storage folders for Digital Asset Management (DAM).
+   * @returns {Promise<Array<Object>>} Array of asset metadata objects with public URLs.
+   */
   async function listAllMediaFiles() {
     try {
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;

@@ -6549,6 +6549,13 @@ function initMusicWidget() {
   setInterval(syncMusicUI, 600);
 }
 
+/**
+ * ============================================================================
+ * MAIN APPLICATION BOOT & INITIALIZATION SEQUENCE
+ * Asynchronously hydrates user configurations, repairs dynamic DOM assets,
+ * mounts UI components, and launches background audio/video engines.
+ * ============================================================================
+ */
 (async function boot() {
   window.DEFAULT_CONFIG_BACKUP = JSON.parse(JSON.stringify(CONFIG));
 

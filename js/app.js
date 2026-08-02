@@ -3437,6 +3437,10 @@ function saveCakeMemory() {
 
 }
 
+/**
+ * Updates floating music widget icons and text state dynamically based on active playback.
+ * @param {boolean} playing - True if audio playback is actively playing.
+ */
 function updateMusicWidgetUI(playing) {
   const widget = document.getElementById("music-widget");
   if (widget) widget.classList.toggle("paused", !playing);

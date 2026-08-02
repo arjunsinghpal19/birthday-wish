@@ -2706,6 +2706,13 @@ function cakeSound(kind) {
 
 }
 
+/**
+ * Spawns floating particle animations around the birthday cake on candle blowout or cake slice.
+ * @param {number} x - Horizontal pixel coordinate for particle burst center.
+ * @param {number} y - Vertical pixel coordinate for particle burst center.
+ * @param {Array<string>} emoji - Array of particle glyphs/emojis to render.
+ * @param {number} [count=16] - Total particle count to spawn.
+ */
 function cakeParticles(x, y, emoji, count = 16) {
 
   const layer = document.getElementById("ambient-layer");
@@ -2734,6 +2741,9 @@ function cakeParticles(x, y, emoji, count = 16) {
 
 }
 
+/**
+ * Initializes interactive birthday cake candles, microphone blowout detection, and cake slicing flow.
+ */
 function initCake() {
 
   const candles = [...document.querySelectorAll(".candle")],

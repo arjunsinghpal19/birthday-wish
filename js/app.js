@@ -5821,6 +5821,11 @@ async function initCustomizerModal() {
 }
 
 // ─── PHOTO LIGHTBOX HELPER FUNCTIONS ───
+/**
+ * Opens full-screen photo lightbox view with HD image source and caption overlay.
+ * @param {string} src - Image URL string.
+ * @param {string} [caption] - Image caption text.
+ */
 function openPhotoLightbox(src, caption) {
   const modal = document.getElementById("photo-lightbox");
   const img = document.getElementById("photo-lightbox-img");
@@ -5831,6 +5836,9 @@ function openPhotoLightbox(src, caption) {
   modal.classList.add("show");
 }
 
+/**
+ * Binds close and background backdrop click listeners for the photo lightbox modal.
+ */
 function initPhotoLightbox() {
   const modal = document.getElementById("photo-lightbox");
   const closeBtn = document.getElementById("photo-lightbox-close");

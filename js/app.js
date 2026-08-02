@@ -3015,7 +3015,7 @@ function initCake() {
 
   });
 
-  function saveCakeMemory() {
+  function triggerInstaStorySave() {
     if (typeof exportInstaStory === "function") {
       exportInstaStory();
     } else {
@@ -3025,7 +3025,7 @@ function initCake() {
     if (typeof confettiBurst === "function") confettiBurst(innerWidth / 2, innerHeight * 0.45, 150);
   }
 
-  if (saveBtn) saveBtn.addEventListener("click", () => saveCakeMemory());
+  if (saveBtn) saveBtn.addEventListener("click", () => triggerInstaStorySave());
 
 }
 

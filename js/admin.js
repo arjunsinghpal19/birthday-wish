@@ -41,6 +41,10 @@
   };
 
   // Toast Notification Helper
+  /**
+   * Displays a temporary admin dashboard toast notification message.
+   * @param {string} message - Toast message text to display.
+   */
   function showToast(message) {
     const toast = document.getElementById("admin-toast");
     if (!toast) return;
@@ -98,6 +102,10 @@
   }
 
   // Render Dashboard KPI Cards & Recent Lists
+  /**
+   * Fetches wish records from cloud DB or local cache and updates dashboard KPI cards.
+   * @returns {Promise<void>}
+   */
   async function loadDashboardData() {
     try {
       if (window.SupabaseModule) {

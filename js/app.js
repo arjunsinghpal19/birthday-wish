@@ -58,6 +58,19 @@ const CP1252_BYTES = {
 
 };
 
+/* ─── HIGH-FREQUENCY DOM QUERY CACHE MANAGER ─── */
+const DOM = {
+  _cache: new Map(),
+  get(id) {
+    let el = this._cache.get(id);
+    if (!el || !el.isConnected) {
+      el = document.getElementById(id);
+      if (el) this._cache.set(id, el);
+    }
+    return el;
+  }
+};
+
 function repairMojibake(value) {
 
   if (typeof value !== "string" || !/[\u00C2\u00C3\u00E2\u00F0]/.test(value))
@@ -4567,11 +4580,11 @@ window.addEventListener("keydown", (e) => {
   if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === "a" || e.key === "A" || e.key === "r" || e.key === "R")) {
     e.preventDefault();
     showToast("⚡ Emergency Developer Reset Triggered! Admin Unlocked 🔓");
-    const fab = document.getElementById("customizer-toggle-btn");
+    const fab = DOM.get("customizer-toggle-btn");
     if (fab) fab.classList.add("admin-visible");
-    const adminModal = document.getElementById("admin-login-modal");
+    const adminModal = DOM.get("admin-login-modal");
     if (adminModal) adminModal.classList.remove("open");
-    const customizerModal = document.getElementById("customizer-modal");
+    const customizerModal = DOM.get("customizer-modal");
     if (customizerModal) customizerModal.classList.add("open");
   }
 });
@@ -5841,9 +5854,9 @@ async function initCustomizerModal() {
  * @param {string} [caption] - Image caption text.
  */
 function openPhotoLightbox(src, caption) {
-  const modal = document.getElementById("photo-lightbox");
-  const img = document.getElementById("photo-lightbox-img");
-  const cap = document.getElementById("photo-lightbox-caption");
+  const modal = DOM.get("photo-lightbox");
+  const img = DOM.get("photo-lightbox-img");
+  const cap = DOM.get("photo-lightbox-caption");
   if (!modal || !img) return;
   img.src = src;
   if (cap) cap.textContent = caption || "";
@@ -5854,8 +5867,8 @@ function openPhotoLightbox(src, caption) {
  * Binds close and background backdrop click listeners for the photo lightbox modal.
  */
 function initPhotoLightbox() {
-  const modal = document.getElementById("photo-lightbox");
-  const closeBtn = document.getElementById("photo-lightbox-close");
+  const modal = DOM.get("photo-lightbox");
+  const closeBtn = DOM.get("photo-lightbox-close");
   if (closeBtn) {
     closeBtn.addEventListener("click", () => modal.classList.remove("show"));
   }
@@ -5872,7 +5885,7 @@ function reRenderPage() {
   const displayName = nameVal ? formatName(nameVal) : "";
 
   // Letter Font Style & Theme
-  const exp = document.getElementById("experience");
+  const exp = DOM.get("experience");
   if (exp) {
     exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-poppins", "font-style-nunito", "font-style-sans");
     if (CONFIG.letterFont && CONFIG.letterFont !== "default") {
@@ -6231,8 +6244,8 @@ const VideoStorage = {
 };
 
 function renderVideoWishSection() {
-  const section = document.getElementById("video-wish-scene");
-  const container = document.getElementById("video-wish-player-container");
+  const section = DOM.get("video-wish-scene");
+  const container = DOM.get("video-wish-player-container");
   if (!section || !container) return;
 
   const file = CONFIG.videoWish?.file;

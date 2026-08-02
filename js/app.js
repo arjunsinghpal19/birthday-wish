@@ -1732,11 +1732,15 @@ function initCursor() {
 
   (function raf() {
 
-    rx += (mx - rx) * 0.48;
+    if (Math.abs(mx - rx) > 0.05 || Math.abs(my - ry) > 0.05) {
 
-    ry += (my - ry) * 0.48;
+      rx += (mx - rx) * 0.48;
 
-    ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+      ry += (my - ry) * 0.48;
+
+      ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`;
+
+    }
 
     requestAnimationFrame(raf);
 
@@ -1947,33 +1951,47 @@ function initReveal() {
 
   // dawn transition: interpolate sky colors with scroll progress
 
+  let isScrollTicking = false;
+
   window.addEventListener(
 
     "scroll",
 
     () => {
 
-      const doc = document.documentElement;
+      if (!isScrollTicking) {
 
-      const progress =
+        requestAnimationFrame(() => {
 
-        doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
+          const doc = document.documentElement;
 
-      const root = document.documentElement.style;
+          const progress =
 
-      if (progress > 0.55) {
+            doc.scrollTop / (doc.scrollHeight - doc.clientHeight || 1);
 
-        const t = Math.min((progress - 0.55) / 0.45, 1);
+          const root = document.documentElement.style;
 
-        root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
+          if (progress > 0.55) {
 
-        root.setProperty(
+            const t = Math.min((progress - 0.55) / 0.45, 1);
 
-          "--sky-mid",
+            root.setProperty("--sky-bot", mixColor("#170b30", "#2a0f3d", t));
 
-          mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
+            root.setProperty(
 
-        );
+              "--sky-mid",
+
+              mixColor("#0a0618", "#170b30", Math.min(t * 1.3, 1)),
+
+            );
+
+          }
+
+          isScrollTicking = false;
+
+        });
+
+        isScrollTicking = true;
 
       }
 
@@ -2451,6 +2469,9 @@ function typeLetterBody() {
         i++;
         if (i >= paras.length) {
           window.letterTyped = true;
+          setTimeout(() => {
+            revealPostLetterContent();
+          }, 400);
         }
         setTimeout(nextLine, 300);
       }
@@ -2458,6 +2479,20 @@ function typeLetterBody() {
 
     typeChar();
   })();
+}
+
+/**
+ * Smoothly reveals all storytelling sections below the letter after typing completes.
+ */
+function revealPostLetterContent() {
+  const container = DOM.get("post-letter-content");
+  if (container && container.classList.contains("post-letter-hidden")) {
+    container.classList.remove("post-letter-hidden");
+    container.classList.add("post-letter-revealed");
+    if (typeof initReveal === "function") {
+      initReveal();
+    }
+  }
 }
 
 /* ==========================================================================
@@ -5881,6 +5916,7 @@ function initPhotoLightbox() {
 
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
+  if (window.letterTyped) revealPostLetterContent();
   const nameVal = (CONFIG.name || "").trim();
   const displayName = nameVal ? formatName(nameVal) : "";
 

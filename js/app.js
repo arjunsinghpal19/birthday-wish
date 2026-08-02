@@ -2469,6 +2469,9 @@ function typeLetterBody() {
         i++;
         if (i >= paras.length) {
           window.letterTyped = true;
+          setTimeout(() => {
+            revealPostLetterContent();
+          }, 400);
         }
         setTimeout(nextLine, 300);
       }
@@ -2476,6 +2479,20 @@ function typeLetterBody() {
 
     typeChar();
   })();
+}
+
+/**
+ * Smoothly reveals all storytelling sections below the letter after typing completes.
+ */
+function revealPostLetterContent() {
+  const container = DOM.get("post-letter-content");
+  if (container && container.classList.contains("post-letter-hidden")) {
+    container.classList.remove("post-letter-hidden");
+    container.classList.add("post-letter-revealed");
+    if (typeof initReveal === "function") {
+      initReveal();
+    }
+  }
 }
 
 /* ==========================================================================
@@ -5899,6 +5916,7 @@ function initPhotoLightbox() {
 
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
+  if (window.letterTyped) revealPostLetterContent();
   const nameVal = (CONFIG.name || "").trim();
   const displayName = nameVal ? formatName(nameVal) : "";
 

@@ -6446,6 +6446,10 @@ function initShare() {
 
 }
 
+/**
+ * Displays a temporary UI toast notification banner on the main page.
+ * @param {string} msg - Text message to render in the toast banner.
+ */
 function showToast(msg) {
 
   const t = document.getElementById("toast");
@@ -6520,6 +6524,9 @@ function triggerFinalScene() {
 
 }
 
+/**
+ * Initializes the floating music playback toggle widget and state synchronizer.
+ */
 function initMusicWidget() {
   const widget = document.getElementById("music-widget");
   const toggleBtn = document.getElementById("music-toggle-btn");

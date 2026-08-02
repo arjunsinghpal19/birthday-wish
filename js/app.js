@@ -6574,14 +6574,8 @@ function initMusicWidget() {
       CONFIG.videoWish = CONFIG.videoWish || {};
       CONFIG.videoWish.url = searchParams.get("v");
     }
-  } else if (!searchParams.has("admin")) {
-    // Normal visit to root URL: start clean with default 1234 & default melody for a new recipient!
-    localStorage.removeItem("custom_birthday_config");
-    CONFIG.name = "";
-    CONFIG.passcode.code = "1234";
-    CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg" };
   } else {
-    // Admin mode (?admin=2001): load saved admin draft
+    // Normal visit to root URL or Admin mode: load saved customizer draft if present
     const savedConfig = localStorage.getItem("custom_birthday_config");
     if (savedConfig) {
       try {
@@ -6613,12 +6607,16 @@ function initMusicWidget() {
   const hasParams = urlParams.has("w") || urlParams.has("wish") || urlParams.has("name") || urlParams.has("music") || urlParams.has("v");
 
   if (!hasParams) {
-    // FRESH NEW WISH CREATION: Automatically wipe previous session's stored audio/video files
-    try { await AudioStorage.removeAudio(); } catch(e){}
-    try { await VideoStorage.removeVideo(); } catch(e){}
-    CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
-    CONFIG.videoWish = { url: "", startTime: "", file: null, fileName: null };
-    renderVideoWishSection();
+    // FRESH NEW WISH CREATION: Only wipe if no local draft is stored in localStorage or CONFIG
+    const savedConfig = localStorage.getItem("custom_birthday_config");
+    const hasLocalDraft = !!savedConfig || !!(CONFIG.videoWish?.url || CONFIG.videoWish?.file) || !!(CONFIG.music?.file && CONFIG.music.file !== "assets/music/happy-birthday-song.mpeg");
+    if (!hasLocalDraft) {
+      try { await AudioStorage.removeAudio(); } catch(e){}
+      try { await VideoStorage.removeVideo(); } catch(e){}
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
+      CONFIG.videoWish = { url: "", startTime: "", file: null, fileName: null };
+      renderVideoWishSection();
+    }
   } else {
     // Shared wish link opened: Supabase Storage public HTTPS URLs are the ONE SOURCE OF TRUTH.
     // Only check local IndexedDB if CONFIG.music.file or CONFIG.videoWish.url is not set.

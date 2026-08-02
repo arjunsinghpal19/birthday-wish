@@ -6017,6 +6017,21 @@ function updateSenderSlots() {
   if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
 }
 
+/**
+ * Updates memory section text paragraph.
+ */
+function updateMemorySection() {
+  const memText = document.getElementById("memory-text");
+  if (memText) memText.textContent = CONFIG.memory;
+}
+
+/**
+ * Updates wish quote card display with a random wish from CONFIG.wishes.
+ */
+function updateWishesSection() {
+  showRandomWish();
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6061,8 +6076,7 @@ function reRenderPage() {
   }
 
   // Memory
-  const memText = document.getElementById("memory-text");
-  if (memText) memText.textContent = CONFIG.memory;
+  updateMemorySection();
 
   // Reasons grid — re-render
   const reasonsGrid = document.getElementById("reasons-grid");
@@ -6078,7 +6092,7 @@ function reRenderPage() {
   }
 
   // Wishes
-  showRandomWish();
+  updateWishesSection();
 
   // Gallery — re-render
   const deck = document.getElementById("gallery-deck");
@@ -6463,7 +6477,7 @@ function initWishes() {
   const newQuoteBtn = document.getElementById("new-quote-btn");
   if (!quoteText || !newQuoteBtn) return;
 
-  const quotes = Array.isArray(CONFIG.wishes) && CONFIG.wishes.length > 0 ? CONFIG.wishes : [
+  const defaultQuotes = [
     "May this year hand you everything last year taught you to deserve.",
     "Wishing you a year as bright and unstoppable as you are.",
     "May your birthday be the gentle start of your best year yet.",
@@ -6471,16 +6485,19 @@ function initWishes() {
     "May you keep choosing yourself this year, the way you choose everyone else."
   ];
 
-  let currentIdx = Math.floor(Math.random() * quotes.length);
-  quoteText.textContent = quotes[currentIdx];
+  const getQuotes = () => (Array.isArray(CONFIG.wishes) && CONFIG.wishes.length > 0 ? CONFIG.wishes : defaultQuotes);
+
+  let currentIdx = Math.floor(Math.random() * getQuotes().length);
+  quoteText.textContent = getQuotes()[currentIdx] || defaultQuotes[0];
 
   newQuoteBtn.addEventListener("click", () => {
+    const quotes = getQuotes();
     currentIdx = (currentIdx + 1) % quotes.length;
     quoteText.style.opacity = "0";
     quoteText.style.transform = "translateY(8px)";
     quoteText.style.transition = "all 0.2s ease";
     setTimeout(() => {
-      quoteText.textContent = quotes[currentIdx];
+      quoteText.textContent = quotes[currentIdx] || defaultQuotes[0];
       quoteText.style.opacity = "1";
       quoteText.style.transform = "translateY(0)";
       if (typeof confettiBurst === "function") confettiBurst(innerWidth / 2, innerHeight * 0.4, 25);

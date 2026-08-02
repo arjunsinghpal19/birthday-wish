@@ -1883,6 +1883,9 @@ function initGyro() {
 
    ========================================================================== */
 
+/**
+ * Initializes IntersectionObserver scroll reveal observers and triggers final scene animations.
+ */
 function initReveal() {
 
   const io = new IntersectionObserver(

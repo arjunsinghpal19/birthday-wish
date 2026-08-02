@@ -419,6 +419,13 @@ function populateContent() {
   window.addEventListener("resize", updateTimelineLine);
   window.addEventListener("load", updateTimelineLine);
 
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => {
+      updateTimelineLine();
+    });
+    ro.observe(tl);
+  }
+
   document.getElementById("gift-message").textContent = CONFIG.gift.message;
   document.getElementById("gift-coupon").textContent = CONFIG.gift.coupon;
   buildCountdown();
@@ -2491,6 +2498,11 @@ function revealPostLetterContent() {
     container.classList.add("post-letter-revealed");
     if (typeof initReveal === "function") {
       initReveal();
+    }
+    if (typeof updateTimelineLine === "function") {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(updateTimelineLine);
+      });
     }
   }
 }

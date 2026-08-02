@@ -5926,13 +5926,10 @@ function initPhotoLightbox() {
   }
 }
 
-// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
-function reRenderPage() {
-  if (window.letterTyped) revealPostLetterContent();
-  const nameVal = (CONFIG.name || "").trim();
-  const displayName = nameVal ? formatName(nameVal) : "";
-
-  // Letter Font Style & Theme
+/**
+ * Updates experience container letter font style and color theme classes.
+ */
+function updateLetterThemeAndFont() {
   const exp = DOM.get("experience");
   if (exp) {
     exp.classList.remove("font-style-cursive", "font-style-serif", "font-style-script", "font-style-poppins", "font-style-nunito", "font-style-sans");
@@ -5945,14 +5942,12 @@ function reRenderPage() {
       exp.classList.add(`theme-${CONFIG.letterTheme}`);
     }
   }
+}
 
-  // Corner flowers dynamic update
-  const flowers = document.querySelectorAll(".corner-flower");
-  if (flowers.length) {
-    flowers.forEach(f => f.textContent = "🌸");
-  }
-
-  // Cake Theme
+/**
+ * Updates luxury cake flavor theme class and candle row reset.
+ */
+function updateCakeTheme() {
   const cake = document.getElementById("luxury-cake");
   if (cake) {
     cake.classList.remove("cake-theme-chocolate", "cake-theme-vanilla", "cake-theme-strawberry");
@@ -5962,6 +5957,49 @@ function reRenderPage() {
     const numRow = cake.querySelector(".number-candles-row");
     if (numRow) numRow.remove();
   }
+}
+
+/**
+ * Updates lock screen passcode hint text depending on custom vs default wish state.
+ */
+function updatePasscodeHint() {
+  const hintEl = document.getElementById("pc-hint");
+  if (hintEl) {
+    if (isWishCustomized()) {
+      hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
+    } else {
+      hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
+    }
+  }
+}
+
+/**
+ * Updates gift message text and redeemable coupon text.
+ */
+function updateGiftSection() {
+  const giftMsg = document.getElementById("gift-message");
+  if (giftMsg) giftMsg.textContent = CONFIG.gift.message;
+  const giftCoupon = document.getElementById("gift-coupon");
+  if (giftCoupon) giftCoupon.textContent = CONFIG.gift.coupon;
+}
+
+// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
+function reRenderPage() {
+  if (window.letterTyped) revealPostLetterContent();
+  const nameVal = (CONFIG.name || "").trim();
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+  // Letter Font Style & Theme
+  updateLetterThemeAndFont();
+
+  // Corner flowers dynamic update
+  const flowers = document.querySelectorAll(".corner-flower");
+  if (flowers.length) {
+    flowers.forEach(f => f.textContent = "🌸");
+  }
+
+  // Cake Theme
+  updateCakeTheme();
 
   // Title & Name slots
   document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
@@ -5984,14 +6022,7 @@ function reRenderPage() {
   if (peekEl) peekEl.textContent = displayName ? `For ${displayName} ❤️` : "For You ❤️";
 
   // Passcode hint
-  const hintEl = document.getElementById("pc-hint");
-  if (hintEl) {
-    if (isWishCustomized()) {
-      hintEl.textContent = CONFIG.passcode?.customHint || "Hint: think of a date that matters 💕";
-    } else {
-      hintEl.textContent = CONFIG.passcode?.defaultHint || "Hint: 1234 💕";
-    }
-  }
+  updatePasscodeHint();
 
   // Birthday card
   updateBirthdayCard();
@@ -6091,10 +6122,9 @@ function reRenderPage() {
   }
 
   // Gift
-  const giftMsg = document.getElementById("gift-message");
-  if (giftMsg) giftMsg.textContent = CONFIG.gift.message;
-  const giftCoupon = document.getElementById("gift-coupon");
-  if (giftCoupon) giftCoupon.textContent = CONFIG.gift.coupon;
+  updateGiftSection();
+
+  // Video Wish & Age counter
 
   // Video Wish & Age counter
   renderVideoWishSection();

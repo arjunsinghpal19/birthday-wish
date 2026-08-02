@@ -6661,6 +6661,12 @@ function initMusicWidget() {
   initPhotoLightbox();
   renderVideoWishSection();
 
+  function revokeMediaBlobUrl(url) {
+    if (typeof url === "string" && url.startsWith("blob:")) {
+      try { URL.revokeObjectURL(url); } catch(e) {}
+    }
+  }
+
   // Check if opening fresh base URL to create a new wish or opening a shared recipient link
   const urlParams = new URLSearchParams(location.search);
   const hasParams = urlParams.has("w") || urlParams.has("wish") || urlParams.has("name") || urlParams.has("music") || urlParams.has("v");
@@ -6677,12 +6683,6 @@ function initMusicWidget() {
       renderVideoWishSection();
     }
   } else {
-    function revokeMediaBlobUrl(url) {
-      if (typeof url === "string" && url.startsWith("blob:")) {
-        try { URL.revokeObjectURL(url); } catch(e) {}
-      }
-    }
-
     // Shared wish link opened: Supabase Storage public HTTPS URLs are the ONE SOURCE OF TRUTH.
     // Only check local IndexedDB if CONFIG.music.file or CONFIG.videoWish.url is not set.
     if (!CONFIG.music?.file || CONFIG.music.file === "assets/music/happy-birthday-song.mpeg") {

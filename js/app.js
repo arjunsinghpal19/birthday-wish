@@ -4689,6 +4689,11 @@ function initWishStudioCalendar() {
     return `${d}/${m}/${y}`;
   }
 
+  /**
+   * Formats a JavaScript Date object into internal DD-MM-YYYY string format.
+   * @param {Date} dateObj - Calendar date object.
+   * @returns {string} Formatted internal date string.
+   */
   function formatInternalStored(dateObj) {
     const d = String(dateObj.getDate()).padStart(2, "0");
     const m = String(dateObj.getMonth() + 1).padStart(2, "0");

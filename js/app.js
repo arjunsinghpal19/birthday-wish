@@ -6017,6 +6017,21 @@ function updateSenderSlots() {
   if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
 }
 
+/**
+ * Updates memory section text paragraph.
+ */
+function updateMemorySection() {
+  const memText = document.getElementById("memory-text");
+  if (memText) memText.textContent = CONFIG.memory;
+}
+
+/**
+ * Updates wish quote card display with a random wish from CONFIG.wishes.
+ */
+function updateWishesSection() {
+  showRandomWish();
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6061,8 +6076,7 @@ function reRenderPage() {
   }
 
   // Memory
-  const memText = document.getElementById("memory-text");
-  if (memText) memText.textContent = CONFIG.memory;
+  updateMemorySection();
 
   // Reasons grid — re-render
   const reasonsGrid = document.getElementById("reasons-grid");
@@ -6078,7 +6092,7 @@ function reRenderPage() {
   }
 
   // Wishes
-  showRandomWish();
+  updateWishesSection();
 
   // Gallery — re-render
   const deck = document.getElementById("gallery-deck");

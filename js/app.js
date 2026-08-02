@@ -6262,6 +6262,10 @@ function renderVideoWishSection() {
   }
 }
 
+/**
+ * Utility helper checking if application runtime environment is hosted over HTTP or HTTPS.
+ * @returns {boolean} True if loaded over web protocol.
+ */
 function isHostedOnline() {
 
   return ["http:", "https:"].includes(location.protocol);

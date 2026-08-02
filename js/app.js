@@ -2647,9 +2647,9 @@ function cakeSound(kind) {
 
   try {
 
-    const AC = window.AudioContext || window.webkitAudioContext;
+    const ac = getAudioCtx();
 
-    const ac = cakeSound.ac || (cakeSound.ac = new AC());
+    if (!ac) return;
 
     const now = ac.currentTime,
 
@@ -2887,7 +2887,9 @@ function initCake() {
 
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx = getAudioCtx();
+
+      if (!audioCtx) return;
 
       analyser = audioCtx.createAnalyser();
 
@@ -3055,11 +3057,11 @@ function playCakeBirthdayMelody() {
 
       try {
 
-        const AC = window.AudioContext || window.webkitAudioContext,
+        const ac = getAudioCtx();
 
-          ac = cakeSound.ac || (cakeSound.ac = new AC()),
+        if (!ac) return;
 
-          o = ac.createOscillator(),
+        const o = ac.createOscillator(),
 
           g = ac.createGain();
 

@@ -5983,6 +5983,40 @@ function updateGiftSection() {
   if (giftCoupon) giftCoupon.textContent = CONFIG.gift.coupon;
 }
 
+/**
+ * Updates page title, hero name slots, loading logo, envelope seal initial, and peek text.
+ * @param {string} [displayName] - Formatted recipient display name.
+ */
+function updateNameSlots(displayName) {
+  const nameVal = (CONFIG.name || "").trim();
+  const name = displayName !== undefined ? displayName : (nameVal ? formatName(nameVal) : "");
+
+  document.title = name ? `Happy Birthday, ${name}! ❤️` : "Happy Birthday! ❤️";
+
+  const slot1 = document.getElementById("name-slot-1");
+  if (slot1) slot1.textContent = name ? `, ${name}` : "";
+
+  const slot2 = document.getElementById("name-slot-2");
+  if (slot2) slot2.textContent = name || "You";
+
+  const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
+  if (logoEl) logoEl.textContent = name ? `✨ ${name}'s Birthday ✨` : "✨ Happy Birthday ✨";
+
+  const sealEl = document.getElementById("seal-initial");
+  if (sealEl) sealEl.textContent = name ? name.charAt(0).toUpperCase() : "❤️";
+
+  const peekEl = document.getElementById("letter-peek-text");
+  if (peekEl) peekEl.textContent = name ? `For ${name} ❤️` : "For You ❤️";
+}
+
+/**
+ * Updates signature sender name slot.
+ */
+function updateSenderSlots() {
+  const fromSlot = document.getElementById("from-slot");
+  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6002,24 +6036,10 @@ function reRenderPage() {
   updateCakeTheme();
 
   // Title & Name slots
-  document.title = displayName ? `Happy Birthday, ${displayName}! ❤️` : "Happy Birthday! ❤️";
-  const slot1 = document.getElementById("name-slot-1");
-  if (slot1) slot1.textContent = displayName ? `, ${displayName}` : "";
-  const slot2 = document.getElementById("name-slot-2");
-  if (slot2) slot2.textContent = displayName || "You";
+  updateNameSlots(displayName);
 
-  const fromSlot = document.getElementById("from-slot");
-  if (fromSlot) fromSlot.textContent = CONFIG.from || "your friends";
-
-  // Loading logo
-  const logoEl = document.getElementById("loading-logo-glow") || document.querySelector(".logo-glow");
-  if (logoEl) logoEl.textContent = displayName ? `✨ ${displayName}'s Birthday ✨` : "✨ Happy Birthday ✨";
-
-  // Envelope
-  const sealEl = document.getElementById("seal-initial");
-  if (sealEl) sealEl.textContent = displayName ? displayName.charAt(0).toUpperCase() : "❤️";
-  const peekEl = document.getElementById("letter-peek-text");
-  if (peekEl) peekEl.textContent = displayName ? `For ${displayName} ❤️` : "For You ❤️";
+  // Sender slot
+  updateSenderSlots();
 
   // Passcode hint
   updatePasscodeHint();

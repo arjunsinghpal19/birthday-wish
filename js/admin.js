@@ -914,9 +914,11 @@
           const txt = `Wish Studio\n\nEmergency Backup Code\n\nGenerated:\n${formattedDate}\n\nBackup Code:\n${code}\n\nKeep this code secure.`;
           const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
           const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
+          const dlUrl = URL.createObjectURL(blob);
+          a.href = dlUrl;
           a.download = "WishStudio-Backup-Code.txt";
           a.click();
+          setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
           if (typeof showToast === "function") showToast("📥 WishStudio-Backup-Code.txt downloaded!");
           return;
         }
@@ -1080,9 +1082,11 @@
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
+        const dlUrl = URL.createObjectURL(blob);
+        a.href = dlUrl;
         a.download = `birthday-suite-backup-${Date.now()}.json`;
         a.click();
+        setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
         logEvent("BACKUP_EXPORT", "Exported JSON backup file");
         showToast("💾 Backup JSON File Exported! 📥");
       });

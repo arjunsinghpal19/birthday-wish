@@ -2325,6 +2325,9 @@ function startExperienceEffects() {
 
 }
 
+/**
+ * Initializes interactive envelope flap opening, confetti burst, and letter reveal animation.
+ */
 function initEnvelope() {
 
   const env = document.getElementById("envelope");
@@ -2375,6 +2378,9 @@ function ensureLineHighlight(line) {
   return line;
 }
 
+/**
+ * Triggers typewriter effect for letter paragraphs, auto-highlighting featured words.
+ */
 function typeLetterBody() {
   if (window.letterTyped || window.letterTyping) return;
   window.letterTyping = true;

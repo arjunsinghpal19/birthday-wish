@@ -6677,12 +6677,19 @@ function initMusicWidget() {
       renderVideoWishSection();
     }
   } else {
+    function revokeMediaBlobUrl(url) {
+      if (typeof url === "string" && url.startsWith("blob:")) {
+        try { URL.revokeObjectURL(url); } catch(e) {}
+      }
+    }
+
     // Shared wish link opened: Supabase Storage public HTTPS URLs are the ONE SOURCE OF TRUTH.
     // Only check local IndexedDB if CONFIG.music.file or CONFIG.videoWish.url is not set.
     if (!CONFIG.music?.file || CONFIG.music.file === "assets/music/happy-birthday-song.mpeg") {
       try {
         const savedAudioBlob = await AudioStorage.getAudio();
         if (savedAudioBlob) {
+          revokeMediaBlobUrl(CONFIG.music?.file);
           const blobUrl = URL.createObjectURL(savedAudioBlob);
           CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
         }
@@ -6693,6 +6700,7 @@ function initMusicWidget() {
       try {
         const savedVidBlob = await VideoStorage.getVideo();
         if (savedVidBlob) {
+          revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);
           const blobUrl = URL.createObjectURL(savedVidBlob);
           CONFIG.videoWish = CONFIG.videoWish || {};
           CONFIG.videoWish.file = blobUrl;
@@ -6724,6 +6732,7 @@ function initMusicWidget() {
 
       console.log("☁️ STEP 1 - Storage upload audio public URL:", cloudUrl);
 
+      revokeMediaBlobUrl(CONFIG.music?.file);
       if (cloudUrl) {
         CONFIG.music = { file: cloudUrl, isBlob: false, fileName: f.name };
         showToast("Audio / Voice note uploaded & saved to Cloud! ☁️🎙️");
@@ -6742,6 +6751,7 @@ function initMusicWidget() {
 
   if (audRemoveBtn) {
     audRemoveBtn.addEventListener("click", async () => {
+      revokeMediaBlobUrl(CONFIG.music?.file);
       CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "" };
       await AudioStorage.removeAudio();
       if (audFileInput) audFileInput.value = "";
@@ -6774,6 +6784,7 @@ function initMusicWidget() {
 
       console.log("☁️ STEP 2 - Storage upload video public URL:", cloudUrl);
 
+      revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);
       CONFIG.videoWish = CONFIG.videoWish || {};
       if (cloudUrl) {
         CONFIG.videoWish.url = cloudUrl;
@@ -6798,6 +6809,7 @@ function initMusicWidget() {
 
   if (vidRemoveBtn) {
     vidRemoveBtn.addEventListener("click", async () => {
+      revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);
       if (CONFIG.videoWish) {
         CONFIG.videoWish.file = null;
         CONFIG.videoWish.fileName = null;

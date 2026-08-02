@@ -5002,6 +5002,11 @@ async function initCustomizerModal() {
   }
 
   // ─── STRIP HTML TAGS (for CONFIG.letterLines which may contain <span> tags) ───
+  /**
+   * Helper utility stripping HTML markup tags from formatted customizer letter lines.
+   * @param {string} html - HTML string.
+   * @returns {string} Plain text string.
+   */
   function stripHtml(html) {
     const tmp = document.createElement("div");
     tmp.innerHTML = html;

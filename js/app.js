@@ -6224,6 +6224,23 @@ function renderGalleryDeck() {
   }
 }
 
+function renderTimelineSection() {
+  const tl = document.getElementById("timeline-wrap");
+  if (tl) {
+    tl.innerHTML = "";
+    CONFIG.timeline.forEach((t, i) => {
+      const el = document.createElement("div");
+      el.className = "timeline-item reveal";
+      el.dataset.icon = t.icon;
+      el.style.setProperty("--i", i);
+      el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
+      tl.appendChild(el);
+    });
+    updateTimelineLine();
+    setTimeout(updateTimelineLine, 300);
+  }
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6269,21 +6286,8 @@ function reRenderPage() {
   // Gallery
   renderGalleryDeck();
 
-  // Timeline — re-render
-  const tl = document.getElementById("timeline-wrap");
-  if (tl) {
-    tl.innerHTML = "";
-    CONFIG.timeline.forEach((t, i) => {
-      const el = document.createElement("div");
-      el.className = "timeline-item reveal";
-      el.dataset.icon = t.icon;
-      el.style.setProperty("--i", i);
-      el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
-      tl.appendChild(el);
-    });
-    updateTimelineLine();
-    setTimeout(updateTimelineLine, 300);
-  }
+  // Timeline
+  renderTimelineSection();
 
   // Gift
   updateGiftSection();

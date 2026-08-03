@@ -4779,6 +4779,7 @@ function initWishStudioCalendar() {
     const maxDays = new Date(year, monthIndex + 1, 0).getDate();
     return day <= maxDays;
   }
+  window.isValidCalendarDate = isValidCalendarDate;
 
   function parseTypedDate(str) {
     if (!str) return null;
@@ -4974,6 +4975,8 @@ function initWishStudioCalendar() {
     const typed = parseTypedDate(displayInput.value.trim());
     if (typed) {
       displayInput.value = formatUserDisplay(typed);
+    } else {
+      window.syncDatePickerDisplay();
     }
   });
 
@@ -5459,14 +5462,20 @@ async function initCustomizerModal() {
     if (bDateVal) {
       const parts = bDateVal.split("-");
       if (parts.length === 3) {
+        let candidateY = 2001, candidateM = 1, candidateD = 1;
         if (parseInt(parts[0]) > 1000) { // YYYY-MM-DD
-          yVal = parseInt(parts[0]) || 2001;
-          mVal = parseInt(parts[1]) || 1;
-          dVal = parseInt(parts[2]) || 1;
+          candidateY = parseInt(parts[0]) || 2001;
+          candidateM = parseInt(parts[1]) || 1;
+          candidateD = parseInt(parts[2]) || 1;
         } else { // DD-MM-YYYY
-          dVal = parseInt(parts[0]) || 1;
-          mVal = parseInt(parts[1]) || 1;
-          yVal = parseInt(parts[2]) || 2001;
+          candidateD = parseInt(parts[0]) || 1;
+          candidateM = parseInt(parts[1]) || 1;
+          candidateY = parseInt(parts[2]) || 2001;
+        }
+        if (typeof window.isValidCalendarDate === "function" && window.isValidCalendarDate(candidateY, candidateM - 1, candidateD)) {
+          yVal = candidateY;
+          mVal = candidateM;
+          dVal = candidateD;
         }
       }
     }
@@ -5619,7 +5628,10 @@ async function initCustomizerModal() {
         const nInput = document.getElementById("input-name");
         if (nInput) nInput.value = "";
         const bDateInput = document.getElementById("input-birthdate");
-        if (bDateInput) bDateInput.value = "2001-01-01";
+        if (bDateInput) bDateInput.value = "01-01-2001";
+        const bDateDisplay = document.getElementById("input-birthdate-display");
+        if (bDateDisplay) bDateDisplay.value = "01/01/2001";
+        if (typeof window.syncDatePickerDisplay === "function") window.syncDatePickerDisplay();
         const cakeSelect = document.getElementById("input-cake-flavor");
         if (cakeSelect) cakeSelect.value = "default";
         const passInput = document.getElementById("input-passcode");

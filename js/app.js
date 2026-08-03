@@ -6032,6 +6032,15 @@ function updateWishesSection() {
   showRandomWish();
 }
 
+/**
+ * Updates birthday card, zodiac sign, age counter, and dynamic greeting.
+ */
+function updateDateAndAge() {
+  updateBirthdayCard();
+  updateAgeCounter();
+  buildDynamicGreeting();
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6059,8 +6068,8 @@ function reRenderPage() {
   // Passcode hint
   updatePasscodeHint();
 
-  // Birthday card
-  updateBirthdayCard();
+  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
+  updateDateAndAge();
 
   // Letter body — re-render (keep empty until envelope opens and types)
   const letterBody = document.getElementById("letter-body");
@@ -6158,12 +6167,8 @@ function reRenderPage() {
   // Gift
   updateGiftSection();
 
-  // Video Wish & Age counter
-
-  // Video Wish & Age counter
+  // Video Wish & Share Section
   renderVideoWishSection();
-  updateAgeCounter();
-  buildDynamicGreeting();
   updateShareSection();
 
   // Re-init reveal for new elements

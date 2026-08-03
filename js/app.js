@@ -4925,34 +4925,64 @@ function initWishStudioCalendar() {
   // Triggers
   if (openBtn) openBtn.addEventListener("click", (e) => { e.preventDefault(); openCalendar(); });
 
-  // Restrict keydown to numbers and navigation keys
+  // Segmented Date Input Keyboard & Navigation Handler
   displayInput.addEventListener("keydown", (e) => {
     if (
-      ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+      ["Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
       e.ctrlKey || e.metaKey
     ) {
       return;
     }
+
+    const pos = displayInput.selectionStart || 0;
+
+    // Smart Backspace handling: prevent slash removal
+    if (e.key === "Backspace") {
+      if (pos === 3 || pos === 6) {
+        e.preventDefault();
+        displayInput.setSelectionRange(pos - 1, pos - 1);
+        return;
+      }
+      return;
+    }
+
+    // Delete key handling: prevent slash removal
+    if (e.key === "Delete") {
+      if (pos === 2 || pos === 5) {
+        e.preventDefault();
+        displayInput.setSelectionRange(pos + 1, pos + 1);
+        return;
+      }
+      return;
+    }
+
+    // Allow only numeric digits
     if (!/^\d$/.test(e.key)) {
       e.preventDefault();
+      return;
+    }
+
+    // Auto-advance past slashes
+    if (pos === 2 || pos === 5) {
+      displayInput.setSelectionRange(pos + 1, pos + 1);
     }
   });
 
   function syncTypedValue() {
-    let digits = displayInput.value.replace(/\D/g, "").slice(0, 8);
+    let raw = displayInput.value.replace(/\D/g, "").slice(0, 8);
     let masked = "";
-    if (digits.length > 0) {
-      if (digits.length <= 2) {
-        masked = digits;
-      } else if (digits.length <= 4) {
-        masked = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (raw.length > 0) {
+      if (raw.length <= 2) {
+        masked = raw;
+      } else if (raw.length <= 4) {
+        masked = raw.slice(0, 2) + "/" + raw.slice(2);
       } else {
-        masked = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4, 8);
+        masked = raw.slice(0, 2) + "/" + raw.slice(2, 4) + "/" + raw.slice(4, 8);
       }
     }
     displayInput.value = masked;
 
-    if (digits.length === 8) {
+    if (raw.length === 8) {
       const typed = parseTypedDate(masked);
       if (typed) {
         selectedDate = typed;

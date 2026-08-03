@@ -6150,49 +6150,7 @@ function renderReasonsGrid() {
   }
 }
 
-// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
-function reRenderPage() {
-  if (window.letterTyped) revealPostLetterContent();
-  const nameVal = (CONFIG.name || "").trim();
-  const displayName = nameVal ? formatName(nameVal) : "";
-
-  // Letter Font Style & Theme
-  updateLetterThemeAndFont();
-
-  // Corner flowers dynamic update
-  const flowers = document.querySelectorAll(".corner-flower");
-  if (flowers.length) {
-    flowers.forEach(f => f.textContent = "🌸");
-  }
-
-  // Cake Theme
-  updateCakeTheme();
-
-  // Title & Name slots
-  updateNameSlots(displayName);
-
-  // Sender slot
-  updateSenderSlots();
-
-  // Passcode hint
-  updatePasscodeHint();
-
-  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
-  updateDateAndAge();
-
-  // Letter body
-  updateLetterBody();
-
-  // Memory
-  updateMemorySection();
-
-  // Reasons grid
-  renderReasonsGrid();
-
-  // Wishes
-  updateWishesSection();
-
-  // Gallery — re-render
+function renderGalleryDeck() {
   const deck = document.getElementById("gallery-deck");
   if (deck) {
     deck.innerHTML = "";
@@ -6236,6 +6194,52 @@ function reRenderPage() {
       deck.appendChild(el);
     });
   }
+}
+
+// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
+function reRenderPage() {
+  if (window.letterTyped) revealPostLetterContent();
+  const nameVal = (CONFIG.name || "").trim();
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+  // Letter Font Style & Theme
+  updateLetterThemeAndFont();
+
+  // Corner flowers dynamic update
+  const flowers = document.querySelectorAll(".corner-flower");
+  if (flowers.length) {
+    flowers.forEach(f => f.textContent = "🌸");
+  }
+
+  // Cake Theme
+  updateCakeTheme();
+
+  // Title & Name slots
+  updateNameSlots(displayName);
+
+  // Sender slot
+  updateSenderSlots();
+
+  // Passcode hint
+  updatePasscodeHint();
+
+  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
+  updateDateAndAge();
+
+  // Letter body
+  updateLetterBody();
+
+  // Memory
+  updateMemorySection();
+
+  // Reasons grid
+  renderReasonsGrid();
+
+  // Wishes
+  updateWishesSection();
+
+  // Gallery
+  renderGalleryDeck();
 
   // Timeline — re-render
   const tl = document.getElementById("timeline-wrap");

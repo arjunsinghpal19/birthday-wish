@@ -5608,6 +5608,8 @@ async function initCustomizerModal() {
 
   // ─── APPLY VALUES TO CONFIG & RE-RENDER PAGE ───
   function applyAllValues(vals) {
+    const changedSections = detectChangedSections(CONFIG, vals);
+
     CONFIG.name = vals.nameVal;
     CONFIG.birthDate = { year: vals.yVal, month: vals.mVal, day: vals.dVal };
     CONFIG.passcode.code = vals.nameVal ? vals.passVal : "1234";
@@ -5637,8 +5639,12 @@ async function initCustomizerModal() {
     CONFIG.videoWish.url = vals.videoUrlVal;
     CONFIG.videoWish.startTime = vals.videoStartVal;
 
-    // Re-render entire page content
-    reRenderPage();
+    // Smart Partial Rendering: only dispatch renderers for sections whose values changed
+    if (changedSections.length > 0) {
+      const nameVal = (vals.nameVal || "").trim();
+      const displayName = nameVal ? formatName(nameVal) : "";
+      renderSections(changedSections, displayName);
+    }
   }
 
   // Clear Music URL / YouTube Link

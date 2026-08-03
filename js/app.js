@@ -6122,6 +6122,20 @@ function updateDateAndAge() {
   buildDynamicGreeting();
 }
 
+function updateLetterBody() {
+  const letterBody = document.getElementById("letter-body");
+  if (letterBody) {
+    letterBody.innerHTML = "";
+    CONFIG.letterLines.forEach(line => {
+      const p = document.createElement("p");
+      if (window.letterTyped) {
+        p.innerHTML = ensureLineHighlight(line);
+      }
+      letterBody.appendChild(p);
+    });
+  }
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6152,18 +6166,8 @@ function reRenderPage() {
   // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
   updateDateAndAge();
 
-  // Letter body — re-render (keep empty until envelope opens and types)
-  const letterBody = document.getElementById("letter-body");
-  if (letterBody) {
-    letterBody.innerHTML = "";
-    CONFIG.letterLines.forEach(line => {
-      const p = document.createElement("p");
-      if (window.letterTyped) {
-        p.innerHTML = ensureLineHighlight(line);
-      }
-      letterBody.appendChild(p);
-    });
-  }
+  // Letter body
+  updateLetterBody();
 
   // Memory
   updateMemorySection();

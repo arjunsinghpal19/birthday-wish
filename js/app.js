@@ -5813,7 +5813,11 @@ async function initCustomizerModal() {
       if (sectionHeader) sectionHeader.classList.add("active");
     }
 
-    lastItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    lastItem.scrollIntoView({ behavior: "smooth", block: "end" });
+    const editorBody = document.getElementById("editor-body");
+    if (editorBody) {
+      editorBody.scrollTo({ top: editorBody.scrollHeight, behavior: "smooth" });
+    }
 
     const firstInput = lastItem.querySelector("input[type='text'], input[type='url'], textarea, input:not([type='hidden']):not([type='file'])");
     if (firstInput) {

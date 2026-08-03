@@ -6285,6 +6285,55 @@ function renderSections(sectionNames, displayName) {
   });
 }
 
+/**
+ * Detects which section renderer keys need updating by comparing previous CONFIG state against new values.
+ * @param {Object} prevConfig - Original reference CONFIG object.
+ * @param {Object} newVals - Parsed values from readAllValues().
+ * @returns {string[]} Array of section renderer keys that changed.
+ */
+function detectChangedSections(prevConfig, newVals) {
+  const changed = [];
+  if (!prevConfig || !newVals) return changed;
+
+  const nameChanged = (prevConfig.name || "") !== (newVals.nameVal || "");
+  const yChanged = (prevConfig.birthDate?.year || 2001) !== newVals.yVal;
+  const mChanged = (prevConfig.birthDate?.month || 1) !== newVals.mVal;
+  const dChanged = (prevConfig.birthDate?.day || 1) !== newVals.dVal;
+  const passChanged = (prevConfig.passcode?.code || "1234") !== newVals.passVal;
+  const cakeChanged = (prevConfig.cakeFlavor || "default") !== newVals.cakeFlavor;
+
+  if (nameChanged) changed.push("name");
+  if (yChanged || mChanged || dChanged) changed.push("date");
+  if (passChanged) changed.push("passcode");
+  if (cakeChanged) changed.push("cake");
+
+  if ((prevConfig.from || "") !== (newVals.fromVal || "")) changed.push("sender");
+
+  const letterFontChanged = (prevConfig.letterFont || "default") !== newVals.letterFont;
+  const letterThemeChanged = (prevConfig.letterTheme || "default") !== newVals.letterTheme;
+  const letterLinesChanged = JSON.stringify(prevConfig.letterLines || []) !== JSON.stringify(newVals.letterLines || []);
+
+  if (letterFontChanged || letterThemeChanged) changed.push("theme");
+  if (letterLinesChanged) changed.push("letter");
+
+  if ((prevConfig.memory || "") !== (newVals.memoryVal || "")) changed.push("memory");
+
+  if (JSON.stringify(prevConfig.reasons || []) !== JSON.stringify(newVals.reasons || [])) changed.push("reasons");
+  if (JSON.stringify(prevConfig.wishes || []) !== JSON.stringify(newVals.wishes || [])) changed.push("wishes");
+  if (JSON.stringify(prevConfig.gallery || []) !== JSON.stringify(newVals.gallery || [])) changed.push("gallery");
+  if (JSON.stringify(prevConfig.timeline || []) !== JSON.stringify(newVals.timeline || [])) changed.push("timeline");
+
+  const giftMsgChanged = (prevConfig.gift?.message || "") !== (newVals.giftMsg || "");
+  const giftCpnChanged = (prevConfig.gift?.coupon || "") !== (newVals.giftCoupon || "");
+  if (giftMsgChanged || giftCpnChanged) changed.push("gift");
+
+  const vidUrlChanged = (prevConfig.videoWish?.url || "") !== (newVals.videoUrlVal || "");
+  const vidStartChanged = (prevConfig.videoWish?.startTime || "") !== (newVals.videoStartVal || "");
+  if (vidUrlChanged || vidStartChanged) changed.push("video");
+
+  return changed;
+}
+
 function renderAllSections(displayName) {
   renderSections(ALL_SECTION_KEYS, displayName);
 }

@@ -685,7 +685,7 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
   transition:max-height .4s ease, padding .3s ease;
 }
 .editor-section-body.open{
-  max-height:2000px; padding:16px 18px;
+  max-height:99999px; padding:16px 18px;
 }
 
 /* Form Group Enhancements */

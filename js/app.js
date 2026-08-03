@@ -5800,15 +5800,41 @@ async function initCustomizerModal() {
     });
   }
 
-  // ─── ADD ITEM HANDLERS ───
+  // ─── ADD ITEM HANDLERS & AUTO-FOCUS SCROLL ───
+  function focusAndScrollNewItem(container) {
+    if (!container) return;
+    const lastItem = container.lastElementChild;
+    if (!lastItem) return;
+
+    const sectionBody = container.closest(".editor-section-body");
+    const sectionHeader = sectionBody ? sectionBody.previousElementSibling : null;
+    if (sectionBody && !sectionBody.classList.contains("open")) {
+      sectionBody.classList.add("open");
+      if (sectionHeader) sectionHeader.classList.add("active");
+    }
+
+    lastItem.scrollIntoView({ behavior: "smooth", block: "end" });
+    const editorBody = document.getElementById("editor-body");
+    if (editorBody) {
+      editorBody.scrollTo({ top: editorBody.scrollHeight, behavior: "smooth" });
+    }
+
+    const firstInput = lastItem.querySelector("input[type='text'], input[type='url'], textarea, input:not([type='hidden']):not([type='file'])");
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 150);
+    }
+  }
+
   document.getElementById("add-reason-btn").addEventListener("click", () => {
     CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
     renderReasonInputs();
+    focusAndScrollNewItem(document.getElementById("reasons-inputs-container"));
   });
 
   document.getElementById("add-wish-btn").addEventListener("click", () => {
     CONFIG.wishes.push("Write a beautiful birthday wish...");
     renderWishInputs();
+    focusAndScrollNewItem(document.getElementById("wishes-inputs-container"));
   });
 
   document.getElementById("add-gallery-btn").addEventListener("click", () => {
@@ -5817,11 +5843,13 @@ async function initCustomizerModal() {
       cap: "New Memory", secretNote: "A special moment ❤️"
     });
     renderGalleryInputs();
+    focusAndScrollNewItem(document.getElementById("gallery-inputs-container"));
   });
 
   document.getElementById("add-timeline-btn").addEventListener("click", () => {
     CONFIG.timeline.push({ icon: "🌟", date: "Some time", title: "New Milestone", text: "Write about this moment..." });
     renderTimelineInputs();
+    focusAndScrollNewItem(document.getElementById("timeline-inputs-container"));
   });
 
   // ─── OPEN MODAL ───
@@ -6150,49 +6178,7 @@ function renderReasonsGrid() {
   }
 }
 
-// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
-function reRenderPage() {
-  if (window.letterTyped) revealPostLetterContent();
-  const nameVal = (CONFIG.name || "").trim();
-  const displayName = nameVal ? formatName(nameVal) : "";
-
-  // Letter Font Style & Theme
-  updateLetterThemeAndFont();
-
-  // Corner flowers dynamic update
-  const flowers = document.querySelectorAll(".corner-flower");
-  if (flowers.length) {
-    flowers.forEach(f => f.textContent = "🌸");
-  }
-
-  // Cake Theme
-  updateCakeTheme();
-
-  // Title & Name slots
-  updateNameSlots(displayName);
-
-  // Sender slot
-  updateSenderSlots();
-
-  // Passcode hint
-  updatePasscodeHint();
-
-  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
-  updateDateAndAge();
-
-  // Letter body
-  updateLetterBody();
-
-  // Memory
-  updateMemorySection();
-
-  // Reasons grid
-  renderReasonsGrid();
-
-  // Wishes
-  updateWishesSection();
-
-  // Gallery — re-render
+function renderGalleryDeck() {
   const deck = document.getElementById("gallery-deck");
   if (deck) {
     deck.innerHTML = "";
@@ -6236,6 +6222,52 @@ function reRenderPage() {
       deck.appendChild(el);
     });
   }
+}
+
+// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
+function reRenderPage() {
+  if (window.letterTyped) revealPostLetterContent();
+  const nameVal = (CONFIG.name || "").trim();
+  const displayName = nameVal ? formatName(nameVal) : "";
+
+  // Letter Font Style & Theme
+  updateLetterThemeAndFont();
+
+  // Corner flowers dynamic update
+  const flowers = document.querySelectorAll(".corner-flower");
+  if (flowers.length) {
+    flowers.forEach(f => f.textContent = "🌸");
+  }
+
+  // Cake Theme
+  updateCakeTheme();
+
+  // Title & Name slots
+  updateNameSlots(displayName);
+
+  // Sender slot
+  updateSenderSlots();
+
+  // Passcode hint
+  updatePasscodeHint();
+
+  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
+  updateDateAndAge();
+
+  // Letter body
+  updateLetterBody();
+
+  // Memory
+  updateMemorySection();
+
+  // Reasons grid
+  renderReasonsGrid();
+
+  // Wishes
+  updateWishesSection();
+
+  // Gallery
+  renderGalleryDeck();
 
   // Timeline — re-render
   const tl = document.getElementById("timeline-wrap");

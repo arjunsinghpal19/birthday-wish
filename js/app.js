@@ -6242,6 +6242,14 @@ function renderTimelineSection() {
 }
 
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
+function updateCornerFlowers() {
+  const flowers = document.querySelectorAll(".corner-flower");
+  if (flowers.length) {
+    flowers.forEach(f => f.textContent = "🌸");
+  }
+}
+
+// ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
   const nameVal = (CONFIG.name || "").trim();
@@ -6251,10 +6259,7 @@ function reRenderPage() {
   updateLetterThemeAndFont();
 
   // Corner flowers dynamic update
-  const flowers = document.querySelectorAll(".corner-flower");
-  if (flowers.length) {
-    flowers.forEach(f => f.textContent = "🌸");
-  }
+  updateCornerFlowers();
 
   // Cake Theme
   updateCakeTheme();

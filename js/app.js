@@ -6270,24 +6270,23 @@ const RenderDispatcher = {
   reveal: () => initReveal()
 };
 
+const ALL_SECTION_KEYS = [
+  "theme", "flowers", "cake", "name", "sender", "passcode",
+  "date", "letter", "memory", "reasons", "wishes", "gallery",
+  "timeline", "gift", "video", "share", "reveal"
+];
+
+function renderSections(sectionNames, displayName) {
+  if (!Array.isArray(sectionNames)) return;
+  sectionNames.forEach(key => {
+    if (typeof RenderDispatcher[key] === "function") {
+      RenderDispatcher[key](displayName);
+    }
+  });
+}
+
 function renderAllSections(displayName) {
-  RenderDispatcher.theme();
-  RenderDispatcher.flowers();
-  RenderDispatcher.cake();
-  RenderDispatcher.name(displayName);
-  RenderDispatcher.sender();
-  RenderDispatcher.passcode();
-  RenderDispatcher.date();
-  RenderDispatcher.letter();
-  RenderDispatcher.memory();
-  RenderDispatcher.reasons();
-  RenderDispatcher.wishes();
-  RenderDispatcher.gallery();
-  RenderDispatcher.timeline();
-  RenderDispatcher.gift();
-  RenderDispatcher.video();
-  RenderDispatcher.share();
-  RenderDispatcher.reveal();
+  renderSections(ALL_SECTION_KEYS, displayName);
 }
 
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───

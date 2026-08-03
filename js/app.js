@@ -5800,15 +5800,37 @@ async function initCustomizerModal() {
     });
   }
 
-  // ─── ADD ITEM HANDLERS ───
+  // ─── ADD ITEM HANDLERS & AUTO-FOCUS SCROLL ───
+  function focusAndScrollNewItem(container) {
+    if (!container) return;
+    const lastItem = container.lastElementChild;
+    if (!lastItem) return;
+
+    const sectionBody = container.closest(".editor-section-body");
+    const sectionHeader = sectionBody ? sectionBody.previousElementSibling : null;
+    if (sectionBody && !sectionBody.classList.contains("open")) {
+      sectionBody.classList.add("open");
+      if (sectionHeader) sectionHeader.classList.add("active");
+    }
+
+    lastItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    const firstInput = lastItem.querySelector("input[type='text'], input[type='url'], textarea, input:not([type='hidden']):not([type='file'])");
+    if (firstInput) {
+      setTimeout(() => firstInput.focus(), 150);
+    }
+  }
+
   document.getElementById("add-reason-btn").addEventListener("click", () => {
     CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
     renderReasonInputs();
+    focusAndScrollNewItem(document.getElementById("reasons-inputs-container"));
   });
 
   document.getElementById("add-wish-btn").addEventListener("click", () => {
     CONFIG.wishes.push("Write a beautiful birthday wish...");
     renderWishInputs();
+    focusAndScrollNewItem(document.getElementById("wishes-inputs-container"));
   });
 
   document.getElementById("add-gallery-btn").addEventListener("click", () => {
@@ -5817,11 +5839,13 @@ async function initCustomizerModal() {
       cap: "New Memory", secretNote: "A special moment ❤️"
     });
     renderGalleryInputs();
+    focusAndScrollNewItem(document.getElementById("gallery-inputs-container"));
   });
 
   document.getElementById("add-timeline-btn").addEventListener("click", () => {
     CONFIG.timeline.push({ icon: "🌟", date: "Some time", title: "New Milestone", text: "Write about this moment..." });
     renderTimelineInputs();
+    focusAndScrollNewItem(document.getElementById("timeline-inputs-container"));
   });
 
   // ─── OPEN MODAL ───

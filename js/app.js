@@ -4779,6 +4779,7 @@ function initWishStudioCalendar() {
     const maxDays = new Date(year, monthIndex + 1, 0).getDate();
     return day <= maxDays;
   }
+  window.isValidCalendarDate = isValidCalendarDate;
 
   function parseTypedDate(str) {
     if (!str) return null;
@@ -4809,6 +4810,13 @@ function initWishStudioCalendar() {
 
     return null;
   }
+
+  function isCurrentBirthdateValid() {
+    const val = displayInput.value.trim();
+    if (!val) return false;
+    return parseTypedDate(val) !== null;
+  }
+  window.isCurrentBirthdateValid = isCurrentBirthdateValid;
 
   window.syncDatePickerDisplay = function() {
     let curVal = hiddenInput.value || displayInput.value;
@@ -4917,34 +4925,64 @@ function initWishStudioCalendar() {
   // Triggers
   if (openBtn) openBtn.addEventListener("click", (e) => { e.preventDefault(); openCalendar(); });
 
-  // Restrict keydown to numbers and navigation keys
+  // Segmented Date Input Keyboard & Navigation Handler
   displayInput.addEventListener("keydown", (e) => {
     if (
-      ["Backspace", "Delete", "Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
+      ["Tab", "Escape", "Enter", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key) ||
       e.ctrlKey || e.metaKey
     ) {
       return;
     }
+
+    const pos = displayInput.selectionStart || 0;
+
+    // Smart Backspace handling: prevent slash removal
+    if (e.key === "Backspace") {
+      if (pos === 3 || pos === 6) {
+        e.preventDefault();
+        displayInput.setSelectionRange(pos - 1, pos - 1);
+        return;
+      }
+      return;
+    }
+
+    // Delete key handling: prevent slash removal
+    if (e.key === "Delete") {
+      if (pos === 2 || pos === 5) {
+        e.preventDefault();
+        displayInput.setSelectionRange(pos + 1, pos + 1);
+        return;
+      }
+      return;
+    }
+
+    // Allow only numeric digits
     if (!/^\d$/.test(e.key)) {
       e.preventDefault();
+      return;
+    }
+
+    // Auto-advance past slashes
+    if (pos === 2 || pos === 5) {
+      displayInput.setSelectionRange(pos + 1, pos + 1);
     }
   });
 
   function syncTypedValue() {
-    let digits = displayInput.value.replace(/\D/g, "").slice(0, 8);
+    let raw = displayInput.value.replace(/\D/g, "").slice(0, 8);
     let masked = "";
-    if (digits.length > 0) {
-      if (digits.length <= 2) {
-        masked = digits;
-      } else if (digits.length <= 4) {
-        masked = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (raw.length > 0) {
+      if (raw.length <= 2) {
+        masked = raw;
+      } else if (raw.length <= 4) {
+        masked = raw.slice(0, 2) + "/" + raw.slice(2);
       } else {
-        masked = digits.slice(0, 2) + "/" + digits.slice(2, 4) + "/" + digits.slice(4, 8);
+        masked = raw.slice(0, 2) + "/" + raw.slice(2, 4) + "/" + raw.slice(4, 8);
       }
     }
     displayInput.value = masked;
 
-    if (digits.length === 8) {
+    if (raw.length === 8) {
       const typed = parseTypedDate(masked);
       if (typed) {
         selectedDate = typed;
@@ -4971,9 +5009,15 @@ function initWishStudioCalendar() {
 
   displayInput.addEventListener("blur", () => {
     syncTypedValue();
-    const typed = parseTypedDate(displayInput.value.trim());
+    const val = displayInput.value.trim();
+    if (!val) return;
+    const typed = parseTypedDate(val);
     if (typed) {
       displayInput.value = formatUserDisplay(typed);
+      displayInput.classList.remove("input-error");
+    } else {
+      displayInput.classList.add("input-error");
+      showToast("Please enter a valid calendar date.");
     }
   });
 
@@ -5459,14 +5503,20 @@ async function initCustomizerModal() {
     if (bDateVal) {
       const parts = bDateVal.split("-");
       if (parts.length === 3) {
+        let candidateY = 2001, candidateM = 1, candidateD = 1;
         if (parseInt(parts[0]) > 1000) { // YYYY-MM-DD
-          yVal = parseInt(parts[0]) || 2001;
-          mVal = parseInt(parts[1]) || 1;
-          dVal = parseInt(parts[2]) || 1;
+          candidateY = parseInt(parts[0]) || 2001;
+          candidateM = parseInt(parts[1]) || 1;
+          candidateD = parseInt(parts[2]) || 1;
         } else { // DD-MM-YYYY
-          dVal = parseInt(parts[0]) || 1;
-          mVal = parseInt(parts[1]) || 1;
-          yVal = parseInt(parts[2]) || 2001;
+          candidateD = parseInt(parts[0]) || 1;
+          candidateM = parseInt(parts[1]) || 1;
+          candidateY = parseInt(parts[2]) || 2001;
+        }
+        if (typeof window.isValidCalendarDate === "function" && window.isValidCalendarDate(candidateY, candidateM - 1, candidateD)) {
+          yVal = candidateY;
+          mVal = candidateM;
+          dVal = candidateD;
         }
       }
     }
@@ -5619,7 +5669,10 @@ async function initCustomizerModal() {
         const nInput = document.getElementById("input-name");
         if (nInput) nInput.value = "";
         const bDateInput = document.getElementById("input-birthdate");
-        if (bDateInput) bDateInput.value = "2001-01-01";
+        if (bDateInput) bDateInput.value = "01-01-2001";
+        const bDateDisplay = document.getElementById("input-birthdate-display");
+        if (bDateDisplay) bDateDisplay.value = "01/01/2001";
+        if (typeof window.syncDatePickerDisplay === "function") window.syncDatePickerDisplay();
         const cakeSelect = document.getElementById("input-cake-flavor");
         if (cakeSelect) cakeSelect.value = "default";
         const passInput = document.getElementById("input-passcode");
@@ -5793,8 +5846,34 @@ async function initCustomizerModal() {
     if (e.target === backdrop) backdrop.classList.remove("active");
   });
 
+  function handleSaveGuard() {
+    if (typeof window.isCurrentBirthdateValid === "function" && !window.isCurrentBirthdateValid()) {
+      const bDateDisplay = document.getElementById("input-birthdate-display");
+      if (bDateDisplay) {
+        bDateDisplay.classList.add("input-error");
+
+        // Expand Basic Info section if collapsed
+        const basicHeader = document.querySelector('.editor-section-header[data-section="basic"]');
+        const basicBody = document.getElementById("sec-basic");
+        if (basicHeader && basicBody && !basicBody.classList.contains("open")) {
+          document.querySelectorAll(".editor-section-header").forEach(h => h.classList.remove("active"));
+          document.querySelectorAll(".editor-section-body").forEach(b => b.classList.remove("open"));
+          basicHeader.classList.add("active");
+          basicBody.classList.add("open");
+        }
+
+        bDateDisplay.focus();
+      }
+      showToast("Please enter a valid calendar date.");
+      return false;
+    }
+    return true;
+  }
+
   // ─── SAVE ───
   saveBtn.addEventListener("click", async () => {
+    if (!handleSaveGuard()) return;
+
     const values = readAllValues();
     applyAllValues(values);
 
@@ -5812,6 +5891,8 @@ async function initCustomizerModal() {
   // ─── SHARE LINK ───
   if (shareLinkBtn) {
     shareLinkBtn.addEventListener("click", async () => {
+      if (!handleSaveGuard()) return;
+
       const values = readAllValues();
       applyAllValues(values);
       await updateShareSection();

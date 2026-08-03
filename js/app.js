@@ -4970,13 +4970,27 @@ function initWishStudioCalendar() {
   // Manual Typing Parser on Input & Blur
   displayInput.addEventListener("input", syncTypedValue);
 
+  let isRevertingDate = false;
   displayInput.addEventListener("blur", () => {
+    if (isRevertingDate) return;
     syncTypedValue();
-    const typed = parseTypedDate(displayInput.value.trim());
+    const val = displayInput.value.trim();
+    if (!val) {
+      window.syncDatePickerDisplay();
+      return;
+    }
+    const typed = parseTypedDate(val);
     if (typed) {
       displayInput.value = formatUserDisplay(typed);
+      displayInput.classList.remove("input-error");
     } else {
-      window.syncDatePickerDisplay();
+      isRevertingDate = true;
+      displayInput.classList.add("input-error");
+      showToast("Invalid date. Please enter a valid calendar date.");
+      setTimeout(() => {
+        window.syncDatePickerDisplay();
+        isRevertingDate = false;
+      }, 1400);
     }
   });
 

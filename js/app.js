@@ -6302,7 +6302,7 @@ function detectChangedSections(prevConfig, newVals) {
   const passChanged = (prevConfig.passcode?.code || "1234") !== newVals.passVal;
   const cakeChanged = (prevConfig.cakeFlavor || "default") !== newVals.cakeFlavor;
 
-  if (nameChanged) changed.push("name");
+  if (nameChanged) changed.push("name", "date", "share");
   if (yChanged || mChanged || dChanged) changed.push("date");
   if (passChanged) changed.push("passcode");
   if (cakeChanged) changed.push("cake");

@@ -6136,6 +6136,20 @@ function updateLetterBody() {
   }
 }
 
+function renderReasonsGrid() {
+  const reasonsGrid = document.getElementById("reasons-grid");
+  if (reasonsGrid) {
+    reasonsGrid.innerHTML = "";
+    CONFIG.reasons.forEach((r, i) => {
+      const el = document.createElement("div");
+      el.className = "info-card glass reveal";
+      el.style.setProperty("--i", i);
+      el.innerHTML = `<span class="icon">${r.icon}</span><h3>${r.title}</h3><p>${r.text}</p>`;
+      reasonsGrid.appendChild(el);
+    });
+  }
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
@@ -6172,18 +6186,8 @@ function reRenderPage() {
   // Memory
   updateMemorySection();
 
-  // Reasons grid — re-render
-  const reasonsGrid = document.getElementById("reasons-grid");
-  if (reasonsGrid) {
-    reasonsGrid.innerHTML = "";
-    CONFIG.reasons.forEach((r, i) => {
-      const el = document.createElement("div");
-      el.className = "info-card glass reveal";
-      el.style.setProperty("--i", i);
-      el.innerHTML = `<span class="icon">${r.icon}</span><h3>${r.title}</h3><p>${r.text}</p>`;
-      reasonsGrid.appendChild(el);
-    });
-  }
+  // Reasons grid
+  renderReasonsGrid();
 
   // Wishes
   updateWishesSection();

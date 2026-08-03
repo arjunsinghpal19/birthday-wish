@@ -6249,60 +6249,54 @@ function updateCornerFlowers() {
   }
 }
 
+// ─── SMART RENDERER DISPATCHER INFRASTRUCTURE ───
+const RenderDispatcher = {
+  theme: () => updateLetterThemeAndFont(),
+  flowers: () => updateCornerFlowers(),
+  cake: () => updateCakeTheme(),
+  name: (displayName) => updateNameSlots(displayName),
+  sender: () => updateSenderSlots(),
+  passcode: () => updatePasscodeHint(),
+  date: () => updateDateAndAge(),
+  letter: () => updateLetterBody(),
+  memory: () => updateMemorySection(),
+  reasons: () => renderReasonsGrid(),
+  wishes: () => updateWishesSection(),
+  gallery: () => renderGalleryDeck(),
+  timeline: () => renderTimelineSection(),
+  gift: () => updateGiftSection(),
+  video: () => renderVideoWishSection(),
+  share: () => updateShareSection(),
+  reveal: () => initReveal()
+};
+
+function renderAllSections(displayName) {
+  RenderDispatcher.theme();
+  RenderDispatcher.flowers();
+  RenderDispatcher.cake();
+  RenderDispatcher.name(displayName);
+  RenderDispatcher.sender();
+  RenderDispatcher.passcode();
+  RenderDispatcher.date();
+  RenderDispatcher.letter();
+  RenderDispatcher.memory();
+  RenderDispatcher.reasons();
+  RenderDispatcher.wishes();
+  RenderDispatcher.gallery();
+  RenderDispatcher.timeline();
+  RenderDispatcher.gift();
+  RenderDispatcher.video();
+  RenderDispatcher.share();
+  RenderDispatcher.reveal();
+}
+
 // ─── RE-RENDER ENTIRE PAGE (called after Save & Apply) ───
 function reRenderPage() {
   if (window.letterTyped) revealPostLetterContent();
   const nameVal = (CONFIG.name || "").trim();
   const displayName = nameVal ? formatName(nameVal) : "";
 
-  // Letter Font Style & Theme
-  updateLetterThemeAndFont();
-
-  // Corner flowers dynamic update
-  updateCornerFlowers();
-
-  // Cake Theme
-  updateCakeTheme();
-
-  // Title & Name slots
-  updateNameSlots(displayName);
-
-  // Sender slot
-  updateSenderSlots();
-
-  // Passcode hint
-  updatePasscodeHint();
-
-  // Date & Age sections (Birthday card, Zodiac, Age counter, Dynamic greeting)
-  updateDateAndAge();
-
-  // Letter body
-  updateLetterBody();
-
-  // Memory
-  updateMemorySection();
-
-  // Reasons grid
-  renderReasonsGrid();
-
-  // Wishes
-  updateWishesSection();
-
-  // Gallery
-  renderGalleryDeck();
-
-  // Timeline
-  renderTimelineSection();
-
-  // Gift
-  updateGiftSection();
-
-  // Video Wish & Share Section
-  renderVideoWishSection();
-  updateShareSection();
-
-  // Re-init reveal for new elements
-  initReveal();
+  renderAllSections(displayName);
 }
 
 function launchRealisticShootingStar() {

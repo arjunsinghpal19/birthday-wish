@@ -3851,19 +3851,20 @@ function encodeWishData(dataObj) {
   try {
     let payload = {};
     if (typeof dataObj === "object" && dataObj !== null) {
-      if (CONFIG.name) payload.n = CONFIG.name;
-      if (CONFIG.passcode?.code && CONFIG.passcode.code !== "1234") payload.c = CONFIG.passcode.code;
-      if (CONFIG.birthDate?.year && CONFIG.birthDate.year !== 2001) payload.y = CONFIG.birthDate.year;
-      if (CONFIG.birthDate?.month && CONFIG.birthDate.month !== 1) payload.m = CONFIG.birthDate.month;
-      if (CONFIG.birthDate?.day && CONFIG.birthDate.day !== 1) payload.d = CONFIG.birthDate.day;
-      if (CONFIG.from && CONFIG.from !== "your friends who adore you") payload.f = CONFIG.from;
-      if (CONFIG.memory && !CONFIG.memory.includes("That one late night we didn't plan anything")) payload.mem = CONFIG.memory;
-      if (CONFIG.cakeFlavor && CONFIG.cakeFlavor !== "default") payload.cf = CONFIG.cakeFlavor;
-      if (CONFIG.letterFont && CONFIG.letterFont !== "default") payload.lf = CONFIG.letterFont;
-      if (CONFIG.letterTheme && CONFIG.letterTheme !== "default") payload.lt = CONFIG.letterTheme;
-      if (CONFIG.gift?.message && !CONFIG.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = CONFIG.gift;
+      const target = dataObj;
+      if (target.name) payload.n = target.name;
+      if (target.passcode?.code && target.passcode.code !== "1234") payload.c = target.passcode.code;
+      if (target.birthDate?.year && target.birthDate.year !== 2001) payload.y = target.birthDate.year;
+      if (target.birthDate?.month && target.birthDate.month !== 1) payload.m = target.birthDate.month;
+      if (target.birthDate?.day && target.birthDate.day !== 1) payload.d = target.birthDate.day;
+      if (target.from && target.from !== "your friends who adore you") payload.f = target.from;
+      if (target.memory && !target.memory.includes("That one late night we didn't plan anything")) payload.mem = target.memory;
+      if (target.cakeFlavor && target.cakeFlavor !== "default") payload.cf = target.cakeFlavor;
+      if (target.letterFont && target.letterFont !== "default") payload.lf = target.letterFont;
+      if (target.letterTheme && target.letterTheme !== "default") payload.lt = target.letterTheme;
+      if (target.gift?.message && !target.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = target.gift;
 
-      if (CONFIG.gallery && Array.isArray(CONFIG.gallery)) {
+      if (target.gallery && Array.isArray(target.gallery)) {
         const defaultNotes = [
           "Remember this day",
           "Getting 50 photos",
@@ -3871,7 +3872,7 @@ function encodeWishData(dataObj) {
           "Pure unscripted laughter",
           "Here's to making this year"
         ];
-        const customGallery = CONFIG.gallery.filter(item => {
+        const customGallery = target.gallery.filter(item => {
           const isCustomImage = item.image && (item.image.startsWith("http://") || item.image.startsWith("https://"));
           const isCustomNote = item.secretNote && !defaultNotes.some(dn => item.secretNote.includes(dn));
           return isCustomImage || isCustomNote;
@@ -3902,6 +3903,139 @@ function encodeWishData(dataObj) {
   } catch (e) {
     return "";
   }
+}
+
+/**
+ * Pure helper function constructing a clean, publish-only configuration payload.
+ * Uses window.DEFAULT_CONFIG_BACKUP as the ONLY source for template default comparison.
+ * Filters out unchanged defaults, local blob: URLs, and local draft-only runtime metadata.
+ * Does NOT mutate the source configuration object or global CONFIG.
+ * @param {Object} [sourceConfig] - Target configuration object to extract publish state from.
+ * @returns {Object} Clean publish payload object.
+ */
+function buildPublishConfig(sourceConfig) {
+  const src = sourceConfig || CONFIG;
+  if (!src || typeof src !== "object") return {};
+
+  const def = window.DEFAULT_CONFIG_BACKUP || CONFIG;
+  const payload = {};
+
+  // 1. Recipient Name (Always published if present)
+  if (typeof src.name === "string" && src.name.trim()) {
+    payload.name = src.name.trim();
+  }
+
+  // 2. Sender Name (Only if customized from template default)
+  if (typeof src.from === "string" && src.from !== def.from) {
+    payload.from = src.from;
+  }
+
+  // 3. Birth Date (Only if customized from template default)
+  if (src.birthDate && typeof src.birthDate === "object") {
+    const isDefYear = def.birthDate && src.birthDate.year === def.birthDate.year;
+    const isDefMonth = def.birthDate && src.birthDate.month === def.birthDate.month;
+    const isDefDay = def.birthDate && src.birthDate.day === def.birthDate.day;
+    if (!isDefYear || !isDefMonth || !isDefDay) {
+      payload.birthDate = {
+        year: src.birthDate.year,
+        month: src.birthDate.month,
+        day: src.birthDate.day
+      };
+    }
+  }
+
+  // 4. Passcode (Only if customized from template default)
+  if (src.passcode?.code && def.passcode?.code && src.passcode.code !== def.passcode.code) {
+    payload.passcode = { code: src.passcode.code };
+  }
+
+  // 5. Letter Lines (Only if customized from template default)
+  if (Array.isArray(src.letterLines)) {
+    const isSameLines = Array.isArray(def.letterLines) &&
+      src.letterLines.length === def.letterLines.length &&
+      src.letterLines.every((line, idx) => line === def.letterLines[idx]);
+    if (!isSameLines) {
+      payload.letterLines = [ ...src.letterLines ];
+    }
+  }
+
+  // 6. Memory Paragraph (Only if customized from template default)
+  if (typeof src.memory === "string" && src.memory !== def.memory) {
+    payload.memory = src.memory;
+  }
+
+  // 7. Reasons Grid (Only if customized from template default)
+  if (Array.isArray(src.reasons)) {
+    const isSameReasons = Array.isArray(def.reasons) &&
+      JSON.stringify(src.reasons) === JSON.stringify(def.reasons);
+    if (!isSameReasons) {
+      payload.reasons = JSON.parse(JSON.stringify(src.reasons));
+    }
+  }
+
+  // 8. Wishes Array (Only if customized from template default)
+  if (Array.isArray(src.wishes)) {
+    const isSameWishes = Array.isArray(def.wishes) &&
+      JSON.stringify(src.wishes) === JSON.stringify(def.wishes);
+    if (!isSameWishes) {
+      payload.wishes = [ ...src.wishes ];
+    }
+  }
+
+  // 9. Gallery Deck (Only if customized; strip out any local blob: URLs)
+  if (Array.isArray(src.gallery)) {
+    const isSameGallery = Array.isArray(def.gallery) &&
+      JSON.stringify(src.gallery) === JSON.stringify(def.gallery);
+    if (!isSameGallery) {
+      payload.gallery = src.gallery.map(item => ({
+        image: (item.image && typeof item.image === "string" && !item.image.startsWith("blob:")) ? item.image : null,
+        emoji: item.emoji || "🎈",
+        rot: item.rot || 0,
+        cap: item.cap || "",
+        secretNote: item.secretNote || ""
+      }));
+    }
+  }
+
+  // 10. Milestone Timeline (Only if customized from template default)
+  if (Array.isArray(src.timeline)) {
+    const isSameTimeline = Array.isArray(def.timeline) &&
+      JSON.stringify(src.timeline) === JSON.stringify(def.timeline);
+    if (!isSameTimeline) {
+      payload.timeline = JSON.parse(JSON.stringify(src.timeline));
+    }
+  }
+
+  // 11. Gift Section (Only if customized from template default)
+  if (src.gift && typeof src.gift === "object") {
+    const isDefMsg = def.gift && src.gift.message === def.gift.message;
+    const isDefCpn = def.gift && src.gift.coupon === def.gift.coupon;
+    if (!isDefMsg || !isDefCpn) {
+      payload.gift = {
+        message: src.gift.message || "",
+        coupon: src.gift.coupon || ""
+      };
+    }
+  }
+
+  // 12. Remote Public Media URLs (Exclude local blob: URLs)
+  if (src.music?.file && typeof src.music.file === "string" && !src.music.file.startsWith("blob:")) {
+    const isDefAudio = def.music && src.music.file === def.music.file;
+    if (!isDefAudio) {
+      payload.music = { file: src.music.file, startTime: src.music.startTime || "" };
+    }
+  }
+
+  if (src.videoWish?.url && typeof src.videoWish.url === "string" && !src.videoWish.url.startsWith("blob:")) {
+    payload.videoWish = { url: src.videoWish.url, startTime: src.videoWish.startTime || "" };
+  }
+
+  // 13. Styling Options (Only if customized from template default)
+  if (src.letterFont && def.letterFont && src.letterFont !== def.letterFont) payload.letterFont = src.letterFont;
+  if (src.letterTheme && def.letterTheme && src.letterTheme !== def.letterTheme) payload.letterTheme = src.letterTheme;
+  if (src.cakeFlavor && def.cakeFlavor && src.cakeFlavor !== def.cakeFlavor) payload.cakeFlavor = src.cakeFlavor;
+
+  return payload;
 }
 
 function decodeWishData(token) {

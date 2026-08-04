@@ -6283,12 +6283,36 @@ const ALL_SECTION_KEYS = [
 ];
 
 function renderSections(sectionNames, displayName) {
-  if (!Array.isArray(sectionNames)) return;
+  if (!Array.isArray(sectionNames) || sectionNames.length === 0) return;
+  
   sectionNames.forEach(key => {
     if (typeof RenderDispatcher[key] === "function") {
       RenderDispatcher[key](displayName);
     }
   });
+
+  // Post-render lifecycle hooks for smart partial rendering:
+  // 1. Preserve revealPostLetterContent behavior if letter has been typed
+  if (window.letterTyped && typeof revealPostLetterContent === "function") {
+    revealPostLetterContent();
+  }
+
+  // 2. Re-initialize scroll reveal IntersectionObservers for any newly created .reveal elements
+  if (typeof initReveal === "function") {
+    initReveal();
+  }
+
+  // 3. Ensure immediate visibility for newly rendered .reveal nodes in in-view or revealed containers
+  const postContent = document.getElementById("post-letter-content");
+  const isPostRevealed = postContent && !postContent.classList.contains("post-letter-hidden");
+  if (isPostRevealed) {
+    document.querySelectorAll(".reveal").forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+        el.classList.add("in-view");
+      }
+    });
+  }
 }
 
 /**

@@ -6391,6 +6391,7 @@ function renderGalleryDeck() {
       });
       deck.appendChild(el);
     });
+    window.RENDERED_GALLERY_JSON = JSON.stringify(CONFIG.gallery);
   }
 }
 
@@ -6472,7 +6473,7 @@ function renderSections(sectionNames, displayName) {
   if (isPostRevealed) {
     document.querySelectorAll(".reveal").forEach(el => {
       const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+      if ((rect.top < window.innerHeight + 200 && rect.bottom > -200) || postContent.contains(el)) {
         el.classList.add("in-view");
       }
     });
@@ -6514,7 +6515,10 @@ function detectChangedSections(prevConfig, newVals) {
 
   if (JSON.stringify(prevConfig.reasons || []) !== JSON.stringify(newVals.reasons || [])) changed.push("reasons");
   if (JSON.stringify(prevConfig.wishes || []) !== JSON.stringify(newVals.wishes || [])) changed.push("wishes");
-  if (JSON.stringify(prevConfig.gallery || []) !== JSON.stringify(newVals.gallery || [])) changed.push("gallery");
+
+  const prevGalleryJson = window.RENDERED_GALLERY_JSON || JSON.stringify(prevConfig.gallery || []);
+  if (prevGalleryJson !== JSON.stringify(newVals.gallery || [])) changed.push("gallery");
+
   if (JSON.stringify(prevConfig.timeline || []) !== JSON.stringify(newVals.timeline || [])) changed.push("timeline");
 
   const giftMsgChanged = (prevConfig.gift?.message || "") !== (newVals.giftMsg || "");

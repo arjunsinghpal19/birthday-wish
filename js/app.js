@@ -5806,6 +5806,20 @@ async function initCustomizerModal() {
   }
 
   // ─── SECTION RESET LOGIC ───
+  const resetSectionRenderMap = {
+    basic: ["name", "date", "share", "cake"],
+    sender: ["sender"],
+    letter: ["letter"],
+    memory: ["memory"],
+    reasons: ["reasons"],
+    wishes: ["wishes"],
+    gallery: ["gallery"],
+    timeline: ["timeline"],
+    gift: ["gift"],
+    music: ["music"],
+    videowish: ["video"]
+  };
+
   function resetSection(sec) {
     if (!window.DEFAULT_CONFIG_BACKUP) return;
     const def = window.DEFAULT_CONFIG_BACKUP;
@@ -5924,9 +5938,13 @@ async function initCustomizerModal() {
         if (vidTxt) vidTxt.textContent = `📹 Select Video from Device`;
         const vidRem = document.getElementById("remove-video-file-btn");
         if (vidRem) vidRem.style.display = "none";
-        renderVideoWishSection();
         showToast("Video Wish reset 📹");
         break;
+    }
+
+    if (resetSectionRenderMap[sec]) {
+      const displayName = CONFIG.name ? formatName(CONFIG.name) : "";
+      renderSections(resetSectionRenderMap[sec], displayName);
     }
   }
 
@@ -5946,6 +5964,8 @@ async function initCustomizerModal() {
     resetMsgsBtn.addEventListener("click", () => {
       const allSections = ["basic", "sender", "letter", "memory", "reasons", "wishes", "gallery", "timeline", "gift", "music", "videowish"];
       allSections.forEach(s => resetSection(s));
+      const displayName = CONFIG.name ? formatName(CONFIG.name) : "";
+      renderSections(ALL_SECTION_KEYS, displayName);
       showToast("Entire Wish reset to defaults! ✨");
     });
   }

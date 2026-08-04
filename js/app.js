@@ -6752,13 +6752,19 @@ async function buildRecipientShareUrl(overrideName) {
     baseUrl = location.href.split("?")[0];
   }
 
+  // Construct clean publish-only configuration payload (preserves local draft CONFIG untouched)
+  const publishConfig = typeof buildPublishConfig === "function" ? buildPublishConfig(CONFIG) : CONFIG;
+  if (overrideName !== undefined) {
+    publishConfig.name = nameVal;
+  }
+
   // Try generating short UUID link via ShareModule
   if (window.ShareModule) {
-    const uuidUrl = await window.ShareModule.buildShareUrl(CONFIG, nameVal);
+    const uuidUrl = await window.ShareModule.buildShareUrl(publishConfig, nameVal);
     if (uuidUrl) return uuidUrl;
   }
 
-  const token = encodeWishData(CONFIG);
+  const token = encodeWishData(publishConfig);
 
   if (!token) {
     return nameVal ? `${baseUrl}?name=${encodeURIComponent(nameVal)}` : baseUrl;
@@ -6768,14 +6774,14 @@ async function buildRecipientShareUrl(overrideName) {
   if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
 
   // Filter out any blob: URLs from music & video params so blob: URLs NEVER get appended to shareable links!
-  if (CONFIG.music?.file && !CONFIG.music.file.startsWith("blob:") && !CONFIG.music.file.startsWith("data:") && !CONFIG.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
-    shareUrl += `&music=${encodeURIComponent(CONFIG.music.file)}`;
+  if (publishConfig.music?.file && !publishConfig.music.file.startsWith("blob:") && !publishConfig.music.file.startsWith("data:") && !publishConfig.music.file.includes("assets/music/happy-birthday-song.mpeg")) {
+    shareUrl += `&music=${encodeURIComponent(publishConfig.music.file)}`;
   }
-  if (CONFIG.music?.startTime) {
-    shareUrl += `&t=${encodeURIComponent(CONFIG.music.startTime)}`;
+  if (publishConfig.music?.startTime) {
+    shareUrl += `&t=${encodeURIComponent(publishConfig.music.startTime)}`;
   }
-  if (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:") && !CONFIG.videoWish.url.startsWith("data:")) {
-    shareUrl += `&v=${encodeURIComponent(CONFIG.videoWish.url)}`;
+  if (publishConfig.videoWish?.url && !publishConfig.videoWish.url.startsWith("blob:") && !publishConfig.videoWish.url.startsWith("data:")) {
+    shareUrl += `&v=${encodeURIComponent(publishConfig.videoWish.url)}`;
   }
 
   return shareUrl;

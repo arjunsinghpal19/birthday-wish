@@ -3886,6 +3886,12 @@ function encodeWishData(dataObj) {
       if (target.letterFont && target.letterFont !== "default") payload.lf = target.letterFont;
       if (target.letterTheme && target.letterTheme !== "default") payload.lt = target.letterTheme;
       if (target.gift?.message && !target.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = target.gift;
+      if (target.music?.file && typeof target.music.file === "string" && !target.music.file.startsWith("blob:") && target.music.file !== "assets/music/happy-birthday-song.mpeg") {
+        payload.msc = { f: target.music.file, t: target.music.startTime || "" };
+      }
+      if (target.videoWish?.url) {
+        payload.v = { u: target.videoWish.url, t: target.videoWish.startTime || "" };
+      }
 
       if (target.gallery && Array.isArray(target.gallery)) {
         const defaultNotes = [

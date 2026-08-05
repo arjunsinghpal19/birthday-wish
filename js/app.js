@@ -5240,7 +5240,29 @@ async function initCustomizerModal() {
   if (savedMod) {
     try {
       const parsed = JSON.parse(savedMod);
-      if (parsed && typeof parsed === "object") Object.assign(CONFIG, parsed);
+      if (parsed && typeof parsed === "object") {
+        const runtimeMusic = CONFIG.music;
+        const runtimeVideo = CONFIG.videoWish;
+        Object.assign(CONFIG, parsed);
+        if (runtimeMusic && runtimeMusic.file && (!parsed.music || !parsed.music.file)) {
+          CONFIG.music = {
+            ...runtimeMusic,
+            ...(parsed.music || {}),
+            file: runtimeMusic.file,
+            fileName: runtimeMusic.fileName || (parsed.music && parsed.music.fileName),
+            isBlob: runtimeMusic.isBlob !== undefined ? runtimeMusic.isBlob : (parsed.music && parsed.music.isBlob)
+          };
+        }
+        if (runtimeVideo && (runtimeVideo.url || runtimeVideo.file) && (!parsed.videoWish || (!parsed.videoWish.url && !parsed.videoWish.file))) {
+          CONFIG.videoWish = {
+            ...runtimeVideo,
+            ...(parsed.videoWish || {}),
+            url: runtimeVideo.url || (parsed.videoWish && parsed.videoWish.url),
+            file: runtimeVideo.file || (parsed.videoWish && parsed.videoWish.file),
+            fileName: runtimeVideo.fileName || (parsed.videoWish && parsed.videoWish.fileName)
+          };
+        }
+      }
     } catch(e){}
   }
 
@@ -7204,7 +7226,29 @@ function initMusicWidget() {
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
-        if (parsed && typeof parsed === "object") Object.assign(CONFIG, parsed);
+        if (parsed && typeof parsed === "object") {
+          const runtimeMusic = CONFIG.music;
+          const runtimeVideo = CONFIG.videoWish;
+          Object.assign(CONFIG, parsed);
+          if (runtimeMusic && runtimeMusic.file && (!parsed.music || !parsed.music.file)) {
+            CONFIG.music = {
+              ...runtimeMusic,
+              ...(parsed.music || {}),
+              file: runtimeMusic.file,
+              fileName: runtimeMusic.fileName || (parsed.music && parsed.music.fileName),
+              isBlob: runtimeMusic.isBlob !== undefined ? runtimeMusic.isBlob : (parsed.music && parsed.music.isBlob)
+            };
+          }
+          if (runtimeVideo && (runtimeVideo.url || runtimeVideo.file) && (!parsed.videoWish || (!parsed.videoWish.url && !parsed.videoWish.file))) {
+            CONFIG.videoWish = {
+              ...runtimeVideo,
+              ...(parsed.videoWish || {}),
+              url: runtimeVideo.url || (parsed.videoWish && parsed.videoWish.url),
+              file: runtimeVideo.file || (parsed.videoWish && parsed.videoWish.file),
+              fileName: runtimeVideo.fileName || (parsed.videoWish && parsed.videoWish.fileName)
+            };
+          }
+        }
       } catch(e){}
     }
   }
@@ -7265,7 +7309,8 @@ function initMusicWidget() {
         revokeMediaBlobUrl(CONFIG.music?.file);
         const blobUrl = URL.createObjectURL(savedAudioBlob);
         const audioName = savedAudioBlob.name || CONFIG.music?.fileName || "audio.mp3";
-        CONFIG.music = { file: blobUrl, isBlob: true, fileName: audioName };
+        const existingStart = CONFIG.music?.startTime || "";
+        CONFIG.music = { file: blobUrl, isBlob: true, fileName: audioName, startTime: existingStart };
         if (audUploadText) audUploadText.textContent = `🎙️ Attached: ${audioName.substring(0, 18)}`;
         if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
         if (MusicEngine.isPlaying()) {

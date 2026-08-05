@@ -5483,45 +5483,56 @@ async function initCustomizerModal() {
 
     // Bind file inputs
     container.querySelectorAll(".gallery-file-input").forEach(input => {
-      input.addEventListener("change", async (e) => {
+      input.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const idx = parseInt(input.dataset.index);
-        input.disabled = true;
-        showToast("⏳ Processing & Uploading Photo...");
-        try {
-          const dataUrl = await compressImageFile(file, 350, 0.5);
-          if (dataUrl) {
-            try {
-              const formData = new FormData();
-              formData.append("image", dataUrl.split(",")[1]);
-              const res = await fetch("https://api.imgbb.com/1/upload?key=6d0276711900d7966f1632f457bc6716", {
-                method: "POST",
-                body: formData
-              });
-              const json = await res.json();
-              if (json && json.data && json.data.url) {
-                CONFIG.gallery[idx].image = json.data.url;
-                showToast(`Photo Cloud Uploaded to Tile ${idx + 1}! ☁️📸`);
-              } else {
-                CONFIG.gallery[idx].image = dataUrl;
-                showToast(`Photo added to Tile ${idx + 1}! 📸`);
-              }
-            } catch (err) {
-              CONFIG.gallery[idx].image = dataUrl;
-              showToast(`Photo added to Tile ${idx + 1}! 📸`);
-            }
-            renderGalleryInputs();
-            if (typeof renderGalleryDeck === "function") {
-              renderGalleryDeck();
-            }
-          }
-        } catch (err) {
-          showToast("Could not process photo ⚠️");
-        } finally {
-          input.disabled = false;
-          e.target.value = "";
+
+        // 1. INSTANT LOCAL PREVIEW (0ms latency!)
+        const localBlobUrl = URL.createObjectURL(file);
+        CONFIG.gallery[idx].image = localBlobUrl;
+        renderGalleryInputs();
+        if (typeof renderGalleryDeck === "function") {
+          renderGalleryDeck();
         }
+        showToast(`📸 Photo attached to Tile ${idx + 1}! Optimizing in background... ☁️`);
+
+        // 2. BACKGROUND NON-BLOCKING ASYNC COMPRESSION & CLOUD UPLOAD
+        (async () => {
+          try {
+            const dataUrl = await compressImageFile(file, 400, 0.7);
+            if (dataUrl) {
+              try {
+                const formData = new FormData();
+                formData.append("image", dataUrl.split(",")[1]);
+                const res = await fetch("https://api.imgbb.com/1/upload?key=6d0276711900d7966f1632f457bc6716", {
+                  method: "POST",
+                  body: formData
+                });
+                const json = await res.json();
+                if (json && json.data && json.data.url) {
+                  if (CONFIG.gallery[idx] && CONFIG.gallery[idx].image === localBlobUrl) {
+                    try { URL.revokeObjectURL(localBlobUrl); } catch(err){}
+                    CONFIG.gallery[idx].image = json.data.url;
+                    renderGalleryInputs();
+                    if (typeof renderGalleryDeck === "function") {
+                      renderGalleryDeck();
+                    }
+                    showToast(`☁️ Tile ${idx + 1} synced to Cloud! ✨`);
+                  }
+                }
+              } catch (err) {
+                if (CONFIG.gallery[idx] && CONFIG.gallery[idx].image === localBlobUrl) {
+                  CONFIG.gallery[idx].image = dataUrl;
+                }
+              }
+            }
+          } catch (err) {
+            // Quiet non-blocking fallback
+          }
+        })();
+
+        e.target.value = "";
       });
     });
 

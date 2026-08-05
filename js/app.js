@@ -5307,6 +5307,9 @@ async function initCustomizerModal() {
         if (CONFIG.reasons.length > 1) {
           CONFIG.reasons.splice(idx, 1);
           renderReasonInputs();
+          if (typeof renderSections === "function") {
+            renderSections(["reasons"]);
+          }
         } else {
           showToast("At least 1 reason required ⭐");
         }
@@ -5998,6 +6001,9 @@ async function initCustomizerModal() {
   document.getElementById("add-reason-btn").addEventListener("click", () => {
     CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
     renderReasonInputs();
+    if (typeof renderSections === "function") {
+      renderSections(["reasons"]);
+    }
     focusAndScrollNewItem(document.getElementById("reasons-inputs-container"));
   });
 

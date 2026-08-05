@@ -773,8 +773,9 @@
 
   <!-- ==================== ADMIN SECURITY MODAL ==================== -->
   <div id="admin-login-modal" class="modal-backdrop">
-    <div class="modal-content glass card-glow-border" style="max-width:440px;width:100%;box-sizing:border-box;padding:24px 20px;border-radius:20px;text-align:left;position:relative;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <div class="modal-content glass card-glow-border" style="max-width:440px;width:100%;box-sizing:border-box;border-radius:20px;text-align:left;position:relative;overflow:hidden;">
+      <div class="modal-scroll" style="max-height:calc(100vh - 32px);overflow-y:auto;box-sizing:border-box;padding:24px 20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
         <h3 style="font-family:var(--font-hand);font-size:1.6rem;color:var(--gold);margin:0;">🔒 Admin Security Access</h3>
         <button id="admin-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;" type="button">✕</button>
       </div>

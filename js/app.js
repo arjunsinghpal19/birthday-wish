@@ -5271,7 +5271,7 @@ async function initCustomizerModal() {
         if (Array.isArray(CONFIG.gallery)) {
           CONFIG.gallery.forEach(item => {
             if (typeof item.image === "string" && item.image.startsWith("blob:")) {
-              item.image = null;
+              item.image = item._localDraft || null;
             }
           });
         }
@@ -5509,6 +5509,9 @@ async function initCustomizerModal() {
           try {
             const dataUrl = await compressImageFile(file, 400, 0.7);
             if (dataUrl) {
+              if (CONFIG.gallery[idx]) {
+                CONFIG.gallery[idx]._localDraft = dataUrl;
+              }
               try {
                 const formData = new FormData();
                 formData.append("image", dataUrl.split(",")[1]);
@@ -5518,9 +5521,10 @@ async function initCustomizerModal() {
                 });
                 const json = await res.json();
                 if (json && json.data && json.data.url) {
-                  if (CONFIG.gallery[idx] && CONFIG.gallery[idx].image === localBlobUrl) {
+                  if (CONFIG.gallery[idx]) {
                     try { URL.revokeObjectURL(localBlobUrl); } catch(err){}
                     CONFIG.gallery[idx].image = json.data.url;
+                    delete CONFIG.gallery[idx]._localDraft;
                     renderGalleryInputs();
                     if (typeof renderGalleryDeck === "function") {
                       renderGalleryDeck();
@@ -5529,8 +5533,9 @@ async function initCustomizerModal() {
                   }
                 }
               } catch (err) {
-                if (CONFIG.gallery[idx] && CONFIG.gallery[idx].image === localBlobUrl) {
+                if (CONFIG.gallery[idx]) {
                   CONFIG.gallery[idx].image = dataUrl;
+                  delete CONFIG.gallery[idx]._localDraft;
                 }
               }
             }
@@ -6180,8 +6185,9 @@ async function initCustomizerModal() {
     if (Array.isArray(saveData.gallery)) {
       saveData.gallery.forEach(item => {
         if (typeof item.image === "string" && item.image.startsWith("blob:")) {
-          item.image = null;
+          item.image = item._localDraft || null;
         }
+        delete item._localDraft;
       });
     }
     localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
@@ -7287,7 +7293,7 @@ function initMusicWidget() {
   if (Array.isArray(CONFIG.gallery)) {
     CONFIG.gallery.forEach(item => {
       if (typeof item.image === "string" && item.image.startsWith("blob:")) {
-        item.image = null;
+        item.image = item._localDraft || null;
       }
     });
   }

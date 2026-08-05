@@ -1622,11 +1622,11 @@ const MusicEngine = (() => {
         const startSec = parseYouTubeStartSec(fileOrUrl, CONFIG.music ? CONFIG.music.startTime : null);
         if (startSec > 0) {
           const seekHandler = () => {
-            if (startSec < el.duration) {
+            if (Number.isFinite(el.duration) && el.duration > 0 && startSec < el.duration) {
               el.currentTime = startSec;
             }
           };
-          if (el.readyState >= 1) {
+          if (el.readyState >= 1 && Number.isFinite(el.duration) && el.duration > 0) {
             seekHandler();
           } else {
             el.addEventListener("loadedmetadata", seekHandler, { once: true });
@@ -1638,6 +1638,7 @@ const MusicEngine = (() => {
         audioEl = new Audio(fileOrUrl);
         audioEl.loop = true;
         audioEl.volume = 0.5;
+        audioEl.load();
         applyAudioStartTime(audioEl);
         audioEl.addEventListener("error", (e) => {
           console.warn("Audio load error fallback:", e);
@@ -1645,11 +1646,13 @@ const MusicEngine = (() => {
             fileOrUrl = "assets/music/happy-birthday-song.mpeg";
             if (CONFIG.music) CONFIG.music.file = fileOrUrl;
             audioEl.src = fileOrUrl;
+            audioEl.load();
             audioEl.play().then(() => { playing = true; }).catch(() => {});
           }
         });
       } else if (audioEl.src !== fileOrUrl && !audioEl.src.endsWith(fileOrUrl)) {
         audioEl.src = fileOrUrl;
+        audioEl.load();
         applyAudioStartTime(audioEl);
       } else {
         applyAudioStartTime(audioEl);

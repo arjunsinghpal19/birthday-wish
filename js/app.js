@@ -1618,10 +1618,27 @@ const MusicEngine = (() => {
       const container = document.getElementById("yt-player-container");
       if (container) { container.innerHTML = ""; container.style.display = "none"; }
 
+      const applyAudioStartTime = (el) => {
+        const startSec = parseYouTubeStartSec(fileOrUrl, CONFIG.music ? CONFIG.music.startTime : null);
+        if (startSec > 0) {
+          const seekHandler = () => {
+            if (startSec < el.duration) {
+              el.currentTime = startSec;
+            }
+          };
+          if (el.readyState >= 1) {
+            seekHandler();
+          } else {
+            el.addEventListener("loadedmetadata", seekHandler, { once: true });
+          }
+        }
+      };
+
       if (!audioEl) {
         audioEl = new Audio(fileOrUrl);
         audioEl.loop = true;
         audioEl.volume = 0.5;
+        applyAudioStartTime(audioEl);
         audioEl.addEventListener("error", (e) => {
           console.warn("Audio load error fallback:", e);
           if (fileOrUrl !== "assets/music/happy-birthday-song.mpeg") {
@@ -1633,6 +1650,9 @@ const MusicEngine = (() => {
         });
       } else if (audioEl.src !== fileOrUrl && !audioEl.src.endsWith(fileOrUrl)) {
         audioEl.src = fileOrUrl;
+        applyAudioStartTime(audioEl);
+      } else {
+        applyAudioStartTime(audioEl);
       }
 
       audioEl.play().then(() => {

@@ -5812,6 +5812,7 @@ async function initCustomizerModal() {
     galleryEmojis.forEach((el, i) => {
       gallery.push({
         image: CONFIG.gallery[i]?.image || null,
+        _localDraft: CONFIG.gallery[i]?._localDraft || null,
         emoji: el.value.trim() || CONFIG.gallery[i]?.emoji || "🎈",
         rot: CONFIG.gallery[i]?.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
         cap: galleryCaps[i]?.value.trim() || CONFIG.gallery[i]?.cap || "Memory",
@@ -6511,10 +6512,12 @@ function renderGalleryDeck() {
 function renderTimelineSection() {
   const tl = document.getElementById("timeline-wrap");
   if (tl) {
+    const postContent = document.getElementById("post-letter-content");
+    const isRevealed = Boolean(window.letterTyped || (postContent && !postContent.classList.contains("post-letter-hidden")));
     tl.innerHTML = "";
     CONFIG.timeline.forEach((t, i) => {
       const el = document.createElement("div");
-      el.className = "timeline-item reveal";
+      el.className = isRevealed ? "timeline-item reveal in-view" : "timeline-item reveal";
       el.dataset.icon = t.icon;
       el.style.setProperty("--i", i);
       el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;

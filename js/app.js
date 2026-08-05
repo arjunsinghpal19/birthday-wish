@@ -5601,19 +5601,33 @@ async function initCustomizerModal() {
     // Video Wish
     const vidUrlInput = document.getElementById("input-video-url");
     if (vidUrlInput) {
-      vidUrlInput.value = CONFIG.videoWish?.url || "";
+      vidUrlInput.value = (CONFIG.videoWish?.url && !CONFIG.videoWish.url.startsWith("blob:")) ? CONFIG.videoWish.url : "";
     }
     const vidStartInput = document.getElementById("input-video-start");
     if (vidStartInput) {
       vidStartInput.value = CONFIG.videoWish?.startTime || "";
     }
+
+    const hasCustomAudio = CONFIG.music?.file && (CONFIG.music.isBlob || (typeof CONFIG.music.file === "string" && CONFIG.music.file.startsWith("blob:")) || CONFIG.music.fileName);
     const audText = document.getElementById("audio-upload-text");
     if (audText) {
-      audText.textContent = (CONFIG.music?.file && CONFIG.music.isBlob) ? `🎙️ Attached: ${CONFIG.music.fileName || 'audio'}` : `🎙️ Select Audio / Voice Note`;
+      audText.textContent = hasCustomAudio ? `🎙️ Attached: ${(CONFIG.music.fileName || 'audio').substring(0, 18)}` : `🎙️ Select Audio / Voice Note`;
     }
+
+    const hasCustomVid = CONFIG.videoWish?.file || (typeof CONFIG.videoWish?.url === "string" && CONFIG.videoWish.url.startsWith("blob:")) || CONFIG.videoWish?.fileName;
     const vidText = document.getElementById("video-upload-text");
     if (vidText) {
-      vidText.textContent = (CONFIG.videoWish?.file) ? `📹 Attached: ${CONFIG.videoWish.fileName || 'video'}` : `📹 Select Video from Device`;
+      vidText.textContent = hasCustomVid ? `📹 Attached: ${(CONFIG.videoWish.fileName || 'video').substring(0, 18)}` : `📹 Select Video from Device`;
+    }
+
+    const audRemoveBtn = document.getElementById("remove-audio-file-btn");
+    if (audRemoveBtn) {
+      audRemoveBtn.style.display = hasCustomAudio ? "inline-block" : "none";
+    }
+
+    const vidRemoveBtn = document.getElementById("remove-video-file-btn");
+    if (vidRemoveBtn) {
+      vidRemoveBtn.style.display = hasCustomVid ? "inline-block" : "none";
     }
 
     const cakeFlavorSelect = document.getElementById("input-cake-flavor");
@@ -7231,6 +7245,10 @@ function initMusicWidget() {
         CONFIG.music = { file: blobUrl, isBlob: true, fileName: audioName };
         if (audUploadText) audUploadText.textContent = `🎙️ Attached: ${audioName.substring(0, 18)}`;
         if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
+        if (MusicEngine.isPlaying()) {
+          MusicEngine.pause();
+          MusicEngine.play();
+        }
       }
     } catch(e){}
   }

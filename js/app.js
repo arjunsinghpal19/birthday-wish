@@ -5268,6 +5268,13 @@ async function initCustomizerModal() {
             fileName: runtimeVideo.fileName || (parsed.videoWish && parsed.videoWish.fileName)
           };
         }
+        if (Array.isArray(CONFIG.gallery)) {
+          CONFIG.gallery.forEach(item => {
+            if (typeof item.image === "string" && item.image.startsWith("blob:")) {
+              item.image = null;
+            }
+          });
+        }
       }
     } catch(e){}
   }
@@ -6169,6 +6176,13 @@ async function initCustomizerModal() {
       if (typeof saveData.videoWish.url === "string" && saveData.videoWish.url.startsWith("blob:")) {
         saveData.videoWish.url = "";
       }
+    }
+    if (Array.isArray(saveData.gallery)) {
+      saveData.gallery.forEach(item => {
+        if (typeof item.image === "string" && item.image.startsWith("blob:")) {
+          item.image = null;
+        }
+      });
     }
     localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
 
@@ -7268,6 +7282,14 @@ function initMusicWidget() {
         }
       } catch(e){}
     }
+  }
+
+  if (Array.isArray(CONFIG.gallery)) {
+    CONFIG.gallery.forEach(item => {
+      if (typeof item.image === "string" && item.image.startsWith("blob:")) {
+        item.image = null;
+      }
+    });
   }
 
   repairStaticIcons();

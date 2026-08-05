@@ -6083,6 +6083,17 @@ async function initCustomizerModal() {
 
     // Save to localStorage
     const saveData = JSON.parse(JSON.stringify(CONFIG));
+    if (saveData.music && typeof saveData.music.file === "string" && saveData.music.file.startsWith("blob:")) {
+      saveData.music.file = "";
+    }
+    if (saveData.videoWish) {
+      if (typeof saveData.videoWish.file === "string" && saveData.videoWish.file.startsWith("blob:")) {
+        saveData.videoWish.file = "";
+      }
+      if (typeof saveData.videoWish.url === "string" && saveData.videoWish.url.startsWith("blob:")) {
+        saveData.videoWish.url = "";
+      }
+    }
     localStorage.setItem("custom_birthday_config", JSON.stringify(saveData));
 
     await updateShareSection();
@@ -7199,40 +7210,49 @@ function initMusicWidget() {
       CONFIG.videoWish = { url: "", startTime: "", file: null, fileName: null };
       renderVideoWishSection();
     }
-  } else {
-    // Shared wish link opened: Supabase Storage public HTTPS URLs are the ONE SOURCE OF TRUTH.
-    // Only check local IndexedDB if CONFIG.music.file or CONFIG.videoWish.url is not set.
-    if (!CONFIG.music?.file || CONFIG.music.file === "assets/music/happy-birthday-song.mpeg") {
-      try {
-        const savedAudioBlob = await AudioStorage.getAudio();
-        if (savedAudioBlob) {
-          revokeMediaBlobUrl(CONFIG.music?.file);
-          const blobUrl = URL.createObjectURL(savedAudioBlob);
-          CONFIG.music = { file: blobUrl, isBlob: true, fileName: savedAudioBlob.name };
-        }
-      } catch(e){}
-    }
-
-    if (!CONFIG.videoWish?.url && !CONFIG.videoWish?.file) {
-      try {
-        const savedVidBlob = await VideoStorage.getVideo();
-        if (savedVidBlob) {
-          revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);
-          const blobUrl = URL.createObjectURL(savedVidBlob);
-          CONFIG.videoWish = CONFIG.videoWish || {};
-          CONFIG.videoWish.file = blobUrl;
-          CONFIG.videoWish.url = blobUrl;
-          CONFIG.videoWish.fileName = savedVidBlob.name || "video.mp4";
-          renderVideoWishSection();
-        }
-      } catch(e){}
-    }
   }
 
-  // Audio / Voice Note file input listeners
+  // Audio & Video file input & UI elements
   const audFileInput = document.getElementById("input-audio-file");
   const audRemoveBtn = document.getElementById("remove-audio-file-btn");
   const audUploadText = document.getElementById("audio-upload-text");
+  const vidFileInput = document.getElementById("input-video-file");
+  const vidRemoveBtn = document.getElementById("remove-video-file-btn");
+  const vidUploadText = document.getElementById("video-upload-text");
+
+  // Restore local IndexedDB audio if unconfigured or pointing to invalid blob URL
+  if (!CONFIG.music?.file || CONFIG.music.file === "assets/music/happy-birthday-song.mpeg" || (typeof CONFIG.music.file === "string" && CONFIG.music.file.startsWith("blob:"))) {
+    try {
+      const savedAudioBlob = await AudioStorage.getAudio();
+      if (savedAudioBlob) {
+        revokeMediaBlobUrl(CONFIG.music?.file);
+        const blobUrl = URL.createObjectURL(savedAudioBlob);
+        const audioName = savedAudioBlob.name || CONFIG.music?.fileName || "audio.mp3";
+        CONFIG.music = { file: blobUrl, isBlob: true, fileName: audioName };
+        if (audUploadText) audUploadText.textContent = `🎙️ Attached: ${audioName.substring(0, 18)}`;
+        if (audRemoveBtn) audRemoveBtn.style.display = "inline-block";
+      }
+    } catch(e){}
+  }
+
+  // Restore local IndexedDB video if unconfigured or pointing to invalid blob URL
+  if (!CONFIG.videoWish?.url || (typeof CONFIG.videoWish.url === "string" && CONFIG.videoWish.url.startsWith("blob:"))) {
+    try {
+      const savedVidBlob = await VideoStorage.getVideo();
+      if (savedVidBlob) {
+        revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);
+        const blobUrl = URL.createObjectURL(savedVidBlob);
+        const vidName = savedVidBlob.name || CONFIG.videoWish?.fileName || "video.mp4";
+        CONFIG.videoWish = CONFIG.videoWish || {};
+        CONFIG.videoWish.file = blobUrl;
+        CONFIG.videoWish.url = blobUrl;
+        CONFIG.videoWish.fileName = vidName;
+        if (vidUploadText) vidUploadText.textContent = `📹 Attached: ${vidName.substring(0, 18)}`;
+        if (vidRemoveBtn) vidRemoveBtn.style.display = "inline-block";
+        renderVideoWishSection();
+      }
+    } catch(e){}
+  }
 
   if (audFileInput) {
     audFileInput.addEventListener("change", async (e) => {
@@ -7254,6 +7274,7 @@ function initMusicWidget() {
         CONFIG.music = { file: cloudUrl, isBlob: false, fileName: f.name };
         showToast("Audio / Voice note uploaded & saved to Cloud! ☁️🎙️");
       } else {
+        await AudioStorage.saveAudio(f);
         const blobUrl = URL.createObjectURL(f);
         CONFIG.music = { file: blobUrl, isBlob: true, fileName: f.name };
         showToast("Audio attached locally 🎙️");
@@ -7282,10 +7303,6 @@ function initMusicWidget() {
   }
 
   // Video file input listeners in customizer modal
-  const vidFileInput = document.getElementById("input-video-file");
-  const vidRemoveBtn = document.getElementById("remove-video-file-btn");
-  const vidUploadText = document.getElementById("video-upload-text");
-
   if (vidFileInput) {
     vidFileInput.addEventListener("change", async (e) => {
       const f = e.target.files[0];
@@ -7309,6 +7326,7 @@ function initMusicWidget() {
         CONFIG.videoWish.fileName = f.name;
         showToast("Video uploaded & saved to Cloud! ☁️📹");
       } else {
+        await VideoStorage.saveVideo(f);
         const blobUrl = URL.createObjectURL(f);
         CONFIG.videoWish.file = blobUrl;
         CONFIG.videoWish.url = blobUrl;

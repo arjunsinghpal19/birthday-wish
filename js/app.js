@@ -3872,35 +3872,38 @@ function encodeWishData(dataObj) {
       if (target.cakeFlavor && target.cakeFlavor !== "default") payload.cf = target.cakeFlavor;
       if (target.letterFont && target.letterFont !== "default") payload.lf = target.letterFont;
       if (target.letterTheme && target.letterTheme !== "default") payload.lt = target.letterTheme;
-      if (target.gift?.message && !target.gift.message.includes("This isn't much, but it's from the heart")) payload.gft = target.gift;
-      if (target.music?.file && typeof target.music.file === "string" && !target.music.file.startsWith("blob:") && target.music.file !== "assets/music/happy-birthday-song.mpeg") {
+      if (target.gift && typeof target.gift === "object") {
+        payload.gft = target.gift;
+      }
+      if (target.music?.file && typeof target.music.file === "string" && !target.music.file.startsWith("blob:")) {
         payload.msc = { f: target.music.file, t: target.music.startTime || "" };
       }
-      if (target.videoWish?.url) {
-        payload.v = { u: target.videoWish.url, t: target.videoWish.startTime || "" };
+      const vTarget = target.videoWish?.url || target.videoWish?.file || "";
+      if (vTarget && typeof vTarget === "string" && !vTarget.startsWith("blob:")) {
+        payload.v = { u: vTarget, t: target.videoWish?.startTime || "" };
       }
 
-      if (target.gallery && Array.isArray(target.gallery)) {
-        const defaultNotes = [
-          "Remember this day",
-          "Getting 50 photos",
-          "Half of the icing",
-          "Pure unscripted laughter",
-          "Here's to making this year"
-        ];
-        const customGallery = target.gallery.filter(item => {
-          const isCustomImage = item.image && (item.image.startsWith("http://") || item.image.startsWith("https://"));
-          const isCustomNote = item.secretNote && !defaultNotes.some(dn => item.secretNote.includes(dn));
-          return isCustomImage || isCustomNote;
-        });
-        if (customGallery.length > 0) {
-          payload.g = customGallery.map(item => ({
-            img: (item.image && (item.image.startsWith("http://") || item.image.startsWith("https://"))) ? item.image : null,
-            e: item.emoji || "🎈",
-            c: item.cap || "",
-            n: item.secretNote || ""
-          }));
-        }
+      if (target.letterLines && Array.isArray(target.letterLines) && target.letterLines.length > 0) {
+        payload.l = target.letterLines;
+      }
+      if (target.reasons && Array.isArray(target.reasons) && target.reasons.length > 0) {
+        payload.r = target.reasons;
+      }
+      if (target.wishes && Array.isArray(target.wishes) && target.wishes.length > 0) {
+        payload.w = target.wishes;
+      }
+      if (target.timeline && Array.isArray(target.timeline) && target.timeline.length > 0) {
+        payload.t = target.timeline;
+      }
+
+      if (target.gallery && Array.isArray(target.gallery) && target.gallery.length > 0) {
+        payload.g = target.gallery.map(item => ({
+          img: (item.image && typeof item.image === "string" && !item.image.startsWith("blob:")) ? item.image : null,
+          e: item.emoji || "🎈",
+          rot: item.rot || 0,
+          c: item.cap || "",
+          n: item.secretNote || ""
+        }));
       }
     } else {
       payload = { n: dataObj };
@@ -3998,52 +4001,38 @@ function buildPublishConfig(sourceConfig) {
     }
   }
 
-  // 9. Gallery Deck (Only if customized; strip out any local blob: URLs)
-  if (Array.isArray(src.gallery)) {
-    const isSameGallery = Array.isArray(def.gallery) &&
-      JSON.stringify(src.gallery) === JSON.stringify(def.gallery);
-    if (!isSameGallery) {
-      payload.gallery = src.gallery.map(item => ({
-        image: (item.image && typeof item.image === "string" && !item.image.startsWith("blob:")) ? item.image : null,
-        emoji: item.emoji || "🎈",
-        rot: item.rot || 0,
-        cap: item.cap || "",
-        secretNote: item.secretNote || ""
-      }));
-    }
+  // 9. Gallery Deck (Always preserve publishable items, stripping out local blob: URLs)
+  if (Array.isArray(src.gallery) && src.gallery.length > 0) {
+    payload.gallery = src.gallery.map(item => ({
+      image: (item.image && typeof item.image === "string" && !item.image.startsWith("blob:")) ? item.image : (item._localDraft || null),
+      emoji: item.emoji || "🎈",
+      rot: item.rot || 0,
+      cap: item.cap || "",
+      secretNote: item.secretNote || ""
+    }));
   }
 
-  // 10. Milestone Timeline (Only if customized from template default)
-  if (Array.isArray(src.timeline)) {
-    const isSameTimeline = Array.isArray(def.timeline) &&
-      JSON.stringify(src.timeline) === JSON.stringify(def.timeline);
-    if (!isSameTimeline) {
-      payload.timeline = JSON.parse(JSON.stringify(src.timeline));
-    }
+  // 10. Milestone Timeline (Always preserve timeline if present)
+  if (Array.isArray(src.timeline) && src.timeline.length > 0) {
+    payload.timeline = JSON.parse(JSON.stringify(src.timeline));
   }
 
-  // 11. Gift Section (Only if customized from template default)
+  // 11. Gift Section (Always preserve gift message & coupon if present)
   if (src.gift && typeof src.gift === "object") {
-    const isDefMsg = def.gift && src.gift.message === def.gift.message;
-    const isDefCpn = def.gift && src.gift.coupon === def.gift.coupon;
-    if (!isDefMsg || !isDefCpn) {
-      payload.gift = {
-        message: src.gift.message || "",
-        coupon: src.gift.coupon || ""
-      };
-    }
+    payload.gift = {
+      message: src.gift.message || "",
+      coupon: src.gift.coupon || ""
+    };
   }
 
   // 12. Remote Public Media URLs (Exclude local blob: URLs)
   if (src.music?.file && typeof src.music.file === "string" && !src.music.file.startsWith("blob:")) {
-    const isDefAudio = def.music && src.music.file === def.music.file;
-    if (!isDefAudio) {
-      payload.music = { file: src.music.file, startTime: src.music.startTime || "" };
-    }
+    payload.music = { file: src.music.file, startTime: src.music.startTime || "" };
   }
 
-  if (src.videoWish?.url && typeof src.videoWish.url === "string" && !src.videoWish.url.startsWith("blob:")) {
-    payload.videoWish = { url: src.videoWish.url, startTime: src.videoWish.startTime || "" };
+  const videoTarget = src.videoWish?.url || src.videoWish?.file || "";
+  if (videoTarget && typeof videoTarget === "string" && !videoTarget.startsWith("blob:")) {
+    payload.videoWish = { url: videoTarget, startTime: src.videoWish?.startTime || "" };
   }
 
   // 13. Styling Options (Only if customized from template default)
@@ -4213,10 +4202,11 @@ async function parseQueryParams() {
       if (decoded.g && Array.isArray(decoded.g) && decoded.g.length > 0) {
         CONFIG.gallery = decoded.g.map((item, i) => {
           const defaultCard = (window.DEFAULT_CONFIG_BACKUP && window.DEFAULT_CONFIG_BACKUP.gallery && window.DEFAULT_CONFIG_BACKUP.gallery[i]) || (CONFIG.gallery && CONFIG.gallery[i]) || {};
+          const imageVal = (item.img !== undefined) ? item.img : ((item.image !== undefined) ? item.image : (defaultCard.image || null));
           return {
-            image: item.img || item.image || defaultCard.image || `assets/images/polaroid-${(i % 6) + 1}.jpg`,
+            image: imageVal,
             emoji: item.e || item.emoji || defaultCard.emoji || "🎈",
-            rot: item.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+            rot: item.rot !== undefined ? item.rot : ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
             cap: item.c || item.cap || defaultCard.cap || "Memory",
             secretNote: item.n || item.secretNote || defaultCard.secretNote || ""
           };

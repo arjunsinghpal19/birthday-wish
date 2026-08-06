@@ -21,6 +21,10 @@
       const stored = localStorage.getItem(`custom_${key.toLowerCase()}`);
       if (stored) return stored;
     } catch (e) {}
+
+    if (key === "SUPABASE_URL") return "https://dvacxeooaqxwldszqpek.supabase.co";
+    if (key === "SUPABASE_ANON_KEY") return "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+
     return null;
   }
 

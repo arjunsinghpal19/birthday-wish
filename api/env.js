@@ -11,8 +11,8 @@ export default function handler(req, res) {
   res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  const supabaseUrl = process.env.SUPABASE_URL || "";
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
+  const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
+  const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
 
   res.status(200).send(`
     (function(window) {

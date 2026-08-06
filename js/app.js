@@ -6514,10 +6514,6 @@ function renderTimelineSection() {
   if (tl) {
     const postContent = document.getElementById("post-letter-content");
     const isRevealed = Boolean(window.letterTyped || (postContent && !postContent.classList.contains("post-letter-hidden")));
-    console.log("[TIMELINE DEBUG] window.letterTyped:", window.letterTyped);
-    console.log("[TIMELINE DEBUG] postContent:", postContent);
-    console.log("[TIMELINE DEBUG] postContent.classList:", postContent ? Array.from(postContent.classList) : []);
-    console.log("[TIMELINE DEBUG] isRevealed:", isRevealed);
 
     tl.innerHTML = "";
     CONFIG.timeline.forEach((t, i) => {
@@ -6528,8 +6524,9 @@ function renderTimelineSection() {
       el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
       tl.appendChild(el);
     });
-    updateTimelineLine();
-    setTimeout(updateTimelineLine, 300);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updateTimelineLine);
+    });
   }
 }
 

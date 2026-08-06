@@ -397,21 +397,7 @@ function populateContent() {
 
   const tl = document.getElementById("timeline-wrap");
 
-  CONFIG.timeline.forEach((t, i) => {
-
-    const el = document.createElement("div");
-
-    el.className = "timeline-item reveal";
-
-    el.dataset.icon = t.icon;
-
-    el.style.setProperty("--i", i);
-
-    el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
-
-    tl.appendChild(el);
-
-  });
+  renderTimelineSection();
 
   updateTimelineLine();
   setTimeout(updateTimelineLine, 300);
@@ -419,11 +405,12 @@ function populateContent() {
   window.addEventListener("resize", updateTimelineLine);
   window.addEventListener("load", updateTimelineLine);
 
-  if (window.ResizeObserver) {
+  if (window.ResizeObserver && !window.__timelineROInitialized) {
+    window.__timelineROInitialized = true;
     const ro = new ResizeObserver(() => {
       updateTimelineLine();
     });
-    ro.observe(tl);
+    if (tl) ro.observe(tl);
   }
 
   document.getElementById("gift-message").textContent = CONFIG.gift.message;
@@ -5629,6 +5616,9 @@ async function initCustomizerModal() {
         if (CONFIG.timeline.length > 1) {
           CONFIG.timeline.splice(idx, 1);
           renderTimelineInputs();
+          if (typeof renderSections === "function") {
+            renderSections(["timeline"]);
+          }
         } else {
           showToast("At least 1 milestone required 🕐");
         }

@@ -5760,60 +5760,80 @@ async function initCustomizerModal() {
     // Letter lines
     const letterInputs = document.querySelectorAll(".letter-line-input");
     const letterLines = [];
-    letterInputs.forEach((input, i) => {
-      letterLines.push(input.value.trim() || CONFIG.letterLines[i] || "");
-    });
+    if (letterInputs.length > 0) {
+      letterInputs.forEach((input, i) => {
+        letterLines.push(input.value.trim() || CONFIG.letterLines[i] || "");
+      });
+    } else {
+      letterLines.push(...(CONFIG.letterLines || []));
+    }
 
-    // Reasons (read from current inputs)
+    // Reasons (read from current inputs if rendered, otherwise preserve CONFIG)
     const reasonIcons = document.querySelectorAll(".reason-icon");
     const reasonTitles = document.querySelectorAll(".reason-title");
     const reasonTexts = document.querySelectorAll(".reason-text");
     const reasons = [];
-    reasonIcons.forEach((el, i) => {
-      reasons.push({
-        icon: el.value.trim() || CONFIG.reasons[i]?.icon || "💫",
-        title: reasonTitles[i]?.value.trim() || CONFIG.reasons[i]?.title || "Special",
-        text: reasonTexts[i]?.value.trim() || CONFIG.reasons[i]?.text || "",
+    if (reasonIcons.length > 0) {
+      reasonIcons.forEach((el, i) => {
+        reasons.push({
+          icon: el.value.trim() || CONFIG.reasons[i]?.icon || "💫",
+          title: reasonTitles[i]?.value.trim() || CONFIG.reasons[i]?.title || "Special",
+          text: reasonTexts[i]?.value.trim() || CONFIG.reasons[i]?.text || "",
+        });
       });
-    });
+    } else {
+      reasons.push(...(CONFIG.reasons || []));
+    }
 
-    // Wishes
+    // Wishes (read from current inputs if rendered, otherwise preserve CONFIG)
     const wishInputs = document.querySelectorAll(".wish-input");
     const wishes = [];
-    wishInputs.forEach((el, i) => {
-      wishes.push(el.value.trim() || CONFIG.wishes[i] || "");
-    });
+    if (wishInputs.length > 0) {
+      wishInputs.forEach((el, i) => {
+        wishes.push(el.value.trim() || CONFIG.wishes[i] || "");
+      });
+    } else {
+      wishes.push(...(CONFIG.wishes || []));
+    }
 
-    // Gallery (read from current inputs)
+    // Gallery (read from current inputs if rendered, otherwise preserve CONFIG)
     const galleryEmojis = document.querySelectorAll(".gallery-emoji");
     const galleryCaps = document.querySelectorAll(".gallery-cap");
     const galleryNotes = document.querySelectorAll(".gallery-note");
     const gallery = [];
-    galleryEmojis.forEach((el, i) => {
-      gallery.push({
-        image: CONFIG.gallery[i]?.image || null,
-        _localDraft: CONFIG.gallery[i]?._localDraft || null,
-        emoji: el.value.trim() || CONFIG.gallery[i]?.emoji || "🎈",
-        rot: CONFIG.gallery[i]?.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
-        cap: galleryCaps[i]?.value.trim() || CONFIG.gallery[i]?.cap || "Memory",
-        secretNote: galleryNotes[i]?.value.trim() || CONFIG.gallery[i]?.secretNote || "",
+    if (galleryEmojis.length > 0) {
+      galleryEmojis.forEach((el, i) => {
+        gallery.push({
+          image: CONFIG.gallery[i]?.image || null,
+          _localDraft: CONFIG.gallery[i]?._localDraft || null,
+          emoji: el.value.trim() || CONFIG.gallery[i]?.emoji || "🎈",
+          rot: CONFIG.gallery[i]?.rot || ((i % 2 === 0 ? -1 : 1) * (3 + i * 2)),
+          cap: galleryCaps[i]?.value.trim() || CONFIG.gallery[i]?.cap || "Memory",
+          secretNote: galleryNotes[i]?.value.trim() || CONFIG.gallery[i]?.secretNote || "",
+        });
       });
-    });
+    } else {
+      gallery.push(...(CONFIG.gallery || []));
+    }
 
-    // Timeline
+    // Timeline (read from current inputs if rendered, otherwise preserve CONFIG)
     const tlIcons = document.querySelectorAll(".timeline-icon");
     const tlDates = document.querySelectorAll(".timeline-date");
     const tlTitles = document.querySelectorAll(".timeline-title");
     const tlTexts = document.querySelectorAll(".timeline-text");
     const timeline = [];
-    tlIcons.forEach((el, i) => {
-      timeline.push({
-        icon: el.value.trim() || CONFIG.timeline[i]?.icon || "🌟",
-        date: tlDates[i]?.value.trim() || CONFIG.timeline[i]?.date || "",
-        title: tlTitles[i]?.value.trim() || CONFIG.timeline[i]?.title || "",
-        text: tlTexts[i]?.value.trim() || CONFIG.timeline[i]?.text || "",
+    if (tlIcons.length > 0) {
+      tlIcons.forEach((el, i) => {
+        timeline.push({
+          icon: el.value.trim() || CONFIG.timeline[i]?.icon || "🌟",
+          date: tlDates[i]?.value.trim() || CONFIG.timeline[i]?.date || "",
+          title: tlTitles[i]?.value.trim() || CONFIG.timeline[i]?.title || "",
+          text: tlTexts[i]?.value.trim() || CONFIG.timeline[i]?.text || "",
+        });
       });
-    });
+    } else {
+      timeline.push(...(CONFIG.timeline || []));
+    }
 
     const cakeFlavor = document.getElementById("input-cake-flavor")?.value || "default";
     const letterFont = document.getElementById("input-letter-font")?.value || "default";
@@ -5831,12 +5851,26 @@ async function initCustomizerModal() {
     CONFIG.passcode.code = vals.nameVal ? vals.passVal : "1234";
     CONFIG.from = vals.fromVal;
     CONFIG.memory = vals.memoryVal;
-    CONFIG.letterLines = vals.letterLines;
-    CONFIG.reasons = vals.reasons;
-    CONFIG.wishes = vals.wishes;
-    CONFIG.gallery = vals.gallery;
-    CONFIG.timeline = vals.timeline;
-    CONFIG.gift = { message: vals.giftMsg, coupon: vals.giftCoupon };
+
+    if (Array.isArray(vals.letterLines) && vals.letterLines.length > 0) {
+      CONFIG.letterLines = vals.letterLines;
+    }
+    if (Array.isArray(vals.reasons) && vals.reasons.length > 0) {
+      CONFIG.reasons = vals.reasons;
+    }
+    if (Array.isArray(vals.wishes) && vals.wishes.length > 0) {
+      CONFIG.wishes = vals.wishes;
+    }
+    if (Array.isArray(vals.gallery) && vals.gallery.length > 0) {
+      CONFIG.gallery = vals.gallery;
+    }
+    if (Array.isArray(vals.timeline) && vals.timeline.length > 0) {
+      CONFIG.timeline = vals.timeline;
+    }
+    CONFIG.gift = {
+      message: vals.giftMsg || CONFIG.gift?.message || "",
+      coupon: vals.giftCoupon || CONFIG.gift?.coupon || ""
+    };
     CONFIG.cakeFlavor = vals.cakeFlavor;
     CONFIG.letterFont = vals.letterFont;
     CONFIG.letterTheme = vals.letterTheme;
@@ -5844,16 +5878,22 @@ async function initCustomizerModal() {
     if (vals.secAnsVal) localStorage.setItem("custom_secret_answer", vals.secAnsVal);
 
     if (vals.musicUrlVal) {
-      CONFIG.music = { file: vals.musicUrlVal, startTime: vals.musicStartVal };
+      CONFIG.music = CONFIG.music || {};
+      CONFIG.music.file = vals.musicUrlVal;
+      if (vals.musicStartVal !== undefined) CONFIG.music.startTime = vals.musicStartVal;
     } else if (!CONFIG.music || !CONFIG.music.file) {
-      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: vals.musicStartVal };
+      CONFIG.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: vals.musicStartVal || "" };
     } else {
-      CONFIG.music.startTime = vals.musicStartVal;
+      if (vals.musicStartVal !== undefined) CONFIG.music.startTime = vals.musicStartVal;
     }
 
     CONFIG.videoWish = CONFIG.videoWish || {};
-    CONFIG.videoWish.url = vals.videoUrlVal;
-    CONFIG.videoWish.startTime = vals.videoStartVal;
+    if (vals.videoUrlVal) {
+      CONFIG.videoWish.url = vals.videoUrlVal;
+    }
+    if (vals.videoStartVal !== undefined) {
+      CONFIG.videoWish.startTime = vals.videoStartVal;
+    }
 
     // Smart Partial Rendering: only dispatch renderers for sections whose values changed
     if (changedSections.length > 0) {
@@ -6119,7 +6159,9 @@ async function initCustomizerModal() {
     if (e.target === backdrop) backdrop.classList.remove("active");
   });
 
-  function handleSaveGuard() {
+  window.pendingUploadsMap = window.pendingUploadsMap || new Map();
+
+  async function handleSaveGuard() {
     if (typeof window.isCurrentBirthdateValid === "function" && !window.isCurrentBirthdateValid()) {
       const bDateDisplay = document.getElementById("input-birthdate-display");
       if (bDateDisplay) {
@@ -6140,12 +6182,20 @@ async function initCustomizerModal() {
       showToast("Please enter a valid calendar date.");
       return false;
     }
+
+    if (window.pendingUploadsMap && window.pendingUploadsMap.size > 0) {
+      showToast("⏳ Uploading media files to cloud... Please wait ✨");
+      try {
+        await Promise.all(Array.from(window.pendingUploadsMap.values()));
+      } catch(err){}
+    }
+
     return true;
   }
 
   // ─── SAVE ───
   saveBtn.addEventListener("click", async () => {
-    if (!handleSaveGuard()) return;
+    if (!(await handleSaveGuard())) return;
 
     const values = readAllValues();
     applyAllValues(values);
@@ -6183,13 +6233,13 @@ async function initCustomizerModal() {
   // ─── SHARE LINK ───
   if (shareLinkBtn) {
     shareLinkBtn.addEventListener("click", async () => {
-      if (!handleSaveGuard()) return;
+      if (!(await handleSaveGuard())) return;
 
       const values = readAllValues();
       applyAllValues(values);
       await updateShareSection();
 
-      const customUrl = await buildRecipientShareUrl(values.nameVal);
+      const customUrl = await buildRecipientShareUrl(values.nameVal, { persist: true });
       const recipientName = values.nameVal || "Friend";
 
       // Visual Button Feedback
@@ -6226,7 +6276,7 @@ async function initCustomizerModal() {
         const waBtn = document.getElementById("share-whatsapp-btn");
         if (waBtn) {
           waBtn.onclick = async () => {
-            const currentUrl = await buildRecipientShareUrl(values.nameVal);
+            const currentUrl = await buildRecipientShareUrl(values.nameVal, { persist: true });
             const trimmedName = (recipientName || "").trim();
             let greetingHeader = "Hey! 🎂✨";
             if (trimmedName && trimmedName !== "Friend") {
@@ -6243,7 +6293,7 @@ async function initCustomizerModal() {
         const nativeBtn = document.getElementById("share-native-btn");
         if (nativeBtn) {
           nativeBtn.onclick = async () => {
-            const currentUrl = await buildRecipientShareUrl(values.nameVal);
+            const currentUrl = await buildRecipientShareUrl(values.nameVal, { persist: true });
             if (navigator.share) {
               try {
                 await navigator.share({
@@ -6877,7 +6927,7 @@ function isHostedOnline() {
 
 }
 
-async function buildRecipientShareUrl(overrideName) {
+async function buildRecipientShareUrl(overrideName, options = { persist: false }) {
   const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
   let baseUrl = location.origin + location.pathname;
   if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
@@ -6892,7 +6942,7 @@ async function buildRecipientShareUrl(overrideName) {
 
   // Try generating short UUID link via ShareModule
   if (window.ShareModule) {
-    const uuidUrl = await window.ShareModule.buildShareUrl(publishConfig, nameVal);
+    const uuidUrl = await window.ShareModule.buildShareUrl(publishConfig, nameVal, options);
     if (uuidUrl) return uuidUrl;
   }
 
@@ -6920,7 +6970,7 @@ async function buildRecipientShareUrl(overrideName) {
 }
 
 async function updateShareSection() {
-  const fullShareUrl = await buildRecipientShareUrl();
+  const fullShareUrl = await buildRecipientShareUrl(undefined, { persist: false });
   const nameVal = (CONFIG.name || "").trim();
   let qrTargetUrl = fullShareUrl;
 
@@ -6998,7 +7048,7 @@ function initShare() {
   const copyBtn = document.getElementById("copy-link-btn");
   if (copyBtn) {
     copyBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl();
+      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
 
@@ -7028,7 +7078,7 @@ function initShare() {
   const shareBtn = document.getElementById("native-share-btn");
   if (shareBtn) {
     shareBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl();
+      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
@@ -7055,7 +7105,7 @@ function initShare() {
   const waBtn = document.getElementById("whatsapp-share-btn");
   if (waBtn) {
     waBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl();
+      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
@@ -7224,7 +7274,7 @@ function initMusicWidget() {
     try { await document.fonts.ready; } catch(e){}
   }
 
-  parseQueryParams();
+  await parseQueryParams();
 
   const searchParams = new URLSearchParams(location.search);
   const hasRecipientParams = searchParams.has("name") || searchParams.has("w");
@@ -7378,11 +7428,26 @@ function initMusicWidget() {
       console.log("🔊 STEP 1 - CONFIG.music BEFORE UPLOAD:", JSON.stringify(CONFIG.music));
       showToast("Uploading audio to Supabase Storage... ☁️");
 
-      let cloudUrl = null;
-      if (window.StorageModule) {
-        cloudUrl = await window.StorageModule.uploadMedia(f, "audio");
+      const uploadId = "audio_" + Date.now();
+      const uploadPromise = (async () => {
+        let cloudUrl = null;
+        if (window.StorageModule) {
+          cloudUrl = await window.StorageModule.uploadMedia(f, "audio");
+        }
+        return { cloudUrl, f };
+      })();
+
+      window.pendingUploadsMap = window.pendingUploadsMap || new Map();
+      window.pendingUploadsMap.set(uploadId, uploadPromise);
+
+      let result = null;
+      try {
+        result = await uploadPromise;
+      } finally {
+        window.pendingUploadsMap.delete(uploadId);
       }
 
+      const cloudUrl = result ? result.cloudUrl : null;
       console.log("☁️ STEP 1 - Storage upload audio public URL:", cloudUrl);
 
       revokeMediaBlobUrl(CONFIG.music?.file);
@@ -7427,11 +7492,26 @@ function initMusicWidget() {
       console.log("📹 STEP 2 - CONFIG.videoWish BEFORE UPLOAD:", JSON.stringify(CONFIG.videoWish));
       showToast("Uploading video to Supabase Storage... ☁️");
 
-      let cloudUrl = null;
-      if (window.StorageModule) {
-        cloudUrl = await window.StorageModule.uploadMedia(f, "videos");
+      const uploadId = "video_" + Date.now();
+      const uploadPromise = (async () => {
+        let cloudUrl = null;
+        if (window.StorageModule) {
+          cloudUrl = await window.StorageModule.uploadMedia(f, "videos");
+        }
+        return { cloudUrl, f };
+      })();
+
+      window.pendingUploadsMap = window.pendingUploadsMap || new Map();
+      window.pendingUploadsMap.set(uploadId, uploadPromise);
+
+      let result = null;
+      try {
+        result = await uploadPromise;
+      } finally {
+        window.pendingUploadsMap.delete(uploadId);
       }
 
+      const cloudUrl = result ? result.cloudUrl : null;
       console.log("☁️ STEP 2 - Storage upload video public URL:", cloudUrl);
 
       revokeMediaBlobUrl(CONFIG.videoWish?.file || CONFIG.videoWish?.url);

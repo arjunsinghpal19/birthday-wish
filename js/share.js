@@ -16,15 +16,16 @@
    * @param {string} [overrideName] - Optional override recipient name.
    * @returns {Promise<string>} Fully formatted public share URL.
    */
-  async function generateShareableUrl(configObj, overrideName) {
+  async function generateShareableUrl(configObj, overrideName, options = { persist: false }) {
+    const shouldPersist = typeof options === "boolean" ? options : !!(options && options.persist);
     const nameVal = (overrideName !== undefined ? overrideName : (configObj.name || "")).trim();
     let baseUrl = location.origin + location.pathname;
     if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
       baseUrl = location.href.split("?")[0];
     }
 
-    // Try saving to Supabase DB first
-    if (window.DatabaseModule) {
+    // Save to Supabase DB ONLY when explicit persistence is requested
+    if (shouldPersist && window.DatabaseModule) {
       const uuid = await window.DatabaseModule.saveWish(configObj);
       if (uuid) {
         let url = `${baseUrl}?w=${uuid}`;
@@ -33,7 +34,7 @@
       }
     }
 
-    // Fallback to legacy Base64 URL encoding
+    // Client-side preview / non-persisted Base64 URL encoding
     if (typeof window.encodeWishData === "function") {
       const token = window.encodeWishData(configObj);
       if (token) {

@@ -3968,14 +3968,9 @@ function buildPublishConfig(sourceConfig) {
     payload.passcode = { code: src.passcode.code };
   }
 
-  // 5. Letter Lines (Only if customized from template default)
+  // 5. Letter Lines (Always publish if present)
   if (Array.isArray(src.letterLines)) {
-    const isSameLines = Array.isArray(def.letterLines) &&
-      src.letterLines.length === def.letterLines.length &&
-      src.letterLines.every((line, idx) => line === def.letterLines[idx]);
-    if (!isSameLines) {
-      payload.letterLines = [ ...src.letterLines ];
-    }
+    payload.letterLines = [ ...src.letterLines ];
   }
 
   // 6. Memory Paragraph (Only if customized from template default)
@@ -3983,22 +3978,14 @@ function buildPublishConfig(sourceConfig) {
     payload.memory = src.memory;
   }
 
-  // 7. Reasons Grid (Only if customized from template default)
+  // 7. Reasons Grid (Always publish if present)
   if (Array.isArray(src.reasons)) {
-    const isSameReasons = Array.isArray(def.reasons) &&
-      JSON.stringify(src.reasons) === JSON.stringify(def.reasons);
-    if (!isSameReasons) {
-      payload.reasons = JSON.parse(JSON.stringify(src.reasons));
-    }
+    payload.reasons = JSON.parse(JSON.stringify(src.reasons));
   }
 
-  // 8. Wishes Array (Only if customized from template default)
+  // 8. Wishes Array (Always publish if present)
   if (Array.isArray(src.wishes)) {
-    const isSameWishes = Array.isArray(def.wishes) &&
-      JSON.stringify(src.wishes) === JSON.stringify(def.wishes);
-    if (!isSameWishes) {
-      payload.wishes = [ ...src.wishes ];
-    }
+    payload.wishes = [ ...src.wishes ];
   }
 
   // 9. Gallery Deck (Always preserve publishable items, stripping out local blob: URLs)
@@ -5256,10 +5243,122 @@ async function initCustomizerModal() {
     } catch(e){}
   }
 
+  // ─── EDITOR STATE SYNCHRONIZATION ───
+  function syncDOMToConfig() {
+    // 1. Basic / Main Form Fields
+    const nameEl = document.getElementById("input-name");
+    if (nameEl) {
+      const rawName = nameEl.value.trim();
+      CONFIG.name = rawName ? formatName(rawName) : "";
+      if (CONFIG.passcode) {
+        const passEl = document.getElementById("input-passcode");
+        CONFIG.passcode.code = CONFIG.name ? (passEl ? passEl.value.trim() : "1234") : "1234";
+      }
+    }
+    const fromEl = document.getElementById("input-from");
+    if (fromEl) CONFIG.from = fromEl.value;
+
+    const memEl = document.getElementById("input-memory");
+    if (memEl) CONFIG.memory = memEl.value;
+
+    const gMsgEl = document.getElementById("input-gift-message");
+    const gCpnEl = document.getElementById("input-gift-coupon");
+    if (gMsgEl || gCpnEl) {
+      CONFIG.gift = {
+        message: gMsgEl ? gMsgEl.value : (CONFIG.gift?.message || ""),
+        coupon: gCpnEl ? gCpnEl.value : (CONFIG.gift?.coupon || "")
+      };
+    }
+
+    const musUrlEl = document.getElementById("input-music-url");
+    const musStartEl = document.getElementById("input-music-start");
+    if (musUrlEl && musUrlEl.value.trim()) {
+      CONFIG.music = CONFIG.music || {};
+      CONFIG.music.file = musUrlEl.value.trim();
+      if (musStartEl) CONFIG.music.startTime = musStartEl.value.trim();
+    } else if (musStartEl && CONFIG.music) {
+      CONFIG.music.startTime = musStartEl.value.trim();
+    }
+
+    const vidUrlEl = document.getElementById("input-video-url");
+    const vidStartEl = document.getElementById("input-video-start");
+    if (vidUrlEl || vidStartEl) {
+      CONFIG.videoWish = CONFIG.videoWish || {};
+      if (vidUrlEl && vidUrlEl.value.trim()) CONFIG.videoWish.url = vidUrlEl.value.trim();
+      if (vidStartEl) CONFIG.videoWish.startTime = vidStartEl.value.trim();
+    }
+
+    // 2. Letter Lines
+    const letterInputs = document.querySelectorAll(".letter-line-input");
+    if (letterInputs.length > 0) {
+      letterInputs.forEach((input, i) => {
+        if (CONFIG.letterLines[i] !== undefined) {
+          CONFIG.letterLines[i] = input.value;
+        }
+      });
+    }
+
+    // 3. Reasons
+    const reasonIcons = document.querySelectorAll(".reason-icon");
+    const reasonTitles = document.querySelectorAll(".reason-title");
+    const reasonTexts = document.querySelectorAll(".reason-text");
+    if (reasonIcons.length > 0) {
+      reasonIcons.forEach((el, i) => {
+        if (!CONFIG.reasons[i]) {
+          CONFIG.reasons[i] = { icon: "💫", title: "", text: "" };
+        }
+        CONFIG.reasons[i].icon = el.value;
+        if (reasonTitles[i]) CONFIG.reasons[i].title = reasonTitles[i].value;
+        if (reasonTexts[i]) CONFIG.reasons[i].text = reasonTexts[i].value;
+      });
+    }
+
+    // 4. Wishes
+    const wishInputs = document.querySelectorAll(".wish-input");
+    if (wishInputs.length > 0) {
+      wishInputs.forEach((el, i) => {
+        CONFIG.wishes[i] = el.value;
+      });
+    }
+
+    // 5. Gallery
+    const galleryEmojis = document.querySelectorAll(".gallery-emoji");
+    const galleryCaps = document.querySelectorAll(".gallery-cap");
+    const galleryNotes = document.querySelectorAll(".gallery-note");
+    if (galleryEmojis.length > 0) {
+      galleryEmojis.forEach((el, i) => {
+        if (!CONFIG.gallery[i]) {
+          CONFIG.gallery[i] = { image: null, emoji: "🎈", rot: 0, cap: "", secretNote: "" };
+        }
+        CONFIG.gallery[i].emoji = el.value;
+        if (galleryCaps[i]) CONFIG.gallery[i].cap = galleryCaps[i].value;
+        if (galleryNotes[i]) CONFIG.gallery[i].secretNote = galleryNotes[i].value;
+      });
+    }
+
+    // 6. Timeline
+    const tlIcons = document.querySelectorAll(".timeline-icon");
+    const tlDates = document.querySelectorAll(".timeline-date");
+    const tlTitles = document.querySelectorAll(".timeline-title");
+    const tlTexts = document.querySelectorAll(".timeline-text");
+    if (tlIcons.length > 0) {
+      tlIcons.forEach((el, i) => {
+        if (!CONFIG.timeline[i]) {
+          CONFIG.timeline[i] = { icon: "🌟", date: "", title: "", text: "" };
+        }
+        CONFIG.timeline[i].icon = el.value;
+        if (tlDates[i]) CONFIG.timeline[i].date = tlDates[i].value;
+        if (tlTitles[i]) CONFIG.timeline[i].title = tlTitles[i].value;
+        if (tlTexts[i]) CONFIG.timeline[i].text = tlTexts[i].value;
+      });
+    }
+  }
+
   // ─── ACCORDION TOGGLE ───
   function initAccordion() {
     document.querySelectorAll(".editor-section-header").forEach(header => {
       header.addEventListener("click", () => {
+        syncDOMToConfig();
         const body = header.nextElementSibling;
         const wasOpen = header.classList.contains("active");
         // Close all sections
@@ -5271,6 +5370,18 @@ async function initCustomizerModal() {
         if (!wasOpen) {
           header.classList.add("active");
           body.classList.add("open");
+
+          requestAnimationFrame(() => {
+            const editorBody = document.getElementById("editor-body");
+            if (editorBody) {
+              const relativeTop = header.getBoundingClientRect().top - editorBody.getBoundingClientRect().top;
+              const targetScrollTop = editorBody.scrollTop + relativeTop - 8;
+              editorBody.scrollTo({
+                top: Math.max(0, targetScrollTop),
+                behavior: "smooth"
+              });
+            }
+          });
         }
       });
     });
@@ -5338,6 +5449,7 @@ async function initCustomizerModal() {
     // Bind delete buttons
     container.querySelectorAll(".item-delete-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        syncDOMToConfig();
         const idx = parseInt(btn.dataset.index);
         if (CONFIG.reasons.length > 1) {
           CONFIG.reasons.splice(idx, 1);
@@ -5372,6 +5484,7 @@ async function initCustomizerModal() {
     });
     container.querySelectorAll(".item-delete-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        syncDOMToConfig();
         const idx = parseInt(btn.dataset.index);
         if (CONFIG.wishes.length > 1) {
           CONFIG.wishes.splice(idx, 1);
@@ -5553,6 +5666,7 @@ async function initCustomizerModal() {
     // Bind delete item
     container.querySelectorAll(".item-delete-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        syncDOMToConfig();
         const idx = parseInt(btn.dataset.index);
         if (CONFIG.gallery.length > 1) {
           CONFIG.gallery.splice(idx, 1);
@@ -5602,6 +5716,7 @@ async function initCustomizerModal() {
     });
     container.querySelectorAll(".item-delete-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        syncDOMToConfig();
         const idx = parseInt(btn.dataset.index);
         if (CONFIG.timeline.length > 1) {
           CONFIG.timeline.splice(idx, 1);
@@ -6211,6 +6326,7 @@ async function initCustomizerModal() {
   }
 
   document.getElementById("add-reason-btn").addEventListener("click", () => {
+    syncDOMToConfig();
     CONFIG.reasons.push({ icon: "💫", title: "New Reason", text: "Write something special..." });
     renderReasonInputs();
     if (typeof renderSections === "function") {
@@ -6220,12 +6336,14 @@ async function initCustomizerModal() {
   });
 
   document.getElementById("add-wish-btn").addEventListener("click", () => {
+    syncDOMToConfig();
     CONFIG.wishes.push("Write a beautiful birthday wish...");
     renderWishInputs();
     focusAndScrollNewItem(document.getElementById("wishes-inputs-container"));
   });
 
   document.getElementById("add-gallery-btn").addEventListener("click", () => {
+    syncDOMToConfig();
     CONFIG.gallery.push({
       image: null, emoji: "🎈", rot: Math.floor(Math.random() * 12 - 6),
       cap: "New Memory", secretNote: "A special moment ❤️"
@@ -6235,8 +6353,12 @@ async function initCustomizerModal() {
   });
 
   document.getElementById("add-timeline-btn").addEventListener("click", () => {
+    syncDOMToConfig();
     CONFIG.timeline.push({ icon: "🌟", date: "Some time", title: "New Milestone", text: "Write about this moment..." });
     renderTimelineInputs();
+    if (typeof renderSections === "function") {
+      renderSections(["timeline"]);
+    }
     focusAndScrollNewItem(document.getElementById("timeline-inputs-container"));
   });
 
@@ -6660,6 +6782,7 @@ function renderTimelineSection() {
     requestAnimationFrame(() => {
       requestAnimationFrame(updateTimelineLine);
     });
+    window.RENDERED_TIMELINE_JSON = JSON.stringify(CONFIG.timeline);
   }
 }
 
@@ -6770,7 +6893,8 @@ function detectChangedSections(prevConfig, newVals) {
   const prevGalleryJson = window.RENDERED_GALLERY_JSON || JSON.stringify(prevConfig.gallery || []);
   if (prevGalleryJson !== JSON.stringify(newVals.gallery || [])) changed.push("gallery");
 
-  if (JSON.stringify(prevConfig.timeline || []) !== JSON.stringify(newVals.timeline || [])) changed.push("timeline");
+  const prevTimelineJson = window.RENDERED_TIMELINE_JSON || JSON.stringify(prevConfig.timeline || []);
+  if (prevTimelineJson !== JSON.stringify(newVals.timeline || [])) changed.push("timeline");
 
   const giftMsgChanged = (prevConfig.gift?.message || "") !== (newVals.giftMsg || "");
   const giftCpnChanged = (prevConfig.gift?.coupon || "") !== (newVals.giftCoupon || "");

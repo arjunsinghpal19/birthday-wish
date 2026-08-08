@@ -6070,6 +6070,109 @@ async function initCustomizerModal() {
     });
   });
 
+  // Helper: Detect meaningful unsaved editor data
+  function hasUnsavedChanges() {
+    if (!window.DEFAULT_CONFIG_BACKUP) return false;
+    const def = window.DEFAULT_CONFIG_BACKUP;
+    const currentVals = readAllValues();
+
+    if (currentVals.nameVal && currentVals.nameVal.trim() !== (def.name || "").trim()) return true;
+    if (currentVals.passcodeVal && currentVals.passcodeVal.trim() !== (def.passcode?.code || "1234").trim()) return true;
+    if (currentVals.fromVal && currentVals.fromVal.trim() !== (def.from || "").trim()) return true;
+    if (currentVals.letterVal && currentVals.letterVal.trim() !== (def.letterLines || []).join("\n").trim()) return true;
+
+    try {
+      if (localStorage.getItem("custom_birthday_config")) return true;
+    } catch(e) {}
+
+    if (CONFIG.reasons?.length !== def.reasons?.length) return true;
+    if (CONFIG.wishes?.length !== def.wishes?.length) return true;
+    if (CONFIG.timeline?.length !== def.timeline?.length) return true;
+    if (CONFIG.gallery?.length !== def.gallery?.length) return true;
+
+    return false;
+  }
+
+  // Helper: Create a completely fresh New Wish draft (0 DB calls)
+  function resetToFreshNewWish() {
+    if (!window.DEFAULT_CONFIG_BACKUP) return;
+
+    // 1. Deep clone clean default backup into CONFIG
+    const cleanDef = JSON.parse(JSON.stringify(window.DEFAULT_CONFIG_BACKUP));
+    Object.keys(CONFIG).forEach(k => delete CONFIG[k]);
+    Object.assign(CONFIG, cleanDef);
+
+    // 2. Clear localStorage draft keys
+    try {
+      localStorage.removeItem("custom_birthday_config");
+      localStorage.removeItem("custom_secret_question");
+      localStorage.removeItem("custom_secret_answer");
+    } catch(e) {}
+
+    // 3. Clear audio/video storage & revoke media blob URLs
+    if (window.AudioStorage && typeof window.AudioStorage.removeAudio === "function") {
+      window.AudioStorage.removeAudio();
+    }
+    if (window.VideoStorage && typeof window.VideoStorage.removeVideo === "function") {
+      window.VideoStorage.removeVideo();
+    }
+    if (typeof revokeMediaBlobUrl === "function") {
+      revokeMediaBlobUrl(CONFIG.music?.file);
+      revokeMediaBlobUrl(CONFIG.videoWish?.url);
+    }
+
+    // Clear pending uploads
+    if (window.pendingUploadsMap) {
+      window.pendingUploadsMap.clear();
+    }
+
+    // 4. Re-render customizer fields cleanly
+    populateEditorFields();
+
+    // 5. Re-render main application DOM sections
+    const displayName = CONFIG.name ? formatName(CONFIG.name) : "";
+    renderSections(ALL_SECTION_KEYS, displayName);
+
+    showToast("Started a brand new birthday wish! ✨");
+  }
+
+  // ─── + NEW WISH BUTTON HANDLERS ───
+  const newWishBtn = document.getElementById("new-wish-btn");
+  const newWishModal = document.getElementById("new-wish-confirm-modal");
+  const btnNewWishConfirm = document.getElementById("btn-new-wish-confirm");
+  const btnNewWishCancel = document.getElementById("btn-new-wish-cancel");
+
+  if (newWishBtn) {
+    newWishBtn.addEventListener("click", () => {
+      if (hasUnsavedChanges()) {
+        if (newWishModal) newWishModal.style.display = "flex";
+      } else {
+        resetToFreshNewWish();
+      }
+    });
+  }
+
+  if (btnNewWishCancel && newWishModal) {
+    btnNewWishCancel.addEventListener("click", () => {
+      newWishModal.style.display = "none";
+    });
+  }
+
+  if (btnNewWishConfirm && newWishModal) {
+    btnNewWishConfirm.addEventListener("click", () => {
+      newWishModal.style.display = "none";
+      resetToFreshNewWish();
+    });
+  }
+
+  if (newWishModal) {
+    newWishModal.addEventListener("click", (e) => {
+      if (e.target === newWishModal) {
+        newWishModal.style.display = "none";
+      }
+    });
+  }
+
   // Restore All Default Messages button in header
   const resetMsgsBtn = document.getElementById("reset-default-messages-btn");
   if (resetMsgsBtn) {

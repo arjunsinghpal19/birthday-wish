@@ -458,7 +458,10 @@
             <h3 class="modal-title">✨ Customize Birthday Wish</h3>
             <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
           </div>
-          <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button type="button" id="new-wish-btn" title="Create a completely fresh birthday wish" style="background:linear-gradient(135deg,rgba(255,215,0,0.25),rgba(247,201,74,0.15));border:1px solid rgba(255,215,0,0.5);color:var(--gold,#ffd700);padding:6px 14px;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;box-shadow:0 2px 10px rgba(255,215,0,0.15);">✨ + New Wish</button>
+            <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
+          </div>
         </div>
         <button id="customizer-close-btn" class="modal-close">&times;</button>
       </div>
@@ -1071,6 +1074,19 @@
       <div style="display:flex; gap:10px;">
         <button type="button" id="btn-regen-cancel" class="btn" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Cancel</button>
         <button type="button" id="btn-regen-confirm" class="btn" style="flex:1; background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(239,68,68,0.4);">Generate New Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Wish Confirmation Modal -->
+  <div id="new-wish-confirm-modal" class="modal-backdrop" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:9999999; align-items:center; justify-content:center;">
+    <div class="modal-content glass" style="max-width:380px; width:90%; padding:24px; border-radius:18px; border:1px solid rgba(247,201,74,0.4); text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.8); background:#1B1530;">
+      <div style="font-size:2.2rem; margin-bottom:8px;">✨</div>
+      <h3 style="font-size:1.1rem; font-weight:700; color:#fff; margin-bottom:8px;">Start a new birthday wish?</h3>
+      <p style="font-size:0.8rem; color:#CBD5E1; margin-bottom:20px; line-height:1.5;">Your current unsaved changes will be cleared.</p>
+      <div style="display:flex; gap:10px;">
+        <button type="button" id="btn-new-wish-cancel" class="btn" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:600; cursor:pointer;">Cancel</button>
+        <button type="button" id="btn-new-wish-confirm" class="btn" style="flex:1; background:linear-gradient(135deg,var(--gold,#ffd700),#e6b800); color:#1a102f; padding:10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(255,215,0,0.3);">New Wish</button>
       </div>
     </div>
   </div>

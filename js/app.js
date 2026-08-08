@@ -6192,9 +6192,9 @@ async function initCustomizerModal() {
     const currentVals = readAllValues();
 
     if (currentVals.nameVal && currentVals.nameVal.trim() !== (def.name || "").trim()) return true;
-    if (currentVals.passcodeVal && currentVals.passcodeVal.trim() !== (def.passcode?.code || "1234").trim()) return true;
+    if (currentVals.passVal && currentVals.passVal.trim() !== (def.passcode?.code || "1234").trim()) return true;
     if (currentVals.fromVal && currentVals.fromVal.trim() !== (def.from || "").trim()) return true;
-    if (currentVals.letterVal && currentVals.letterVal.trim() !== (def.letterLines || []).join("\n").trim()) return true;
+    if (Array.isArray(currentVals.letterLines) && currentVals.letterLines.join("\n").trim() !== (def.letterLines || []).join("\n").trim()) return true;
 
     try {
       if (localStorage.getItem("custom_birthday_config")) return true;
@@ -6260,7 +6260,10 @@ async function initCustomizerModal() {
   if (newWishBtn) {
     newWishBtn.addEventListener("click", () => {
       if (hasUnsavedChanges()) {
-        if (newWishModal) newWishModal.style.display = "flex";
+        if (newWishModal) {
+          newWishModal.style.display = "flex";
+          newWishModal.classList.add("open");
+        }
       } else {
         resetToFreshNewWish();
       }
@@ -6269,12 +6272,14 @@ async function initCustomizerModal() {
 
   if (btnNewWishCancel && newWishModal) {
     btnNewWishCancel.addEventListener("click", () => {
+      newWishModal.classList.remove("open");
       newWishModal.style.display = "none";
     });
   }
 
   if (btnNewWishConfirm && newWishModal) {
     btnNewWishConfirm.addEventListener("click", () => {
+      newWishModal.classList.remove("open");
       newWishModal.style.display = "none";
       resetToFreshNewWish();
     });
@@ -6283,6 +6288,7 @@ async function initCustomizerModal() {
   if (newWishModal) {
     newWishModal.addEventListener("click", (e) => {
       if (e.target === newWishModal) {
+        newWishModal.classList.remove("open");
         newWishModal.style.display = "none";
       }
     });

@@ -6,20 +6,33 @@
  * ============================================================================
  */
 
-export default function handler(req, res) {
-  res.setHeader("Content-Type", "application/javascript");
-  res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
-  res.setHeader("Access-Control-Allow-Origin", "*");
+(function(root) {
+  'use strict';
+  root.ENV = root.ENV || {};
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.SUPABASE_URL) root.ENV.SUPABASE_URL = process.env.SUPABASE_URL.trim();
+    if (process.env.SUPABASE_ANON_KEY) root.ENV.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY.trim();
+  }
+  if (!root.ENV.SUPABASE_URL) root.ENV.SUPABASE_URL = "https://dvacxeooaqxwldszqpek.supabase.co";
+  if (!root.ENV.SUPABASE_ANON_KEY) root.ENV.SUPABASE_ANON_KEY = "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));
 
-  const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
-  const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = function handler(req, res) {
+    res.setHeader("Content-Type", "application/javascript");
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
+    res.setHeader("Access-Control-Allow-Origin", "*");
 
-  res.status(200).send(`
-    (function(window) {
-      'use strict';
-      window.ENV = window.ENV || {};
-      window.ENV.SUPABASE_URL = ${JSON.stringify(supabaseUrl)};
-      window.ENV.SUPABASE_ANON_KEY = ${JSON.stringify(supabaseAnonKey)};
-    })(typeof window !== 'undefined' ? window : this);
-  `);
+    const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
+    const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+
+    res.status(200).send(`
+      (function(window) {
+        'use strict';
+        window.ENV = window.ENV || {};
+        window.ENV.SUPABASE_URL = ${JSON.stringify(supabaseUrl)};
+        window.ENV.SUPABASE_ANON_KEY = ${JSON.stringify(supabaseAnonKey)};
+      })(typeof window !== 'undefined' ? window : this);
+    `);
+  };
 }

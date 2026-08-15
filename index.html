@@ -441,6 +441,22 @@
       <span id="music-icon">🎵</span>
       <span id="music-label">Birthday Music</span>
     </button>
+    <button id="music-volume-btn" class="music-volume-btn" type="button" title="Volume Settings" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,215,0,0.3);color:#ffd700;border-radius:50%;width:34px;height:34px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem;transition:all 0.2s ease;">
+      <span id="volume-icon">🔊</span>
+    </button>
+
+    <!-- VOLUME POPOVER PANEL -->
+    <div id="music-volume-popover" class="volume-popover" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--gold,#ffd700);margin-bottom:8px;font-weight:600;">
+        <span id="volume-popover-title">🔊 Volume</span>
+        <span id="volume-pct-display" style="color:#fff;font-weight:700;">70%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="volume-mute-toggle-btn" type="button" style="background:none;border:none;color:var(--gold,#ffd700);cursor:pointer;font-size:1rem;padding:0;" title="Mute / Unmute">🔈</button>
+        <input type="range" id="public-volume-slider" min="0" max="100" value="70" step="1">
+        <span style="font-size:0.8rem;color:#ffd700;">🔊</span>
+      </div>
+    </div>
   </div>
   <div id="yt-player-container" style="display:none;position:fixed;bottom:-999px;left:-999px;opacity:0;pointer-events:none;"></div>
 
@@ -452,18 +468,18 @@
     <div class="customizer-card glass">
 
       <!-- HEADER -->
-      <div class="editor-header">
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding-right:24px;flex-wrap:wrap;gap:8px;">
+      <div class="editor-header" style="flex-direction:column;align-items:stretch;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;padding-right:12px;">
           <div>
             <h3 class="modal-title">✨ Customize Birthday Wish</h3>
             <p class="modal-sub">Edit any section below — all fields are pre-filled with current values</p>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <button type="button" id="new-wish-btn" title="Create a completely fresh birthday wish" style="background:linear-gradient(135deg,rgba(255,215,0,0.25),rgba(247,201,74,0.15));border:1px solid rgba(255,215,0,0.5);color:var(--gold,#ffd700);padding:6px 14px;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;box-shadow:0 2px 10px rgba(255,215,0,0.15);">✨ + New Wish</button>
-            <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
-          </div>
+          <button id="customizer-close-btn" class="modal-close">&times;</button>
         </div>
-        <button id="customizer-close-btn" class="modal-close">&times;</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:8px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.08);">
+          <button type="button" id="reset-default-messages-btn" title="Reset all edited text back to original default messages" style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);padding:6px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">🔄 Restore Default Messages</button>
+          <button type="button" id="new-wish-btn" title="Create a completely fresh birthday wish" style="background:linear-gradient(135deg,rgba(255,215,0,0.25),rgba(247,201,74,0.15));border:1px solid rgba(255,215,0,0.5);color:var(--gold,#ffd700);padding:6px 14px;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;box-shadow:0 2px 10px rgba(255,215,0,0.15);">✨ + New Wish</button>
+        </div>
       </div>
 
       <!-- SCROLLABLE BODY -->
@@ -704,9 +720,26 @@
               <input type="text" id="input-music-url" placeholder="https://youtu.be/... or https://www.youtube.com/watch?v=...">
             </div>
             <div class="form-group" style="margin-top:12px;">
-              <label for="input-music-start">YouTube Start Time (Optional, e.g. 30 or 1:15)</label>
+              <label for="input-music-start">Audio Start Time (Optional, e.g. 30 or 1:15)</label>
               <small class="field-hint">Song kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
               <input type="text" id="input-music-start" placeholder="e.g. 30 or 1:15">
+              <div id="audio-seekbar-wrap" style="display:none;margin-top:8px;background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--gold,#ffd700);margin-bottom:6px;">
+                  <span>⏱️ Audio Start Time Seekbar</span>
+                  <span id="audio-duration-display">Duration: 00:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span id="audio-seek-min" style="font-size:0.75rem;opacity:0.8;">00:00</span>
+                  <div class="seekbar-box" style="flex:1;position:relative;height:16px;display:flex;align-items:center;">
+                    <div class="seekbar-track-line" style="position:absolute;left:8px;right:8px;height:6px;border-radius:3px;pointer-events:none;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);"></div>
+                    <input type="range" id="audio-start-seekbar" min="0" max="100" value="0" step="1">
+                  </div>
+                  <span id="audio-seek-max" style="font-size:0.75rem;opacity:0.8;">00:00</span>
+                </div>
+                <div style="text-align:center;font-size:0.75rem;color:#fff;margin-top:4px;">
+                  Selected Start: <strong id="audio-selected-time-display" style="color:var(--gold,#ffd700);">00:00</strong>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -743,6 +776,23 @@
               <label for="input-video-start">Video Start Time (Optional, e.g. 30 or 1:15)</label>
               <small class="field-hint">Video kis time se start hona chahiye (seconds ya mm:ss me likho)</small>
               <input type="text" id="input-video-start" placeholder="e.g. 30 or 1:15">
+              <div id="video-seekbar-wrap" style="display:none;margin-top:8px;background:rgba(255,255,255,0.05);padding:10px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--gold,#ffd700);margin-bottom:6px;">
+                  <span>⏱️ Video Start Time Seekbar</span>
+                  <span id="video-duration-display">Duration: 00:00</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span id="video-seek-min" style="font-size:0.75rem;opacity:0.8;">00:00</span>
+                  <div class="seekbar-box" style="flex:1;position:relative;height:16px;display:flex;align-items:center;">
+                    <div class="seekbar-track-line" style="position:absolute;left:8px;right:8px;height:6px;border-radius:3px;pointer-events:none;box-shadow:inset 0 1px 3px rgba(0,0,0,0.4);"></div>
+                    <input type="range" id="video-start-seekbar" min="0" max="100" value="0" step="1">
+                  </div>
+                  <span id="video-seek-max" style="font-size:0.75rem;opacity:0.8;">00:00</span>
+                </div>
+                <div style="text-align:center;font-size:0.75rem;color:#fff;margin-top:4px;">
+                  Selected Start: <strong id="video-selected-time-display" style="color:var(--gold,#ffd700);">00:00</strong>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1005,7 +1055,7 @@
         
         <!-- Month Selector Group (< Month ▾ >) -->
         <div style="display:flex;align-items:center;gap:4px;">
-          <button type="button" id="mdp-prev-month" aria-label="Previous Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">‹</button>
+          <button type="button" id="mdp-prev-month" aria-label="Previous Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
           <select id="mdp-month-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
             <option value="0" style="background:#1B1530;color:#fff;">Jan</option>
             <option value="1" style="background:#1B1530;color:#fff;">Feb</option>
@@ -1020,16 +1070,16 @@
             <option value="10" style="background:#1B1530;color:#fff;">Nov</option>
             <option value="11" style="background:#1B1530;color:#fff;">Dec</option>
           </select>
-          <button type="button" id="mdp-next-month" aria-label="Next Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">›</button>
+          <button type="button" id="mdp-next-month" aria-label="Next Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
 
         <!-- Year Selector Group (< Year ▾ >) -->
         <div style="display:flex;align-items:center;gap:4px;">
-          <button type="button" id="mdp-prev-year" aria-label="Previous Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">‹</button>
+          <button type="button" id="mdp-prev-year" aria-label="Previous Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
           <select id="mdp-year-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
             <!-- Dynamic 1900 to 2100 -->
           </select>
-          <button type="button" id="mdp-next-year" aria-label="Next Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;font-size:1.1rem;cursor:pointer;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">›</button>
+          <button type="button" id="mdp-next-year" aria-label="Next Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
         </div>
 
       </div>
@@ -1100,6 +1150,28 @@
   <script src="js/database.js"></script>
   <script src="js/share.js"></script>
   <script src="js/admin.js"></script>
+  <script src="js/modules/utils.js"></script>
+  <script src="js/modules/wish-codec.js"></script>
+  <script src="js/modules/renderers.js"></script>
+  <script src="js/modules/content-renderer.js"></script>
+  <script src="js/modules/audio-fx.js"></script>
+  <script src="js/modules/interactive.js"></script>
+  <script src="js/modules/visual-effects.js"></script>
+  <script src="js/modules/loading.js"></script>
+  <script src="js/modules/canvas-export.js"></script>
+  <script src="js/modules/photo-lightbox.js"></script>
+  <script src="js/modules/scroll-reveal.js"></script>
+  <script src="js/modules/admin-security.js"></script>
+  <script src="js/modules/editor/accordion.js"></script>
+  <script src="js/modules/editor/letter.js"></script>
+  <script src="js/modules/editor/reasons.js"></script>
+  <script src="js/modules/editor/wishes.js"></script>
+  <script src="js/modules/editor/gallery.js"></script>
+  <script src="js/modules/editor/timeline.js"></script>
+  <script src="js/modules/editor/datepicker.js"></script>
+  <script src="js/modules/editor/audio.js"></script>
+  <script src="js/modules/editor/video.js"></script>
+  <script src="js/modules/editor/customizer.js"></script>
   <script src="js/app.js"></script>
 </body>
 

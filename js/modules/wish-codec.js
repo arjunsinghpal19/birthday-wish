@@ -348,6 +348,11 @@
     if (src.letterTheme && def.letterTheme && src.letterTheme !== def.letterTheme) payload.letterTheme = src.letterTheme;
     if (src.cakeFlavor && def.cakeFlavor && src.cakeFlavor !== def.cakeFlavor) payload.cakeFlavor = src.cakeFlavor;
 
+    // 14. Active Wish UUID Identity (Preserved if present)
+    if (src._activeWishUuid) {
+      payload._activeWishUuid = src._activeWishUuid;
+    }
+
     return payload;
   }
 

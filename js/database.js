@@ -55,6 +55,56 @@
     }
   }
 
+  async function updateWishRecord(uuid, configObj) {
+    try {
+      if (!uuid) return null;
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (!client) return null;
+
+      const record = {
+        recipient_name: configObj.name || "",
+        sender_name: configObj.from || "",
+        pass_code: configObj.passcode?.code || "1234",
+        birth_date: configObj.birthDate || { year: 2001, month: 1, day: 1 },
+        letter_lines: configObj.letterLines || [],
+        memory_text: configObj.memory || "",
+        reasons_json: configObj.reasons || [],
+        wishes_json: configObj.wishes || [],
+        gallery_json: configObj.gallery || [],
+        timeline_json: configObj.timeline || [],
+        gift_json: configObj.gift || {},
+        music_url: configObj.music?.file || null,
+        video_url: configObj.videoWish?.url || configObj.videoWish?.file || null,
+        cake_flavor: configObj.cakeFlavor || "default",
+        letter_font: configObj.letterFont || "default",
+        letter_theme: configObj.letterTheme || "default",
+        updated_at: new Date().toISOString()
+      };
+
+      console.log("💾 Database UPDATE record id:", uuid, "recipient:", record.recipient_name);
+
+      const { error, count } = await client
+        .from(TABLE_NAME)
+        .update(record, { count: "exact" })
+        .eq("id", uuid);
+
+      if (error) {
+        console.warn("⚠️ Supabase DB Update Error:", error.message);
+        return null;
+      }
+
+      if (count === 0) {
+        console.warn("⚠️ Existing wish UUID was not updated (row not found):", uuid);
+        return null;
+      }
+
+      return uuid;
+    } catch (e) {
+      console.warn("⚠️ DB update exception:", e);
+      return null;
+    }
+  }
+
   async function getWishRecordById(uuid) {
     try {
       if (!uuid) return null;
@@ -355,6 +405,7 @@
 
   window.DatabaseModule = {
     saveWish: saveWishRecord,
+    updateWish: updateWishRecord,
     getWishById: getWishRecordById,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,

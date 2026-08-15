@@ -149,6 +149,9 @@ async function parseQueryParams() {
     }
 
     if (decoded) {
+      if (tokenParam.length >= 20 && (tokenParam.includes("-") || !tokenParam.match(/^[A-Za-z0-9_-]+$/))) {
+        CONFIG._activeWishUuid = tokenParam;
+      }
       if (decoded.n) CONFIG.name = formatName(decoded.n);
       if (decoded.c) CONFIG.passcode.code = decoded.c.trim();
       else CONFIG.passcode.code = "1234";
@@ -270,11 +273,24 @@ async function buildRecipientShareUrl(overrideName, options = { persist: false }
   if (overrideName !== undefined) {
     publishConfig.name = nameVal;
   }
+  if (CONFIG._activeWishUuid) {
+    publishConfig._activeWishUuid = CONFIG._activeWishUuid;
+  }
 
-  // Try generating short UUID link via ShareModule
+  // Try generating / updating short UUID link via ShareModule
   if (window.ShareModule) {
     const uuidUrl = await window.ShareModule.buildShareUrl(publishConfig, nameVal, options);
-    if (uuidUrl) return uuidUrl;
+    if (uuidUrl) {
+      if (publishConfig._activeWishUuid) {
+        CONFIG._activeWishUuid = publishConfig._activeWishUuid;
+      }
+      return uuidUrl;
+    }
+    // If persistence was explicitly requested but failed, do NOT fallback to a misleading unpersisted URL
+    const shouldPersist = typeof options === "boolean" ? options : !!(options && options.persist);
+    if (shouldPersist) {
+      return null;
+    }
   }
 
   const token = encodeWishData(publishConfig);
@@ -394,6 +410,10 @@ function initShare() {
   if (copyBtn) {
     copyBtn.addEventListener("click", async () => {
       const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      if (!shareUrl) {
+        showToast("⚠️ Could not update share link. Please try again.");
+        return;
+      }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
 
@@ -424,6 +444,10 @@ function initShare() {
   if (shareBtn) {
     shareBtn.addEventListener("click", async () => {
       const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      if (!shareUrl) {
+        showToast("⚠️ Could not update share link. Please try again.");
+        return;
+      }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
@@ -451,6 +475,10 @@ function initShare() {
   if (waBtn) {
     waBtn.addEventListener("click", async () => {
       const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      if (!shareUrl) {
+        showToast("⚠️ Could not update share link. Please try again.");
+        return;
+      }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;

@@ -421,6 +421,7 @@
               startTime: existingStartTime,
               duration: finalDuration
             };
+            if (root.CONFIG) root.CONFIG.music = cfg.music;
             if (finalDuration > 0) setupAudioSeekbar(finalDuration);
             toast("Audio / Voice note uploaded & saved to Cloud! ☁️🎙️");
           } else {
@@ -432,6 +433,7 @@
               startTime: existingStartTime,
               duration: finalDuration
             };
+            if (root.CONFIG) root.CONFIG.music = cfg.music;
             if (finalDuration > 0) setupAudioSeekbar(finalDuration);
             toast("Audio attached locally 🎙️");
           }
@@ -521,6 +523,7 @@
         } else {
           // No custom audio source remaining -> restore default happy birthday song & clear startTime
           cfg.music = { file: "assets/music/happy-birthday-song.mpeg", startTime: "", duration: 0 };
+          if (root.CONFIG) root.CONFIG.music = cfg.music;
           const musicStartInput = document.getElementById("input-music-start");
           if (musicStartInput) musicStartInput.value = "";
           setupAudioSeekbar(0);

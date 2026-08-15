@@ -24,14 +24,50 @@
       baseUrl = location.href.split("?")[0];
     }
 
-    // Save to Supabase DB ONLY when explicit persistence is requested
+    const activeUuid = (configObj && configObj._activeWishUuid !== undefined)
+      ? configObj._activeWishUuid
+      : ((window.CONFIG && window.CONFIG._activeWishUuid) || null);
+
+    // Save or Update to Supabase DB ONLY when explicit persistence is requested
     if (shouldPersist && window.DatabaseModule) {
-      const uuid = await window.DatabaseModule.saveWish(configObj);
-      if (uuid) {
-        let url = `${baseUrl}?w=${uuid}`;
-        if (nameVal) url += `&name=${encodeURIComponent(nameVal)}`;
-        return url;
+      if (activeUuid) {
+        // EXISTING WISH: Strictly UPDATE existing record. NEVER fallback to INSERT!
+        if (typeof window.DatabaseModule.updateWish === "function") {
+          const updatedId = await window.DatabaseModule.updateWish(activeUuid, configObj);
+          if (updatedId) {
+            configObj._activeWishUuid = activeUuid;
+            if (window.CONFIG) window.CONFIG._activeWishUuid = activeUuid;
+            let url = `${baseUrl}?w=${activeUuid}`;
+            if (nameVal) url += `&name=${encodeURIComponent(nameVal)}`;
+            return url;
+          }
+        }
+        // UPDATE failed: Preserve activeUuid, do NOT insert a duplicate row, return null
+        console.warn("⚠️ Failed to update existing wish record in database:", activeUuid);
+        return null;
+      } else {
+        // NEW WISH: Exactly ONE initial INSERT to create the permanent UUID
+        if (typeof window.DatabaseModule.saveWish === "function") {
+          const newUuid = await window.DatabaseModule.saveWish(configObj);
+          if (newUuid) {
+            configObj._activeWishUuid = newUuid;
+            if (window.CONFIG) window.CONFIG._activeWishUuid = newUuid;
+            let url = `${baseUrl}?w=${newUuid}`;
+            if (nameVal) url += `&name=${encodeURIComponent(nameVal)}`;
+            return url;
+          }
+        }
+        // INSERT failed
+        console.warn("⚠️ Failed to create new wish in cloud database");
+        return null;
       }
+    }
+
+    // Client-side preview / non-persisted share link with active UUID
+    if (activeUuid) {
+      let url = `${baseUrl}?w=${activeUuid}`;
+      if (nameVal) url += `&name=${encodeURIComponent(nameVal)}`;
+      return url;
     }
 
     // Client-side preview / non-persisted Base64 URL encoding
@@ -69,6 +105,10 @@
     // Check if token is a Supabase DB UUID (36 chars) or Blob ID
     if (tokenParam.length >= 20 && window.DatabaseModule) {
       wishPayload = await window.DatabaseModule.getWishById(tokenParam);
+      if (wishPayload) {
+        configObj._activeWishUuid = tokenParam;
+        if (window.CONFIG) window.CONFIG._activeWishUuid = tokenParam;
+      }
     }
 
     // Fallback to Base64 decoding (Permanent Backward Compatibility)

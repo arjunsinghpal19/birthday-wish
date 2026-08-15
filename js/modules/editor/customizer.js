@@ -245,10 +245,18 @@
       vidStartInput.value = cfg.videoWish?.startTime || "";
     }
 
-    const hasCustomAudio = cfg.music?.file && (cfg.music.isBlob || (typeof cfg.music.file === "string" && cfg.music.file.startsWith("blob:")) || cfg.music.fileName);
+    const hasCustomAudio = cfg.music?.file && (
+      cfg.music.isBlob ||
+      (typeof cfg.music.file === "string" && (
+        cfg.music.file.startsWith("blob:") ||
+        cfg.music.file.includes("supabase.co") ||
+        (!isYTMusic(cfg.music.file) && !cfg.music.file.includes("assets/music/happy-birthday-song.mpeg"))
+      )) ||
+      cfg.music.fileName
+    );
     const audText = document.getElementById("audio-upload-text");
     if (audText) {
-      audText.textContent = hasCustomAudio ? `🎙️ Attached: ${(cfg.music.fileName || 'audio').substring(0, 18)}` : `🎙️ Select Audio / Voice Note`;
+      audText.textContent = hasCustomAudio ? `🎙️ Attached: ${(cfg.music.fileName || 'Cloud Audio').substring(0, 18)}` : `🎙️ Select Audio / Voice Note`;
     }
 
     const audRemoveBtn = document.getElementById("remove-audio-file-btn");
@@ -752,12 +760,21 @@
     const cleanDef = JSON.parse(JSON.stringify(def));
     Object.keys(cfg).forEach(k => delete cfg[k]);
     Object.assign(cfg, cleanDef);
+    cfg._activeWishUuid = null;
+    if (root.CONFIG) root.CONFIG._activeWishUuid = null;
 
     // 2. Clear localStorage draft keys
     try {
       localStorage.removeItem("custom_birthday_config");
       localStorage.removeItem("custom_secret_question");
       localStorage.removeItem("custom_secret_answer");
+    } catch(e) {}
+
+    // Clean URL query parameters in address bar without reload
+    try {
+      if (typeof window !== "undefined" && window.history && window.history.replaceState) {
+        window.history.replaceState(null, "", location.pathname);
+      }
     } catch(e) {}
 
     // 3. Clear audio/video storage & revoke media blob URLs
@@ -849,10 +866,11 @@
       return false;
     }
 
-    if (root.pendingUploadsMap && root.pendingUploadsMap.size > 0) {
+    const pendingMap = root.pendingUploadsMap || (typeof window !== "undefined" ? window.pendingUploadsMap : null);
+    if (pendingMap && pendingMap.size > 0) {
       toastFn("⏳ Uploading media files to cloud... Please wait ✨");
       try {
-        await Promise.all(Array.from(root.pendingUploadsMap.values()));
+        await Promise.all(Array.from(pendingMap.values()));
       } catch(err){}
     }
 
@@ -893,6 +911,10 @@
           const runtimeMusic = cfg.music;
           const runtimeVideo = cfg.videoWish;
           Object.assign(cfg, parsed);
+          if (parsed._activeWishUuid) {
+            cfg._activeWishUuid = parsed._activeWishUuid;
+            if (root.CONFIG) root.CONFIG._activeWishUuid = parsed._activeWishUuid;
+          }
           if (runtimeMusic && runtimeMusic.file && (!parsed.music || !parsed.music.file || (typeof runtimeMusic.file === "string" && runtimeMusic.file.startsWith("blob:")))) {
             cfg.music = {
               ...runtimeMusic,
@@ -1055,6 +1077,9 @@
 
       // Save to localStorage
       const saveData = JSON.parse(JSON.stringify(cfg));
+      if (cfg._activeWishUuid) {
+        saveData._activeWishUuid = cfg._activeWishUuid;
+      }
       if (saveData.music && typeof saveData.music.file === "string" && saveData.music.file.startsWith("blob:")) {
         saveData.music.file = "";
       }
@@ -1100,6 +1125,18 @@
 
         const buildUrlFn = root.buildRecipientShareUrl || (typeof buildRecipientShareUrl === "function" ? buildRecipientShareUrl : async () => window.location.href);
         const customUrl = await buildUrlFn(values.nameVal, { persist: true });
+        const toastFn = root.showToast || ((m) => console.log(m));
+
+        if (!customUrl) {
+          toastFn("⚠️ Unable to sync wish to cloud. Please check connection and try again.");
+          return;
+        }
+
+        const match = customUrl.match(/[?&]w=([a-f0-9-]{20,})/i);
+        if (match) {
+          cfg._activeWishUuid = match[1];
+          if (root.CONFIG) root.CONFIG._activeWishUuid = match[1];
+        }
         const recipientName = values.nameVal || "Friend";
 
         // Visual Button Feedback
@@ -1115,8 +1152,6 @@
           shareLinkBtn.style.color = "";
           shareLinkBtn.style.boxShadow = "";
         }, 2500);
-
-        const toastFn = root.showToast || ((m) => console.log(m));
 
         // Clipboard copy
         try {
@@ -1139,6 +1174,10 @@
           if (waBtn) {
             waBtn.onclick = async () => {
               const currentUrl = await buildUrlFn(values.nameVal, { persist: true });
+              if (!currentUrl) {
+                toastFn("⚠️ Unable to sync wish to cloud. Please try again.");
+                return;
+              }
               const trimmedName = (recipientName || "").trim();
               let greetingHeader = "Hey! 🎂✨";
               if (trimmedName && trimmedName !== "Friend") {
@@ -1156,6 +1195,10 @@
           if (nativeBtn) {
             nativeBtn.onclick = async () => {
               const currentUrl = await buildUrlFn(values.nameVal, { persist: true });
+              if (!currentUrl) {
+                toastFn("⚠️ Unable to sync wish to cloud. Please try again.");
+                return;
+              }
               if (navigator.share) {
                 try {
                   await navigator.share({

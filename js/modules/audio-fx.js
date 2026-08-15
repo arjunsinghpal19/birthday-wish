@@ -569,9 +569,9 @@
           audioEl.addEventListener("error", (e) => {
             console.warn("Audio load error fallback:", e);
             if (fileOrUrl !== "assets/music/happy-birthday-song.mpeg") {
-              fileOrUrl = "assets/music/happy-birthday-song.mpeg";
-              if (CONFIG.music) CONFIG.music.file = fileOrUrl;
-              audioEl.src = fileOrUrl;
+              const fallbackUrl = "assets/music/happy-birthday-song.mpeg";
+              // Redirect playback to fallback melody WITHOUT corrupting the persisted CONFIG.music.file!
+              audioEl.src = fallbackUrl;
               audioEl.load();
               audioEl.play().then(() => { playing = true; }).catch(() => {});
             }

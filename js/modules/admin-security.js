@@ -124,9 +124,60 @@
 
     if (!modal) return;
 
+    const clearAllPasswordInputs = () => {
+      if (loginPassInput) {
+        loginPassInput.value = "";
+        loginPassInput.classList.remove("input-error");
+      }
+      if (oldPassInput) {
+        oldPassInput.value = "";
+        oldPassInput.classList.remove("input-error");
+      }
+      if (newPassInput) {
+        newPassInput.value = "";
+        newPassInput.classList.remove("input-error");
+      }
+      if (confirmPassInput) {
+        confirmPassInput.value = "";
+        confirmPassInput.classList.remove("input-error");
+      }
+      const resetNew = document.getElementById("admin-reset-new-pass");
+      if (resetNew) {
+        resetNew.value = "";
+        resetNew.classList.remove("input-error");
+      }
+      const resetConf = document.getElementById("admin-reset-confirm-pass");
+      if (resetConf) {
+        resetConf.value = "";
+        resetConf.classList.remove("input-error");
+      }
+      const errLogin = document.getElementById("admin-login-error");
+      if (errLogin) errLogin.style.display = "none";
+      const errChange = document.getElementById("admin-change-error");
+      if (errChange) errChange.style.display = "none";
+      const errOtp = document.getElementById("email-otp-error");
+      if (errOtp) errOtp.style.display = "none";
+      const errBackup = document.getElementById("backup-code-error");
+      if (errBackup) errBackup.style.display = "none";
+      const errQuest = document.getElementById("question-answer-error");
+      if (errQuest) errQuest.style.display = "none";
+      const errSetNew = document.getElementById("admin-setnew-error");
+      if (errSetNew) errSetNew.style.display = "none";
+    };
+
     // Close modal
-    if (closeBtn) closeBtn.onclick = () => modal.classList.remove("open");
-    modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        clearAllPasswordInputs();
+        modal.classList.remove("open");
+      };
+    }
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        clearAllPasswordInputs();
+        modal.classList.remove("open");
+      }
+    };
 
     // Eye Toggle (Show/Hide Password) for all password fields
     document.querySelectorAll(".eye-toggle").forEach(btn => {
@@ -146,6 +197,7 @@
 
     tabBtns.forEach(btn => {
       btn.onclick = () => {
+        clearAllPasswordInputs();
         const tabName = btn.dataset.tab;
         tabBtns.forEach(b => b.classList.remove("active"));
         tabContents.forEach(c => { c.classList.remove("active"); c.style.display = "none"; });
@@ -156,8 +208,51 @@
           targetContent.classList.add("active");
           targetContent.style.display = "block";
         }
-        if (tabName === "forgot") {
-          if (typeof resetToMethods === "function") resetToMethods();
+        if (tabName === "security") {
+          const activeSub = document.querySelector(".security-subtab-btn.active")?.dataset.subtab || "change";
+          const subContent = document.getElementById(`security-subtab-${activeSub}`);
+          if (subContent) {
+            subContent.classList.add("active");
+            subContent.style.display = "block";
+          }
+          if (activeSub === "forgot" && typeof resetToMethods === "function") {
+            resetToMethods();
+          }
+        }
+      };
+    });
+
+    // Sub-Tab navigation within SECURITY tab (Change Password vs Forgot Password)
+    const subtabBtns = document.querySelectorAll(".security-subtab-btn");
+    const subtabContents = document.querySelectorAll(".security-subtab-content");
+
+    subtabBtns.forEach(btn => {
+      btn.onclick = () => {
+        clearAllPasswordInputs();
+        const subName = btn.dataset.subtab;
+        subtabBtns.forEach(b => {
+          b.classList.remove("active");
+          b.style.background = "transparent";
+          b.style.borderColor = "transparent";
+          b.style.color = "#94a3b8";
+        });
+        subtabContents.forEach(c => {
+          c.classList.remove("active");
+          c.style.display = "none";
+        });
+
+        btn.classList.add("active");
+        btn.style.background = "rgba(168,85,247,0.2)";
+        btn.style.borderColor = "rgba(168,85,247,0.4)";
+        btn.style.color = "#fff";
+
+        const targetSub = document.getElementById(`security-subtab-${subName}`);
+        if (targetSub) {
+          targetSub.classList.add("active");
+          targetSub.style.display = "block";
+        }
+        if (subName === "forgot" && typeof resetToMethods === "function") {
+          resetToMethods();
         }
       };
     });
@@ -165,6 +260,15 @@
     // Tab 1: Unlock Submission (Strict Supabase Password Validation)
     async function handleUnlock() {
       const entered = (loginPassInput?.value || "").trim();
+      if (!entered) {
+        safeToast("Please enter Admin Password 🔑");
+        if (loginPassInput) {
+          loginPassInput.classList.add("input-error");
+          loginPassInput.focus();
+        }
+        return;
+      }
+
       safeToast("⏳ Verifying Admin Password...");
       const errorMsgEl = document.getElementById("admin-login-error");
 
@@ -172,12 +276,12 @@
 
       if (isValid) {
         sessionStorage.setItem("admin_authenticated", "true");
-        modal.classList.remove("open");
         if (loginPassInput) {
           loginPassInput.value = "";
           loginPassInput.classList.remove("input-error");
         }
         if (errorMsgEl) errorMsgEl.style.display = "none";
+        modal.classList.remove("open");
         const fab = document.getElementById("customizer-toggle-btn");
         if (fab) fab.classList.add("admin-visible");
         safeToast("👑 Admin Mode Activated!");
@@ -185,12 +289,12 @@
         if (customizerModal) customizerModal.classList.add("open");
       } else {
         if (loginPassInput) {
+          loginPassInput.value = "";
           loginPassInput.classList.add("input-error");
           loginPassInput.focus();
-          loginPassInput.select();
         }
 
-        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal;
+        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal.querySelector(".modal-content") || modal;
         if (modalCard) {
           modalCard.classList.remove("shake-error");
           void modalCard.offsetWidth;
@@ -205,7 +309,54 @@
       }
     }
 
+    // Tab 1 Action 2: Open Admin Dashboard Button Handler
+    const openDashboardBtn = document.getElementById("admin-open-dashboard-btn");
+
+    async function handleOpenDashboard() {
+      const entered = (loginPassInput?.value || "").trim();
+      if (!entered) {
+        safeToast("Please enter Admin Password to open Dashboard 🔑");
+        if (loginPassInput) {
+          loginPassInput.classList.add("input-error");
+          loginPassInput.focus();
+        }
+        return;
+      }
+
+      safeToast("⏳ Verifying Admin Password...");
+      const isValid = root.PasswordService ? await root.PasswordService.verifyPassword(entered) : false;
+
+      if (isValid) {
+        sessionStorage.setItem("admin_authenticated", "true");
+        if (loginPassInput) {
+          loginPassInput.value = "";
+          loginPassInput.classList.remove("input-error");
+        }
+        modal.classList.remove("open");
+        const fab = document.getElementById("customizer-toggle-btn");
+        if (fab) fab.classList.add("admin-visible");
+        safeToast("👑 Admin Mode Activated! Opening Dashboard...");
+        window.location.href = "admin.html";
+      } else {
+        if (loginPassInput) {
+          loginPassInput.value = "";
+          loginPassInput.classList.add("input-error");
+          loginPassInput.focus();
+        }
+        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal.querySelector(".modal-content") || modal;
+        if (modalCard) {
+          modalCard.classList.remove("shake-error");
+          void modalCard.offsetWidth;
+          modalCard.classList.add("shake-error");
+        }
+        const errorMsgEl = document.getElementById("admin-login-error");
+        if (errorMsgEl) errorMsgEl.style.display = "flex";
+        safeToast("Incorrect Admin Password ❌");
+      }
+    }
+
     if (loginSubmitBtn) loginSubmitBtn.onclick = handleUnlock;
+    if (openDashboardBtn) openDashboardBtn.onclick = handleOpenDashboard;
     if (loginPassInput) {
       loginPassInput.onkeydown = (e) => { if (e.key === "Enter") handleUnlock(); };
       loginPassInput.addEventListener("input", () => {
@@ -270,7 +421,7 @@
           if (confirmPassInput) confirmPassInput.value = "";
           safeToast("🔑 Admin Password updated successfully on Supabase! ✅");
 
-          const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="login"]');
+          const loginTabBtn = document.querySelector('.admin-tab-btn[data-tab="admin"]') || document.querySelector('.admin-tab-btn[data-tab="login"]');
           if (loginTabBtn) loginTabBtn.click();
         } else {
           safeToast("Failed to update password on Supabase ❌");
@@ -279,7 +430,7 @@
     }
 
     // TAB 3: APPROVED MULTI-STEP RECOVERY FLOW HANDLERS
-    const forgotTab = document.getElementById("admin-tab-forgot");
+    const forgotTab = document.getElementById("security-subtab-forgot") || document.getElementById("admin-tab-forgot");
     let resetToMethods = () => {};
 
     if (forgotTab) {
@@ -573,22 +724,26 @@
           
           const success = root.PasswordService ? await root.PasswordService.updatePassword(newPass) : false;
           if (success) {
+            sessionStorage.setItem("admin_authenticated", "true");
             safeToast("🔑 New Admin Password Saved & Persisted on Supabase! ✅");
+            if (modal) modal.classList.remove("open");
+
+            const fab = document.getElementById("customizer-toggle-btn");
+            if (fab) fab.classList.add("admin-visible");
+            const customizerModal = document.getElementById("customizer-modal");
+            if (customizerModal) customizerModal.classList.add("open");
+
+            resetToMethods();
+            if (newPassInput) newPassInput.value = "";
+            if (confirmPassInput) confirmPassInput.value = "";
+            if (errEl) errEl.style.display = "none";
           } else {
             safeToast("Failed to persist password to Supabase ❌");
+            if (errEl) {
+              errEl.textContent = "❌ Failed to update password on Supabase";
+              errEl.style.display = "flex";
+            }
           }
-
-          if (modal) modal.classList.remove("open");
-
-          const fab = document.getElementById("customizer-toggle-btn");
-          if (fab) fab.classList.add("admin-visible");
-          const customizerModal = document.getElementById("customizer-modal");
-          if (customizerModal) customizerModal.classList.add("open");
-
-          resetToMethods();
-          if (newPassInput) newPassInput.value = "";
-          if (confirmPassInput) confirmPassInput.value = "";
-          if (errEl) errEl.style.display = "none";
         });
       }
     }
@@ -616,7 +771,7 @@
     const tabContents = document.querySelectorAll(".admin-tab-content");
 
     tabBtns.forEach(btn => {
-      if (btn.dataset.tab === "login") {
+      if (btn.dataset.tab === "admin" || btn.dataset.tab === "login") {
         btn.classList.add("active");
       } else {
         btn.classList.remove("active");
@@ -624,7 +779,7 @@
     });
 
     tabContents.forEach(content => {
-      if (content.id === "admin-tab-login") {
+      if (content.id === "admin-tab-admin" || content.id === "admin-tab-login") {
         content.classList.add("active");
         content.style.display = "block";
       } else {
@@ -633,11 +788,64 @@
       }
     });
 
-    // Clear login input error states if present
-    const loginPassInput = document.getElementById("admin-login-pass");
-    const errorMsgEl = document.getElementById("admin-login-error");
-    if (loginPassInput) loginPassInput.classList.remove("input-error");
-    if (errorMsgEl) errorMsgEl.style.display = "none";
+    // Reset security subtabs if present
+    const subtabBtns = document.querySelectorAll(".security-subtab-btn");
+    const subtabContents = document.querySelectorAll(".security-subtab-content");
+    subtabBtns.forEach(btn => {
+      if (btn.dataset.subtab === "change") {
+        btn.classList.add("active");
+        btn.style.background = "rgba(168,85,247,0.2)";
+        btn.style.borderColor = "rgba(168,85,247,0.4)";
+        btn.style.color = "#fff";
+      } else {
+        btn.classList.remove("active");
+        btn.style.background = "transparent";
+        btn.style.borderColor = "transparent";
+        btn.style.color = "#94a3b8";
+      }
+    });
+    subtabContents.forEach(c => {
+      if (c.id === "security-subtab-change") {
+        c.classList.add("active");
+        c.style.display = "block";
+      } else {
+        c.classList.remove("active");
+        c.style.display = "none";
+      }
+    });
+
+    // Clear all password inputs and error states
+    const inputsToClear = [
+      "admin-login-pass",
+      "admin-old-pass",
+      "admin-new-pass",
+      "admin-confirm-pass",
+      "admin-reset-new-pass",
+      "admin-reset-confirm-pass",
+      "recovery-backup-input",
+      "recovery-question-input",
+      "recovery-otp-input"
+    ];
+    inputsToClear.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = "";
+        el.classList.remove("input-error");
+      }
+    });
+
+    const errorIds = [
+      "admin-login-error",
+      "admin-change-error",
+      "email-otp-error",
+      "backup-code-error",
+      "question-answer-error",
+      "admin-setnew-error"
+    ];
+    errorIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
   }
 
   /**

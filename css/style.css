@@ -1925,6 +1925,48 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   box-sizing: border-box !important;
 }
 
+#admin-login-modal .security-subtab-nav {
+  display: flex !important;
+  gap: 6px !important;
+  margin-bottom: 16px !important;
+  background: rgba(0, 0, 0, 0.25) !important;
+  padding: 4px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#admin-login-modal .security-subtab-btn {
+  flex: 1 1 auto !important;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+}
+
+#admin-login-modal .security-subtab-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#admin-login-modal .security-subtab-btn.active {
+  background: rgba(168, 85, 247, 0.25) !important;
+  border-color: rgba(168, 85, 247, 0.5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.3) !important;
+}
+
 /* Premium Security Module Buttons & SVG Icons */
 #admin-login-modal .btn,
 #admin-login-modal button.primary-btn {

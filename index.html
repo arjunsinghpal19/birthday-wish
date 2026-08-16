@@ -833,15 +833,17 @@
         <button id="admin-modal-close-btn" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;padding:4px;" type="button">✕</button>
       </div>
 
-      <!-- Admin Tabs -->
-      <div class="admin-tab-nav" style="display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:10px;flex-wrap:wrap;">
-        <button class="admin-tab-btn active" data-tab="login" type="button">👑 Unlock Editor</button>
-        <button class="admin-tab-btn" data-tab="change" type="button">🔑 Change Password</button>
-        <button class="admin-tab-btn" data-tab="forgot" type="button">❓ Forgot Password</button>
+      <!-- Admin Top-Level Tabs: ADMIN vs SECURITY -->
+      <div class="admin-tab-nav" style="display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:12px;">
+        <button class="admin-tab-btn active" data-tab="admin" type="button">👑 ADMIN</button>
+        <button class="admin-tab-btn" data-tab="security" type="button">🔐 SECURITY</button>
       </div>
 
-      <!-- TAB 1: UNLOCK EDITOR -->
-      <div id="admin-tab-login" class="admin-tab-content active">
+      <!-- TAB 1: 👑 ADMIN ACCESS -->
+      <div id="admin-tab-admin" class="admin-tab-content active">
+        <div style="font-size:0.92rem;font-weight:700;color:var(--gold,#ffd700);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>👑</span> <span>Admin Access</span>
+        </div>
         <div class="form-group" style="margin-bottom:16px;">
           <label for="admin-login-pass">Enter Admin Password</label>
           <div class="pass-input-wrap">
@@ -850,197 +852,213 @@
           </div>
           <div id="admin-login-error" class="admin-error-msg" style="display:none;">❌ Incorrect Admin Password! Please try again.</div>
         </div>
-        <button id="admin-login-submit-btn" class="btn primary-btn" style="width:100%;" type="button">👑 Unlock Editor</button>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="admin-login-submit-btn" class="btn primary-btn" style="width:100%;" type="button">👑 Unlock Editor</button>
+          <button id="admin-open-dashboard-btn" class="btn" style="width:100%;background:rgba(247,201,74,0.15);border:1px solid rgba(247,201,74,0.4);color:var(--gold,#ffd700);padding:10px;border-radius:8px;font-size:0.84rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;" type="button">📊 Open Admin Dashboard</button>
+        </div>
       </div>
 
-      <!-- TAB 2: CHANGE PASSWORD -->
-      <div id="admin-tab-change" class="admin-tab-content" style="display:none;">
-        <div class="form-group" style="margin-bottom:12px;">
-          <label for="admin-old-pass">Current / Old Password</label>
-          <div class="pass-input-wrap">
-            <input type="password" id="admin-old-pass" class="form-control" placeholder="Current Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-old-pass" aria-label="Toggle password visibility">👁</button>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:12px;">
-          <label for="admin-new-pass">New Password</label>
-          <div class="pass-input-wrap">
-            <input type="password" id="admin-new-pass" class="form-control" placeholder="New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-new-pass" aria-label="Toggle password visibility">👁</button>
-          </div>
-        </div>
-        <div class="form-group" style="margin-bottom:16px;">
-          <label for="admin-confirm-pass">Confirm New Password</label>
-          <div class="pass-input-wrap">
-            <input type="password" id="admin-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            <button type="button" class="eye-toggle" data-target="admin-confirm-pass" aria-label="Toggle password visibility">👁</button>
-          </div>
-        </div>
-        <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update Password</button>
-      </div>
-
-      <!-- TAB 3: FORGOT PASSWORD (APPROVED MULTI-STEP RECOVERY FLOW) -->
-      <div id="admin-tab-forgot" class="admin-tab-content" style="display:none;">
-        
-        <!-- STEP 1: CHOOSE RECOVERY METHOD -->
-        <div id="forgot-step-choose-method">
-          <div class="recovery-step-badge">📌 Step 1: Choose Recovery Method</div>
-          <p style="font-size:0.8rem;color:rgba(255,255,255,0.85);margin-bottom:10px;line-height:1.4;">
-            Apna account recover karne ke liye neeche me se koi EK method select karein:
-          </p>
-          
-          <div class="recovery-method-grid">
-            <!-- Method 1: Recovery Email -->
-            <div class="recovery-method-card" id="card-method-email" data-method="email">
-              <div class="recovery-method-icon">📧</div>
-              <div>
-                <div class="recovery-method-title">Recovery Email</div>
-                <div class="recovery-method-desc">Registered email par 6-digit OTP code praapt karein</div>
-              </div>
-            </div>
-
-            <!-- Method 2: Emergency Backup Code -->
-            <div class="recovery-method-card" id="card-method-backup" data-method="backup">
-              <div class="recovery-method-icon">🔑</div>
-              <div>
-                <div class="recovery-method-title">Emergency Backup Code</div>
-                <div class="recovery-method-desc">Apna 16-character offline emergency code enter karein</div>
-              </div>
-            </div>
-
-            <!-- Method 3: Security Question -->
-            <div class="recovery-method-card" id="card-method-question" data-method="question">
-              <div class="recovery-method-icon">❓</div>
-              <div>
-                <div class="recovery-method-title">Security Question</div>
-                <div class="recovery-method-desc">Apne secret security question ka jawab dein</div>
-              </div>
-            </div>
-          </div>
+      <!-- TAB 2: 🔐 SECURITY & RECOVERY -->
+      <div id="admin-tab-security" class="admin-tab-content" style="display:none;">
+        <div style="font-size:0.92rem;font-weight:700;color:#c084fc;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+          <span>🔐</span> <span>Security & Recovery</span>
         </div>
 
-        <!-- SUB-STEP 1A: RECOVERY EMAIL FLOW -->
-        <div id="forgot-substep-email" class="recovery-flow-box" style="display:none;">
-          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
-          <div class="recovery-step-badge">📧 Email OTP Verification</div>
-
-          <div class="form-group" style="margin-bottom:10px;">
-            <label for="recovery-email-input" style="font-size:0.75rem;opacity:0.9;">Registered Recovery Email</label>
-            <div class="pass-input-wrap">
-              <input type="email" id="recovery-email-input" class="form-control" placeholder="Enter Recovery Email (e.g. admin@example.com)" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-            </div>
-          </div>
-
-          <button id="btn-send-email-otp" class="btn primary-btn" style="width:100%;margin-bottom:12px;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send OTP</span></button>
-
-          <div id="otp-enter-group" style="display:none;margin-top:12px;">
-            <div class="form-group" style="margin-bottom:10px;">
-              <label for="recovery-otp-input" style="font-size:0.75rem;color:#c084fc;">Enter 6-Digit Verification Code</label>
-              <input type="text" id="recovery-otp-input" class="form-control" placeholder="6-Digit OTP (e.g. 123456)" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:bold;" />
-            </div>
-            <button id="btn-verify-email-otp" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify OTP</span></button>
-          </div>
-          <div id="email-otp-error" class="admin-error-msg" style="display:none;"></div>
+        <!-- Security Sub-Tabs Navigation -->
+        <div class="security-subtab-nav" style="display:flex;gap:6px;margin-bottom:16px;background:rgba(0,0,0,0.25);padding:4px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);">
+          <button class="security-subtab-btn active" data-subtab="change" type="button" style="flex:1;background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.4);color:#fff;padding:6px 10px;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;">🔑 Change Password</button>
+          <button class="security-subtab-btn" data-subtab="forgot" type="button" style="flex:1;background:transparent;border:1px solid transparent;color:#94a3b8;padding:6px 10px;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all 0.2s;">❓ Forgot Password</button>
         </div>
 
-        <!-- SUB-STEP 1B: BACKUP CODE MANAGEMENT & VERIFICATION FLOW -->
-        <div id="forgot-substep-backup" class="recovery-flow-box" style="display:none;">
-          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
-          <div class="recovery-step-badge">🔑 Emergency Backup Code & Verification</div>
-
-          <!-- Section 1: Information Card -->
-          <div class="glass-info-card" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-            <div style="font-size:0.88rem;font-weight:700;color:#F7C94A;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-              <span>🛟</span> <span>Emergency Recovery Code</span>
-            </div>
-            <div style="font-size:0.75rem;font-weight:600;color:#E2E8F0;margin-bottom:6px;">
-              Use this code ONLY if you cannot access your recovery email.
-            </div>
-            <div style="font-size:0.72rem;color:#94A3B8;line-height:1.5;">
-              <div>• Email OTP unavailable</div>
-              <div>• Lost access to recovery email</div>
-              <div>• Last recovery option</div>
-            </div>
-          </div>
-
-          <!-- Section 2: Backup Code Card -->
-          <div id="forgot-backup-card-wrapper" class="backup-code-card" style="background:rgba(18,13,36,0.7);border:1px dashed #F7C94A;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;box-shadow:0 0 20px rgba(247,201,74,0.15);transition:all 0.3s ease;">
-            <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-bottom:6px;">Your Current Emergency Code</div>
-            <div id="forgot-backup-code-display" class="sec-backup-code-val" style="font-family:'Courier New',Courier,monospace;font-size:1.3rem;font-weight:800;letter-spacing:3px;color:#F7C94A;text-shadow:0 0 10px rgba(247,201,74,0.3);word-break:break-all;">WS-9F8A-3E21-7B04</div>
-            <div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;">Copy, download, or enter this code below</div>
-          </div>
-
-          <!-- Section 3: Recovery Actions (2x2 Grid) -->
-          <div class="backup-actions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
-            <button type="button" class="btn-backup-act btn-copy-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">📋 Copy Code</button>
-            <button type="button" class="btn-backup-act btn-download-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">⬇ Download TXT</button>
-            <button type="button" class="btn-backup-act btn-print-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🖨 Print Code</button>
-            <button type="button" class="btn-backup-act btn-regen-code-action" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🔄 Generate New Code</button>
-          </div>
-
-          <!-- Section 4: Security Warning Card -->
-          <div class="security-warning-card" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:10px;padding:10px 12px;font-size:0.73rem;color:#FDE047;line-height:1.5;margin-bottom:14px;">
-            <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.78rem;">
-              <span>⚠</span> <span>Store this code safely.</span>
-            </div>
-            <div>• Never share it with anyone.</div>
-            <div>• Generating a new backup code permanently invalidates the old one.</div>
-          </div>
-
-          <!-- Section 5: Verify Existing Backup Code Below -->
-          <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:12px;">
-            <div style="font-size:0.8rem;font-weight:700;color:#c084fc;margin-bottom:8px;">🔑 Verify Existing Backup Code</div>
-            <div class="form-group" style="margin-bottom:12px;">
-              <label for="recovery-backup-input" style="font-size:0.75rem;opacity:0.9;">Enter 16-Character Emergency Code</label>
-              <div class="pass-input-wrap">
-                <input type="text" id="recovery-backup-input" class="form-control" placeholder="WS-XXXX-XXXX-XXXX" maxlength="20" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-                <button type="button" class="eye-toggle" data-target="recovery-backup-input" aria-label="Toggle visibility">👁</button>
-              </div>
-              <div id="backup-code-error" class="admin-error-msg" style="display:none;">❌ Invalid Emergency Backup Code!</div>
-            </div>
-            <button id="btn-verify-backup-code" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Code & Proceed</span></button>
-          </div>
-        </div>
-
-        <!-- SUB-STEP 1C: SECURITY QUESTION FLOW -->
-        <div id="forgot-substep-question" class="recovery-flow-box" style="display:none;">
-          <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
-          <div class="recovery-step-badge">❓ Security Question Verification</div>
-
+        <!-- SUBTAB 1: CHANGE PASSWORD -->
+        <div id="security-subtab-change" class="security-subtab-content">
           <div class="form-group" style="margin-bottom:12px;">
-            <label id="forgot-question-label" style="font-size:0.8rem;color:var(--gold,#ffd700);margin-bottom:6px;display:block;">Question: Who is your best friend?</label>
+            <label for="admin-old-pass">Current / Old Password</label>
             <div class="pass-input-wrap">
-              <input type="password" id="recovery-question-input" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="recovery-question-input" aria-label="Toggle visibility">👁</button>
+              <input type="password" id="admin-old-pass" class="form-control" placeholder="Current Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-old-pass" aria-label="Toggle password visibility">👁</button>
             </div>
-            <div id="question-answer-error" class="admin-error-msg" style="display:none;">❌ Invalid Secret Answer!</div>
           </div>
-          <button id="btn-verify-question-answer" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Answer & Proceed</span></button>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="admin-new-pass">New Password</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-new-pass" class="form-control" placeholder="New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-new-pass" aria-label="Toggle password visibility">👁</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label for="admin-confirm-pass">Confirm New Password</label>
+            <div class="pass-input-wrap">
+              <input type="password" id="admin-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              <button type="button" class="eye-toggle" data-target="admin-confirm-pass" aria-label="Toggle password visibility">👁</button>
+            </div>
+          </div>
+          <button id="admin-change-submit-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Update Password</button>
         </div>
 
-        <!-- STEP 2: SET NEW PASSWORD -->
-        <div id="forgot-step-newpass" style="display:none;">
-          <div style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:#2ecc71;padding:8px 12px;border-radius:8px;font-size:0.8rem;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-            ✓ Identity Verified! Enter your new Admin password:
-          </div>
-          <div class="form-group" style="margin-bottom:10px;">
-            <label for="admin-reset-new-pass" style="font-size:0.75rem;">New Admin Password</label>
-            <div class="pass-input-wrap">
-              <input type="password" id="admin-reset-new-pass" class="form-control" placeholder="New Password (min 4 chars)" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="admin-reset-new-pass" aria-label="Toggle visibility">👁</button>
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom:14px;">
-            <label for="admin-reset-confirm-pass" style="font-size:0.75rem;">Confirm New Password</label>
-            <div class="pass-input-wrap">
-              <input type="password" id="admin-reset-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
-              <button type="button" class="eye-toggle" data-target="admin-reset-confirm-pass" aria-label="Toggle visibility">👁</button>
-            </div>
-            <div id="admin-setnew-error" class="admin-error-msg" style="display:none;">❌ Passwords do not match!</div>
-          </div>
-          <button id="admin-save-newpass-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Save New Password & Unlock</button>
-        </div>
+        <!-- SUBTAB 2: FORGOT PASSWORD (APPROVED MULTI-STEP RECOVERY FLOW) -->
+        <div id="security-subtab-forgot" class="security-subtab-content" style="display:none;">
+          
+          <!-- STEP 1: CHOOSE RECOVERY METHOD -->
+          <div id="forgot-step-choose-method">
+            <div class="recovery-step-badge">📌 Step 1: Choose Recovery Method</div>
+            <p style="font-size:0.8rem;color:rgba(255,255,255,0.85);margin-bottom:10px;line-height:1.4;">
+              Apna account recover karne ke liye neeche me se koi EK method select karein:
+            </p>
+            
+            <div class="recovery-method-grid">
+              <!-- Method 1: Recovery Email -->
+              <div class="recovery-method-card" id="card-method-email" data-method="email">
+                <div class="recovery-method-icon">📧</div>
+                <div>
+                  <div class="recovery-method-title">Recovery Email</div>
+                  <div class="recovery-method-desc">Registered email par 6-digit OTP code praapt karein</div>
+                </div>
+              </div>
 
+              <!-- Method 2: Emergency Backup Code -->
+              <div class="recovery-method-card" id="card-method-backup" data-method="backup">
+                <div class="recovery-method-icon">🔑</div>
+                <div>
+                  <div class="recovery-method-title">Emergency Backup Code</div>
+                  <div class="recovery-method-desc">Apna 16-character offline emergency code enter karein</div>
+                </div>
+              </div>
+
+              <!-- Method 3: Security Question -->
+              <div class="recovery-method-card" id="card-method-question" data-method="question">
+                <div class="recovery-method-icon">❓</div>
+                <div>
+                  <div class="recovery-method-title">Security Question</div>
+                  <div class="recovery-method-desc">Apne secret security question ka jawab dein</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-STEP 1A: RECOVERY EMAIL FLOW -->
+          <div id="forgot-substep-email" class="recovery-flow-box" style="display:none;">
+            <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+            <div class="recovery-step-badge">📧 Email OTP Verification</div>
+
+            <div class="form-group" style="margin-bottom:10px;">
+              <label for="recovery-email-input" style="font-size:0.75rem;opacity:0.9;">Registered Recovery Email</label>
+              <div class="pass-input-wrap">
+                <input type="email" id="recovery-email-input" class="form-control" placeholder="Enter Recovery Email (e.g. admin@example.com)" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+              </div>
+            </div>
+
+            <button id="btn-send-email-otp" class="btn primary-btn" style="width:100%;margin-bottom:12px;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Send OTP</span></button>
+
+            <div id="otp-enter-group" style="display:none;margin-top:12px;">
+              <div class="form-group" style="margin-bottom:10px;">
+                <label for="recovery-otp-input" style="font-size:0.75rem;color:#c084fc;">Enter 6-Digit Verification Code</label>
+                <input type="text" id="recovery-otp-input" class="form-control" placeholder="6-Digit OTP (e.g. 123456)" maxlength="6" style="width:100%;padding:10px;border-radius:8px;background:rgba(168,85,247,0.15);color:#fff;border:1px solid #a855f7;text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:bold;" />
+              </div>
+              <button id="btn-verify-email-otp" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify OTP</span></button>
+            </div>
+            <div id="email-otp-error" class="admin-error-msg" style="display:none;"></div>
+          </div>
+
+          <!-- SUB-STEP 1B: BACKUP CODE MANAGEMENT & VERIFICATION FLOW -->
+          <div id="forgot-substep-backup" class="recovery-flow-box" style="display:none;">
+            <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+            <div class="recovery-step-badge">🔑 Emergency Backup Code & Verification</div>
+
+            <!-- Section 1: Information Card -->
+            <div class="glass-info-card" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+              <div style="font-size:0.88rem;font-weight:700;color:#F7C94A;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                <span>🛟</span> <span>Emergency Recovery Code</span>
+              </div>
+              <div style="font-size:0.75rem;font-weight:600;color:#E2E8F0;margin-bottom:6px;">
+                Use this code ONLY if you cannot access your recovery email.
+              </div>
+              <div style="font-size:0.72rem;color:#94A3B8;line-height:1.5;">
+                <div>• Email OTP unavailable</div>
+                <div>• Lost access to recovery email</div>
+                <div>• Last recovery option</div>
+              </div>
+            </div>
+
+            <!-- Section 2: Backup Code Card -->
+            <div id="forgot-backup-card-wrapper" class="backup-code-card" style="background:rgba(18,13,36,0.7);border:1px dashed #F7C94A;border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;box-shadow:0 0 20px rgba(247,201,74,0.15);transition:all 0.3s ease;">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-bottom:6px;">Your Current Emergency Code</div>
+              <div id="forgot-backup-code-display" class="sec-backup-code-val" style="font-family:'Courier New',Courier,monospace;font-size:1.3rem;font-weight:800;letter-spacing:3px;color:#F7C94A;text-shadow:0 0 10px rgba(247,201,74,0.3);word-break:break-all;">WS-9F8A-3E21-7B04</div>
+              <div style="font-size:0.68rem;color:#94A3B8;margin-top:6px;">Copy, download, or enter this code below</div>
+            </div>
+
+            <!-- Section 3: Recovery Actions (2x2 Grid) -->
+            <div class="backup-actions-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;">
+              <button type="button" class="btn-backup-act btn-copy-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">📋 Copy Code</button>
+              <button type="button" class="btn-backup-act btn-download-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">⬇ Download TXT</button>
+              <button type="button" class="btn-backup-act btn-print-code-action" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🖨 Print Code</button>
+              <button type="button" class="btn-backup-act btn-regen-code-action" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:8px 10px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s ease;">🔄 Generate New Code</button>
+            </div>
+
+            <!-- Section 4: Security Warning Card -->
+            <div class="security-warning-card" style="background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:10px;padding:10px 12px;font-size:0.73rem;color:#FDE047;line-height:1.5;margin-bottom:14px;">
+              <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:0.78rem;">
+                <span>⚠</span> <span>Store this code safely.</span>
+              </div>
+              <div>• Never share it with anyone.</div>
+              <div>• Generating a new backup code permanently invalidates the old one.</div>
+            </div>
+
+            <!-- Section 5: Verify Existing Backup Code Below -->
+            <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:12px;">
+              <div style="font-size:0.8rem;font-weight:700;color:#c084fc;margin-bottom:8px;">🔑 Verify Existing Backup Code</div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label for="recovery-backup-input" style="font-size:0.75rem;opacity:0.9;">Enter 16-Character Emergency Code</label>
+                <div class="pass-input-wrap">
+                  <input type="text" id="recovery-backup-input" class="form-control" placeholder="WS-XXXX-XXXX-XXXX" maxlength="20" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+                  <button type="button" class="eye-toggle" data-target="recovery-backup-input" aria-label="Toggle visibility">👁</button>
+                </div>
+                <div id="backup-code-error" class="admin-error-msg" style="display:none;">❌ Invalid Emergency Backup Code!</div>
+              </div>
+              <button id="btn-verify-backup-code" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Code & Proceed</span></button>
+            </div>
+          </div>
+
+          <!-- SUB-STEP 1C: SECURITY QUESTION FLOW -->
+          <div id="forgot-substep-question" class="recovery-flow-box" style="display:none;">
+            <button type="button" class="btn-back-link btn-back-to-methods">← Back to Recovery Methods</button>
+            <div class="recovery-step-badge">❓ Security Question Verification</div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+              <label id="forgot-question-label" style="font-size:0.8rem;color:var(--gold,#ffd700);margin-bottom:6px;display:block;">Question: Who is your best friend?</label>
+              <div class="pass-input-wrap">
+                <input type="password" id="recovery-question-input" class="form-control" placeholder="Enter Secret Answer" maxlength="30" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+                <button type="button" class="eye-toggle" data-target="recovery-question-input" aria-label="Toggle visibility">👁</button>
+              </div>
+              <div id="question-answer-error" class="admin-error-msg" style="display:none;">❌ Invalid Secret Answer!</div>
+            </div>
+            <button id="btn-verify-question-answer" class="btn primary-btn" style="width:100%;" type="button"><svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg><span>Verify Answer & Proceed</span></button>
+          </div>
+
+          <!-- STEP 2: SET NEW PASSWORD -->
+          <div id="forgot-step-newpass" style="display:none;">
+            <div style="background:rgba(46,204,113,0.15);border:1px solid rgba(46,204,113,0.4);color:#2ecc71;padding:8px 12px;border-radius:8px;font-size:0.8rem;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              ✓ Identity Verified! Enter your new Admin password:
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label for="admin-reset-new-pass" style="font-size:0.75rem;">New Admin Password</label>
+              <div class="pass-input-wrap">
+                <input type="password" id="admin-reset-new-pass" class="form-control" placeholder="New Password (min 4 chars)" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+                <button type="button" class="eye-toggle" data-target="admin-reset-new-pass" aria-label="Toggle visibility">👁</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:14px;">
+              <label for="admin-reset-confirm-pass" style="font-size:0.75rem;">Confirm New Password</label>
+              <div class="pass-input-wrap">
+                <input type="password" id="admin-reset-confirm-pass" class="form-control" placeholder="Confirm New Password" maxlength="10" style="width:100%;padding:10px 40px 10px 10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);" />
+                <button type="button" class="eye-toggle" data-target="admin-reset-confirm-pass" aria-label="Toggle visibility">👁</button>
+              </div>
+              <div id="admin-setnew-error" class="admin-error-msg" style="display:none;">❌ Passwords do not match!</div>
+            </div>
+            <button id="admin-save-newpass-btn" class="btn primary-btn" style="width:100%;" type="button">💾 Save New Password & Unlock</button>
+          </div>
+
+        </div>
       </div>
     </div>
   </div>
@@ -1149,7 +1167,6 @@
   <script src="js/storage.js"></script>
   <script src="js/database.js"></script>
   <script src="js/share.js"></script>
-  <script src="js/admin.js"></script>
   <script src="js/modules/utils.js"></script>
   <script src="js/modules/wish-codec.js"></script>
   <script src="js/modules/renderers.js"></script>

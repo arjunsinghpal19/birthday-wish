@@ -43,8 +43,12 @@
 
   /**
    * Parses time input (e.g., "30", ":30", "1:15", "1.30", "1m15s") into total seconds.
+   * Delegates to shared TimeUtils.parseTimeToSeconds with fallback.
    */
   function parseTimeToSeconds(input) {
+    if (root.TimeUtils && typeof root.TimeUtils.parseTimeToSeconds === "function") {
+      return root.TimeUtils.parseTimeToSeconds(input);
+    }
     if (typeof input === "number") return isNaN(input) ? 0 : Math.max(0, Math.floor(input));
     if (!input || typeof input !== "string") return 0;
     const str = input.trim();
@@ -75,8 +79,12 @@
 
   /**
    * Formats total seconds into MM:SS display string (e.g. 90 -> "01:30").
+   * Delegates to shared TimeUtils.formatSecondsToMMSS with fallback.
    */
   function formatSecondsToMMSS(seconds) {
+    if (root.TimeUtils && typeof root.TimeUtils.formatSecondsToMMSS === "function") {
+      return root.TimeUtils.formatSecondsToMMSS(seconds);
+    }
     const total = Math.max(0, Math.floor(seconds || 0));
     const m = Math.floor(total / 60);
     const s = total % 60;
@@ -301,11 +309,18 @@
   function updateVideoWishUI() {
     const cfg = getConfig();
     const videoWish = cfg.videoWish || {};
-    const hasCustomVid = videoWish.file || (typeof videoWish.url === "string" && videoWish.url.startsWith("blob:")) || videoWish.fileName;
+    const hasCustomVid = videoWish.file || 
+      videoWish.fileName || 
+      (typeof videoWish.url === "string" && (
+        videoWish.url.startsWith("blob:") ||
+        videoWish.url.includes("supabase.co") ||
+        (!isYouTubeVideoUrl(videoWish.url) && videoWish.url.trim().length > 0)
+      ));
 
     const vidText = document.getElementById("video-upload-text");
     if (vidText) {
-      vidText.textContent = hasCustomVid ? `📹 Attached: ${(videoWish.fileName || "video").substring(0, 18)}` : `📹 Select Video from Device`;
+      const vidDisplayName = videoWish.fileName || (videoWish.url?.includes("supabase.co") ? "Cloud Video" : (videoWish.url && !isYouTubeVideoUrl(videoWish.url) ? "Custom Video" : "video"));
+      vidText.textContent = hasCustomVid ? `📹 Attached: ${vidDisplayName.substring(0, 18)}` : `📹 Select Video from Device`;
     }
     const vidRemoveBtn = document.getElementById("remove-video-file-btn");
     if (vidRemoveBtn) {

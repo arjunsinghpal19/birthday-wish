@@ -11,10 +11,55 @@
 
   const TABLE_NAME = "wishes";
 
+  // Safe helper to encode media start time metadata
+  function encodeMediaUrlWithStart(url, startTime) {
+    if (!url || typeof url !== "string") return null;
+    const clean = url.trim();
+    if (!clean) return null;
+    if (window.MediaService && typeof window.MediaService.encodeMediaStartTime === "function") {
+      return window.MediaService.encodeMediaStartTime(clean, startTime) || clean;
+    }
+    if (typeof window.encodeMediaStartTime === "function") {
+      return window.encodeMediaStartTime(clean, startTime) || clean;
+    }
+    return clean;
+  }
+
+  // Safe helper to decode media start time metadata
+  function decodeMediaUrlStart(url) {
+    if (!url || typeof url !== "string") return 0;
+    if (window.MediaService && typeof window.MediaService.decodeMediaStartTime === "function") {
+      return window.MediaService.decodeMediaStartTime(url);
+    }
+    if (typeof window.decodeMediaStartTime === "function") {
+      return window.decodeMediaStartTime(url);
+    }
+    const match = url.match(/#bw-start=(\d+)/i);
+    return match ? (parseInt(match[1], 10) || 0) : 0;
+  }
+
+  // Safe helper to strip media start time metadata
+  function stripMediaUrlMetadata(url) {
+    if (!url || typeof url !== "string") return "";
+    if (window.MediaService && typeof window.MediaService.stripMediaMetadata === "function") {
+      return window.MediaService.stripMediaMetadata(url);
+    }
+    if (typeof window.stripMediaMetadata === "function") {
+      return window.stripMediaMetadata(url);
+    }
+    return url.replace(/#bw-start=\d+/i, "").replace(/#+$/, "").trim();
+  }
+
   async function saveWishRecord(configObj) {
     try {
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (!client) return null;
+
+      const rawMusicFile = configObj.music?.file || null;
+      const rawVideoUrl = configObj.videoWish?.url || configObj.videoWish?.file || null;
+
+      const finalMusicUrl = encodeMediaUrlWithStart(rawMusicFile, configObj.music?.startTime);
+      const finalVideoUrl = encodeMediaUrlWithStart(rawVideoUrl, configObj.videoWish?.startTime);
 
       const record = {
         recipient_name: configObj.name || "",
@@ -28,8 +73,8 @@
         gallery_json: configObj.gallery || [],
         timeline_json: configObj.timeline || [],
         gift_json: configObj.gift || {},
-        music_url: configObj.music?.file || null,
-        video_url: configObj.videoWish?.url || configObj.videoWish?.file || null,
+        music_url: finalMusicUrl,
+        video_url: finalVideoUrl,
         cake_flavor: configObj.cakeFlavor || "default",
         letter_font: configObj.letterFont || "default",
         letter_theme: configObj.letterTheme || "default"
@@ -61,6 +106,12 @@
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (!client) return null;
 
+      const rawMusicFile = configObj.music?.file || null;
+      const rawVideoUrl = configObj.videoWish?.url || configObj.videoWish?.file || null;
+
+      const finalMusicUrl = encodeMediaUrlWithStart(rawMusicFile, configObj.music?.startTime);
+      const finalVideoUrl = encodeMediaUrlWithStart(rawVideoUrl, configObj.videoWish?.startTime);
+
       const record = {
         recipient_name: configObj.name || "",
         sender_name: configObj.from || "",
@@ -73,8 +124,8 @@
         gallery_json: configObj.gallery || [],
         timeline_json: configObj.timeline || [],
         gift_json: configObj.gift || {},
-        music_url: configObj.music?.file || null,
-        video_url: configObj.videoWish?.url || configObj.videoWish?.file || null,
+        music_url: finalMusicUrl,
+        video_url: finalVideoUrl,
         cake_flavor: configObj.cakeFlavor || "default",
         letter_font: configObj.letterFont || "default",
         letter_theme: configObj.letterTheme || "default",
@@ -124,6 +175,14 @@
 
       console.log("📥 Database SELECT record music_url:", data.music_url, "video_url:", data.video_url);
 
+      const rawMusic = data.music_url || "";
+      const cleanMusic = stripMediaUrlMetadata(rawMusic);
+      const musicStart = decodeMediaUrlStart(rawMusic);
+
+      const rawVideo = data.video_url || "";
+      const cleanVideo = stripMediaUrlMetadata(rawVideo);
+      const videoStart = decodeMediaUrlStart(rawVideo);
+
       // Format database record back to application config schema
       return {
         n: data.recipient_name,
@@ -139,8 +198,8 @@
         g: data.gallery_json || [],
         t: data.timeline_json || [],
         gft: data.gift_json || {},
-        msc: { f: data.music_url, file: data.music_url },
-        v: { u: data.video_url, url: data.video_url },
+        msc: { f: cleanMusic, file: cleanMusic, startTime: musicStart, t: musicStart },
+        v: { u: cleanVideo, url: cleanVideo, startTime: videoStart, t: videoStart },
         cf: data.cake_flavor,
         lf: data.letter_font,
         lt: data.letter_theme

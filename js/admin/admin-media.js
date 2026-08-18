@@ -255,7 +255,7 @@
 
       let previewHtml = "";
       if (file.folder === "photos") {
-        previewHtml = `<img src="${file.publicUrl}" alt="${file.name}" onerror="this.src='assets/images/polaroid-1.jpg'">`;
+        previewHtml = `<img src="${file.publicUrl}" alt="${file.name}" onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<div class=\\'gallery-emoji-tile\\'>📷</div>');">`;
       } else if (file.folder === "videos") {
         previewHtml = `<video src="${file.publicUrl}" preload="metadata" muted></video>`;
       } else {

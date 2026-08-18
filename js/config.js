@@ -5,7 +5,9 @@
  * theme options, milestone timeline items, and media references.
  * ============================================================================
  */
-const CONFIG = {
+const CONFIG = (typeof WishDefaults !== "undefined" && typeof WishDefaults.getDefaultConfig === "function")
+  ? WishDefaults.getDefaultConfig()
+  : {
   // For each new wish, change these two values first.
   name: "", // Person receiving the wish (leave blank for default "Happy Birthday")
   from: "your friends who adore you", // Your name / sender name
@@ -144,6 +146,10 @@ const CONFIG = {
   letterTheme: "default",
   cakeFlavor: "default",
 };
+
+if (typeof window !== "undefined") {
+  window.CONFIG = CONFIG;
+}
 
 /* ==========================================================================
    CDN LOADER WITH AUTOMATIC MULTI-SOURCE FALLBACK

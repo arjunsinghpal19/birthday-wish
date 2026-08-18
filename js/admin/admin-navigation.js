@@ -71,8 +71,17 @@
     const mobileToggle = document.getElementById("mobile-sidebar-toggle");
     const sidebar = document.getElementById("admin-sidebar");
     if (mobileToggle && sidebar) {
-      mobileToggle.addEventListener("click", () => {
+      mobileToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
         sidebar.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (window.innerWidth <= 1024 && sidebar.classList.contains("open")) {
+          if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+            sidebar.classList.remove("open");
+          }
+        }
       });
     }
   }

@@ -223,6 +223,19 @@
     if (giftCpnInput) giftCpnInput.value = cfg.gift?.coupon || "";
 
     // Music
+    if (cfg.music?.file) {
+      const decStart = (root.MediaService && typeof root.MediaService.decodeMediaStartTime === "function")
+        ? root.MediaService.decodeMediaStartTime(cfg.music.file)
+        : (typeof root.decodeMediaStartTime === "function" ? root.decodeMediaStartTime(cfg.music.file) : 0);
+      if (decStart > 0 && !cfg.music.startTime) {
+        cfg.music.startTime = decStart;
+      }
+      if (root.MediaService && typeof root.MediaService.stripMediaMetadata === "function") {
+        cfg.music.file = root.MediaService.stripMediaMetadata(cfg.music.file);
+      } else if (typeof root.stripMediaMetadata === "function") {
+        cfg.music.file = root.stripMediaMetadata(cfg.music.file);
+      }
+    }
     const isYTMusic = (u) => (u && typeof u === "string" && (u.includes("youtube.com/watch") || u.includes("youtube.com/shorts") || u.includes("youtu.be")));
     const musicInput = document.getElementById("input-music-url");
     if (musicInput) {
@@ -231,10 +244,33 @@
     }
     const musicStartInput = document.getElementById("input-music-start");
     if (musicStartInput) {
-      musicStartInput.value = cfg.music?.startTime || "";
+      const rawStart = cfg.music?.startTime;
+      if (rawStart !== undefined && rawStart !== null && rawStart !== "") {
+        const sec = (root.TimeUtils && typeof root.TimeUtils.parseTimeToSeconds === "function")
+          ? root.TimeUtils.parseTimeToSeconds(rawStart)
+          : (parseInt(rawStart, 10) || 0);
+        musicStartInput.value = (sec > 0 && root.TimeUtils && typeof root.TimeUtils.formatSecondsToMMSS === "function")
+          ? root.TimeUtils.formatSecondsToMMSS(sec)
+          : (sec > 0 ? String(sec) : "");
+      } else {
+        musicStartInput.value = "";
+      }
     }
 
     // Video Wish
+    if (cfg.videoWish?.url) {
+      const decStart = (root.MediaService && typeof root.MediaService.decodeMediaStartTime === "function")
+        ? root.MediaService.decodeMediaStartTime(cfg.videoWish.url)
+        : (typeof root.decodeMediaStartTime === "function" ? root.decodeMediaStartTime(cfg.videoWish.url) : 0);
+      if (decStart > 0 && !cfg.videoWish.startTime) {
+        cfg.videoWish.startTime = decStart;
+      }
+      if (root.MediaService && typeof root.MediaService.stripMediaMetadata === "function") {
+        cfg.videoWish.url = root.MediaService.stripMediaMetadata(cfg.videoWish.url);
+      } else if (typeof root.stripMediaMetadata === "function") {
+        cfg.videoWish.url = root.stripMediaMetadata(cfg.videoWish.url);
+      }
+    }
     const vidUrlInput = document.getElementById("input-video-url");
     if (vidUrlInput) {
       const isYT = typeof root.isYouTubeVideoUrl === "function" ? root.isYouTubeVideoUrl : (u) => (u && (u.includes("youtube.com") || u.includes("youtu.be")));
@@ -242,7 +278,17 @@
     }
     const vidStartInput = document.getElementById("input-video-start");
     if (vidStartInput) {
-      vidStartInput.value = cfg.videoWish?.startTime || "";
+      const rawStart = cfg.videoWish?.startTime;
+      if (rawStart !== undefined && rawStart !== null && rawStart !== "") {
+        const sec = (root.TimeUtils && typeof root.TimeUtils.parseTimeToSeconds === "function")
+          ? root.TimeUtils.parseTimeToSeconds(rawStart)
+          : (parseInt(rawStart, 10) || 0);
+        vidStartInput.value = (sec > 0 && root.TimeUtils && typeof root.TimeUtils.formatSecondsToMMSS === "function")
+          ? root.TimeUtils.formatSecondsToMMSS(sec)
+          : (sec > 0 ? String(sec) : "");
+      } else {
+        vidStartInput.value = "";
+      }
     }
 
     const hasCustomAudio = cfg.music?.file && (
@@ -902,46 +948,57 @@
 
     if (!backdrop || !toggleBtn) return;
 
-    // Load saved config from localStorage if available
-    const savedMod = localStorage.getItem("custom_birthday_config");
-    if (savedMod) {
-      try {
-        const parsed = JSON.parse(savedMod);
-        if (parsed && typeof parsed === "object") {
-          const runtimeMusic = cfg.music;
-          const runtimeVideo = cfg.videoWish;
-          Object.assign(cfg, parsed);
-          if (parsed._activeWishUuid) {
-            cfg._activeWishUuid = parsed._activeWishUuid;
-            if (root.CONFIG) root.CONFIG._activeWishUuid = parsed._activeWishUuid;
+    // Load saved config from localStorage ONLY for fresh creator sessions (never overwrite active public, UUID wish, or preview routes)
+    const searchParams = (typeof window !== "undefined" && window.location) ? new URLSearchParams(window.location.search) : new URLSearchParams("");
+    const isPreviewParam = (root.CONFIG && root.CONFIG._isPreview) || searchParams.get("preview") === "admin" || searchParams.get("preview") === "admin_session" || searchParams.get("preview") === "true";
+    const hasRecipientParams =
+      isPreviewParam ||
+      searchParams.has("name") ||
+      searchParams.has("w") ||
+      searchParams.has("wish") ||
+      searchParams.has("id");
+
+    if (!hasRecipientParams && !cfg._activeWishUuid && !(root.CONFIG && root.CONFIG._activeWishUuid)) {
+      const savedMod = localStorage.getItem("custom_birthday_config");
+      if (savedMod) {
+        try {
+          const parsed = JSON.parse(savedMod);
+          if (parsed && typeof parsed === "object") {
+            const runtimeMusic = cfg.music;
+            const runtimeVideo = cfg.videoWish;
+            Object.assign(cfg, parsed);
+            if (parsed._activeWishUuid) {
+              cfg._activeWishUuid = parsed._activeWishUuid;
+              if (root.CONFIG) root.CONFIG._activeWishUuid = parsed._activeWishUuid;
+            }
+            if (runtimeMusic && runtimeMusic.file && (!parsed.music || !parsed.music.file || (typeof runtimeMusic.file === "string" && runtimeMusic.file.startsWith("blob:")))) {
+              cfg.music = {
+                ...runtimeMusic,
+                ...(parsed.music || {}),
+                file: runtimeMusic.file,
+                fileName: runtimeMusic.fileName || (parsed.music && parsed.music.fileName),
+                isBlob: runtimeMusic.isBlob !== undefined ? runtimeMusic.isBlob : (parsed.music && parsed.music.isBlob)
+              };
+            }
+            if (runtimeVideo && (runtimeVideo.url || runtimeVideo.file) && (!parsed.videoWish || (!parsed.videoWish.url && !parsed.videoWish.file) || (typeof runtimeVideo.file === "string" && runtimeVideo.file.startsWith("blob:")))) {
+              cfg.videoWish = {
+                ...runtimeVideo,
+                ...(parsed.videoWish || {}),
+                url: runtimeVideo.url || (parsed.videoWish && parsed.videoWish.url),
+                file: runtimeVideo.file || (parsed.videoWish && parsed.videoWish.file),
+                fileName: runtimeVideo.fileName || (parsed.videoWish && parsed.videoWish.fileName)
+              };
+            }
+            if (Array.isArray(cfg.gallery)) {
+              cfg.gallery.forEach(item => {
+                if (typeof item.image === "string" && item.image.startsWith("blob:")) {
+                  item.image = item._localDraft || null;
+                }
+              });
+            }
           }
-          if (runtimeMusic && runtimeMusic.file && (!parsed.music || !parsed.music.file || (typeof runtimeMusic.file === "string" && runtimeMusic.file.startsWith("blob:")))) {
-            cfg.music = {
-              ...runtimeMusic,
-              ...(parsed.music || {}),
-              file: runtimeMusic.file,
-              fileName: runtimeMusic.fileName || (parsed.music && parsed.music.fileName),
-              isBlob: runtimeMusic.isBlob !== undefined ? runtimeMusic.isBlob : (parsed.music && parsed.music.isBlob)
-            };
-          }
-          if (runtimeVideo && (runtimeVideo.url || runtimeVideo.file) && (!parsed.videoWish || (!parsed.videoWish.url && !parsed.videoWish.file) || (typeof runtimeVideo.file === "string" && runtimeVideo.file.startsWith("blob:")))) {
-            cfg.videoWish = {
-              ...runtimeVideo,
-              ...(parsed.videoWish || {}),
-              url: runtimeVideo.url || (parsed.videoWish && parsed.videoWish.url),
-              file: runtimeVideo.file || (parsed.videoWish && parsed.videoWish.file),
-              fileName: runtimeVideo.fileName || (parsed.videoWish && parsed.videoWish.fileName)
-            };
-          }
-          if (Array.isArray(cfg.gallery)) {
-            cfg.gallery.forEach(item => {
-              if (typeof item.image === "string" && item.image.startsWith("blob:")) {
-                item.image = item._localDraft || null;
-              }
-            });
-          }
-        }
-      } catch(e){}
+        } catch(e){}
+      }
     }
 
     // Initialize the dedicated accordion controller after Customizer DOM and event bindings are ready
@@ -1277,6 +1334,135 @@
       });
     }
 
+    // Relationship Preset Style in Quick Editor
+    function applyQuickRelationshipPreset(relKey, lang = "en", isManualClick = false) {
+      const toastFn = root.showToast || ((m) => console.log(m));
+
+      if (!relKey) {
+        if (isManualClick) toastFn("Please select a relationship template! ⚠️");
+        return;
+      }
+
+      if (!root.RelationshipPresets || typeof root.RelationshipPresets.getPreset !== "function") {
+        console.warn("⚠️ RelationshipPresets module unavailable");
+        return;
+      }
+
+      const preset = root.RelationshipPresets.getPreset(relKey, lang);
+      if (!preset) {
+        if (isManualClick) toastFn("Relationship preset not found! ⚠️");
+        return;
+      }
+
+      // Apply preset content preserving basic info, uploaded photos, audio & video
+      if (preset.letterLines) cfg.letterLines = JSON.parse(JSON.stringify(preset.letterLines));
+      if (preset.memory) cfg.memory = preset.memory;
+      if (preset.reasons) cfg.reasons = JSON.parse(JSON.stringify(preset.reasons));
+      if (preset.wishes) cfg.wishes = JSON.parse(JSON.stringify(preset.wishes));
+      if (preset.gift) {
+        cfg.gift = {
+          message: preset.gift.message || cfg.gift?.message || "",
+          coupon: preset.gift.coupon || cfg.gift?.coupon || ""
+        };
+      }
+      if (Array.isArray(preset.timeline)) {
+        cfg.timeline = JSON.parse(JSON.stringify(preset.timeline));
+      }
+      if (Array.isArray(preset.gallery) && Array.isArray(cfg.gallery)) {
+        cfg.gallery.forEach((g, idx) => {
+          const pG = preset.gallery[idx];
+          if (pG) {
+            g.emoji = pG.emoji || g.emoji;
+            g.cap = pG.cap || g.cap;
+            g.secretNote = pG.secretNote || g.secretNote;
+          }
+        });
+      }
+
+      populateEditorFields();
+
+      const renderSecFn = root.renderSections || (typeof renderSections === "function" ? renderSections : null);
+      if (renderSecFn) {
+        const formatFn = root.formatName || ((n) => n);
+        const displayName = cfg.name ? formatFn(cfg.name) : "";
+        renderSecFn(["letter", "memory", "reasons", "wishes", "gallery", "timeline", "gift"], displayName);
+      }
+
+      toastFn(`Applied ${preset.label} style! ✨`);
+    }
+
+    // Direct change on Relationship Template dropdown
+    const quickRelSelect = document.getElementById("input-relationship-preset");
+    if (quickRelSelect) {
+      quickRelSelect.addEventListener("change", () => {
+        const langSelect = document.getElementById("input-relationship-lang");
+        const lang = langSelect?.value || "en";
+        applyQuickRelationshipPreset(quickRelSelect.value, lang, false);
+      });
+    }
+
+    // Direct change on Language / Tone dropdown
+    const quickRelLangSelect = document.getElementById("input-relationship-lang");
+    if (quickRelLangSelect) {
+      quickRelLangSelect.addEventListener("change", () => {
+        const relVal = quickRelSelect?.value;
+        if (relVal) {
+          applyQuickRelationshipPreset(relVal, quickRelLangSelect.value, false);
+        }
+      });
+    }
+
+    // Explicit Apply Button click
+    const applyQuickRelBtn = document.getElementById("btn-apply-quick-relationship");
+    if (applyQuickRelBtn) {
+      applyQuickRelBtn.addEventListener("click", () => {
+        const relKey = quickRelSelect?.value;
+        const lang = quickRelLangSelect?.value || "en";
+        applyQuickRelationshipPreset(relKey, lang, true);
+      });
+    }
+
+    // Reset Relationship Style in Quick Editor
+    const resetQuickRelBtn = document.getElementById("btn-reset-quick-relationship");
+    if (resetQuickRelBtn) {
+      resetQuickRelBtn.addEventListener("click", () => {
+        const toastFn = root.showToast || ((m) => console.log(m));
+        const wishDefaults = root.WishDefaults || (typeof WishDefaults !== "undefined" ? WishDefaults : null);
+
+        if (wishDefaults && typeof wishDefaults.getSectionDefault === "function") {
+          cfg.letterLines = JSON.parse(JSON.stringify(wishDefaults.getSectionDefault("letter") || []));
+          cfg.memory = wishDefaults.getSectionDefault("memory") || "";
+          cfg.reasons = JSON.parse(JSON.stringify(wishDefaults.getSectionDefault("reasons") || []));
+          cfg.wishes = JSON.parse(JSON.stringify(wishDefaults.getSectionDefault("wishes") || []));
+          cfg.gift = JSON.parse(JSON.stringify(wishDefaults.getSectionDefault("gift") || {}));
+          cfg.timeline = JSON.parse(JSON.stringify(wishDefaults.getSectionDefault("timeline") || []));
+
+          const defGallery = wishDefaults.getSectionDefault("gallery") || [];
+          if (Array.isArray(cfg.gallery) && Array.isArray(defGallery)) {
+            cfg.gallery.forEach((g, idx) => {
+              const defCard = defGallery[idx] || {};
+              g.emoji = defCard.emoji || "🎈";
+              g.cap = defCard.cap || "A special moment ✨";
+              g.secretNote = defCard.secretNote || "Remember this day? 💫";
+            });
+          }
+        }
+
+        if (quickRelSelect) quickRelSelect.value = "";
+
+        populateEditorFields();
+
+        const renderSecFn = root.renderSections || (typeof renderSections === "function" ? renderSections : null);
+        if (renderSecFn) {
+          const formatFn = root.formatName || ((n) => n);
+          const displayName = cfg.name ? formatFn(cfg.name) : "";
+          renderSecFn(["letter", "memory", "reasons", "wishes", "gallery", "timeline", "gift"], displayName);
+        }
+
+        toastFn("Restored relationship style to defaults ↺");
+      });
+    }
+
     // Live Editor Input Event Listeners
     const editorBodyEl = document.getElementById("editor-body");
     if (editorBodyEl) {
@@ -1325,6 +1511,57 @@
         }
       });
     }
+
+    // ============================================================
+    // ADMIN EDIT MODE DETECTION & RETURN UI (Phase 29B-1)
+    // ============================================================
+    handleAdminEditLaunch();
+  }
+
+  /**
+   * Evaluates admin URL parameters and opens Quick Editor if session is authenticated.
+   */
+  function handleAdminEditLaunch() {
+    if (typeof window === "undefined" || !window.location) return;
+    const params = new URLSearchParams(window.location.search);
+    const adminEdit = params.get("admin_edit");
+    const returnParam = params.get("return");
+
+    const isAuthenticated = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_authenticated") === "true");
+
+    // Strict Security Gate: URL parameters NEVER grant privileges without active session
+    if (!isAuthenticated) return;
+
+    // 1. Admin Return UI activation
+    if (returnParam === "admin") {
+      const returnBar = document.getElementById("admin-return-bar");
+      if (returnBar) returnBar.style.display = "flex";
+      const returnModalBtn = document.getElementById("customizer-return-admin-btn");
+      if (returnModalBtn) returnModalBtn.style.display = "inline-flex";
+      const returnShareBtn = document.getElementById("share-return-admin-btn");
+      if (returnShareBtn) returnShareBtn.style.display = "inline-flex";
+    }
+
+    const backdrop = document.getElementById("customizer-modal");
+
+    // 2. New Wish Mode (admin_edit=new)
+    if (adminEdit === "new") {
+      resetToFreshNewWish();
+      if (backdrop) backdrop.classList.add("active");
+      const openAccFn = root.openAccordionSection || (typeof openAccordionSection === "function" ? openAccordionSection : null);
+      if (openAccFn) {
+        openAccFn("basic");
+      }
+    }
+    // 3. Existing Wish Edit Mode (admin_edit=true)
+    else if (adminEdit === "true") {
+      populateEditorFields();
+      if (backdrop) backdrop.classList.add("active");
+      const openAccFn = root.openAccordionSection || (typeof openAccordionSection === "function" ? openAccordionSection : null);
+      if (openAccFn) {
+        openAccFn("basic");
+      }
+    }
   }
 
   // Expose core customizer module methods on root (window)
@@ -1337,5 +1574,6 @@
   root.resetToFreshNewWish = resetToFreshNewWish;
   root.handleSaveGuard = handleSaveGuard;
   root.initCustomizerModal = initCustomizerModal;
+  root.handleAdminEditLaunch = handleAdminEditLaunch;
 
 })(typeof window !== "undefined" ? window : this);

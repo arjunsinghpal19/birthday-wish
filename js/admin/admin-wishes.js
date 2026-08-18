@@ -2,7 +2,7 @@
  * ============================================================================
  * ADMIN STUDIO WISHES MODULE (js/admin/admin-wishes.js)
  * Manages Wishes Management view, live table rendering, real-time search,
- * sorting, row actions (duplicate, delete, copy URL), and state sync.
+ * sorting, row actions (edit, duplicate, delete, copy URL), and state sync.
  * ============================================================================
  */
 
@@ -19,7 +19,8 @@
     tbody: "wishes-tbody",
     searchInput: "wishes-search-input",
     sortSelect: "wishes-sort-select",
-    createBtn: "btn-create-new-wish-admin"
+    createBtn: "btn-create-new-wish-wishes",
+    createBtnFallback: "btn-create-new-wish-admin"
   };
 
   /* ============================================================
@@ -51,7 +52,33 @@
   }
 
   /* ============================================================
-     4. DATA LOADING & SYNCHRONIZATION
+     4. ADMIN CREATE / EDIT BRIDGE
+     ============================================================ */
+  /**
+   * Authoritative Admin -> Quick Editor launcher.
+   * Directs to the approved URL flows:
+   *   - New Wish: index.html?admin_edit=new&return=admin
+   *   - Existing: index.html?w={UUID}&admin_edit=true&return=admin
+   * @param {string|null} [wishId=null] - UUID of wish to edit, or null for new wish.
+   */
+  function openWishEditor(wishId = null) {
+    if (window.AdminWishEditor) {
+      if (wishId) {
+        window.AdminWishEditor.openEdit(wishId);
+      } else {
+        window.AdminWishEditor.openNew();
+      }
+      return;
+    }
+    // Fallback: compatibility route to public editor
+    const target = wishId
+      ? `index.html?w=${encodeURIComponent(wishId)}&admin_edit=true&return=admin`
+      : `index.html?admin_edit=new&return=admin`;
+    window.location.href = target;
+  }
+
+  /* ============================================================
+     5. DATA LOADING & SYNCHRONIZATION
      ============================================================ */
   /**
    * Sets the active wishes data array and refreshes the table view.
@@ -73,7 +100,7 @@
   }
 
   /* ============================================================
-     5. SEARCH, SORT & FILTERING
+     6. SEARCH, SORT & FILTERING
      ============================================================ */
   /**
    * Filters and sorts the wishes list based on toolbar search term and sort selection.
@@ -103,7 +130,7 @@
   }
 
   /* ============================================================
-     6. TABLE RENDERING
+     7. TABLE RENDERING
      ============================================================ */
   /**
    * Renders the Wishes table in the Admin Studio view.
@@ -161,6 +188,7 @@
       const avatarInitial = escapeHtml((w.recipient_name || "W").charAt(0).toUpperCase());
       const passcodeText = escapeHtml(w.pass_code || "1234");
       const dateText = w.created_at ? new Date(w.created_at).toLocaleDateString() : "Recent";
+      const rawId = escapeHtml(w.id || "");
 
       tr.innerHTML = `
         <td>
@@ -179,8 +207,9 @@
         <td>
           <div class="action-btns">
             <a class="btn-icon" href="${fullUrl}" target="_blank" title="Open Public Page">👁️</a>
-            <button class="btn-icon" title="Duplicate Wish" onclick="window.adminApp ? window.adminApp.duplicateWish('${escapeHtml(w.id)}') : (window.AdminWishes && window.AdminWishes.duplicateWish('${escapeHtml(w.id)}'))">📋</button>
-            <button class="btn-icon danger" title="Delete Wish" onclick="window.adminApp ? window.adminApp.deleteWish('${escapeHtml(w.id)}') : (window.AdminWishes && window.AdminWishes.deleteWish('${escapeHtml(w.id)}'))">🗑️</button>
+            <button class="btn-icon" title="Edit Wish" data-action="edit" data-id="${rawId}">✏️</button>
+            <button class="btn-icon" title="Duplicate Wish" data-action="duplicate" data-id="${rawId}">📋</button>
+            <button class="btn-icon danger" title="Delete Wish" data-action="delete" data-id="${rawId}">🗑️</button>
           </div>
         </td>
       `;
@@ -189,7 +218,7 @@
   }
 
   /* ============================================================
-     7. ROW ACTIONS (DELETE & DUPLICATE)
+     8. ROW ACTIONS (DELETE & DUPLICATE)
      ============================================================ */
   /**
    * Deletes a wish record from the in-memory state and triggers UI updates.
@@ -238,10 +267,10 @@
   }
 
   /* ============================================================
-     8. EVENT HANDLERS & INITIALIZATION
+     9. EVENT HANDLERS & INITIALIZATION
      ============================================================ */
   /**
-   * Initializes Wishes toolbar event listeners (search, sort, create).
+   * Initializes Wishes toolbar event listeners (search, sort, create) and table action delegation.
    * @param {Function} [onStateChangeCallback] - Callback triggered when state mutates.
    */
   function init(onStateChangeCallback) {
@@ -264,17 +293,36 @@
     }
 
     // Create New Wish Button Listener
-    const createBtn = document.getElementById(SELECTORS.createBtn);
+    const createBtn = document.getElementById(SELECTORS.createBtn) || document.getElementById(SELECTORS.createBtnFallback);
     if (createBtn && !createBtn.__wishesBound) {
       createBtn.__wishesBound = true;
       createBtn.addEventListener("click", () => {
-        window.location.href = "index.html";
+        openWishEditor(null);
+      });
+    }
+
+    // Event Delegation for Table Action Buttons
+    const tbody = document.getElementById(SELECTORS.tbody);
+    if (tbody && !tbody.__wishesActionsBound) {
+      tbody.__wishesActionsBound = true;
+      tbody.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-action]");
+        if (!btn) return;
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (action === "edit") {
+          openWishEditor(id);
+        } else if (action === "duplicate") {
+          duplicateWish(id);
+        } else if (action === "delete") {
+          deleteWish(id);
+        }
       });
     }
   }
 
   /* ============================================================
-     9. AUTHORITATIVE PUBLIC API
+     10. AUTHORITATIVE PUBLIC API
      ============================================================ */
   window.AdminWishes = Object.freeze({
     init,
@@ -283,7 +331,8 @@
     getWishes,
     deleteWish,
     duplicateWish,
-    getProcessedWishes
+    getProcessedWishes,
+    openWishEditor
   });
 
 })(window);

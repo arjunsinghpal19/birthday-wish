@@ -64,6 +64,17 @@
 
 <body>
 
+  <!-- ==================== ADMIN STUDIO RETURN BAR ==================== -->
+  <div id="admin-return-bar" class="admin-return-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(20,10,32,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,215,0,0.35);padding:10px 20px;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;gap:8px;color:#ffd700;font-size:0.85rem;font-weight:600;">
+      <span>👑</span>
+      <span>Admin Studio Mode</span>
+    </div>
+    <a href="admin.html" id="btn-return-to-admin-bar" style="background:rgba(255,215,0,0.15);border:1px solid #ffd700;color:#ffd700;padding:6px 14px;border-radius:8px;font-size:0.8rem;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;">
+      ← Return to Dashboard
+    </a>
+  </div>
+
   <!-- Custom cursor -->
   <div id="cursor-ring"></div>
   <div id="cursor-dot"></div>
@@ -529,6 +540,45 @@
           </div>
         </div>
 
+        <!-- ═══ SECTION: RELATIONSHIP PRESETS ═══ -->
+        <div class="editor-section" data-section="relationship">
+          <button class="editor-section-header" type="button">
+            <span>✨ Relationship Preset Style</span><span class="chevron">▾</span>
+          </button>
+          <div class="editor-section-body">
+            <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 10px 0;">Select who this wish is for to automatically customize letter, memory, reasons, wishes, and gift style!</p>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label for="input-relationship-lang">Language / Tone</label>
+              <select id="input-relationship-lang" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="en" style="background:#2a162b;color:#fff;">English (Original & Touching)</option>
+                <option value="hi_en" style="background:#2a162b;color:#fff;">Hinglish (Desi, Warm & Fun)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label for="input-relationship-preset">Choose Relationship Template</label>
+              <select id="input-relationship-preset" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,0.08);color:#fff;border:1px solid rgba(255,255,255,0.2);">
+                <option value="" style="background:#2a162b;color:#fff;">-- Select Relationship Template --</option>
+                <option value="friend" style="background:#2a162b;color:#fff;">Friend 🤝</option>
+                <option value="best_friend" style="background:#2a162b;color:#fff;">Best Friend (Close & Funny) 💖</option>
+                <option value="boyfriend" style="background:#2a162b;color:#fff;">Boyfriend 💙</option>
+                <option value="girlfriend" style="background:#2a162b;color:#fff;">Girlfriend 🌸</option>
+                <option value="husband" style="background:#2a162b;color:#fff;">Husband 👑</option>
+                <option value="wife" style="background:#2a162b;color:#fff;">Wife 💍</option>
+                <option value="father" style="background:#2a162b;color:#fff;">Father / Dad 👔</option>
+                <option value="mother" style="background:#2a162b;color:#fff;">Mother / Mom 🌷</option>
+                <option value="brother" style="background:#2a162b;color:#fff;">Brother 🤜🤛</option>
+                <option value="sister" style="background:#2a162b;color:#fff;">Sister 🎀</option>
+                <option value="colleague" style="background:#2a162b;color:#fff;">Colleague / Workmate 💼</option>
+                <option value="teacher" style="background:#2a162b;color:#fff;">Teacher / Mentor 📚</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;">
+              <button type="button" id="btn-apply-quick-relationship" class="quick-rel-btn quick-rel-btn-apply" style="flex:1;min-width:140px;">✨ Apply Relationship Style</button>
+              <button type="button" id="btn-reset-quick-relationship" class="quick-rel-btn quick-rel-btn-reset" style="flex:0 0 auto;">↺ Reset Style</button>
+            </div>
+          </div>
+        </div>
+
         <!-- ═══ SECTION: SENDER ═══ -->
         <div class="editor-section" data-section="sender">
           <button class="editor-section-header" type="button">
@@ -811,10 +861,14 @@
             <button id="share-native-btn" type="button" class="btn" style="flex:1;min-width:130px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 3px 10px rgba(253,29,29,0.3);">
               📱 Other Apps
             </button>
+            <a href="admin.html" id="share-return-admin-btn" class="btn" style="display:none;flex:1;min-width:130px;background:rgba(255,215,0,0.18);border:1px solid rgba(255,215,0,0.45);color:var(--gold,#ffd700);padding:8px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;text-decoration:none;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-shadow:0 3px 10px rgba(255,215,0,0.15);">
+              👑 Back to Admin
+            </a>
           </div>
         </div>
 
         <div class="editor-footer">
+          <a href="admin.html" id="customizer-return-admin-btn" class="btn" style="display:none;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.4);color:var(--gold,#ffd700);text-decoration:none;align-items:center;justify-content:center;gap:6px;font-weight:700;padding:10px 16px;">👑 Return to Admin</a>
           <button id="customizer-save-btn" class="btn">💾 Save & Apply</button>
           <button id="customizer-share-link-btn" class="btn btn-ghost">🔗 Shareable Link</button>
         </div>
@@ -1162,6 +1216,10 @@
   <!-- Supabase JS SDK & Modular Architecture Scripts -->
   <script src="/api/env.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/core/wish-defaults.js"></script>
+  <script src="js/core/relationship-presets.js"></script>
+  <script src="js/core/time-utils.js"></script>
+  <script src="js/services/media-service.js"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/storage.js"></script>

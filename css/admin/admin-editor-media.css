@@ -1,0 +1,12 @@
+/* ==========================================================================
+   ADMIN STUDIO — WISH EDITOR MEDIA (css/admin/admin-editor-media.css)
+   Dedicated Subsystem Styles for Editor Media Attachments & Handlers
+   ========================================================================== */
+
+/* Placeholder for existing & future dedicated editor media attachments */
+.editor-media-preview-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}

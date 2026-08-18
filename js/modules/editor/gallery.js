@@ -39,12 +39,16 @@
 
   /**
    * Asynchronously compresses an image file using HTML5 canvas before storage/upload.
+   * Delegates to shared MediaService.compressImageFile with robust fallback.
    * @param {File} file - User-selected image file.
    * @param {number} maxSide - Maximum dimension for scaling down image width/height.
    * @param {number} quality - Compression quality factor (0.0 to 1.0).
    * @returns {Promise<string|null>} Data URL string of compressed image.
    */
   function compressImageFile(file, maxSide = 350, quality = 0.5) {
+    if (root.MediaService && typeof root.MediaService.compressImageFile === "function") {
+      return root.MediaService.compressImageFile(file, maxSide, quality);
+    }
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {

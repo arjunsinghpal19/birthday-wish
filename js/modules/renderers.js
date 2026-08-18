@@ -54,23 +54,35 @@
       const str = String(customStart).trim();
       if (str.includes(":")) {
         const parts = str.split(":");
-        sec = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+        sec = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
       } else {
-        sec = parseInt(str) || 0;
+        sec = parseInt(str, 10) || 0;
+      }
+    }
+    if (!sec && url) {
+      if (root.MediaService && typeof root.MediaService.decodeMediaStartTime === "function") {
+        sec = root.MediaService.decodeMediaStartTime(url);
+      } else if (typeof root.decodeMediaStartTime === "function") {
+        sec = root.decodeMediaStartTime(url);
+      } else {
+        const bwMatch = url.match(/#bw-start=(\d+)/i);
+        if (bwMatch && bwMatch[1]) {
+          sec = parseInt(bwMatch[1], 10) || 0;
+        }
       }
     }
     if (!sec && url) {
       try {
-        const match = url.match(/[?&](?:t|start)=([^&]+)/);
+        const match = url.match(/[?&](?:t|start)=([^&#]+)/);
         if (match && match[1]) {
           const t = match[1];
           if (t.includes("m") || t.includes("s")) {
             const m = t.match(/(?:(\d+)m)?(?:(\d+)s)?/);
             if (m) {
-              sec = (parseInt(m[1]) || 0) * 60 + (parseInt(m[2]) || 0);
+              sec = (parseInt(m[1], 10) || 0) * 60 + (parseInt(m[2], 10) || 0);
             }
           } else {
-            sec = parseInt(t) || 0;
+            sec = parseInt(t, 10) || 0;
           }
         }
       } catch(e){}
@@ -676,8 +688,11 @@
       console.log("🎬 renderVideoWishSection: YouTube URL detected -> Rendering iframe with ID:", ytId);
       container.innerHTML = `<iframe width="100%" height="380" src="https://www.youtube.com/embed/${ytId}?enablejsapi=1${startParam}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius:12px;display:block;"></iframe>`;
     } else {
-      console.log("🎬 renderVideoWishSection: Direct video MP4/WebM URL detected -> Rendering native <video> element:", targetUrl);
-      container.innerHTML = `<video id="wish-video-element" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${targetUrl}"></video>`;
+      const cleanTargetUrl = (root.MediaService && typeof root.MediaService.stripMediaMetadata === "function")
+        ? root.MediaService.stripMediaMetadata(targetUrl)
+        : (typeof root.stripMediaMetadata === "function" ? root.stripMediaMetadata(targetUrl) : String(targetUrl).replace(/#bw-start=\d+/i, "").trim());
+      console.log("🎬 renderVideoWishSection: Direct video MP4/WebM URL detected -> Rendering native <video> element:", cleanTargetUrl);
+      container.innerHTML = `<video id="wish-video-element" controls playsinline style="width:100%;max-height:420px;border-radius:12px;display:block;" src="${cleanTargetUrl}"></video>`;
       if (startSec > 0) {
         const vid = document.getElementById("wish-video-element");
         if (vid) {

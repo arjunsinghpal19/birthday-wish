@@ -8,7 +8,14 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png?v=2">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png?v=2">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/admin/admin-core.css">
+  <link rel="stylesheet" href="css/admin/admin-layout.css">
+  <link rel="stylesheet" href="css/admin/admin-components.css">
+  <link rel="stylesheet" href="css/admin/admin-dashboard.css">
+  <link rel="stylesheet" href="css/admin/admin-media.css">
+  <link rel="stylesheet" href="css/admin/admin-editor.css">
+  <link rel="stylesheet" href="css/admin/admin-editor-media.css">
+  <link rel="stylesheet" href="css/admin/admin-responsive.css">
 </head>
 <body>
 
@@ -562,19 +569,547 @@
           </div>
         </section>
 
+        <!-- 11. ✏️ NATIVE ADMIN WISH EDITOR -->
+        <section id="view-wish-editor" class="tab-view">
+          <div class="view-header" style="flex-wrap:wrap;gap:12px;">
+            <div class="view-title">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="editor-btn-secondary" id="btn-editor-back">← Back to Wishes</button>
+                <h2 id="admin-editor-title">Create New Wish</h2>
+              </div>
+              <p id="admin-editor-subtitle">Craft and customize a full celebration experience</p>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <span id="admin-editor-dirty-badge" class="editor-badge-dirty" style="display:none;">⚠️ Unsaved Changes</span>
+              <button type="button" class="editor-btn-preview" id="btn-editor-preview">👁 Preview Wish</button>
+              <button type="button" class="editor-btn-secondary" id="btn-editor-cancel">Cancel</button>
+              <button type="button" class="btn-primary" id="btn-editor-save">💾 Save Wish</button>
+              <button type="button" class="btn-primary btn-gold" id="btn-editor-save-share">🚀 Save & Share</button>
+            </div>
+          </div>
+
+          <!-- Two Column Layout -->
+          <div class="admin-editor-layout">
+            <!-- LEFT COLUMN: Forms -->
+            <div class="admin-editor-form-col">
+
+              <!-- 1. BASIC INFO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">01</span> Basic Info</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-basic" style="font-size:0.78rem;white-space:nowrap;flex:0 0 auto;">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="adm-input-name">Recipient Name *</label>
+                    <input type="text" id="adm-input-name" class="form-control" placeholder="e.g. Shivam" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="adm-input-birthdate-display">Birth Date (DD/MM/YYYY) *</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <input type="text" id="adm-input-birthdate-display" class="form-control" placeholder="01/01/2001" style="flex:1;" maxlength="10" required>
+                      <input type="hidden" id="adm-input-birthdate" value="2001-01-01">
+                      <button type="button" class="editor-btn-secondary" id="adm-btn-datepicker" title="Open Calendar" style="padding:8px 12px;font-size:1.1rem;cursor:pointer;">📅</button>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.75rem;">Type DD/MM/YYYY or click 📅 for calendar.</small>
+                  </div>
+                </div>
+                <div class="form-grid-2" style="margin-top:12px;">
+                  <div class="form-group">
+                    <label for="adm-input-cake">🎂 Cake Flavor / Theme</label>
+                    <select id="adm-input-cake" class="form-control">
+                      <option value="default">💖 Classic Pink & Gold</option>
+                      <option value="strawberry">🍓 Pink Strawberry Gold</option>
+                      <option value="chocolate">🍫 Dark Chocolate Velvet</option>
+                      <option value="vanilla">✨ Royal Golden Vanilla</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="adm-input-passcode">🔑 Secret Birthday Passcode (4 Digits)</label>
+                    <input type="text" id="adm-input-passcode" class="form-control" placeholder="1234" maxlength="4" value="1234">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. SENDER INFO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">02</span> Sender Info</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-sender" style="font-size:0.78rem;white-space:nowrap;flex:0 0 auto;">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="adm-input-from">From (Sender Name)</label>
+                  <input type="text" id="adm-input-from" class="form-control" placeholder="e.g. Arjun">
+                </div>
+              </div>
+
+              <!-- RELATIONSHIP PRESET TEMPLATES -->
+              <div class="glass-card editor-card" style="border:1px solid rgba(255,215,0,0.3);background:linear-gradient(135deg,rgba(30,15,45,0.85),rgba(45,20,65,0.75));">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge" style="background:rgba(168,85,247,0.25);border-color:rgba(168,85,247,0.5);color:#e9d5ff;">✨</span> Who is this birthday wish for?</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-relationship" style="font-size:0.78rem;white-space:nowrap;flex:0 0 auto;">↺ Reset Style</button>
+                  </div>
+                </div>
+                <p style="color:var(--text-muted);font-size:0.8rem;margin:0 0 12px 0;">Select a relationship to load curated wording for letter, memory, reasons, 5 wishes, timeline, and gift.</p>
+                <div class="form-grid-2" style="margin-bottom:12px;">
+                  <div class="form-group">
+                    <label for="adm-select-relationship-lang">Language / Tone</label>
+                    <select id="adm-select-relationship-lang" class="form-control">
+                      <option value="en">English (Original & Touching)</option>
+                      <option value="hi_en">Hinglish (Desi, Warm & Fun)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="adm-select-relationship">Relationship Template</label>
+                    <select id="adm-select-relationship" class="form-control">
+                      <option value="">-- Choose Relationship Template (Optional) --</option>
+                      <option value="friend">Friend 🤝</option>
+                      <option value="best_friend">Best Friend (Close & Funny) 💖</option>
+                      <option value="boyfriend">Boyfriend 💙</option>
+                      <option value="girlfriend">Girlfriend 🌸</option>
+                      <option value="husband">Husband 👑</option>
+                      <option value="wife">Wife 💍</option>
+                      <option value="father">Father / Dad 👔</option>
+                      <option value="mother">Mother / Mom 🌷</option>
+                      <option value="brother">Brother 🤜🤛</option>
+                      <option value="sister">Sister 🎀</option>
+                      <option value="colleague">Colleague / Workmate 💼</option>
+                      <option value="teacher">Teacher / Mentor 📚</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <button type="button" class="editor-btn-add" id="adm-btn-apply-relationship" style="width:100%;padding:10px 16px;font-size:0.85rem;cursor:pointer;justify-content:center;">
+                    ✨ Use This Relationship Style
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. BIRTHDAY LETTER -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">03</span> Birthday Letter & Typography</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-letter">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="adm-btn-add-letter-line">+ Add Paragraph</button>
+                  </div>
+                </div>
+                <div class="form-grid-2" style="margin-bottom:12px;">
+                  <div class="form-group">
+                    <label for="adm-input-letter-theme">Envelope & Letter Theme</label>
+                    <select id="adm-input-letter-theme" class="form-control">
+                      <option value="default">✨ Default Original Theme</option>
+                      <option value="royalgold">👑 Vintage Royal Gold</option>
+                      <option value="galaxy">🌌 Midnight Galaxy Glow</option>
+                      <option value="rosegold">🌸 Rose Gold Pastel</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="adm-input-letter-font">Letter Font Style</label>
+                    <select id="adm-input-letter-font" class="form-control">
+                      <option value="default">✨ Default Cursive (Sacramento)</option>
+                      <option value="cursive">✍️ Romantic Cursive</option>
+                      <option value="serif">📜 Classic Royal Serif</option>
+                      <option value="script">🎨 Playful Script</option>
+                      <option value="poppins">✨ Clean & Modern (Poppins)</option>
+                      <option value="nunito">🌸 Soft & Friendly (Nunito Sans)</option>
+                      <option value="sans">⚡ Modern Sleek (Outfit)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Letter Paragraphs</label>
+                  <div id="adm-letter-lines-container"></div>
+                </div>
+              </div>
+
+              <!-- 4. SPECIAL MEMORY -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">04</span> Special Memory</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-memory">↺ Reset</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="adm-input-memory">A Cherished Memory</label>
+                  <textarea id="adm-input-memory" class="form-control" rows="3" placeholder="Share a touching memory..."></textarea>
+                </div>
+              </div>
+
+              <!-- 5. REASONS YOU'RE SPECIAL -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">05</span> Reasons You're Special</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-reasons">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="adm-btn-add-reason">+ Add Reason</button>
+                  </div>
+                </div>
+                <div id="adm-reasons-container"></div>
+              </div>
+
+              <!-- 6. BIRTHDAY WISHES -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">06</span> Birthday Wishes Quotes</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-wishes">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="adm-btn-add-wish">+ Add Wish</button>
+                  </div>
+                </div>
+                <div id="adm-wishes-container"></div>
+              </div>
+
+              <!-- 7. PHOTO GALLERY -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">07</span> Photo Gallery</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-gallery">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="adm-btn-add-gallery">+ Add Polaroid</button>
+                  </div>
+                </div>
+                <div id="adm-gallery-container"></div>
+              </div>
+
+              <!-- 8. TIMELINE MILESTONES -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">08</span> Timeline Milestones</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-timeline">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="adm-btn-add-timeline">+ Add Milestone</button>
+                  </div>
+                </div>
+                <div id="adm-timeline-container"></div>
+              </div>
+
+              <!-- 9. SURPRISE GIFT -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">09</span> Surprise Gift Voucher</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-reset-gift">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="adm-input-gift-message">Gift Message / Headline</label>
+                    <input type="text" id="adm-input-gift-message" class="form-control" placeholder="A special treat just for you!">
+                  </div>
+                  <div class="form-group">
+                    <label for="adm-input-gift-coupon">Coupon / Pass Code</label>
+                    <input type="text" id="adm-input-gift-coupon" class="form-control" placeholder="VIP-BIRTHDAY-TREAT">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 10. MUSIC & AUDIO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">10</span> Background Music & Audio</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-remove-audio">↺ Reset to Default Song</button>
+                  </div>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label>Audio Source Selection</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                    <input type="file" id="adm-audio-file-input" accept="audio/*" style="display:none;">
+                    <button type="button" class="editor-btn-preview" id="adm-btn-upload-audio">🎙️ Upload Audio / Voice Note</button>
+                  </div>
+                  <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="adm-input-music-url" style="font-size:0.75rem;">Direct Audio URL (HTTPS Link)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="adm-input-music-url" class="form-control" placeholder="https://.../song.mp3 or assets/music/...">
+                        <button type="button" class="editor-btn-secondary" id="adm-btn-clear-direct-audio" title="Clear Direct Audio" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="adm-input-music-yt-url" style="font-size:0.75rem;">YouTube Song Link (watch / shorts / youtu.be)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="adm-input-music-yt-url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                        <button type="button" class="editor-btn-secondary" id="adm-btn-clear-yt-audio" title="Clear YouTube Song" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                  </div>
+                  <small style="color:var(--text-muted);font-size:0.75rem;">Upload custom audio from device, paste direct audio link, or paste a YouTube song link.</small>
+                </div>
+
+                <!-- Live Audio Player Preview -->
+                <div id="adm-audio-preview-box" class="editor-preview-box">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:0.85rem;color:var(--gold);font-weight:600;">🎧 Audio Player Preview</span>
+                    <span id="adm-audio-dur-display" class="status-badge" style="font-size:0.75rem;">Default Track</span>
+                  </div>
+                  <audio id="adm-audio-player" controls style="width:100%;height:36px;border-radius:8px;"></audio>
+                  <div id="adm-audio-yt-preview" class="editor-yt-preview-box" style="display:none;margin-top:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);">
+                      <span style="font-size:1.8rem;">🎵</span>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.85rem;color:var(--gold);font-weight:700;">YouTube Audio Track Attached</div>
+                        <div id="adm-audio-yt-id" style="font-size:0.75rem;color:var(--text-muted);word-break:break-all;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Start Time Seekbar -->
+                <div class="form-group">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label style="margin:0;">Start Time Offset</label>
+                    <span style="font-size:0.8rem;color:var(--text-muted);">
+                      Selected Start: <strong id="adm-audio-cur-time" style="color:var(--gold);">00:00</strong> / <span id="adm-audio-dur-time">00:00</span>
+                    </span>
+                  </div>
+                  <input type="range" id="adm-audio-seekbar" class="form-range" min="0" max="100" value="0" style="width:100%;accent-color:var(--purple-accent);cursor:pointer;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                    <label for="adm-input-music-time" style="margin:0;font-size:0.8rem;color:var(--text-muted);">Start Time (MM:SS or sec):</label>
+                    <input type="text" id="adm-input-music-time" class="form-control" value="00:00" placeholder="00:00" style="max-width:110px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 11. VIDEO WISH -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <h3><span class="section-num-badge">11</span> Video Wish</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="adm-btn-remove-video">🗑️ Remove Video</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label>Video Source Selection</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                    <input type="file" id="adm-video-file-input" accept="video/*" style="display:none;">
+                    <button type="button" class="editor-btn-preview" id="adm-btn-upload-video">📹 Upload MP4 from Device</button>
+                  </div>
+                  <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="adm-input-video-url" style="font-size:0.75rem;">Direct Video URL (HTTPS MP4 / WebM)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="adm-input-video-url" class="form-control" placeholder="https://.../video.mp4">
+                        <button type="button" class="editor-btn-secondary" id="adm-btn-clear-direct-video" title="Clear Direct Video" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="adm-input-video-yt-url" style="font-size:0.75rem;">YouTube Video Link (watch / shorts / youtu.be)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="adm-input-video-yt-url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                        <button type="button" class="editor-btn-secondary" id="adm-btn-clear-yt-video" title="Clear YouTube Video" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                  </div>
+                  <small style="color:var(--text-muted);font-size:0.75rem;">Upload MP4 from your device, paste direct MP4 link, or paste a YouTube / Shorts link.</small>
+                </div>
+
+                <!-- Live Video Player Preview -->
+                <div id="adm-video-preview-box" class="editor-preview-box">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:0.85rem;color:var(--gold);font-weight:600;">🎬 Video Player Preview</span>
+                    <span id="adm-video-dur-display" class="status-badge" style="font-size:0.75rem;">No Video</span>
+                  </div>
+                  <video id="adm-video-player" controls playsinline style="width:100%;max-height:220px;background:#000;border-radius:8px;display:none;"></video>
+                  <div id="adm-video-yt-preview" class="editor-yt-preview-box" style="display:none;width:100%;border-radius:8px;overflow:hidden;"></div>
+                  <div id="adm-video-empty-preview" class="editor-empty-preview">
+                    No custom video selected (Optional surprise element)
+                  </div>
+                </div>
+
+                <!-- Start Time Seekbar -->
+                <div class="form-group">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label style="margin:0;">Video Start Time Offset</label>
+                    <span style="font-size:0.8rem;color:var(--text-muted);">
+                      Selected Start: <strong id="adm-video-cur-time" style="color:var(--gold);">00:00</strong> / <span id="adm-video-dur-time">00:00</span>
+                    </span>
+                  </div>
+                  <input type="range" id="adm-video-seekbar" class="form-range" min="0" max="100" value="0" style="width:100%;accent-color:var(--purple-accent);cursor:pointer;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                    <label for="adm-input-video-time" style="margin:0;font-size:0.8rem;color:var(--text-muted);">Start Time (MM:SS or sec):</label>
+                    <input type="text" id="adm-input-video-time" class="form-control" value="00:00" placeholder="00:00" style="max-width:110px;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Sticky Live Summary -->
+            <div class="admin-editor-summary-col">
+              <div class="glass-card summary-sticky-card">
+                <div class="summary-card-header">
+                  <h4>📊 Live Wish Summary</h4>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <span class="status-badge active" id="adm-summary-mode">NEW WISH</span>
+                    <span class="status-badge ready" id="adm-sum-status-badge"><span id="adm-summary-status">Synced</span></span>
+                  </div>
+                </div>
+                <div class="summary-details-list">
+                  <div class="summary-row">
+                    <span class="lbl">Recipient:</span>
+                    <span class="val" id="adm-sum-name">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">From:</span>
+                    <span class="val" id="adm-sum-from">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Birth Date:</span>
+                    <span class="val" id="adm-sum-date">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Passcode:</span>
+                    <span class="val" id="adm-sum-passcode"><span id="adm-sum-pass">1234</span></span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Cake Flavor:</span>
+                    <span class="val" id="adm-sum-cake">Classic</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Letter Theme:</span>
+                    <span class="val" id="adm-sum-theme">Original</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Letter Font:</span>
+                    <span class="val" id="adm-sum-font">Sacramento</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Letter Paragraphs:</span>
+                    <span class="val" id="adm-sum-letter">3 paras</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Memory:</span>
+                    <span class="val" id="adm-sum-memory">Set</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Reasons:</span>
+                    <span class="val" id="adm-sum-reasons">5 items</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Wishes:</span>
+                    <span class="val" id="adm-sum-wishes">5 quotes</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Gallery Photos:</span>
+                    <span class="val" id="adm-sum-gallery">5 polaroids</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Timeline:</span>
+                    <span class="val" id="adm-sum-timeline">4 events</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Gift Voucher:</span>
+                    <span class="val" id="adm-sum-gift">Attached</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Background Music:</span>
+                    <span class="val" id="adm-sum-music">Default Track</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Video Wish:</span>
+                    <span class="val" id="adm-sum-video">None</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="lbl">Target UUID:</span>
+                    <span class="val uuid-text" id="adm-sum-uuid">New Wish</span>
+                  </div>
+                </div>
+
+                <div class="summary-actions" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+                  <button type="button" class="btn-primary btn-gold" id="btn-sum-save-share" style="width:100%;">🚀 Save & Copy Share Link</button>
+                  <button type="button" class="btn-primary" id="btn-sum-save" style="width:100%;">💾 Save Changes</button>
+                  <button type="button" class="editor-btn-preview" id="btn-sum-preview" style="width:100%;">👁 Live Public Preview</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </main>
 
+  <!-- ADMIN WISH STUDIO LUXURY POPUP CALENDAR MODAL -->
+  <div id="adm-date-picker-modal" class="modal-backdrop" style="display:none;position:fixed;inset:0;z-index:10000000;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);">
+    <div id="adm-material-dp-card" class="glass" style="max-width:350px;width:92%;margin:auto;padding:22px;border-radius:20px;background:#1B1530;border:1px solid rgba(247,201,74,0.4);box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(247,201,74,0.25);color:#fff;font-family:'Outfit', sans-serif;position:relative;">
+      
+      <!-- Top Navigation Header: Month & Year Controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        
+        <!-- Month Selector Group (< Month ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="adm-mdp-prev-month" aria-label="Previous Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+          <select id="adm-mdp-month-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
+            <option value="0" style="background:#1B1530;color:#fff;">Jan</option>
+            <option value="1" style="background:#1B1530;color:#fff;">Feb</option>
+            <option value="2" style="background:#1B1530;color:#fff;">Mar</option>
+            <option value="3" style="background:#1B1530;color:#fff;">Apr</option>
+            <option value="4" style="background:#1B1530;color:#fff;">May</option>
+            <option value="5" style="background:#1B1530;color:#fff;">Jun</option>
+            <option value="6" style="background:#1B1530;color:#fff;">Jul</option>
+            <option value="7" style="background:#1B1530;color:#fff;">Aug</option>
+            <option value="8" style="background:#1B1530;color:#fff;">Sep</option>
+            <option value="9" style="background:#1B1530;color:#fff;">Oct</option>
+            <option value="10" style="background:#1B1530;color:#fff;">Nov</option>
+            <option value="11" style="background:#1B1530;color:#fff;">Dec</option>
+          </select>
+          <button type="button" id="adm-mdp-next-month" aria-label="Next Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        </div>
+
+        <!-- Year Selector Group (< Year ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="adm-mdp-prev-year" aria-label="Previous Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+          <select id="adm-mdp-year-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
+            <!-- Dynamic 1900 to 2100 -->
+          </select>
+          <button type="button" id="adm-mdp-next-year" aria-label="Next Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        </div>
+
+      </div>
+
+      <!-- Days Header Row (S M T W T F S) -->
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-size:0.8rem;font-weight:700;color:var(--gold,#ffd700);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+
+      <!-- Calendar Days Grid -->
+      <div id="adm-mdp-days-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:5px;text-align:center;min-height:220px;">
+        <!-- Dynamic day buttons -->
+      </div>
+
+      <!-- Bottom Action Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+        <button type="button" id="adm-mdp-today-btn" style="background:rgba(247,201,74,0.15);border:1px solid rgba(247,201,74,0.3);color:#ffd700;font-size:0.8rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:10px;transition:all 0.2s;">Today</button>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="adm-mdp-cancel-btn" style="background:rgba(255,255,255,0.08);border:none;color:#cbd5e1;font-size:0.85rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;transition:all 0.2s;">Cancel</button>
+          <button type="button" id="adm-mdp-ok-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);border:1px solid rgba(247,201,74,0.4);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;padding:6px 16px;border-radius:10px;box-shadow:0 4px 12px rgba(168,85,247,0.3);transition:all 0.2s;">OK</button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <!-- TOAST NOTIFICATION -->
   <div id="admin-toast" class="admin-toast"></div>
 
-  <!-- Supabase JS SDK & Admin Modular Architecture -->
+  <!-- Supabase JS SDK & Core/Admin Modules -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase.js"></script>
   <script src="js/database.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/core/wish-defaults.js"></script>
+  <script src="js/core/relationship-presets.js"></script>
+  <script src="js/core/time-utils.js"></script>
+  <script src="js/services/media-service.js"></script>
   <script src="js/admin/admin-core.js"></script>
   <script src="js/admin/admin-navigation.js"></script>
   <script src="js/admin/admin-dashboard.js"></script>
@@ -583,6 +1118,7 @@
   <script src="js/admin/admin-security.js"></script>
   <script src="js/admin/admin-backup.js"></script>
   <script src="js/admin/admin-logs.js"></script>
+  <script src="js/admin/admin-wish-editor.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

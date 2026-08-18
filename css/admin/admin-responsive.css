@@ -1,0 +1,61 @@
+/* ==========================================================================
+   ADMIN STUDIO — RESPONSIVE OVERRIDES (css/admin/admin-responsive.css)
+   Baseline Responsive Navigation & Drawer Rules (Phase 29B-3B Baseline)
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+/* Tablet & Mobile Sidebar Drawer (<= 1024px) */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+  .admin-main {
+    margin-left: 0;
+  }
+  .mobile-toggle {
+    display: block;
+  }
+}
+
+/* Tablet Portrait & Small Screens (<= 768px) */
+@media (max-width: 768px) {
+  .admin-header-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Mobile Navbar & Dashboard Grid (<= 640px) */
+@media (max-width: 640px) {
+  .admin-navbar {
+    padding: 0 16px;
+  }
+  .admin-viewport {
+    padding: 16px;
+  }
+  .nav-search {
+    display: none;
+  }
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile Small (<= 480px) */
+@media (max-width: 480px) {
+  .admin-viewport {
+    padding: 12px;
+  }
+}
+
+/* Mobile Extra Small (<= 375px) */
+@media (max-width: 375px) {
+  .admin-viewport {
+    padding: 8px;
+  }
+}

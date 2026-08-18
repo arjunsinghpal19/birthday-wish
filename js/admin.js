@@ -14,6 +14,7 @@
   const { checkAdminAccessGate, initTabNavigation, initLogout } = window.AdminNavigation || {};
   const { init: initDashboard, renderKPIs, renderRecentWishes, renderActivityFeed, fetchWishes } = window.AdminDashboard || {};
   const { init: initWishes, render: renderWishesTable, setWishes: setWishesState, getWishes: getWishesState, deleteWish: deleteWishItem, duplicateWish: duplicateWishItem } = window.AdminWishes || {};
+  const { init: initWishEditor } = window.AdminWishEditor || {};
   const { init: initMedia, load: loadStorageMediaData, render: renderDamGrid, getFiles: getStorageFiles } = window.AdminMedia || {};
   const { init: initSecurityHandlers } = window.AdminSecurity || {};
   const { init: initBackupHandlers, exportBackup, importBackup } = window.AdminBackup || {};
@@ -107,6 +108,16 @@
         const storageFiles = typeof getStorageFiles === "function" ? getStorageFiles() : [];
         if (typeof renderKPIs === "function") renderKPIs(wishesList, storageFiles);
         if (typeof renderRecentWishes === "function") renderRecentWishes(wishesList);
+      });
+    }
+
+    if (typeof initWishEditor === "function") {
+      initWishEditor(async (event, desc) => {
+        if (typeof logEvent === "function") logEvent(event, desc);
+        await loadDashboardData();
+        if (typeof loadStorageMediaData === "function") {
+          await loadStorageMediaData(wishesList);
+        }
       });
     }
 

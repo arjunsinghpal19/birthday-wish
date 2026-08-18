@@ -267,10 +267,22 @@
      ADMIN DASHBOARD — INITIALIZATION & REFRESH COORDINATOR
      ============================================================ */
   /**
-   * Initializes Dashboard Overview event handlers (e.g. Refresh Analytics button) with race-condition protection.
    * @param {Function} [onRefreshCallback] - Custom callback to trigger on refresh.
    */
   function init(onRefreshCallback) {
+    // Create New Wish Button Listener
+    const createWishBtn = document.getElementById("btn-create-new-wish-dashboard");
+    if (createWishBtn && !createWishBtn.__dashBound) {
+      createWishBtn.__dashBound = true;
+      createWishBtn.addEventListener("click", () => {
+        if (window.AdminWishes && typeof window.AdminWishes.openWishEditor === "function") {
+          window.AdminWishes.openWishEditor(null);
+        } else {
+          window.location.href = "index.html?admin_edit=new&return=admin";
+        }
+      });
+    }
+
     const refreshBtn = document.getElementById("btn-refresh-dashboard");
     if (refreshBtn && !refreshBtn.__dashBound) {
       refreshBtn.__dashBound = true;

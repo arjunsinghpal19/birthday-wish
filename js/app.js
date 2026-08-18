@@ -132,6 +132,30 @@ async function parseQueryParams() {
   const nameParam = params.get("name");
   const tokenParam = params.get("w") || params.get("wish") || params.get("id");
 
+  const previewParam = params.get("preview");
+  if (previewParam === "admin" || previewParam === "admin_session" || previewParam === "true") {
+    try {
+      const rawSession = (typeof sessionStorage !== "undefined" && (sessionStorage.getItem("admin_preview_wish") || sessionStorage.getItem("admin_preview_config") || sessionStorage.getItem("antigravity_preview_wish_config")))
+        || (typeof localStorage !== "undefined" && (localStorage.getItem("admin_preview_wish") || localStorage.getItem("admin_preview_config")));
+      if (rawSession) {
+        const previewConfig = JSON.parse(rawSession);
+        if (previewConfig && typeof previewConfig === "object") {
+          Object.assign(CONFIG, previewConfig);
+          CONFIG._isPreview = true;
+          console.log("👁️ Hydrated in-memory wish preview from Admin Studio session with 0 database writes/reads!");
+
+          if (typeof populateContent === "function") populateContent();
+          if (typeof reRenderPage === "function") reRenderPage();
+          if (typeof renderVideoWishSection === "function") renderVideoWishSection();
+          if (typeof populateEditorFields === "function") populateEditorFields();
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ Preview session hydration error:", e);
+    }
+  }
+
   if (tokenParam) {
     let decoded = null;
 
@@ -199,12 +223,31 @@ async function parseQueryParams() {
 
       if (decoded.v) {
         CONFIG.videoWish = CONFIG.videoWish || {};
-        CONFIG.videoWish.url = decoded.v.u || decoded.v.url || "";
-        CONFIG.videoWish.startTime = decoded.v.t || decoded.v.startTime || "";
+        const rawVUrl = decoded.v.u || decoded.v.url || "";
+        const decVStart = (window.MediaService && typeof window.MediaService.decodeMediaStartTime === "function")
+          ? window.MediaService.decodeMediaStartTime(rawVUrl)
+          : (typeof window.decodeMediaStartTime === "function" ? window.decodeMediaStartTime(rawVUrl) : 0);
+        const cleanVUrl = (window.MediaService && typeof window.MediaService.stripMediaMetadata === "function")
+          ? window.MediaService.stripMediaMetadata(rawVUrl)
+          : rawVUrl.replace(/#bw-start=\d+/i, "").trim();
+
+        CONFIG.videoWish.url = cleanVUrl;
+        CONFIG.videoWish.startTime = decoded.v.t || decoded.v.startTime || decVStart || "";
       }
 
       if (decoded.msc) {
-        CONFIG.music = { file: decoded.msc.f || decoded.msc.file, startTime: decoded.msc.t || decoded.msc.startTime || "" };
+        const rawMUrl = decoded.msc.f || decoded.msc.file || "";
+        const decMStart = (window.MediaService && typeof window.MediaService.decodeMediaStartTime === "function")
+          ? window.MediaService.decodeMediaStartTime(rawMUrl)
+          : (typeof window.decodeMediaStartTime === "function" ? window.decodeMediaStartTime(rawMUrl) : 0);
+        const cleanMUrl = (window.MediaService && typeof window.MediaService.stripMediaMetadata === "function")
+          ? window.MediaService.stripMediaMetadata(rawMUrl)
+          : rawMUrl.replace(/#bw-start=\d+/i, "").trim();
+
+        CONFIG.music = {
+          file: cleanMUrl,
+          startTime: decoded.msc.t || decoded.msc.startTime || decMStart || ""
+        };
       }
 
       // Re-render UI and populate all DOM slots with decoded wish data!
@@ -552,9 +595,12 @@ function showToast(msg) {
   await parseQueryParams();
 
   const searchParams = new URLSearchParams(location.search);
-  const hasRecipientParams = searchParams.has("name") || searchParams.has("w");
+  const isPreview = (CONFIG && CONFIG._isPreview) || searchParams.get("preview") === "admin" || searchParams.get("preview") === "admin_session" || searchParams.get("preview") === "true";
+  const hasRecipientParams = searchParams.has("name") || searchParams.has("w") || searchParams.has("wish") || searchParams.has("id");
 
-  if (hasRecipientParams) {
+  if (isPreview) {
+    // PREVIEW MODE: Already hydrated from admin session above, NEVER overwrite with local creator draft!
+  } else if (hasRecipientParams) {
     if (searchParams.has("music")) {
       CONFIG.music = CONFIG.music || {};
       CONFIG.music.file = searchParams.get("music");
@@ -627,7 +673,8 @@ function showToast(msg) {
 
   // Check if opening fresh base URL to create a new wish or opening a shared recipient link
   const urlParams = new URLSearchParams(location.search);
-  const hasParams = urlParams.has("w") || urlParams.has("wish") || urlParams.has("name") || urlParams.has("music") || urlParams.has("v");
+  const isPreviewParam = (CONFIG && CONFIG._isPreview) || urlParams.get("preview") === "admin" || urlParams.get("preview") === "admin_session" || urlParams.get("preview") === "true";
+  const hasParams = isPreviewParam || urlParams.has("w") || urlParams.has("wish") || urlParams.has("name") || urlParams.has("music") || urlParams.has("v");
 
   if (!hasParams) {
     // FRESH NEW WISH CREATION: Only wipe if no local draft is stored in localStorage or CONFIG

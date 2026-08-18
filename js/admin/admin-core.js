@@ -47,18 +47,46 @@
      ============================================================ */
   /**
    * Copies a wish or media URL to the system clipboard with toast feedback.
-   * @param {string} url - Target URL to copy.
+   * Handles both full URLs (http/https) and bare wish UUIDs.
+   * @param {string} url - Target URL or wish UUID to copy.
    */
   function copyWishUrl(url) {
     if (!url) return;
+    const cleanUrl = (String(url).startsWith("http://") || String(url).startsWith("https://"))
+      ? String(url)
+      : `${window.location.origin}/index.html?id=${url}`;
+
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-      navigator.clipboard.writeText(url).then(() => {
-        showToast("📋 Link copied to clipboard!");
+      navigator.clipboard.writeText(cleanUrl).then(() => {
+        showToast("📋 Shareable link copied to clipboard!");
       }).catch(() => {
-        showToast(`Link: ${url}`);
+        fallbackCopyText(cleanUrl);
       });
     } else {
-      showToast(`Link: ${url}`);
+      fallbackCopyText(cleanUrl);
+    }
+  }
+
+  function fallbackCopyText(text) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.top = "0";
+      ta.style.left = "0";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const successful = document.execCommand("copy");
+      document.body.removeChild(ta);
+      if (successful) {
+        showToast("📋 Shareable link copied to clipboard!");
+      } else {
+        showToast(`Share URL: ${text}`);
+      }
+    } catch (e) {
+      showToast(`Share URL: ${text}`);
     }
   }
 

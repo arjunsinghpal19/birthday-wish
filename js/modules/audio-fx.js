@@ -544,6 +544,10 @@
         const container = document.getElementById("yt-player-container");
         if (container) { container.innerHTML = ""; container.style.display = "none"; }
 
+        const cleanFileOrUrl = (root.MediaService && typeof root.MediaService.stripMediaMetadata === "function")
+          ? root.MediaService.stripMediaMetadata(fileOrUrl)
+          : (typeof root.stripMediaMetadata === "function" ? root.stripMediaMetadata(fileOrUrl) : String(fileOrUrl).replace(/#bw-start=\d+/i, "").trim());
+
         const applyAudioStartTime = (el) => {
           const startSec = parseStart(fileOrUrl, CONFIG.music ? CONFIG.music.startTime : null);
           if (startSec > 0) {
@@ -561,14 +565,14 @@
         };
 
         if (!audioEl) {
-          audioEl = new Audio(fileOrUrl);
+          audioEl = new Audio(cleanFileOrUrl);
           audioEl.loop = true;
           audioEl.volume = currentVolume;
           audioEl.load();
           applyAudioStartTime(audioEl);
           audioEl.addEventListener("error", (e) => {
             console.warn("Audio load error fallback:", e);
-            if (fileOrUrl !== "assets/music/happy-birthday-song.mpeg") {
+            if (cleanFileOrUrl !== "assets/music/happy-birthday-song.mpeg") {
               const fallbackUrl = "assets/music/happy-birthday-song.mpeg";
               // Redirect playback to fallback melody WITHOUT corrupting the persisted CONFIG.music.file!
               audioEl.src = fallbackUrl;
@@ -576,8 +580,8 @@
               audioEl.play().then(() => { playing = true; }).catch(() => {});
             }
           });
-        } else if (audioEl.src !== fileOrUrl && !audioEl.src.endsWith(fileOrUrl)) {
-          audioEl.src = fileOrUrl;
+        } else if (audioEl.src !== cleanFileOrUrl && !audioEl.src.endsWith(cleanFileOrUrl)) {
+          audioEl.src = cleanFileOrUrl;
           audioEl.load();
           applyAudioStartTime(audioEl);
         } else {

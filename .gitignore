@@ -1,3 +1,15 @@
-.vercel
+.vercel/
 node_modules/
-package-lock.json
+
+# Local Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Phase 31A One-off Diagnostic Scripts
+scratch/audit_git_secrets.js
+scratch/diag_check_env.js
+scratch/diag_env_encoding.js
+scratch/diag_scan_ports.js
+scratch/diag_test_local_server.js
+scratch/query_debug_env.js

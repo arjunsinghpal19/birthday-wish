@@ -210,6 +210,154 @@
     }
   }
 
+  const SYSTEM_CONFIG_UUID = "00000000-0000-0000-0000-000000000001";
+
+  /**
+   * Deletes a wish record exclusively via secure server-side Admin API (/api/admin-delete-wish).
+   * Strictly rejects deletion of system config row. Never falls back to insecure direct anon delete.
+   * @param {string} uuid - Target wish UUID.
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async function deleteWishRecord(uuid) {
+    try {
+      if (!uuid || typeof uuid !== "string") {
+        return { success: false, error: "Invalid or missing wish UUID" };
+      }
+      const cleanId = uuid.trim();
+      if (cleanId === SYSTEM_CONFIG_UUID) {
+        console.warn("⚠️ DatabaseModule: Attempted deletion of protected system configuration row blocked.");
+        return { success: false, error: "Cannot delete protected system configuration record." };
+      }
+
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-delete-wish")
+        : "/api/admin-delete-wish";
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ uuid: cleanId, adminToken: token })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            console.log("🗑️ Secure Admin API deleted record id:", cleanId);
+            return { success: true };
+          }
+          return { success: false, error: data.error || "Server deletion failed" };
+        }
+
+        if (res.status === 401 || res.status === 403 || res.status === 400) {
+          const errData = await res.json().catch(() => ({}));
+          return { success: false, error: errData.error || `Server rejected deletion (HTTP ${res.status})` };
+        }
+
+        if (res.status === 404) {
+          return {
+            success: false,
+            error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations."
+          };
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        return { success: false, error: errData.error || `Server returned HTTP ${res.status}` };
+      } catch (apiErr) {
+        console.warn("⚠️ Secure Admin Delete API unreachable:", apiErr);
+        return {
+          success: false,
+          error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations."
+        };
+      }
+    } catch (e) {
+      console.warn("⚠️ DB delete exception:", e);
+      return { success: false, error: e.message || "Unknown error during deletion" };
+    }
+  }
+
+  /**
+   * Duplicates an existing wish record in Supabase table 'public.wishes' with a real new UUID.
+   * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
+   * Strictly rejects duplication of the system configuration row.
+   * @param {string} sourceUuid - UUID of the wish to duplicate.
+   * @returns {Promise<{success: boolean, newId?: string, error?: string}>}
+   */
+  async function duplicateWishRecord(sourceUuid) {
+    try {
+      if (!sourceUuid || typeof sourceUuid !== "string") {
+        return { success: false, error: "Invalid or missing source wish UUID" };
+      }
+      const cleanSourceId = sourceUuid.trim();
+      if (cleanSourceId === SYSTEM_CONFIG_UUID) {
+        console.warn("⚠️ DatabaseModule: Attempted duplication of protected system configuration row blocked.");
+        return { success: false, error: "Cannot duplicate protected system configuration record." };
+      }
+
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (!client) {
+        return { success: false, error: "Database client unavailable" };
+      }
+
+      // Fetch the source wish record
+      const { data, error: selectError } = await client
+        .from(TABLE_NAME)
+        .select("*")
+        .eq("id", cleanSourceId)
+        .single();
+
+      if (selectError || !data) {
+        console.warn("⚠️ Supabase DB Duplicate: Source wish not found:", selectError ? selectError.message : "No data");
+        return { success: false, error: selectError ? selectError.message : "Source wish record not found" };
+      }
+
+      const originalName = data.recipient_name || "Friend";
+      const duplicatedName = `${originalName} (Copy)`;
+
+      const record = {
+        recipient_name: duplicatedName,
+        sender_name: data.sender_name || "",
+        pass_code: data.pass_code || "1234",
+        birth_date: data.birth_date || { year: 2001, month: 1, day: 1 },
+        letter_lines: Array.isArray(data.letter_lines) ? JSON.parse(JSON.stringify(data.letter_lines)) : (data.letter_lines || []),
+        memory_text: data.memory_text || "",
+        reasons_json: Array.isArray(data.reasons_json) ? JSON.parse(JSON.stringify(data.reasons_json)) : (data.reasons_json || []),
+        wishes_json: Array.isArray(data.wishes_json) ? JSON.parse(JSON.stringify(data.wishes_json)) : (data.wishes_json || []),
+        gallery_json: Array.isArray(data.gallery_json) ? JSON.parse(JSON.stringify(data.gallery_json)) : (data.gallery_json || []),
+        timeline_json: Array.isArray(data.timeline_json) ? JSON.parse(JSON.stringify(data.timeline_json)) : (data.timeline_json || []),
+        gift_json: (data.gift_json && typeof data.gift_json === "object") ? JSON.parse(JSON.stringify(data.gift_json)) : (data.gift_json || {}),
+        music_url: data.music_url || null,
+        video_url: data.video_url || null,
+        cake_flavor: data.cake_flavor || "default",
+        letter_font: data.letter_font || "default",
+        letter_theme: data.letter_theme || "default"
+      };
+
+      console.log("📋 Database DUPLICATE creating copy for:", duplicatedName, "from source id:", cleanSourceId);
+
+      const { data: inserted, error: insertError } = await client
+        .from(TABLE_NAME)
+        .insert([record])
+        .select("id")
+        .single();
+
+      if (insertError || !inserted) {
+        console.warn("⚠️ Supabase DB Duplicate Insert Error:", insertError ? insertError.message : "Failed insert");
+        return { success: false, error: insertError ? insertError.message : "Failed to insert duplicate wish record" };
+      }
+
+      console.log("✅ Database DUPLICATE created new wish with UUID:", inserted.id);
+      return { success: true, newId: inserted.id };
+    } catch (e) {
+      console.warn("⚠️ DB duplicate exception:", e);
+      return { success: false, error: e.message || "Failed to duplicate wish record" };
+    }
+  }
+
   // ============================================================================
   // SINGLE PASSWORD SERVICE (Supabase Single Source of Truth)
   // Stores password ONLY in JS memory during active session (_sessionPassword).
@@ -269,7 +417,13 @@
         });
         if (res.ok) {
           const data = await res.json();
-          return !!data.valid;
+          if (data.valid) {
+            if (data.token && typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem("admin_session_token", data.token);
+            }
+            return true;
+          }
+          return false;
         }
       } catch (err) {
         console.warn("⚠️ Serverless Auth verification notice:", err);
@@ -297,6 +451,9 @@
           const data = await res.json();
           if (data.success) {
             this._sessionPassword = cleanPass;
+            if (data.token && typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem("admin_session_token", data.token);
+            }
             console.log("🔑 Password hashed (PBKDF2-HMAC-SHA256) & updated via Serverless API.");
             return true;
           }
@@ -466,6 +623,8 @@
     saveWish: saveWishRecord,
     updateWish: updateWishRecord,
     getWishById: getWishRecordById,
+    deleteWish: deleteWishRecord,
+    duplicateWish: duplicateWishRecord,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,
     initSecurityRealtime: () => PasswordService.initRealtime()

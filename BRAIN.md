@@ -557,6 +557,8 @@ DatabaseModule:
 - saveWish
 - updateWish
 - getWishRecordById
+- deleteWish (Real Supabase DELETE with system config row protection)
+- duplicateWish (Real Supabase INSERT with UUID generation & reference media)
 
 Do not duplicate these systems unnecessarily.
 
@@ -1229,11 +1231,64 @@ Accomplished & Manually Verified in Phase 30.2:
    - Zero known remaining regressions.
 
 Git Status:
-- Commit: `stable: Phase 30.2 Admin Studio regression stabilization complete`
+- Commit: `9f873dddb392f2c1694638d1bb569f5e8bf601d2` (`stable: Phase 30.2 Admin Studio regression stabilization complete`)
 - Checkpoint: Accepted stable baseline.
 
-Next Phase:
-Phase 30.3 / Phase 31: Admin Dashboard Management Expansion & Customer Portal.
-Do not push or deploy yet. Ready for next phase planning when requested.
+============================================================
+30. PHASE 31A — ADMIN WISHES MANAGEMENT (SECURE REAL DELETE + REAL DUPLICATE)
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31A:
+1. Secure Server-Side Admin Deletion Architecture:
+   - Created `api/session.js` implementing cryptographic HMAC-SHA256 session token generation and verification.
+   - Updated `api/auth.js` and `api/send-otp.js` to issue signed admin session tokens (`token` + `HttpOnly` cookie) upon verified authentication.
+   - Created dedicated serverless endpoint `api/admin-delete-wish.js` requiring a verified admin session token.
+   - Endpoint validates UUID, strictly rejects master system config row (`00000000-0000-0000-0000-000000000001` with 403 Forbidden), and performs Supabase deletion on the backend using server-side environment credentials.
+   - The public/browser `anon` client is NEVER granted unrestricted `DELETE` privileges on `public.wishes`.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side on Vercel and is never exposed to browser code.
+2. Real Supabase Database Duplication:
+   - Implemented `DatabaseModule.duplicateWish(sourceUuid)` in `js/database.js`.
+   - Fetches source wish from DB, deep-clones all JSON structures (`letter_lines`, `reasons_json`, `wishes_json`, `gallery_json`, `timeline_json`, `gift_json`, etc.).
+   - Appends `" (Copy)"` to `recipient_name`.
+   - Inserts cloned record into Supabase to generate a real primary key UUID (no mock `dup-xxx` IDs).
+   - Preserves all media URLs (`music_url`, `video_url`, gallery photo URLs) by REFERENCE without duplicating physical storage assets.
+   - Strictly protects master system config row `00000000-0000-0000-0000-000000000001` against duplication.
+3. Admin Wishes UI & UX Hardening:
+   - Upgraded `deleteWish(id, btn)` and `duplicateWish(id, btn)` in `js/admin/admin-wishes.js` to async DB operations.
+   - Added clear confirmation prompt for deletion identifying wish recipient name.
+   - Added loading indicators and double-click protection (`disabled`, opacity, `⏳`).
+   - Fixed state synchronization in `js/admin.js` (`initWishes` reloads data from Supabase via `loadDashboardData()`).
+4. Dashboard Initial Load KPI Synchronization & Zero-Flash Neutral Defaults:
+   - Replaced all misleading hardcoded demo numbers (142, 12, 86, 24, 32, 184 MB) in `admin.html` with neutral placeholders (`—`).
+   - Fixed lifecycle race condition in `js/admin.js` `loadDashboardData()`.
+   - Guaranteed that live Storage metadata is fully loaded (`await loadStorageMediaData(wishesList)`) BEFORE `renderKPIs(wishesList, storageFiles)` is called.
+   - Fresh page loads and hard refreshes of `admin.html` now automatically display live Images, Videos, Audio, and Storage Used counts with 100% parity to clicking "Refresh Analytics".
+   - Streamlined subsystem event listeners (`initDashboard`, `initWishes`, `initWishEditor`, `DOMContentLoaded`) to call atomic `loadDashboardData()`.
+5. Non-Fallback Secure Delete Architecture:
+   - Removed the insecure direct client-side `anon` delete fallback in `js/database.js`.
+   - If the serverless Admin API is unavailable or returns 404, `deleteWishRecord()` immediately returns an explicit, actionable error message directing the administrator to run the Vercel/local server runtime.
+   - Zero `anon` DELETE privileges granted in Supabase; zero `service_role` exposed to browser.
+6. Storage Safety & Independence:
+   - Deleting a wish row NEVER deletes files from the `wish-media` Storage bucket.
+   - Zero `Storage.remove()` calls.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31a_kpi_sync.js` (9/9 tests passed).
+   - Created `scratch/test_phase31a_secure_delete.js` (18/18 tests passed).
+   - Created `scratch/test_phase31a_wishes_management.js` (12/12 tests passed).
+   - All 42 JS files syntax valid.
+   - All 410 automated checks passing (100% pass rate).
+8. Sacred Invariants Preserved:
+   - Public Birthday Wish Page untouched.
+   - Quick Editor untouched.
+   - Native Admin Wish Studio 11-section editor untouched.
+   - Database schema and RLS policies untouched.
+   - Admin security gate untouched.
+
+Next Step:
+- Phase 31A manual browser UAT review and approval.
+
+
 
 

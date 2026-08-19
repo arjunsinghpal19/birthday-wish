@@ -97,6 +97,7 @@
     if (logoutBtn) {
       logoutBtn.addEventListener("click", () => {
         sessionStorage.removeItem("admin_authenticated");
+        sessionStorage.removeItem("admin_session_token");
         if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
           window.AdminCore.showToast("Logged out successfully 🚪");
         }

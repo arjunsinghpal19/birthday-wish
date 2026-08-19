@@ -8,6 +8,7 @@
  */
 
 import crypto from "crypto";
+import { createAdminSessionToken, loadLocalEnv } from "./session.js";
 
 const ITERATIONS = 600000;
 const KEY_LEN = 32;
@@ -28,7 +29,7 @@ function generateSalt() {
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-admin-token");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 
   if (req.method === "OPTIONS") {
@@ -38,6 +39,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
+
+  loadLocalEnv();
 
   const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
   const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
@@ -94,14 +97,21 @@ export default async function handler(req, res) {
 
       const inputClean = password.trim();
 
+      let isValid = false;
       if (storedPassHash && storedPassSalt) {
         const inputHash = await pbkdf2Async(inputClean, storedPassSalt);
-        const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedPassHash));
-        return res.status(200).json({ valid: isValid });
+        isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedPassHash));
+      } else {
+        isValid = !!(actualPass && inputClean === actualPass.trim());
       }
 
-      const isValid = (actualPass && inputClean === actualPass.trim());
-      return res.status(200).json({ valid: isValid });
+      if (isValid) {
+        const token = createAdminSessionToken(secRow);
+        res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+        return res.status(200).json({ valid: true, token });
+      }
+
+      return res.status(200).json({ valid: false });
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -153,7 +163,14 @@ export default async function handler(req, res) {
         return res.status(500).json({ success: false, message: "Database update failed" });
       }
 
-      return res.status(200).json({ success: true });
+      const token = createAdminSessionToken({
+        ...secRow,
+        admin_password_hash: newHash,
+        admin_password_salt: newSalt,
+        pass_code: cleanNewPass
+      });
+      res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+      return res.status(200).json({ success: true, token });
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -170,7 +187,12 @@ export default async function handler(req, res) {
       if (storedAnsHash && storedAnsSalt) {
         const inputHash = await pbkdf2Async(cleanAns, storedAnsSalt);
         const isValid = crypto.timingSafeEqual(Buffer.from(inputHash), Buffer.from(storedAnsHash));
-        return res.status(200).json({ valid: isValid });
+        if (isValid) {
+          const token = createAdminSessionToken(secRow);
+          res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+          return res.status(200).json({ valid: true, token });
+        }
+        return res.status(200).json({ valid: false });
       }
 
       // Case B: First migration / pre-migration fallback (expected answer is "shivam")
@@ -200,9 +222,13 @@ export default async function handler(req, res) {
             updated_at: new Date().toISOString()
           })
         });
+
+        const token = createAdminSessionToken(secRow);
+        res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+        return res.status(200).json({ valid: true, token });
       }
 
-      return res.status(200).json({ valid: isValid });
+      return res.status(200).json({ valid: false });
     }
 
     // ────────────────────────────────────────────────────────────────────────

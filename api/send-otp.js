@@ -8,6 +8,7 @@
  */
 
 import crypto from "crypto";
+import { createAdminSessionToken, loadLocalEnv } from "./session.js";
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds
@@ -39,6 +40,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
+
+  loadLocalEnv();
 
   const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
   const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
@@ -377,7 +380,9 @@ export default async function handler(req, res) {
 
       // OTP Verified Successfully!
       if (action === "verify-otp") {
-        return res.status(200).json({ valid: true, message: "OTP Verified!" });
+        const token = createAdminSessionToken(secRow);
+        res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+        return res.status(200).json({ valid: true, message: "OTP Verified!", token });
       }
 
       // Save Recovery Email (Stage 1)
@@ -440,7 +445,14 @@ export default async function handler(req, res) {
           })
         });
 
-        return res.status(200).json({ success: true, message: "Password updated successfully!" });
+        const token = createAdminSessionToken({
+          ...secRow,
+          admin_password_hash: passHash,
+          admin_password_salt: passSalt,
+          pass_code: cleanNewPass
+        });
+        res.setHeader("Set-Cookie", `admin_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400${process.env.NODE_ENV === "production" ? "; Secure" : ""}`);
+        return res.status(200).json({ success: true, message: "Password updated successfully!", token });
       }
     }
 

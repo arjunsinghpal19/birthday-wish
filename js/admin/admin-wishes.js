@@ -217,52 +217,118 @@
     });
   }
 
+  const SYSTEM_CONFIG_UUID = "00000000-0000-0000-0000-000000000001";
+
   /* ============================================================
-     8. ROW ACTIONS (DELETE & DUPLICATE)
+     8. ROW ACTIONS (REAL DELETE & REAL DUPLICATE)
      ============================================================ */
   /**
-   * Deletes a wish record from the in-memory state and triggers UI updates.
-   * @param {string} id - Wish primary UUID or local ID.
+   * Deletes a wish record from Supabase table 'public.wishes' and refreshes live dashboard state.
+   * @param {string} id - Wish primary UUID.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading indicator.
    */
-  function deleteWish(id) {
-    if (!id) return;
-    if (typeof window.confirm === "function" && !window.confirm("Are you sure you want to delete this wish record?")) return;
-
-    wishesState = wishesState.filter(w => w.id !== id);
-    render();
-
-    if (typeof onStateChangeHook === "function") {
-      onStateChangeHook("WISH_DELETED", `Deleted wish record ID: ${id}`, wishesState);
+  async function deleteWish(id, triggeringBtn = null) {
+    if (!id || typeof id !== "string") return;
+    const cleanId = id.trim();
+    if (cleanId === SYSTEM_CONFIG_UUID) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("Cannot delete system configuration record ⚠️");
+      }
+      return;
     }
 
-    if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
-      window.AdminCore.showToast("Wish record deleted 🗑️");
+    const item = wishesState.find(w => w.id === cleanId);
+    const wishName = item ? (item.recipient_name || "Friend") : "this wish";
+
+    const confirmMsg = `Delete "${wishName}"?\n\nThis action cannot be undone.`;
+    if (typeof window.confirm === "function" && !window.confirm(confirmMsg)) return;
+
+    if (triggeringBtn) {
+      triggeringBtn.disabled = true;
+      triggeringBtn.style.opacity = "0.5";
+      triggeringBtn.dataset.originalText = triggeringBtn.textContent;
+      triggeringBtn.textContent = "⏳";
+    }
+
+    try {
+      if (!window.DatabaseModule || typeof window.DatabaseModule.deleteWish !== "function") {
+        throw new Error("DatabaseModule.deleteWish is unavailable");
+      }
+
+      const res = await window.DatabaseModule.deleteWish(cleanId);
+      if (!res || !res.success) {
+        throw new Error(res?.error || "Failed to delete wish from database");
+      }
+
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("Wish record deleted 🗑️");
+      }
+
+      if (typeof onStateChangeHook === "function") {
+        await onStateChangeHook("WISH_DELETED", `Deleted wish record ID: ${cleanId}`, cleanId);
+      }
+    } catch (err) {
+      console.error("❌ AdminWishes: Delete error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Delete failed: ${err.message} ⚠️`);
+      }
+      if (triggeringBtn) {
+        triggeringBtn.disabled = false;
+        triggeringBtn.style.opacity = "1";
+        triggeringBtn.textContent = triggeringBtn.dataset.originalText || "🗑️";
+      }
     }
   }
 
   /**
-   * Duplicates an existing wish record with a new temporary identifier.
-   * @param {string} id - Wish primary UUID or local ID to duplicate.
+   * Duplicates an existing wish record with a real new UUID in Supabase and refreshes live dashboard state.
+   * @param {string} id - Wish primary UUID to duplicate.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading indicator.
    */
-  function duplicateWish(id) {
-    if (!id) return;
-    const item = wishesState.find(w => w.id === id);
-    if (!item) return;
-
-    const dup = JSON.parse(JSON.stringify(item));
-    dup.id = "dup-" + Date.now().toString(36);
-    dup.recipient_name = (dup.recipient_name || "Copy") + " (Copy)";
-    dup.created_at = new Date().toISOString();
-
-    wishesState.unshift(dup);
-    render();
-
-    if (typeof onStateChangeHook === "function") {
-      onStateChangeHook("WISH_DUPLICATED", `Duplicated wish record ID: ${id}`, wishesState);
+  async function duplicateWish(id, triggeringBtn = null) {
+    if (!id || typeof id !== "string") return;
+    const cleanId = id.trim();
+    if (cleanId === SYSTEM_CONFIG_UUID) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("Cannot duplicate system configuration record ⚠️");
+      }
+      return;
     }
 
-    if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
-      window.AdminCore.showToast("Wish record duplicated 📋");
+    if (triggeringBtn) {
+      triggeringBtn.disabled = true;
+      triggeringBtn.style.opacity = "0.5";
+      triggeringBtn.dataset.originalText = triggeringBtn.textContent;
+      triggeringBtn.textContent = "⏳";
+    }
+
+    try {
+      if (!window.DatabaseModule || typeof window.DatabaseModule.duplicateWish !== "function") {
+        throw new Error("DatabaseModule.duplicateWish is unavailable");
+      }
+
+      const res = await window.DatabaseModule.duplicateWish(cleanId);
+      if (!res || !res.success || !res.newId) {
+        throw new Error(res?.error || "Failed to duplicate wish in database");
+      }
+
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Wish record duplicated 📋 (UUID: ${res.newId.substring(0, 8)}...)`);
+      }
+
+      if (typeof onStateChangeHook === "function") {
+        await onStateChangeHook("WISH_DUPLICATED", `Duplicated wish record ID: ${cleanId} -> ${res.newId}`, res.newId);
+      }
+    } catch (err) {
+      console.error("❌ AdminWishes: Duplicate error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Duplication failed: ${err.message} ⚠️`);
+      }
+      if (triggeringBtn) {
+        triggeringBtn.disabled = false;
+        triggeringBtn.style.opacity = "1";
+        triggeringBtn.textContent = triggeringBtn.dataset.originalText || "📋";
+      }
     }
   }
 
@@ -305,7 +371,7 @@
     const tbody = document.getElementById(SELECTORS.tbody);
     if (tbody && !tbody.__wishesActionsBound) {
       tbody.__wishesActionsBound = true;
-      tbody.addEventListener("click", (e) => {
+      tbody.addEventListener("click", async (e) => {
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
         const action = btn.dataset.action;
@@ -313,9 +379,9 @@
         if (action === "edit") {
           openWishEditor(id);
         } else if (action === "duplicate") {
-          duplicateWish(id);
+          await duplicateWish(id, btn);
         } else if (action === "delete") {
-          deleteWish(id);
+          await deleteWish(id, btn);
         }
       });
     }

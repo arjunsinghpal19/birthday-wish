@@ -25,9 +25,12 @@
 
   /**
    * Coordinates live data loading from Supabase Database and Storage across all views.
+   * Ensures Storage metadata is fully loaded before KPI metrics are rendered.
    */
   async function loadDashboardData() {
     let querySuccess = true;
+
+    // 1. Fetch live wishes from Supabase DB
     if (typeof fetchWishes === "function") {
       const res = await fetchWishes();
       if (res && res.success) {
@@ -38,9 +41,20 @@
       }
     }
 
-    const storageFiles = typeof getStorageFiles === "function" ? getStorageFiles() : [];
+    // 2. Fetch live storage media metadata before rendering KPIs
+    let storageFiles = [];
+    if (typeof loadStorageMediaData === "function") {
+      storageFiles = await loadStorageMediaData(wishesList);
+    } else if (typeof fetchStorage === "function") {
+      const storageRes = await fetchStorage();
+      storageFiles = (storageRes && storageRes.success) ? (storageRes.data || []) : [];
+    } else if (typeof getStorageFiles === "function") {
+      storageFiles = getStorageFiles();
+    }
+
     const activeLogs = typeof getLogs === "function" ? getLogs() : [];
 
+    // 3. Render all views with fully synchronized live data
     if (typeof setWishesState === "function") {
       setWishesState(wishesList, !querySuccess);
     }
@@ -95,19 +109,13 @@
     if (typeof initDashboard === "function") {
       initDashboard(async () => {
         await loadDashboardData();
-        if (typeof loadStorageMediaData === "function") {
-          await loadStorageMediaData(wishesList);
-        }
       });
     }
 
     if (typeof initWishes === "function") {
-      initWishes((event, desc, updatedWishes) => {
-        wishesList = updatedWishes || [];
+      initWishes(async (event, desc) => {
         if (typeof logEvent === "function") logEvent(event, desc);
-        const storageFiles = typeof getStorageFiles === "function" ? getStorageFiles() : [];
-        if (typeof renderKPIs === "function") renderKPIs(wishesList, storageFiles);
-        if (typeof renderRecentWishes === "function") renderRecentWishes(wishesList);
+        await loadDashboardData();
       });
     }
 
@@ -115,9 +123,6 @@
       initWishEditor(async (event, desc) => {
         if (typeof logEvent === "function") logEvent(event, desc);
         await loadDashboardData();
-        if (typeof loadStorageMediaData === "function") {
-          await loadStorageMediaData(wishesList);
-        }
       });
     }
 
@@ -135,11 +140,8 @@
       });
     }
 
-    // 3. Initial Data Fetch & Render
+    // 3. Initial Data Fetch & Render (Synchronized Wishes & Storage KPIs)
     loadDashboardData();
-    if (typeof loadStorageMediaData === "function") {
-      loadStorageMediaData(wishesList);
-    }
   });
 
   // Export Global Facade for Backward Compatibility with Inline HTML Onclicks

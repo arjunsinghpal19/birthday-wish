@@ -281,6 +281,122 @@
   }
 
   /**
+   * Deletes multiple wish records via secure server-side Admin API (/api/admin-delete-wish).
+   * Strictly filters out system config row. Never falls back to insecure direct anon delete.
+   * @param {string[]} uuids - Array of wish UUIDs to delete.
+   * @returns {Promise<{success: boolean, deletedIds?: string[], failedIds?: Array<{id: string, error?: string}>, deletedCount?: number, error?: string}>}
+   */
+  async function deleteWishesBulk(uuids) {
+    try {
+      if (!Array.isArray(uuids) || uuids.length === 0) {
+        return { success: false, error: "No wish UUIDs provided for deletion", deletedIds: [], failedIds: [] };
+      }
+
+      // Filter out invalid or system config UUIDs
+      const validIds = [];
+      const localFailed = [];
+      for (const rawId of uuids) {
+        if (!rawId || typeof rawId !== "string") {
+          localFailed.push({ id: String(rawId || ""), error: "Invalid UUID format" });
+          continue;
+        }
+        const cleanId = rawId.trim();
+        if (cleanId === SYSTEM_CONFIG_UUID) {
+          console.warn("⚠️ DatabaseModule: Attempted bulk deletion of protected system configuration row blocked.");
+          localFailed.push({ id: cleanId, error: "Cannot delete protected system configuration record" });
+          continue;
+        }
+        if (!validIds.includes(cleanId)) {
+          validIds.push(cleanId);
+        }
+      }
+
+      if (validIds.length === 0) {
+        return {
+          success: false,
+          error: "No valid wish UUIDs eligible for deletion",
+          deletedIds: [],
+          failedIds: localFailed
+        };
+      }
+
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-delete-wish")
+        : "/api/admin-delete-wish";
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ uuids: validIds, adminToken: token })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            console.log("🗑️ Secure Admin API bulk deleted records count:", data.deletedCount || validIds.length);
+            const allFailed = [...localFailed, ...(data.failedIds || [])];
+            return {
+              success: true,
+              deletedIds: data.deletedIds || validIds,
+              deletedCount: data.deletedCount || validIds.length,
+              failedIds: allFailed
+            };
+          }
+          return {
+            success: false,
+            error: data.error || "Server bulk deletion failed",
+            deletedIds: [],
+            failedIds: validIds.map(id => ({ id, error: data.error || "Server deletion failed" }))
+          };
+        }
+
+        if (res.status === 401 || res.status === 403 || res.status === 400) {
+          const errData = await res.json().catch(() => ({}));
+          return {
+            success: false,
+            error: errData.error || `Server rejected bulk deletion (HTTP ${res.status})`,
+            deletedIds: [],
+            failedIds: validIds.map(id => ({ id, error: errData.error || `HTTP ${res.status}` }))
+          };
+        }
+
+        if (res.status === 404) {
+          return {
+            success: false,
+            error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations.",
+            deletedIds: [],
+            failedIds: validIds.map(id => ({ id, error: "API unavailable" }))
+          };
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errData.error || `Server returned HTTP ${res.status}`,
+          deletedIds: [],
+          failedIds: validIds.map(id => ({ id, error: errData.error || `HTTP ${res.status}` }))
+        };
+      } catch (apiErr) {
+        console.warn("⚠️ Secure Admin Delete API unreachable:", apiErr);
+        return {
+          success: false,
+          error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations.",
+          deletedIds: [],
+          failedIds: validIds.map(id => ({ id, error: "Network error" }))
+        };
+      }
+    } catch (e) {
+      console.warn("⚠️ DB bulk delete exception:", e);
+      return { success: false, error: e.message || "Unknown error during bulk deletion", deletedIds: [], failedIds: [] };
+    }
+  }
+
+  /**
    * Duplicates an existing wish record in Supabase table 'public.wishes' with a real new UUID.
    * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
    * Strictly rejects duplication of the system configuration row.
@@ -624,6 +740,7 @@
     updateWish: updateWishRecord,
     getWishById: getWishRecordById,
     deleteWish: deleteWishRecord,
+    deleteWishesBulk: deleteWishesBulk,
     duplicateWish: duplicateWishRecord,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,

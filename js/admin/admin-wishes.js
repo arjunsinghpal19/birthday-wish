@@ -25,6 +25,8 @@
     countBadge: "wishes-count-badge",
     selectionBadge: "wishes-selection-badge",
     selectedCount: "wishes-selected-count",
+    bulkDeleteBtn: "btn-wishes-bulk-delete",
+    bulkDeleteCount: "wishes-bulk-delete-count",
     clearSelectionBtn: "btn-wishes-clear-selection",
     selectAllCheckbox: "wishes-select-all",
     createBtn: "btn-create-new-wish-wishes",
@@ -595,16 +597,24 @@
     const selectAllBox = document.getElementById(SELECTORS.selectAllCheckbox);
     const selectionBadge = document.getElementById(SELECTORS.selectionBadge);
     const selectedCountEl = document.getElementById(SELECTORS.selectedCount);
+    const bulkDeleteBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
+    const bulkDeleteCount = document.getElementById(SELECTORS.bulkDeleteCount);
     const clearBtn = document.getElementById(SELECTORS.clearSelectionBtn);
 
     const totalSelected = selectedWishIds.size;
 
-    // 1. Update selection badge & count
+    // 1. Update selection badge, counts & bulk delete button
     if (selectedCountEl) {
       selectedCountEl.textContent = String(totalSelected);
     }
+    if (bulkDeleteCount) {
+      bulkDeleteCount.textContent = String(totalSelected);
+    }
     if (selectionBadge) {
       selectionBadge.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (bulkDeleteBtn) {
+      bulkDeleteBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
     }
     if (clearBtn) {
       clearBtn.style.display = totalSelected > 0 ? "inline-block" : "none";
@@ -984,6 +994,100 @@
   }
 
   /**
+   * Executes secure bulk deletion of all currently selected wishes via DatabaseModule.deleteWishesBulk.
+   * Prompts strong confirmation dialog and synchronizes UI, selection state, and pagination.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading state.
+   * @returns {Promise<{success: boolean, deletedCount?: number, deletedIds?: string[], failedIds?: any[], error?: string}>}
+   */
+  async function deleteSelectedWishes(triggeringBtn = null) {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds || selectedIds.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("No wishes selected for deletion ⚠️");
+      }
+      return { success: false, error: "No wishes selected for deletion" };
+    }
+
+    // Filter out system configuration UUID
+    const validIds = selectedIds.filter(id => id !== SYSTEM_CONFIG_UUID);
+    if (validIds.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("Cannot delete protected system configuration record ⚠️");
+      }
+      return { success: false, error: "Cannot delete protected system configuration record" };
+    }
+
+    const count = validIds.length;
+    const confirmMsg = `Delete ${count} selected wish${count === 1 ? "" : "es"}?\n\nThese wish records will be permanently deleted from the database. Storage media will remain untouched.\n\nThis action cannot be undone.`;
+    if (typeof window.confirm === "function" && !window.confirm(confirmMsg)) {
+      return { success: false, error: "Deletion cancelled by user" };
+    }
+
+    const btn = triggeringBtn || document.getElementById(SELECTORS.bulkDeleteBtn);
+    let originalHtml = "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      originalHtml = btn.innerHTML;
+      btn.textContent = "⏳ Deleting...";
+    }
+
+    try {
+      if (!window.DatabaseModule || typeof window.DatabaseModule.deleteWishesBulk !== "function") {
+        throw new Error("DatabaseModule.deleteWishesBulk is unavailable");
+      }
+
+      const res = await window.DatabaseModule.deleteWishesBulk(validIds);
+      if (!res || !res.success) {
+        throw new Error(res?.error || "Failed to delete selected wishes from database");
+      }
+
+      const deletedIds = res.deletedIds || validIds;
+      const failedIds = (res.failedIds || []).map(f => typeof f === "object" ? f.id : f);
+
+      // Remove successfully deleted wishes from in-memory state and selection Set
+      wishesState = wishesState.filter(w => !deletedIds.includes(w.id));
+      deletedIds.forEach(id => selectedWishIds.delete(id));
+
+      // Re-render table and update selection UI (clamps page if needed)
+      render();
+
+      if (failedIds.length > 0 && deletedIds.length > 0) {
+        if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+          window.AdminCore.showToast(`Deleted ${deletedIds.length} wish(es). ${failedIds.length} failed ⚠️`);
+        }
+      } else if (deletedIds.length > 0) {
+        if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+          window.AdminCore.showToast(`${deletedIds.length} wish record(s) deleted 🗑️`);
+        }
+      }
+
+      if (typeof onStateChangeHook === "function") {
+        await onStateChangeHook("WISHES_BULK_DELETED", `Bulk deleted ${deletedIds.length} wish record(s)`, deletedIds);
+      }
+
+      return {
+        success: true,
+        deletedCount: deletedIds.length,
+        deletedIds: deletedIds,
+        failedIds: res.failedIds || []
+      };
+    } catch (err) {
+      console.error("❌ AdminWishes: Bulk delete error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Bulk delete failed: ${err.message} ⚠️`);
+      }
+      return { success: false, error: err.message };
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = originalHtml || `🗑️ Delete Selected (<span id="wishes-bulk-delete-count">${selectedWishIds.size}</span>)`;
+      }
+    }
+  }
+
+  /**
    * Duplicates an existing wish record with a real new UUID in Supabase and refreshes live dashboard state.
    * @param {string} id - Wish primary UUID to duplicate.
    * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading indicator.
@@ -1172,6 +1276,15 @@
       });
     }
 
+    // Bulk Delete Button Listener
+    const bulkDelBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
+    if (bulkDelBtn && !bulkDelBtn.__wishesBound) {
+      bulkDelBtn.__wishesBound = true;
+      bulkDelBtn.addEventListener("click", async () => {
+        await deleteSelectedWishes(bulkDelBtn);
+      });
+    }
+
     // Clear Selection Button Listener
     const clearSelBtn = document.getElementById(SELECTORS.clearSelectionBtn);
     if (clearSelBtn && !clearSelBtn.__wishesBound) {
@@ -1236,6 +1349,7 @@
     setWishes,
     getWishes,
     deleteWish,
+    deleteSelectedWishes,
     duplicateWish,
     getProcessedWishes,
     getFilteredAndSortedWishes,

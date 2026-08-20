@@ -1473,5 +1473,41 @@ Accomplished in Phase 31B-3:
 6. Public API Exports:
    - Exported `getSelectedIds`, `isWishSelected`, `selectWish`, `deselectWish`, `toggleWishSelection`, `selectAllVisible`, `deselectAllVisible`, `clearSelection`, `updateSelectionUI` on `window.AdminWishes`.
 7. Automated Test Validation:
-   - Created `scratch/test_phase31b_wishes_selection.js` (32 unit & integration tests).
-   - Total regression suite: 531 / 531 automated tests passing (100% pass rate).
+   - Created `scratch/test_phase31b_wishes_selection.js` (30 unit & integration tests).
+   - Total regression suite: 464 / 464 automated tests passing (100% pass rate).
+
+## 36. PHASE 31B-6 — BULK ACTIONS: SECURE BULK DELETE
+
+1. UI / UX Bulk Action Controls:
+   - Added `#btn-wishes-bulk-delete` (`🗑️ Delete Selected (<span id="wishes-bulk-delete-count">N</span>)`) inside `#wishes-selection-badge`.
+   - Automatically displayed via flex layout when `selectedWishIds.size > 0`; hidden when `selectedWishIds.size === 0`.
+   - Styled with theme-matched crimson glassmorphism accent (`.btn-bulk-delete`, `.btn-bulk-delete:hover`, `.btn-bulk-delete:disabled`).
+2. Strong Confirmation Safety Prompt:
+   - Explicit confirmation dialog prompts user:
+     `Delete N selected wishes?\n\nThese wish records will be permanently deleted from the database. Storage media will remain untouched.\n\nThis action cannot be undone.`
+   - Cancelling leaves in-memory state and all selections 100% untouched.
+3. Serverless API Multi-UUID Architecture (`api/admin-delete-wish.js`):
+   - Backward-compatible enhancement supporting both `body.uuid` (single string) and `body.uuids` (array of strings).
+   - Validates each UUID against strict regex and protects system config row (`00000000-0000-0000-0000-000000000001`) with HTTP 403.
+   - Authenticates caller using HMAC-SHA256 session token signed against system security credentials.
+   - Executes privileged PostgREST batch delete: `DELETE /rest/v1/wishes?id=in.(uuid1,uuid2,...)` using `process.env.SUPABASE_SERVICE_ROLE_KEY` with header `Prefer: return=representation`.
+   - Returns structured response: `{ success: true, message, deletedCount, deletedIds, failedIds }`.
+4. Client Database Module (`js/database.js`):
+   - Added `DatabaseModule.deleteWishesBulk(uuids)` with client-side system row validation and token dispatch.
+   - Zero fallback to direct client-side `.delete()` or anon keys; zero service_role exposure on frontend.
+5. In-Memory State & Table Synchronization (`js/admin/admin-wishes.js`):
+   - `AdminWishes.deleteSelectedWishes(triggeringBtn)`:
+     - Disables button and sets loading state (`⏳ Deleting...`).
+     - Removes successfully deleted records from `wishesState` and `selectedWishIds`.
+     - Retains failed records in `wishesState` and keeps them selected in `selectedWishIds`.
+     - Automatically re-renders table, updates count badge, synchronizes tri-state header checkbox, and auto-clamps page if active page becomes empty.
+     - Dispatches `onStateChangeHook("WISHES_BULK_DELETED", ...)` to atomically refresh dashboard KPIs (Total Wishes, Storage analytics) and activity log.
+6. Zero Storage Deletions Invariant:
+   - Bulk deletion strictly removes database rows only; `wish-media` Storage bucket files remain completely untouched.
+7. Public API Exports:
+   - Exported `deleteSelectedWishes` on `window.AdminWishes`.
+8. Automated Test Validation:
+   - Created `scratch/test_phase31b_bulk_delete.js` (27 comprehensive unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 491 / 491 automated tests passing (100% pass rate).
+

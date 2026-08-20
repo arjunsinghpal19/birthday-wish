@@ -92,31 +92,75 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    const targetUuid = (body.uuid || req.query.uuid || "").trim();
+    const isBulk = Array.isArray(body.uuids);
+    const targetUuid = !isBulk ? String(body.uuid || (req.query && req.query.uuid) || "").trim() : "";
 
     // ────────────────────────────────────────────────────────────────────────
-    // 1. VALIDATE TARGET UUID
+    // 1. VALIDATE TARGET UUID(S)
     // ────────────────────────────────────────────────────────────────────────
-    if (!targetUuid) {
-      return res.status(400).json({ success: false, error: "Wish UUID parameter is required." });
+    let validUuids = [];
+    const failedIds = [];
+
+    if (isBulk) {
+      if (body.uuids.length === 0) {
+        return res.status(400).json({ success: false, error: "No wish UUIDs provided for deletion." });
+      }
+
+      for (const rawId of body.uuids) {
+        if (!rawId || typeof rawId !== "string") {
+          failedIds.push({ id: String(rawId || ""), error: "Invalid UUID format." });
+          continue;
+        }
+        const cleanId = rawId.trim();
+        if (!UUID_REGEX.test(cleanId)) {
+          failedIds.push({ id: cleanId, error: "Invalid UUID format." });
+          continue;
+        }
+        if (cleanId.toLowerCase() === SYSTEM_CONFIG_UUID) {
+          failedIds.push({ id: cleanId, error: "Forbidden: Cannot delete protected system configuration record." });
+          continue;
+        }
+        if (!validUuids.includes(cleanId)) {
+          validUuids.push(cleanId);
+        }
+      }
+
+      if (validUuids.length === 0) {
+        const hasOnlySystem = body.uuids.every(id => String(id).trim().toLowerCase() === SYSTEM_CONFIG_UUID);
+        if (hasOnlySystem) {
+          return res.status(403).json({
+            success: false,
+            error: "Forbidden: Cannot delete protected system configuration record.",
+            failedIds
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          error: "No valid wish UUIDs provided for deletion.",
+          failedIds
+        });
+      }
+    } else {
+      if (!targetUuid) {
+        return res.status(400).json({ success: false, error: "Wish UUID parameter is required." });
+      }
+
+      if (!UUID_REGEX.test(targetUuid)) {
+        return res.status(400).json({ success: false, error: "Invalid UUID format." });
+      }
+
+      if (targetUuid.toLowerCase() === SYSTEM_CONFIG_UUID) {
+        return res.status(403).json({
+          success: false,
+          error: "Forbidden: Cannot delete protected system configuration record."
+        });
+      }
+
+      validUuids = [targetUuid];
     }
 
-    if (!UUID_REGEX.test(targetUuid)) {
-      return res.status(400).json({ success: false, error: "Invalid UUID format." });
-    }
-
     // ────────────────────────────────────────────────────────────────────────
-    // 2. STRICT SYSTEM-ROW PROTECTION
-    // ────────────────────────────────────────────────────────────────────────
-    if (targetUuid.toLowerCase() === SYSTEM_CONFIG_UUID) {
-      return res.status(403).json({
-        success: false,
-        error: "Forbidden: Cannot delete protected system configuration record."
-      });
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // 3. FETCH SECURITY ROW TO VERIFY CALLER SESSION
+    // 2. FETCH SECURITY ROW TO VERIFY CALLER SESSION
     // ────────────────────────────────────────────────────────────────────────
     const fetchRes = await fetch(
       `${supabaseUrl}/rest/v1/wishes?id=eq.${SYSTEM_CONFIG_UUID}&select=admin_password_hash,admin_password_salt,pass_code,memory_text`,
@@ -136,7 +180,7 @@ export default async function handler(req, res) {
     const secRow = records[0] || {};
 
     // ────────────────────────────────────────────────────────────────────────
-    // 4. VERIFY ADMIN SESSION TOKEN
+    // 3. VERIFY ADMIN SESSION TOKEN
     // ────────────────────────────────────────────────────────────────────────
     const token = extractToken(req, body);
     const isAuthorized = verifyAdminSessionToken(token, secRow);
@@ -149,25 +193,50 @@ export default async function handler(req, res) {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // 5. EXECUTE PRIVILEGED DELETE IN SUPABASE
+    // 4. EXECUTE PRIVILEGED DELETE IN SUPABASE (SINGLE OR BATCH)
     // ────────────────────────────────────────────────────────────────────────
+    const deleteEndpoint = isBulk
+      ? `${supabaseUrl}/rest/v1/wishes?id=in.(${validUuids.join(",")})`
+      : `${supabaseUrl}/rest/v1/wishes?id=eq.${encodeURIComponent(targetUuid)}`;
+
     const deleteRes = await fetch(
-      `${supabaseUrl}/rest/v1/wishes?id=eq.${encodeURIComponent(targetUuid)}`,
+      deleteEndpoint,
       {
         method: "DELETE",
         headers: {
           apikey: serviceRoleKey,
           Authorization: `Bearer ${serviceRoleKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Prefer": "return=representation"
         }
       }
     );
 
     if (!deleteRes.ok) {
-      const errText = await deleteRes.text();
-      return res.status(deleteRes.status).json({
+      const errText = typeof deleteRes.text === "function" ? await deleteRes.text() : "";
+      return res.status(deleteRes.status || 500).json({
         success: false,
-        error: `Supabase deletion failed: ${errText}`
+        error: `Supabase deletion failed: ${errText}`,
+        deletedIds: [],
+        failedIds: validUuids.map(id => ({ id, error: errText }))
+      });
+    }
+
+    if (isBulk) {
+      let deletedRecords = [];
+      if (typeof deleteRes.json === "function") {
+        deletedRecords = await deleteRes.json().catch(() => []);
+      }
+      const deletedIds = Array.isArray(deletedRecords) && deletedRecords.length > 0
+        ? deletedRecords.map(r => r.id)
+        : validUuids;
+
+      return res.status(200).json({
+        success: true,
+        message: `Deleted ${deletedIds.length} wish record(s) successfully.`,
+        deletedCount: deletedIds.length,
+        deletedIds: deletedIds,
+        failedIds: failedIds
       });
     }
 

@@ -33,6 +33,10 @@
   let wishesState = [];
   let isQueryError = false;
   let onStateChangeHook = null;
+  let currentSort = {
+    field: "created",    // "created" | "recipient" | "sender"
+    direction: "desc"    // "asc" | "desc"
+  };
 
   /* ============================================================
      3. SANITIZATION HELPER
@@ -134,7 +138,119 @@
   }
 
   /* ============================================================
-     5. ADMIN CREATE / EDIT BRIDGE
+     5. SORTING STATE HELPERS & INDICATORS
+     ============================================================ */
+  /**
+   * Sets the authoritative sort state and synchronizes the dropdown control.
+   * @param {string} field - Sort field ('created', 'recipient', 'sender').
+   * @param {string} direction - Sort direction ('asc', 'desc').
+   */
+  function setSortState(field, direction) {
+    currentSort = {
+      field: field || "created",
+      direction: direction === "asc" ? "asc" : "desc"
+    };
+
+    const sortSelect = document.getElementById(SELECTORS.sortSelect);
+    if (sortSelect) {
+      if (currentSort.field === "created") {
+        sortSelect.value = currentSort.direction === "desc" ? "newest" : "oldest";
+      } else if (currentSort.field === "recipient") {
+        sortSelect.value = currentSort.direction === "asc" ? "name_asc" : "name_desc";
+      } else if (currentSort.field === "sender") {
+        sortSelect.value = currentSort.direction === "asc" ? "sender_asc" : "sender_desc";
+      }
+    }
+  }
+
+  /**
+   * Parses dropdown value into authoritative sort state.
+   * @param {string} val - Dropdown value.
+   */
+  function setSortFromDropdown(val) {
+    if (val === "oldest" || val === "created_asc") {
+      currentSort = { field: "created", direction: "asc" };
+    } else if (val === "name" || val === "name_asc" || val === "recipient_asc") {
+      currentSort = { field: "recipient", direction: "asc" };
+    } else if (val === "name_desc" || val === "recipient_desc") {
+      currentSort = { field: "recipient", direction: "desc" };
+    } else if (val === "sender_asc") {
+      currentSort = { field: "sender", direction: "asc" };
+    } else if (val === "sender_desc") {
+      currentSort = { field: "sender", direction: "desc" };
+    } else { // "newest", "created_desc", default
+      currentSort = { field: "created", direction: "desc" };
+    }
+  }
+
+  /**
+   * Toggles sort direction for a given field or activates new sort field.
+   * @param {string} field - Target column field ('recipient', 'sender', 'created').
+   */
+  function toggleSortByField(field) {
+    if (currentSort.field === field) {
+      currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+    } else {
+      currentSort.field = field;
+      currentSort.direction = (field === "created") ? "desc" : "asc";
+    }
+
+    // Sync dropdown
+    const sortSelect = document.getElementById(SELECTORS.sortSelect);
+    if (sortSelect) {
+      if (currentSort.field === "created") {
+        sortSelect.value = currentSort.direction === "desc" ? "newest" : "oldest";
+      } else if (currentSort.field === "recipient") {
+        sortSelect.value = currentSort.direction === "asc" ? "name_asc" : "name_desc";
+      } else if (currentSort.field === "sender") {
+        sortSelect.value = currentSort.direction === "asc" ? "sender_asc" : "sender_desc";
+      }
+    }
+
+    render();
+  }
+
+  /**
+   * Returns current active sort state.
+   * @returns {{field: string, direction: string}}
+   */
+  function getSortState() {
+    return { ...currentSort };
+  }
+
+  /**
+   * Updates sortable table header visual indicators and aria attributes based on currentSort state.
+   */
+  function updateSortIndicators() {
+    const fields = ["recipient", "sender", "created"];
+    fields.forEach(f => {
+      const iconEl = document.getElementById(`sort-icon-${f}`);
+      const thEl = typeof document.querySelector === "function" ? document.querySelector(`th[data-sort="${f}"]`) : null;
+
+      if (currentSort.field === f) {
+        if (iconEl) {
+          iconEl.textContent = currentSort.direction === "asc" ? "↑" : "↓";
+          iconEl.classList.add("active");
+        }
+        if (thEl) {
+          thEl.setAttribute("aria-sort", currentSort.direction === "asc" ? "ascending" : "descending");
+          thEl.classList.add("sorted");
+        }
+      } else {
+        if (iconEl) {
+          iconEl.textContent = "↕";
+          iconEl.classList.remove("active");
+        }
+        if (thEl) {
+          thEl.removeAttribute("aria-sort");
+          thEl.classList.remove("sorted");
+        }
+      }
+    });
+  }
+
+  /* ============================================================
+     6. ADMIN CREATE / EDIT BRIDGE
      ============================================================ */
   /**
    * Authoritative Admin -> Quick Editor launcher.
@@ -160,7 +276,7 @@
   }
 
   /* ============================================================
-     6. DATA LOADING & SYNCHRONIZATION
+     7. DATA LOADING & SYNCHRONIZATION
      ============================================================ */
   /**
    * Sets the active wishes data array and refreshes the table view.
@@ -182,7 +298,7 @@
   }
 
   /* ============================================================
-     7. SEARCH, SORT & FILTERING
+     8. SEARCH, SORT & FILTERING
      ============================================================ */
   /**
    * Filters and sorts the wishes list based on toolbar search term, media filter, date filter, and sort selection.
@@ -195,9 +311,13 @@
     const dateSelect = document.getElementById(SELECTORS.filterDate);
 
     const searchTerm = (searchInput?.value || "").toLowerCase().trim();
-    const sortVal = sortSelect?.value || "newest";
     const mediaVal = mediaSelect?.value || "all";
     const dateVal = dateSelect?.value || "all";
+
+    // Sync sort state from dropdown if value present
+    if (sortSelect && sortSelect.value) {
+      setSortFromDropdown(sortSelect.value);
+    }
 
     // 1. Search filter (Recipient Name, Sender Name, UUID)
     let filtered = wishesState.filter(w => {
@@ -224,18 +344,32 @@
       filtered = filtered.filter(w => matchesDateFilter(w, dateVal));
     }
 
-    // 4. Existing Sort
-    if (sortVal === "oldest") {
-      filtered.reverse();
-    } else if (sortVal === "name") {
-      filtered.sort((a, b) => (a.recipient_name || "").localeCompare(b.recipient_name || ""));
+    // 4. Authoritative Sort
+    if (currentSort.field === "recipient") {
+      if (currentSort.direction === "desc") {
+        filtered.sort((a, b) => (b.recipient_name || "").localeCompare(a.recipient_name || ""));
+      } else {
+        filtered.sort((a, b) => (a.recipient_name || "").localeCompare(b.recipient_name || ""));
+      }
+    } else if (currentSort.field === "sender") {
+      if (currentSort.direction === "desc") {
+        filtered.sort((a, b) => (b.sender_name || "").localeCompare(a.sender_name || ""));
+      } else {
+        filtered.sort((a, b) => (a.sender_name || "").localeCompare(b.sender_name || ""));
+      }
+    } else { // "created"
+      if (currentSort.direction === "asc") {
+        filtered.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      } else {
+        filtered.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      }
     }
 
     return filtered;
   }
 
   /* ============================================================
-     8. TABLE RENDERING
+     9. TABLE RENDERING
      ============================================================ */
   /**
    * Renders the Wishes table in the Admin Studio view.
@@ -248,6 +382,9 @@
 
     if (typeof data !== "undefined") wishesState = Array.isArray(data) ? data : [];
     if (typeof isError !== "undefined") isQueryError = !!isError;
+
+    // Update sort header indicators
+    updateSortIndicators();
 
     // Update search clear button visibility
     const searchInput = document.getElementById(SELECTORS.searchInput);
@@ -508,7 +645,33 @@
     const sortSelect = document.getElementById(SELECTORS.sortSelect);
     if (sortSelect && !sortSelect.__wishesBound) {
       sortSelect.__wishesBound = true;
-      sortSelect.addEventListener("change", () => { render(); });
+      sortSelect.addEventListener("change", () => {
+        setSortFromDropdown(sortSelect.value);
+        render();
+      });
+    }
+
+    // Sortable Table Headers Listener (Click & Keyboard Enter/Space)
+    const tableThead = typeof document.querySelector === "function"
+      ? (document.querySelector("#view-wishes table.admin-table thead") || document.querySelector("table.admin-table thead"))
+      : null;
+    if (tableThead && !tableThead.__sortBound) {
+      tableThead.__sortBound = true;
+      tableThead.addEventListener("click", (e) => {
+        const th = e.target.closest("th.th-sortable");
+        if (th && th.dataset.sort) {
+          toggleSortByField(th.dataset.sort);
+        }
+      });
+      tableThead.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          const th = e.target.closest("th.th-sortable");
+          if (th && th.dataset.sort) {
+            e.preventDefault();
+            toggleSortByField(th.dataset.sort);
+          }
+        }
+      });
     }
 
     // Create New Wish Button Listener
@@ -555,7 +718,10 @@
     hasMusic,
     hasVideo,
     hasPhotos,
-    matchesDateFilter
+    matchesDateFilter,
+    getSortState,
+    setSortState,
+    toggleSortByField
   });
 
 })(window);

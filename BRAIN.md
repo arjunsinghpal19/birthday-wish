@@ -1332,3 +1332,46 @@ Accomplished in Phase 31B-1:
    - Quick Editor and Studio Editor untouched.
    - Secure Server-Side Delete and Duplication untouched.
    - Database schema and RLS policies untouched.
+
+============================================================
+32. PHASE 31B-2 — WISHES TABLE SORTING UX EXPANSION
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31B-2:
+1. Clickable Sortable Table Headers:
+   - Added sortable behavior to `Recipient Name` (`data-sort="recipient"`), `Sender` (`data-sort="sender"`), and `Created At` (`data-sort="created"`) in `admin.html`.
+   - Preserved non-sortable status on action/control columns (`Passcode`, `UUID Link`, `Actions`).
+   - Click toggling behavior:
+     - Clicking the active sort column toggles `asc` <-> `desc`.
+     - Clicking an inactive column activates it with default direction (`desc` for date, `asc` for text names).
+2. Sort Indicators:
+   - Added directional icons: `↑` (ascending), `↓` (descending), `↕` (neutral/inactive) in `admin.html` and `admin-components.css`.
+   - Active sorted header receives `.sorted` and `.sort-icon.active` highlighting with project gold typography (`var(--gold)`).
+   - Added accessibility `aria-sort="ascending"` / `aria-sort="descending"` and keyboard navigation (`Enter` / `Space`).
+3. Single Authoritative Sort State & Bi-directional Synchronization:
+   - `currentSort = { field: "created"|"recipient"|"sender", direction: "asc"|"desc" }` in `js/admin/admin-wishes.js`.
+   - Synchronized `#wishes-sort-select` dropdown options:
+     - `newest`: Created At (Newest First)
+     - `oldest`: Created At (Oldest First)
+     - `name_asc`: Recipient Name (A -> Z)
+     - `name_desc`: Recipient Name (Z -> A)
+     - `sender_asc`: Sender Name (A -> Z)
+     - `sender_desc`: Sender Name (Z -> A)
+   - Changing dropdown immediately updates header indicators and table rows; clicking table header immediately updates dropdown selection.
+4. Filter + Sort Pipeline Integrity:
+   `wishesState -> Search filter -> Media filter -> Date filter -> Authoritative Sort -> Render`.
+   - Sorting operates strictly in-memory after all search and media/date filters are evaluated.
+   - 0 Supabase network queries during sorting.
+5. Action Button Binding Integrity:
+   - All row actions (`👁️ View`, `✏️ Edit`, `📋 Duplicate`, `🗑️ Delete`, `📋 Copy UUID Link`) target original wish UUIDs correctly via `data-id` and event delegation.
+6. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_sorting.js` (24/24 tests passed).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 456 / 456 automated tests passed (100% pass rate).
+7. Sacred Invariants Preserved:
+   - Public Wish Page untouched.
+   - Quick Editor and Studio Editor untouched.
+   - Secure Server-Side Delete and Duplication untouched.
+   - Database schema and RLS policies untouched.

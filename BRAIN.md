@@ -1511,3 +1511,38 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 491 / 491 automated tests passing (100% pass rate).
 
+## 37. PHASE 31B-7 — BULK ACTIONS: WISHES TABLE BULK DUPLICATE
+
+1. UI / UX Bulk Action Controls:
+   - Added `#btn-wishes-bulk-duplicate` (`📋 Duplicate Selected (<span id="wishes-bulk-duplicate-count">N</span>)`) inside `#wishes-selection-badge`.
+   - Dynamically displayed via flex layout when `selectedWishIds.size > 0`; hidden when `selectedWishIds.size === 0`.
+   - Styled with theme-matched glassmorphism blue accent (`.btn-bulk-duplicate`, `.btn-bulk-duplicate:hover`, `.btn-bulk-duplicate:disabled`).
+2. Confirmation Dialog & Loading State:
+   - Explicit confirmation dialog prompts user:
+     `Duplicate N selected wishes?\n\nNew copy records will be created with "(Copy)" appended to their recipient names. Original wishes will remain untouched.`
+   - Cancelling performs 0 database operations, preserving all selections and table state.
+   - Button is disabled and displays `⏳ Duplicating...` during async duplication, restored in `finally`.
+3. Duplication Semantics & Data Integrity:
+   - Centralized `prepareDuplicatePayload(data)` helper extracting all 15 wish columns: `recipient_name`, `sender_name`, `pass_code`, `birth_date`, `letter_lines`, `memory_text`, `reasons_json`, `wishes_json`, `gallery_json`, `timeline_json`, `gift_json`, `music_url`, `video_url`, `cake_flavor`, `letter_font`, `letter_theme`.
+   - Appends `(Copy)` to `recipient_name`.
+   - Generates brand-new database UUIDs for each duplicate record; original records remain 100% untouched.
+   - Preserves media URLs by reference without duplicating physical files in `wish-media` Storage.
+   - Strictly blocks duplication of system configuration row (`00000000-0000-0000-0000-000000000001`).
+   - Newly created duplicate records are NOT auto-selected; existing original selections remain logically intact.
+4. Client Database Module (`js/database.js`):
+   - Added `DatabaseModule.duplicateWishesBulk(sourceUuids)` executing batch `.select("*").in("id", validSourceIds)` and batch `.insert(duplicatePayloads).select("*")`.
+   - Refactored single `duplicateWishRecord` to share `prepareDuplicatePayload(data)`.
+5. In-Memory State & Table Synchronization (`js/admin/admin-wishes.js`):
+   - `AdminWishes.duplicateSelectedWishes(triggeringBtn)`:
+     - Adds newly inserted duplicate records to `wishesState`.
+     - Re-renders table, updates item range/count badge (e.g. `Showing 1–10 of 26 wishes`), and updates tri-state header checkbox.
+     - Dispatches `onStateChangeHook("WISHES_BULK_DUPLICATED", ...)` to automatically refresh Dashboard Total Wishes KPI and Activity Feed without manual reload.
+6. Public API Exports:
+   - Exported `duplicateSelectedWishes` on `window.AdminWishes`.
+   - Exported `duplicateWishesBulk` on `window.DatabaseModule`.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31b_bulk_duplicate.js` (26 unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 517 / 517 automated tests passing (100% pass rate).
+
+

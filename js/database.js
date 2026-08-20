@@ -397,6 +397,37 @@
   }
 
   /**
+   * Helper to construct a clean duplicate wish record payload from existing data.
+   * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
+   * Appends '(Copy)' to recipient_name.
+   * @param {object} data - Source wish record from database.
+   * @returns {object} Payload ready for Supabase insert.
+   */
+  function prepareDuplicatePayload(data) {
+    const originalName = data.recipient_name || "Friend";
+    const duplicatedName = `${originalName} (Copy)`;
+
+    return {
+      recipient_name: duplicatedName,
+      sender_name: data.sender_name || "",
+      pass_code: data.pass_code || "1234",
+      birth_date: data.birth_date || { year: 2001, month: 1, day: 1 },
+      letter_lines: Array.isArray(data.letter_lines) ? JSON.parse(JSON.stringify(data.letter_lines)) : (data.letter_lines || []),
+      memory_text: data.memory_text || "",
+      reasons_json: Array.isArray(data.reasons_json) ? JSON.parse(JSON.stringify(data.reasons_json)) : (data.reasons_json || []),
+      wishes_json: Array.isArray(data.wishes_json) ? JSON.parse(JSON.stringify(data.wishes_json)) : (data.wishes_json || []),
+      gallery_json: Array.isArray(data.gallery_json) ? JSON.parse(JSON.stringify(data.gallery_json)) : (data.gallery_json || []),
+      timeline_json: Array.isArray(data.timeline_json) ? JSON.parse(JSON.stringify(data.timeline_json)) : (data.timeline_json || []),
+      gift_json: (data.gift_json && typeof data.gift_json === "object") ? JSON.parse(JSON.stringify(data.gift_json)) : (data.gift_json || {}),
+      music_url: data.music_url || null,
+      video_url: data.video_url || null,
+      cake_flavor: data.cake_flavor || "default",
+      letter_font: data.letter_font || "default",
+      letter_theme: data.letter_theme || "default"
+    };
+  }
+
+  /**
    * Duplicates an existing wish record in Supabase table 'public.wishes' with a real new UUID.
    * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
    * Strictly rejects duplication of the system configuration row.
@@ -431,29 +462,9 @@
         return { success: false, error: selectError ? selectError.message : "Source wish record not found" };
       }
 
-      const originalName = data.recipient_name || "Friend";
-      const duplicatedName = `${originalName} (Copy)`;
+      const record = prepareDuplicatePayload(data);
 
-      const record = {
-        recipient_name: duplicatedName,
-        sender_name: data.sender_name || "",
-        pass_code: data.pass_code || "1234",
-        birth_date: data.birth_date || { year: 2001, month: 1, day: 1 },
-        letter_lines: Array.isArray(data.letter_lines) ? JSON.parse(JSON.stringify(data.letter_lines)) : (data.letter_lines || []),
-        memory_text: data.memory_text || "",
-        reasons_json: Array.isArray(data.reasons_json) ? JSON.parse(JSON.stringify(data.reasons_json)) : (data.reasons_json || []),
-        wishes_json: Array.isArray(data.wishes_json) ? JSON.parse(JSON.stringify(data.wishes_json)) : (data.wishes_json || []),
-        gallery_json: Array.isArray(data.gallery_json) ? JSON.parse(JSON.stringify(data.gallery_json)) : (data.gallery_json || []),
-        timeline_json: Array.isArray(data.timeline_json) ? JSON.parse(JSON.stringify(data.timeline_json)) : (data.timeline_json || []),
-        gift_json: (data.gift_json && typeof data.gift_json === "object") ? JSON.parse(JSON.stringify(data.gift_json)) : (data.gift_json || {}),
-        music_url: data.music_url || null,
-        video_url: data.video_url || null,
-        cake_flavor: data.cake_flavor || "default",
-        letter_font: data.letter_font || "default",
-        letter_theme: data.letter_theme || "default"
-      };
-
-      console.log("📋 Database DUPLICATE creating copy for:", duplicatedName, "from source id:", cleanSourceId);
+      console.log("📋 Database DUPLICATE creating copy for:", record.recipient_name, "from source id:", cleanSourceId);
 
       const { data: inserted, error: insertError } = await client
         .from(TABLE_NAME)
@@ -471,6 +482,116 @@
     } catch (e) {
       console.warn("⚠️ DB duplicate exception:", e);
       return { success: false, error: e.message || "Failed to duplicate wish record" };
+    }
+  }
+
+  /**
+   * Duplicates multiple existing wish records in Supabase table 'public.wishes'.
+   * Generates new UUIDs for each duplicate, preserving JSON structures and media URLs by reference.
+   * Strictly rejects duplication of the system configuration row.
+   * @param {string[]} sourceUuids - Array of wish UUIDs to duplicate.
+   * @returns {Promise<{success: boolean, createdCount: number, newWishes: Array<object>, failedIds: Array<any>, error?: string}>}
+   */
+  async function duplicateWishesBulk(sourceUuids) {
+    try {
+      if (!Array.isArray(sourceUuids) || sourceUuids.length === 0) {
+        return { success: false, error: "No wish UUIDs provided for bulk duplication", createdCount: 0, newWishes: [], failedIds: [] };
+      }
+
+      const validSourceIds = [];
+      const failedIds = [];
+
+      sourceUuids.forEach(id => {
+        if (!id || typeof id !== "string") {
+          failedIds.push({ id, error: "Invalid UUID format" });
+          return;
+        }
+        const cleanId = id.trim();
+        if (cleanId === SYSTEM_CONFIG_UUID) {
+          console.warn("⚠️ DatabaseModule: Attempted bulk duplication of protected system configuration row blocked.");
+          failedIds.push({ id: cleanId, error: "Cannot duplicate protected system configuration record" });
+          return;
+        }
+        validSourceIds.push(cleanId);
+      });
+
+      if (validSourceIds.length === 0) {
+        return {
+          success: false,
+          error: "All provided wish UUIDs are invalid or protected",
+          createdCount: 0,
+          newWishes: [],
+          failedIds
+        };
+      }
+
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (!client) {
+        return { success: false, error: "Database client unavailable", createdCount: 0, newWishes: [], failedIds };
+      }
+
+      // Fetch the source wish records
+      const { data: sourceRecords, error: selectError } = await client
+        .from(TABLE_NAME)
+        .select("*")
+        .in("id", validSourceIds);
+
+      if (selectError || !Array.isArray(sourceRecords) || sourceRecords.length === 0) {
+        console.warn("⚠️ Supabase DB Bulk Duplicate: Source wishes not found:", selectError ? selectError.message : "No records found");
+        return {
+          success: false,
+          error: selectError ? selectError.message : "No matching source wish records found to duplicate",
+          createdCount: 0,
+          newWishes: [],
+          failedIds: validSourceIds.map(id => ({ id, error: "Source record not found" }))
+        };
+      }
+
+      // Identify any IDs that were not found in database
+      const foundIds = new Set(sourceRecords.map(r => r.id));
+      validSourceIds.forEach(id => {
+        if (!foundIds.has(id)) {
+          failedIds.push({ id, error: "Source record not found in database" });
+        }
+      });
+
+      // Prepare duplicate payloads
+      const duplicatePayloads = sourceRecords.map(r => prepareDuplicatePayload(r));
+
+      console.log(`📋 Database BULK DUPLICATE creating ${duplicatePayloads.length} copies...`);
+
+      const { data: insertedRecords, error: insertError } = await client
+        .from(TABLE_NAME)
+        .insert(duplicatePayloads)
+        .select("*");
+
+      if (insertError || !Array.isArray(insertedRecords)) {
+        console.warn("⚠️ Supabase DB Bulk Duplicate Insert Error:", insertError ? insertError.message : "Failed batch insert");
+        return {
+          success: false,
+          error: insertError ? insertError.message : "Failed to insert duplicate wish records",
+          createdCount: 0,
+          newWishes: [],
+          failedIds: validSourceIds.map(id => ({ id, error: insertError ? insertError.message : "Batch insert failed" }))
+        };
+      }
+
+      console.log(`✅ Database BULK DUPLICATE created ${insertedRecords.length} new wishes.`);
+      return {
+        success: true,
+        createdCount: insertedRecords.length,
+        newWishes: insertedRecords,
+        failedIds
+      };
+    } catch (e) {
+      console.warn("⚠️ DB bulk duplicate exception:", e);
+      return {
+        success: false,
+        error: e.message || "Failed to duplicate wish records",
+        createdCount: 0,
+        newWishes: [],
+        failedIds: []
+      };
     }
   }
 
@@ -742,6 +863,7 @@
     deleteWish: deleteWishRecord,
     deleteWishesBulk: deleteWishesBulk,
     duplicateWish: duplicateWishRecord,
+    duplicateWishesBulk: duplicateWishesBulk,
     saveSecuritySettings: saveSecuritySettings,
     getSecuritySettings: getSecuritySettings,
     initSecurityRealtime: () => PasswordService.initRealtime()

@@ -25,6 +25,8 @@
     countBadge: "wishes-count-badge",
     selectionBadge: "wishes-selection-badge",
     selectedCount: "wishes-selected-count",
+    bulkDuplicateBtn: "btn-wishes-bulk-duplicate",
+    bulkDuplicateCount: "wishes-bulk-duplicate-count",
     bulkDeleteBtn: "btn-wishes-bulk-delete",
     bulkDeleteCount: "wishes-bulk-delete-count",
     clearSelectionBtn: "btn-wishes-clear-selection",
@@ -597,21 +599,29 @@
     const selectAllBox = document.getElementById(SELECTORS.selectAllCheckbox);
     const selectionBadge = document.getElementById(SELECTORS.selectionBadge);
     const selectedCountEl = document.getElementById(SELECTORS.selectedCount);
+    const bulkDuplicateBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
+    const bulkDuplicateCount = document.getElementById(SELECTORS.bulkDuplicateCount);
     const bulkDeleteBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
     const bulkDeleteCount = document.getElementById(SELECTORS.bulkDeleteCount);
     const clearBtn = document.getElementById(SELECTORS.clearSelectionBtn);
 
     const totalSelected = selectedWishIds.size;
 
-    // 1. Update selection badge, counts & bulk delete button
+    // 1. Update selection badge, counts & bulk action buttons
     if (selectedCountEl) {
       selectedCountEl.textContent = String(totalSelected);
+    }
+    if (bulkDuplicateCount) {
+      bulkDuplicateCount.textContent = String(totalSelected);
     }
     if (bulkDeleteCount) {
       bulkDeleteCount.textContent = String(totalSelected);
     }
     if (selectionBadge) {
       selectionBadge.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (bulkDuplicateBtn) {
+      bulkDuplicateBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
     }
     if (bulkDeleteBtn) {
       bulkDeleteBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
@@ -692,7 +702,7 @@
    * @param {boolean} [isError=false] - Error flag from query.
    */
   function setWishes(data = [], isError = false) {
-    wishesState = Array.isArray(data) ? data : [];
+    wishesState = Array.isArray(data) ? [...data] : [];
     isQueryError = !!isError;
     render();
   }
@@ -815,7 +825,7 @@
     const tbody = document.getElementById(SELECTORS.tbody);
     if (!tbody) return;
 
-    if (typeof data !== "undefined") wishesState = Array.isArray(data) ? data : [];
+    if (typeof data !== "undefined") wishesState = Array.isArray(data) ? [...data] : [];
     if (typeof isError !== "undefined") isQueryError = !!isError;
 
     // Update sort header indicators
@@ -1131,10 +1141,116 @@
       if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
         window.AdminCore.showToast(`Duplication failed: ${err.message} ⚠️`);
       }
+    } finally {
       if (triggeringBtn) {
         triggeringBtn.disabled = false;
         triggeringBtn.style.opacity = "1";
         triggeringBtn.textContent = triggeringBtn.dataset.originalText || "📋";
+      }
+    }
+  }
+
+  /**
+   * Duplicates all currently selected wishes via DatabaseModule.duplicateWishesBulk.
+   * Prompts confirmation dialog, shows loading state, adds new records to wishesState,
+   * re-renders the table, and invokes onStateChangeHook to update KPIs.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading state.
+   * @returns {Promise<{success: boolean, createdCount?: number, newWishes?: Array<object>, failedIds?: any[], error?: string}>}
+   */
+  async function duplicateSelectedWishes(triggeringBtn = null) {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds || selectedIds.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("No wishes selected for duplication ⚠️");
+      }
+      return { success: false, error: "No wishes selected for duplication" };
+    }
+
+    // Filter out system configuration UUID
+    const validIds = selectedIds.filter(id => id !== SYSTEM_CONFIG_UUID);
+    if (validIds.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("Cannot duplicate protected system configuration record ⚠️");
+      }
+      return { success: false, error: "Cannot duplicate protected system configuration record" };
+    }
+
+    const count = validIds.length;
+    const confirmMsg = `Duplicate ${count} selected wish${count === 1 ? "" : "es"}?\n\nNew copy records will be created with "(Copy)" appended to their recipient names. Original wishes will remain untouched.`;
+    if (typeof window.confirm === "function" && !window.confirm(confirmMsg)) {
+      return { success: false, error: "Duplication cancelled by user" };
+    }
+
+    const btn = triggeringBtn || document.getElementById(SELECTORS.bulkDuplicateBtn);
+    let originalHtml = "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      originalHtml = btn.innerHTML;
+      btn.textContent = "⏳ Duplicating...";
+    }
+
+    try {
+      if (!window.DatabaseModule || typeof window.DatabaseModule.duplicateWishesBulk !== "function") {
+        throw new Error("DatabaseModule.duplicateWishesBulk is unavailable");
+      }
+
+      const res = await window.DatabaseModule.duplicateWishesBulk(validIds);
+      if (!res || (!res.success && (!res.newWishes || res.newWishes.length === 0))) {
+        throw new Error(res?.error || "Failed to duplicate selected wishes in database");
+      }
+
+      const createdCount = res.createdCount || (res.newWishes ? res.newWishes.length : 0);
+      const newWishes = res.newWishes || [];
+      const failedIds = (res.failedIds || []).map(f => typeof f === "object" ? f.id : f);
+
+      // Add new duplicate wish records to in-memory state
+      if (newWishes.length > 0) {
+        newWishes.forEach(nw => {
+          if (nw && nw.id && !wishesState.some(w => w.id === nw.id)) {
+            wishesState.unshift(nw);
+          }
+        });
+      }
+
+      // Re-render table and update pagination/counts
+      render();
+
+      // Show appropriate toast
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        if (failedIds.length > 0 && createdCount > 0) {
+          window.AdminCore.showToast(`Duplicated ${createdCount} wish(es). ${failedIds.length} failed ⚠️`);
+        } else if (createdCount > 0) {
+          window.AdminCore.showToast(`Duplicated ${createdCount} wish record${createdCount === 1 ? "" : "s"} 📋`);
+        }
+      }
+
+      // Trigger state change hook to refresh Dashboard KPIs and Activity Feed
+      if (typeof onStateChangeHook === "function") {
+        await onStateChangeHook(
+          "WISHES_BULK_DUPLICATED",
+          `Bulk duplicated ${createdCount} wish record(s) from ${validIds.length} selected`,
+          newWishes.map(w => w.id)
+        );
+      }
+
+      return {
+        success: createdCount > 0,
+        createdCount,
+        newWishes,
+        failedIds: res.failedIds || []
+      };
+    } catch (err) {
+      console.error("❌ AdminWishes: Bulk duplicate error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Bulk duplicate failed: ${err.message} ⚠️`);
+      }
+      return { success: false, error: err.message };
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = originalHtml || `📋 Duplicate Selected (<span id="wishes-bulk-duplicate-count">${selectedWishIds.size}</span>)`;
       }
     }
   }
@@ -1276,6 +1392,15 @@
       });
     }
 
+    // Bulk Duplicate Button Listener
+    const bulkDupBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
+    if (bulkDupBtn && !bulkDupBtn.__wishesBound) {
+      bulkDupBtn.__wishesBound = true;
+      bulkDupBtn.addEventListener("click", async () => {
+        await duplicateSelectedWishes(bulkDupBtn);
+      });
+    }
+
     // Bulk Delete Button Listener
     const bulkDelBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
     if (bulkDelBtn && !bulkDelBtn.__wishesBound) {
@@ -1351,6 +1476,7 @@
     deleteWish,
     deleteSelectedWishes,
     duplicateWish,
+    duplicateSelectedWishes,
     getProcessedWishes,
     getFilteredAndSortedWishes,
     openWishEditor,

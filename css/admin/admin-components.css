@@ -116,6 +116,35 @@
   white-space: nowrap;
 }
 
+.btn-bulk-duplicate {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.btn-bulk-duplicate:hover {
+  background: rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.7);
+  color: #ffffff;
+  transform: scale(1.02);
+}
+
+.btn-bulk-duplicate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-bulk-delete {
   display: inline-flex;
   align-items: center;

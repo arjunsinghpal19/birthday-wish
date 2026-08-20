@@ -1375,3 +1375,42 @@ Accomplished in Phase 31B-2:
    - Quick Editor and Studio Editor untouched.
    - Secure Server-Side Delete and Duplication untouched.
    - Database schema and RLS policies untouched.
+
+============================================================
+33. PHASE 31B-3 — WISHES TABLE PAGINATION & PAGE SIZE CONTROLS
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31B-3:
+1. Configurable Page Size Controls:
+   - Added `#wishes-page-size` dropdown in `admin.html` with options: `5`, `10` (default), `25`, `50`, and `All`.
+   - Changing page size immediately updates `paginationState.pageSize`, resets `currentPage` to 1, and updates the table view without database queries.
+2. Page Navigation & Info Controls:
+   - Added `#btn-wishes-prev-page` (`◀ Prev`), `#wishes-page-info` (`Page X of Y`), and `#btn-wishes-next-page` (`Next ▶`) in `admin.html`.
+   - Next and Prev buttons accurately advance/decrement pages and automatically disable at page boundaries (Prev disabled on page 1, Next disabled on last page).
+3. Item Range & Total Count Badge:
+   - Updated `#wishes-count-badge` to dynamically format item ranges:
+     - e.g., `Showing 1–10 of 24 wishes`, `Showing 11–20 of 24 wishes`, `Showing 21–24 of 24 wishes`.
+     - Displays `Showing 0 of 0 wishes` on empty datasets or zero-match search results.
+4. Auto-Reset and Clamping Architecture:
+   - Typing into search input, clicking search clear, changing media filter, or changing date filter automatically resets `currentPage = 1`.
+   - Auto-clamping guarantees `currentPage = Math.min(Math.max(1, currentPage), totalPages)` when items are deleted or filtered.
+   - Sorting, editing, and duplicating preserve `currentPage` if valid.
+5. Complete In-Memory Processing Pipeline:
+   `wishesState -> Search filter -> Media filter -> Date filter -> Authoritative Sort -> Pagination Slice -> Render`.
+   - 0 Supabase network queries during pagination navigation or page size adjustments.
+6. Row Action Targeting Integrity:
+   - All row actions (`👁️ View`, `✏️ Edit`, `📋 Duplicate`, `🗑️ Delete`, `📋 Copy UUID Link`) on pages 2, 3, etc. continue targeting exact wish UUIDs via `data-id`.
+7. Glassmorphic Design & Responsive Layout:
+   - Added `.table-pagination`, `.pagination-size-group`, `.page-size-select`, `.pagination-controls`, `.pagination-btn`, and `.pagination-info` in `css/admin/admin-components.css`.
+   - Clean flexbox layout with mobile flex-wrapping.
+8. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_pagination.js` (22/22 tests passed).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 478 / 478 automated tests passed (100% pass rate).
+9. Sacred Invariants Preserved:
+   - Public Wish Page untouched.
+   - Quick Editor and Studio Editor untouched.
+   - Secure Server-Side Delete and Duplication untouched.
+   - Database schema and RLS policies untouched.

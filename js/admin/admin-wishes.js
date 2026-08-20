@@ -24,7 +24,12 @@
     filterDate: "wishes-filter-date",
     countBadge: "wishes-count-badge",
     createBtn: "btn-create-new-wish-wishes",
-    createBtnFallback: "btn-create-new-wish-admin"
+    createBtnFallback: "btn-create-new-wish-admin",
+    pageSizeSelect: "wishes-page-size",
+    prevPageBtn: "btn-wishes-prev-page",
+    nextPageBtn: "btn-wishes-next-page",
+    pageInfo: "wishes-page-info",
+    paginationContainer: "wishes-pagination-container"
   };
 
   /* ============================================================
@@ -36,6 +41,10 @@
   let currentSort = {
     field: "created",    // "created" | "recipient" | "sender"
     direction: "desc"    // "asc" | "desc"
+  };
+  let paginationState = {
+    currentPage: 1,
+    pageSize: 10
   };
 
   /* ============================================================
@@ -250,7 +259,127 @@
   }
 
   /* ============================================================
-     6. ADMIN CREATE / EDIT BRIDGE
+     6. PAGINATION STATE HELPERS & CONTROLS
+     ============================================================ */
+  /**
+   * Returns current active page number (1-indexed).
+   * @returns {number}
+   */
+  function getPage() {
+    return paginationState.currentPage;
+  }
+
+  /**
+   * Sets active page number (auto-clamped between 1 and totalPages) and triggers re-render.
+   * @param {number|string} pageNum - Target page.
+   */
+  function setPage(pageNum) {
+    const num = parseInt(pageNum, 10);
+    if (!isNaN(num)) {
+      const totalPages = getTotalPages();
+      paginationState.currentPage = Math.min(Math.max(1, num), totalPages);
+      render();
+    }
+  }
+
+  /**
+   * Returns current page size ('all' or numeric).
+   * @returns {number|string}
+   */
+  function getPageSize() {
+    return (paginationState.pageSize === Infinity || paginationState.pageSize === "all") ? "all" : paginationState.pageSize;
+  }
+
+  /**
+   * Sets page size, resets currentPage to 1, and triggers re-render.
+   * @param {number|string} size - Rows per page or 'all'.
+   */
+  function setPageSize(size) {
+    if (size === "all" || size === Infinity || String(size).toLowerCase() === "all") {
+      paginationState.pageSize = Infinity;
+    } else {
+      const num = parseInt(size, 10);
+      paginationState.pageSize = (!isNaN(num) && num > 0) ? num : 10;
+    }
+    paginationState.currentPage = 1;
+
+    const sizeSelect = document.getElementById(SELECTORS.pageSizeSelect);
+    if (sizeSelect) {
+      sizeSelect.value = (paginationState.pageSize === Infinity) ? "all" : String(paginationState.pageSize);
+    }
+
+    render();
+  }
+
+  /**
+   * Returns total pages for the current filtered and sorted dataset.
+   * @returns {number}
+   */
+  function getTotalPages() {
+    const filtered = getFilteredAndSortedWishes();
+    if (paginationState.pageSize === Infinity || paginationState.pageSize === "all") return 1;
+    return Math.max(1, Math.ceil(filtered.length / paginationState.pageSize));
+  }
+
+  /**
+   * Updates pagination buttons, page info label, and result count badge.
+   * @param {number} totalFiltered - Total count of matching wishes before slicing.
+   */
+  function updatePaginationControls(totalFiltered) {
+    const prevBtn = document.getElementById(SELECTORS.prevPageBtn);
+    const nextBtn = document.getElementById(SELECTORS.nextPageBtn);
+    const pageInfo = document.getElementById(SELECTORS.pageInfo);
+    const countBadge = document.getElementById(SELECTORS.countBadge);
+    const sizeSelect = document.getElementById(SELECTORS.pageSizeSelect);
+
+    const isAll = (paginationState.pageSize === Infinity || paginationState.pageSize === "all");
+    const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalFiltered / paginationState.pageSize));
+
+    // Clamp current page
+    if (paginationState.currentPage > totalPages) {
+      paginationState.currentPage = totalPages;
+    }
+    if (paginationState.currentPage < 1) {
+      paginationState.currentPage = 1;
+    }
+
+    const curPage = paginationState.currentPage;
+
+    if (totalFiltered === 0) {
+      if (countBadge) countBadge.textContent = "Showing 0 of 0 wishes";
+      if (pageInfo) pageInfo.textContent = "Page 1 of 1";
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
+    const start = isAll ? 1 : (curPage - 1) * paginationState.pageSize + 1;
+    const end = isAll ? totalFiltered : Math.min(curPage * paginationState.pageSize, totalFiltered);
+    const rangeText = (start === end) ? String(start) : `${start}–${end}`;
+
+    if (countBadge) {
+      countBadge.textContent = `Showing ${rangeText} of ${totalFiltered} wishes`;
+    }
+
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${curPage} of ${totalPages}`;
+    }
+
+    if (prevBtn) {
+      prevBtn.disabled = curPage <= 1;
+    }
+
+    if (nextBtn) {
+      nextBtn.disabled = curPage >= totalPages;
+    }
+
+    if (sizeSelect) {
+      sizeSelect.value = isAll ? "all" : String(paginationState.pageSize);
+    }
+  }
+
+  /* ============================================================
+     7. ADMIN CREATE / EDIT BRIDGE
      ============================================================ */
   /**
    * Authoritative Admin -> Quick Editor launcher.
@@ -276,7 +405,7 @@
   }
 
   /* ============================================================
-     7. DATA LOADING & SYNCHRONIZATION
+     8. DATA LOADING & SYNCHRONIZATION
      ============================================================ */
   /**
    * Sets the active wishes data array and refreshes the table view.
@@ -298,13 +427,14 @@
   }
 
   /* ============================================================
-     8. SEARCH, SORT & FILTERING
+     9. SEARCH, SORT & FILTERING PIPELINE
      ============================================================ */
   /**
    * Filters and sorts the wishes list based on toolbar search term, media filter, date filter, and sort selection.
-   * @returns {Array} Processed wishes array ready for display.
+   * Does NOT slice by pagination (returns full matching array).
+   * @returns {Array} Full filtered and sorted wishes array.
    */
-  function getProcessedWishes() {
+  function getFilteredAndSortedWishes() {
     const searchInput = document.getElementById(SELECTORS.searchInput);
     const sortSelect = document.getElementById(SELECTORS.sortSelect);
     const mediaSelect = document.getElementById(SELECTORS.filterMedia);
@@ -368,8 +498,34 @@
     return filtered;
   }
 
+  /**
+   * Returns processed, sorted, and paginated wishes array ready for table row display.
+   * @returns {Array} Paginated subset of wishes.
+   */
+  function getProcessedWishes() {
+    const allFiltered = getFilteredAndSortedWishes();
+    const isAll = (paginationState.pageSize === Infinity || paginationState.pageSize === "all");
+    const totalPages = isAll ? 1 : Math.max(1, Math.ceil(allFiltered.length / paginationState.pageSize));
+
+    // Clamp current page
+    if (paginationState.currentPage > totalPages) {
+      paginationState.currentPage = totalPages;
+    }
+    if (paginationState.currentPage < 1) {
+      paginationState.currentPage = 1;
+    }
+
+    if (isAll) {
+      return allFiltered;
+    }
+
+    const start = (paginationState.currentPage - 1) * paginationState.pageSize;
+    const end = start + paginationState.pageSize;
+    return allFiltered.slice(start, end);
+  }
+
   /* ============================================================
-     9. TABLE RENDERING
+     10. TABLE RENDERING
      ============================================================ */
   /**
    * Renders the Wishes table in the Admin Studio view.
@@ -400,6 +556,8 @@
       if (countBadge) {
         countBadge.textContent = "Showing 0 of 0 wishes";
       }
+      const pageInfo = document.getElementById(SELECTORS.pageInfo);
+      if (pageInfo) pageInfo.textContent = "Page 1 of 1";
       tbody.innerHTML = `
         <tr>
           <td colspan="6" style="text-align:center;color:#ef4444;padding:32px;">
@@ -410,18 +568,16 @@
       return;
     }
 
-    const filtered = getProcessedWishes();
+    const allFiltered = getFilteredAndSortedWishes();
+    const paginated = getProcessedWishes();
 
-    // Update live count badge: Showing X of Y wishes
-    const countBadge = document.getElementById(SELECTORS.countBadge);
-    if (countBadge) {
-      countBadge.textContent = `Showing ${filtered.length} of ${wishesState.length} wishes`;
-    }
+    // Update pagination controls and live count badge
+    updatePaginationControls(allFiltered.length);
 
     tbody.innerHTML = "";
 
     // Empty State
-    if (filtered.length === 0) {
+    if (allFiltered.length === 0) {
       const isSearchingOrFiltering = Boolean(
         (searchInput?.value?.trim()) ||
         (document.getElementById(SELECTORS.filterMedia)?.value && document.getElementById(SELECTORS.filterMedia)?.value !== "all") ||
@@ -442,7 +598,7 @@
     }
 
     // Populate rows
-    filtered.forEach(w => {
+    paginated.forEach(w => {
       const tr = document.createElement("tr");
       const shortId = w.id ? (w.id.substring(0, 13) + "...") : "Local";
       const fullUrl = `${window.location.origin}/?w=${encodeURIComponent(w.id || "")}`;
@@ -607,14 +763,17 @@
       onStateChangeHook = onStateChangeCallback;
     }
 
-    // Search Input Listener
+    // Search Input Listener (resets to page 1)
     const searchInput = document.getElementById(SELECTORS.searchInput);
     if (searchInput && !searchInput.__wishesBound) {
       searchInput.__wishesBound = true;
-      searchInput.addEventListener("input", () => { render(); });
+      searchInput.addEventListener("input", () => {
+        paginationState.currentPage = 1;
+        render();
+      });
     }
 
-    // Search Clear Button Listener
+    // Search Clear Button Listener (resets to page 1)
     const searchClearBtn = document.getElementById(SELECTORS.searchClearBtn);
     if (searchClearBtn && !searchClearBtn.__wishesBound) {
       searchClearBtn.__wishesBound = true;
@@ -623,22 +782,29 @@
           searchInput.value = "";
           searchInput.focus();
         }
+        paginationState.currentPage = 1;
         render();
       });
     }
 
-    // Media Filter Dropdown Listener
+    // Media Filter Dropdown Listener (resets to page 1)
     const mediaFilter = document.getElementById(SELECTORS.filterMedia);
     if (mediaFilter && !mediaFilter.__wishesBound) {
       mediaFilter.__wishesBound = true;
-      mediaFilter.addEventListener("change", () => { render(); });
+      mediaFilter.addEventListener("change", () => {
+        paginationState.currentPage = 1;
+        render();
+      });
     }
 
-    // Date Filter Dropdown Listener
+    // Date Filter Dropdown Listener (resets to page 1)
     const dateFilter = document.getElementById(SELECTORS.filterDate);
     if (dateFilter && !dateFilter.__wishesBound) {
       dateFilter.__wishesBound = true;
-      dateFilter.addEventListener("change", () => { render(); });
+      dateFilter.addEventListener("change", () => {
+        paginationState.currentPage = 1;
+        render();
+      });
     }
 
     // Sort Dropdown Listener
@@ -674,6 +840,41 @@
       });
     }
 
+    // Page Size Selector Listener
+    const pageSizeSelect = document.getElementById(SELECTORS.pageSizeSelect);
+    if (pageSizeSelect && !pageSizeSelect.__wishesBound) {
+      pageSizeSelect.__wishesBound = true;
+      pageSizeSelect.addEventListener("change", (e) => {
+        const val = (e && e.target && typeof e.target.value !== "undefined") ? e.target.value : (pageSizeSelect.value || "10");
+        setPageSize(val);
+      });
+    }
+
+    // Prev Page Button Listener
+    const prevPageBtn = document.getElementById(SELECTORS.prevPageBtn);
+    if (prevPageBtn && !prevPageBtn.__wishesBound) {
+      prevPageBtn.__wishesBound = true;
+      prevPageBtn.addEventListener("click", () => {
+        if (paginationState.currentPage > 1) {
+          paginationState.currentPage--;
+          render();
+        }
+      });
+    }
+
+    // Next Page Button Listener
+    const nextPageBtn = document.getElementById(SELECTORS.nextPageBtn);
+    if (nextPageBtn && !nextPageBtn.__wishesBound) {
+      nextPageBtn.__wishesBound = true;
+      nextPageBtn.addEventListener("click", () => {
+        const totalPages = getTotalPages();
+        if (paginationState.currentPage < totalPages) {
+          paginationState.currentPage++;
+          render();
+        }
+      });
+    }
+
     // Create New Wish Button Listener
     const createBtn = document.getElementById(SELECTORS.createBtn) || document.getElementById(SELECTORS.createBtnFallback);
     if (createBtn && !createBtn.__wishesBound) {
@@ -704,7 +905,7 @@
   }
 
   /* ============================================================
-     10. AUTHORITATIVE PUBLIC API
+     11. AUTHORITATIVE PUBLIC API
      ============================================================ */
   window.AdminWishes = Object.freeze({
     init,
@@ -714,6 +915,7 @@
     deleteWish,
     duplicateWish,
     getProcessedWishes,
+    getFilteredAndSortedWishes,
     openWishEditor,
     hasMusic,
     hasVideo,
@@ -721,7 +923,12 @@
     matchesDateFilter,
     getSortState,
     setSortState,
-    toggleSortByField
+    toggleSortByField,
+    getPage,
+    setPage,
+    getPageSize,
+    setPageSize,
+    getTotalPages
   });
 
 })(window);

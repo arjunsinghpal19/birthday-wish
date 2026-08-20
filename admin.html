@@ -265,6 +265,24 @@
                 <!-- Rendered dynamically -->
               </tbody>
             </table>
+
+            <div class="table-pagination" id="wishes-pagination-container">
+              <div class="pagination-size-group">
+                <label for="wishes-page-size" class="pagination-label">Rows per page:</label>
+                <select class="filter-select page-size-select" id="wishes-page-size" title="Select rows per page">
+                  <option value="5">5</option>
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="all">All</option>
+                </select>
+              </div>
+              <div class="pagination-controls">
+                <button type="button" class="btn-sm pagination-btn" id="btn-wishes-prev-page" title="Previous page" disabled>◀ Prev</button>
+                <span class="pagination-info" id="wishes-page-info">Page 1 of 1</span>
+                <button type="button" class="btn-sm pagination-btn" id="btn-wishes-next-page" title="Next page" disabled>Next ▶</button>
+              </div>
+            </div>
           </div>
         </section>
 

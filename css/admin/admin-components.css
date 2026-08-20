@@ -249,6 +249,76 @@
 }
 
 /* ==========================================================================
+   TABLE PAGINATION
+   ========================================================================== */
+
+.table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-glass);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pagination-size-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.page-size-select {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  min-width: 65px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-btn {
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(168, 85, 247, 0.25);
+  border-color: var(--purple-accent);
+  color: #fff;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.pagination-info {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ==========================================================================
    BUTTON SYSTEM
    ========================================================================== */
 

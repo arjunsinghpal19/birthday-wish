@@ -27,6 +27,8 @@
     selectedCount: "wishes-selected-count",
     bulkCopyLinksBtn: "btn-wishes-bulk-copy-links",
     bulkCopyLinksCount: "wishes-bulk-copy-links-count",
+    bulkExportBtn: "btn-wishes-bulk-export",
+    bulkExportCount: "wishes-bulk-export-count",
     bulkDuplicateBtn: "btn-wishes-bulk-duplicate",
     bulkDuplicateCount: "wishes-bulk-duplicate-count",
     bulkDeleteBtn: "btn-wishes-bulk-delete",
@@ -603,6 +605,8 @@
     const selectedCountEl = document.getElementById(SELECTORS.selectedCount);
     const bulkCopyLinksBtn = document.getElementById(SELECTORS.bulkCopyLinksBtn);
     const bulkCopyLinksCount = document.getElementById(SELECTORS.bulkCopyLinksCount);
+    const bulkExportBtn = document.getElementById(SELECTORS.bulkExportBtn);
+    const bulkExportCount = document.getElementById(SELECTORS.bulkExportCount);
     const bulkDuplicateBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
     const bulkDuplicateCount = document.getElementById(SELECTORS.bulkDuplicateCount);
     const bulkDeleteBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
@@ -618,6 +622,9 @@
     if (bulkCopyLinksCount) {
       bulkCopyLinksCount.textContent = String(totalSelected);
     }
+    if (bulkExportCount) {
+      bulkExportCount.textContent = String(totalSelected);
+    }
     if (bulkDuplicateCount) {
       bulkDuplicateCount.textContent = String(totalSelected);
     }
@@ -629,6 +636,9 @@
     }
     if (bulkCopyLinksBtn) {
       bulkCopyLinksBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (bulkExportBtn) {
+      bulkExportBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
     }
     if (bulkDuplicateBtn) {
       bulkDuplicateBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
@@ -1379,6 +1389,211 @@
     }
   }
 
+  /**
+   * Returns deep-cloned array of selected wish records from wishesState.
+   * Prunes stale IDs from selectedWishIds if any records are no longer present.
+   * Preserves deterministic order matching wishesState.
+   * @returns {Array<Object>} Array of deep-cloned wish objects.
+   */
+  function getSelectedWishesData() {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds || selectedIds.length === 0) return [];
+
+    const validWishes = [];
+    const staleIds = [];
+
+    // Keep deterministic order matching wishesState
+    wishesState.forEach(w => {
+      if (w && w.id && selectedWishIds.has(w.id.trim())) {
+        try {
+          validWishes.push(JSON.parse(JSON.stringify(w)));
+        } catch {
+          validWishes.push({ ...w });
+        }
+      }
+    });
+
+    // Check for any selected IDs that weren't found in wishesState
+    selectedIds.forEach(id => {
+      const found = wishesState.some(w => w && w.id && w.id.trim() === id);
+      if (!found) {
+        staleIds.push(id);
+      }
+    });
+
+    if (staleIds.length > 0) {
+      staleIds.forEach(id => selectedWishIds.delete(id));
+      updateSelectionUI();
+    }
+
+    return validWishes;
+  }
+
+  /**
+   * Converts array of wish records into a standardized, properly escaped CSV string.
+   * @param {Array<Object>} wishes - Wish records array.
+   * @returns {string} Formatted CSV text.
+   */
+  function formatWishesToCSV(wishes) {
+    if (!Array.isArray(wishes) || wishes.length === 0) {
+      return "";
+    }
+
+    const headers = [
+      "id",
+      "recipient_name",
+      "sender_name",
+      "pass_code",
+      "birth_date",
+      "cake_flavor",
+      "letter_font",
+      "letter_theme",
+      "letter_lines",
+      "memory_text",
+      "reasons_json",
+      "wishes_json",
+      "gallery_json",
+      "timeline_json",
+      "gift_json",
+      "music_url",
+      "video_url",
+      "created_at"
+    ];
+
+    function escapeCSVField(val) {
+      if (val === null || val === undefined) {
+        return "";
+      }
+      let str = "";
+      if (typeof val === "object") {
+        try {
+          str = JSON.stringify(val);
+        } catch {
+          str = String(val);
+        }
+      } else {
+        str = String(val);
+      }
+
+      // Check if quotes, commas, or newlines are present
+      if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    }
+
+    const rows = [
+      headers.join(",")
+    ];
+
+    wishes.forEach(w => {
+      if (!w) return;
+      const row = headers.map(h => escapeCSVField(w[h]));
+      rows.push(row.join(","));
+    });
+
+    return rows.join("\r\n");
+  }
+
+  /**
+   * Exports selected wish records as a downloadable JSON or CSV file.
+   * Purely client-side using Blob and object URL. Preserves existing selections.
+   * @param {"json"|"csv"} [format="json"] - Export file format.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button for loading indicator.
+   * @returns {Promise<{success: boolean, exportedCount: number, format?: string, filename?: string, data?: Array, error?: string}>}
+   */
+  async function exportSelectedWishes(format = "json", triggeringBtn = null) {
+    const wishesData = getSelectedWishesData();
+    if (!wishesData || wishesData.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("No valid wishes selected to export ⚠️");
+      }
+      return { success: false, exportedCount: 0, error: "No valid wishes selected" };
+    }
+
+    const fmt = String(format).toLowerCase() === "csv" ? "csv" : "json";
+    const btn = triggeringBtn || document.getElementById(SELECTORS.bulkExportBtn);
+    let originalHtml = "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      originalHtml = btn.innerHTML;
+      btn.textContent = "⏳ Exporting...";
+    }
+
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const dateStr = `${year}-${month}-${day}`;
+
+      let payload = "";
+      let mimeType = "";
+      let filename = "";
+
+      if (fmt === "csv") {
+        payload = formatWishesToCSV(wishesData);
+        mimeType = "text/csv;charset=utf-8;";
+        filename = `wishes-export-${dateStr}.csv`;
+      } else {
+        payload = JSON.stringify(wishesData, null, 2);
+        mimeType = "application/json;charset=utf-8;";
+        filename = `wishes-export-${dateStr}.json`;
+      }
+
+      if (typeof Blob !== "undefined") {
+        const blob = new Blob([payload], { type: mimeType });
+        const dlUrl = (window.URL && typeof window.URL.createObjectURL === "function")
+          ? window.URL.createObjectURL(blob)
+          : (typeof webkitURL !== "undefined" && webkitURL.createObjectURL ? webkitURL.createObjectURL(blob) : "");
+
+        if (dlUrl && typeof document.createElement === "function") {
+          const a = document.createElement("a");
+          a.href = dlUrl;
+          a.download = filename;
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => {
+            if (window.URL && typeof window.URL.revokeObjectURL === "function") {
+              window.URL.revokeObjectURL(dlUrl);
+            }
+          }, 1000);
+        }
+      }
+
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Exported ${wishesData.length} wish record${wishesData.length === 1 ? "" : "s"} (${fmt.toUpperCase()}) 📥`);
+      }
+
+      return {
+        success: true,
+        exportedCount: wishesData.length,
+        format: fmt,
+        filename,
+        data: wishesData
+      };
+    } catch (err) {
+      console.error("❌ AdminWishes: Bulk export error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Export failed: ${err.message || "Export error"} ⚠️`);
+      }
+      return {
+        success: false,
+        exportedCount: 0,
+        error: err.message || "Export error"
+      };
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = originalHtml || `📥 Export (<span id="wishes-bulk-export-count">${selectedWishIds.size}</span>)`;
+      }
+    }
+  }
+
   /* ============================================================
      9. EVENT HANDLERS & INITIALIZATION
      ============================================================ */
@@ -1525,6 +1740,15 @@
       });
     }
 
+    // Bulk Export Button Listener
+    const bulkExpBtn = document.getElementById(SELECTORS.bulkExportBtn);
+    if (bulkExpBtn && !bulkExpBtn.__wishesBound) {
+      bulkExpBtn.__wishesBound = true;
+      bulkExpBtn.addEventListener("click", async () => {
+        await exportSelectedWishes("json", bulkExpBtn);
+      });
+    }
+
     // Bulk Duplicate Button Listener
     const bulkDupBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
     if (bulkDupBtn && !bulkDupBtn.__wishesBound) {
@@ -1612,6 +1836,9 @@
     duplicateSelectedWishes,
     getSelectedWishLinks,
     copySelectedWishLinks,
+    getSelectedWishesData,
+    formatWishesToCSV,
+    exportSelectedWishes,
     getProcessedWishes,
     getFilteredAndSortedWishes,
     openWishEditor,

@@ -1574,5 +1574,34 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 543 / 543 automated tests passing (100% pass rate).
 
+## 39. PHASE 31B-9 — BULK ACTIONS: WISHES TABLE BULK EXPORT (JSON & CSV)
+
+1. UI / UX Bulk Action Controls:
+   - Added `#btn-wishes-bulk-export` (`📥 Export (<span id="wishes-bulk-export-count">N</span>)`) inside `#wishes-selection-badge`.
+   - Dynamically displayed via flex layout when `selectedWishIds.size > 0`; hidden when `selectedWishIds.size === 0`.
+   - Styled with theme-matched glassmorphism amber accent (`.btn-bulk-export`, `.btn-bulk-export:hover`, `.btn-bulk-export:disabled`).
+2. Client-Side Blob & ObjectURL Architecture:
+   - 100% client-side file generation using `Blob`, `URL.createObjectURL(blob)`, and simulated anchor click download.
+   - Automatically revokes object URLs after 1 second (`URL.revokeObjectURL`).
+   - Generates deterministic filename matching local date: `wishes-export-YYYY-MM-DD.json` / `wishes-export-YYYY-MM-DD.csv`.
+3. Multi-Format Data Portability:
+   - **JSON Export**: Deep-cloned array of full wish records preserving all 18 wish columns and complex nested JSON structures (`birth_date`, `reasons_json`, `wishes_json`, `gallery_json`, `timeline_json`, `gift_json`, `letter_lines`).
+   - **CSV Export**: Standardized RFC 4180 CSV generation with header row and proper double-quote escaping for fields containing commas, quotes (`""`), newlines, and serialized JSON structures.
+4. Selection State Preservation & Stale UUID Handling:
+   - Successful export leaves `selectedWishIds` 100% intact, enabling seamless action chaining (Export → Copy Links → Duplicate → Delete).
+   - Resolves selected UUIDs against `wishesState`, ignoring and pruning any stale/missing records without throwing.
+5. Async Double-Click Protection & Error Resilience:
+   - Disables button and displays `⏳ Exporting...` during export execution, restored in `finally`.
+   - Displays concise toast feedback (`Exported N wish record(s) (JSON/CSV) 📥` or `Export failed: <error> ⚠️`).
+6. Zero Backend & Zero Storage Invariant:
+   - 100% read-only client-side operation with 0 Supabase network/DB mutations, 0 API calls, and 0 Storage bucket alterations.
+7. Public API Exports:
+   - Exported `getSelectedWishesData`, `formatWishesToCSV`, and `exportSelectedWishes` on `window.AdminWishes`.
+8. Automated Test Validation:
+   - Created `scratch/test_phase31b_bulk_export.js` (26 unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 569 / 569 automated tests passing (100% pass rate).
+
+
 
 

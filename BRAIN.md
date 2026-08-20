@@ -1545,4 +1545,34 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 517 / 517 automated tests passing (100% pass rate).
 
+## 38. PHASE 31B-8 — BULK ACTIONS: WISHES TABLE BULK COPY UUID LINKS
+
+1. UI / UX Bulk Action Controls:
+   - Added `#btn-wishes-bulk-copy-links` (`📋 Copy Links (<span id="wishes-bulk-copy-links-count">N</span>)`) inside `#wishes-selection-badge`.
+   - Dynamically displayed via flex layout when `selectedWishIds.size > 0`; hidden when `selectedWishIds.size === 0`.
+   - Styled with emerald/teal glassmorphism accent (`.btn-bulk-copy-links`, `.btn-bulk-copy-links:hover`, `.btn-bulk-copy-links:disabled`).
+2. Public Canonical UUID Share Link Format:
+   - Reuses existing single-row Copy UUID Link URL-building logic:
+     `${window.location.origin}/?w=${encodeURIComponent(id)}`
+   - Formats clipboard text as one public wish URL per line (newline-separated).
+   - Strictly excludes passcodes, recipient names, sender names, and internal admin URLs (`admin.html` / `admin_edit`).
+3. Async Clipboard Handling & Double-Click Protection:
+   - `AdminWishes.copySelectedWishLinks(triggeringBtn)`:
+     - Disables button and sets loading state (`⏳ Copying...`).
+     - Uses `navigator.clipboard.writeText(payloadText)` with fallback textarea `document.execCommand('copy')`.
+     - Shows concise toast feedback (`Copied N wish link(s) 📋` or `Copy failed: <error> ⚠️`).
+     - Restores button state in `finally`.
+4. Selection State Preservation & Stale UUID Handling:
+   - Successful copy leaves `selectedWishIds` 100% intact, allowing immediate subsequent actions (Duplicate, Delete, or re-copy).
+   - Resolves selected UUIDs against `wishesState`, ignoring and pruning any stale/missing records without throwing.
+5. Zero Backend & Zero Storage Invariant:
+   - 100% client-side utility feature with 0 Supabase network/DB mutations and 0 Storage alterations.
+6. Public API Exports:
+   - Exported `getSelectedWishLinks` and `copySelectedWishLinks` on `window.AdminWishes`.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31b_bulk_copy_links.js` (26 unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 543 / 543 automated tests passing (100% pass rate).
+
+
 

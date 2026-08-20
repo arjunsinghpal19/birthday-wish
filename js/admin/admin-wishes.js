@@ -25,6 +25,8 @@
     countBadge: "wishes-count-badge",
     selectionBadge: "wishes-selection-badge",
     selectedCount: "wishes-selected-count",
+    bulkCopyLinksBtn: "btn-wishes-bulk-copy-links",
+    bulkCopyLinksCount: "wishes-bulk-copy-links-count",
     bulkDuplicateBtn: "btn-wishes-bulk-duplicate",
     bulkDuplicateCount: "wishes-bulk-duplicate-count",
     bulkDeleteBtn: "btn-wishes-bulk-delete",
@@ -599,6 +601,8 @@
     const selectAllBox = document.getElementById(SELECTORS.selectAllCheckbox);
     const selectionBadge = document.getElementById(SELECTORS.selectionBadge);
     const selectedCountEl = document.getElementById(SELECTORS.selectedCount);
+    const bulkCopyLinksBtn = document.getElementById(SELECTORS.bulkCopyLinksBtn);
+    const bulkCopyLinksCount = document.getElementById(SELECTORS.bulkCopyLinksCount);
     const bulkDuplicateBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
     const bulkDuplicateCount = document.getElementById(SELECTORS.bulkDuplicateCount);
     const bulkDeleteBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
@@ -611,6 +615,9 @@
     if (selectedCountEl) {
       selectedCountEl.textContent = String(totalSelected);
     }
+    if (bulkCopyLinksCount) {
+      bulkCopyLinksCount.textContent = String(totalSelected);
+    }
     if (bulkDuplicateCount) {
       bulkDuplicateCount.textContent = String(totalSelected);
     }
@@ -619,6 +626,9 @@
     }
     if (selectionBadge) {
       selectionBadge.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (bulkCopyLinksBtn) {
+      bulkCopyLinksBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
     }
     if (bulkDuplicateBtn) {
       bulkDuplicateBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
@@ -1255,6 +1265,120 @@
     }
   }
 
+  /**
+   * Generates public canonical wish share URL from UUID.
+   * @param {string} id - Wish UUID.
+   * @returns {string} Absolute public wish URL.
+   */
+  function buildPublicWishUrl(id) {
+    if (!id || typeof id !== "string") return "";
+    return `${window.location.origin}/?w=${encodeURIComponent(id.trim())}`;
+  }
+
+  /**
+   * Returns array of public URLs for all currently selected valid wishes.
+   * Resolves selectedWishIds against in-memory wishesState, filtering out stale/missing entries.
+   * @returns {string[]} Array of public URL strings.
+   */
+  function getSelectedWishLinks() {
+    const selectedIds = getSelectedIds();
+    if (!selectedIds || selectedIds.length === 0) return [];
+
+    const validLinks = [];
+    const staleIds = [];
+
+    selectedIds.forEach(id => {
+      const found = wishesState.find(w => w && w.id && w.id.trim() === id);
+      if (found && found.id) {
+        validLinks.push(buildPublicWishUrl(found.id));
+      } else {
+        staleIds.push(id);
+      }
+    });
+
+    if (staleIds.length > 0) {
+      staleIds.forEach(id => selectedWishIds.delete(id));
+      updateSelectionUI();
+    }
+
+    return validLinks;
+  }
+
+  /**
+   * Copies public share URLs for all selected wishes to the clipboard.
+   * One URL per line. Preserves existing selections.
+   * @param {HTMLElement} [triggeringBtn=null] - Optional button element for loading indicator.
+   * @returns {Promise<{success: boolean, copiedCount: number, links?: string[], error?: string}>}
+   */
+  async function copySelectedWishLinks(triggeringBtn = null) {
+    const links = getSelectedWishLinks();
+    if (!links || links.length === 0) {
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast("No valid wishes selected to copy links ⚠️");
+      }
+      return { success: false, copiedCount: 0, error: "No valid wishes selected" };
+    }
+
+    const btn = triggeringBtn || document.getElementById(SELECTORS.bulkCopyLinksBtn);
+    let originalHtml = "";
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = "0.6";
+      originalHtml = btn.innerHTML;
+      btn.textContent = "⏳ Copying...";
+    }
+
+    const payloadText = links.join("\n");
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(payloadText);
+      } else {
+        // Fallback for non-secure contexts or environments without navigator.clipboard
+        const ta = document.createElement("textarea");
+        ta.value = payloadText;
+        ta.style.position = "fixed";
+        ta.style.top = "0";
+        ta.style.left = "0";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const success = (typeof document.execCommand === "function") ? document.execCommand("copy") : true;
+        document.body.removeChild(ta);
+        if (!success) {
+          throw new Error("Clipboard copy command failed");
+        }
+      }
+
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Copied ${links.length} wish link${links.length === 1 ? "" : "s"} 📋`);
+      }
+
+      return {
+        success: true,
+        copiedCount: links.length,
+        links
+      };
+    } catch (err) {
+      console.error("❌ AdminWishes: Bulk copy links error:", err);
+      if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+        window.AdminCore.showToast(`Copy failed: ${err.message || "Clipboard error"} ⚠️`);
+      }
+      return {
+        success: false,
+        copiedCount: 0,
+        error: err.message || "Clipboard error"
+      };
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = originalHtml || `📋 Copy Links (<span id="wishes-bulk-copy-links-count">${selectedWishIds.size}</span>)`;
+      }
+    }
+  }
+
   /* ============================================================
      9. EVENT HANDLERS & INITIALIZATION
      ============================================================ */
@@ -1392,6 +1516,15 @@
       });
     }
 
+    // Bulk Copy Links Button Listener
+    const bulkCopyBtn = document.getElementById(SELECTORS.bulkCopyLinksBtn);
+    if (bulkCopyBtn && !bulkCopyBtn.__wishesBound) {
+      bulkCopyBtn.__wishesBound = true;
+      bulkCopyBtn.addEventListener("click", async () => {
+        await copySelectedWishLinks(bulkCopyBtn);
+      });
+    }
+
     // Bulk Duplicate Button Listener
     const bulkDupBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
     if (bulkDupBtn && !bulkDupBtn.__wishesBound) {
@@ -1477,6 +1610,8 @@
     deleteSelectedWishes,
     duplicateWish,
     duplicateSelectedWishes,
+    getSelectedWishLinks,
+    copySelectedWishLinks,
     getProcessedWishes,
     getFilteredAndSortedWishes,
     openWishEditor,

@@ -24,17 +24,25 @@
 .table-search {
   position: relative;
   min-width: 260px;
+  display: flex;
+  align-items: center;
 }
 
 .table-search input {
   width: 100%;
-  padding: 9px 14px 9px 36px;
+  padding: 9px 34px 9px 36px;
   background: rgba(20, 10, 32, 0.8);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-sm);
   color: #fff;
   font-size: 0.85rem;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.table-search input:focus {
+  border-color: var(--purple-accent);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
 }
 
 .table-search .icon {
@@ -43,11 +51,55 @@
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-dim);
+  pointer-events: none;
+}
+
+.btn-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+}
+
+.btn-search-clear:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .table-filter-group {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.table-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  border-radius: 20px;
+  color: var(--gold, #f59e0b);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .filter-select {
@@ -59,6 +111,11 @@
   font-size: 0.85rem;
   outline: none;
   cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+  border-color: var(--purple-accent);
 }
 
 .admin-table {

@@ -216,13 +216,28 @@
               <div class="table-search">
                 <span class="icon">🔍</span>
                 <input type="text" id="wishes-search-input" placeholder="Search by recipient, sender or UUID...">
+                <button type="button" id="btn-wishes-search-clear" class="btn-search-clear" title="Clear search" aria-label="Clear search" style="display: none;">✕</button>
               </div>
               <div class="table-filter-group">
-                <select class="filter-select" id="wishes-sort-select">
+                <select class="filter-select" id="wishes-filter-media" title="Filter by media type">
+                  <option value="all">All Media Types</option>
+                  <option value="music">🎵 Has Music</option>
+                  <option value="video">🎥 Has Video</option>
+                  <option value="photos">📸 Has Photos</option>
+                  <option value="text_only">📝 Text Only</option>
+                </select>
+                <select class="filter-select" id="wishes-filter-date" title="Filter by creation date">
+                  <option value="all">All Time</option>
+                  <option value="today">Created Today</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                </select>
+                <select class="filter-select" id="wishes-sort-select" title="Sort wishes">
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
                   <option value="name">Name (A-Z)</option>
                 </select>
+                <div class="table-count-badge" id="wishes-count-badge">Showing 0 of 0 wishes</div>
               </div>
             </div>
 

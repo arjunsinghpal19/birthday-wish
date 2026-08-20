@@ -18,7 +18,11 @@
   const SELECTORS = {
     tbody: "wishes-tbody",
     searchInput: "wishes-search-input",
+    searchClearBtn: "btn-wishes-search-clear",
     sortSelect: "wishes-sort-select",
+    filterMedia: "wishes-filter-media",
+    filterDate: "wishes-filter-date",
+    countBadge: "wishes-count-badge",
     createBtn: "btn-create-new-wish-wishes",
     createBtnFallback: "btn-create-new-wish-admin"
   };
@@ -52,7 +56,85 @@
   }
 
   /* ============================================================
-     4. ADMIN CREATE / EDIT BRIDGE
+     4. FILTER & MEDIA HELPERS
+     ============================================================ */
+  /**
+   * Checks if a wish record contains stored music.
+   * @param {Object} w - Wish record.
+   * @returns {boolean}
+   */
+  function hasMusic(w) {
+    return Boolean(w && w.music_url && typeof w.music_url === "string" && w.music_url.trim().length > 0);
+  }
+
+  /**
+   * Checks if a wish record contains stored video.
+   * @param {Object} w - Wish record.
+   * @returns {boolean}
+   */
+  function hasVideo(w) {
+    return Boolean(w && w.video_url && typeof w.video_url === "string" && w.video_url.trim().length > 0);
+  }
+
+  /**
+   * Checks if a wish record contains stored gallery photos.
+   * @param {Object} w - Wish record.
+   * @returns {boolean}
+   */
+  function hasPhotos(w) {
+    if (!w) return false;
+    let raw = w.gallery_json;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (e) { return false; }
+    }
+    if (!Array.isArray(raw) || raw.length === 0) return false;
+    return raw.some(item => {
+      if (!item) return false;
+      if (typeof item === "string") return item.trim().length > 0;
+      return Boolean((item.image && item.image.trim()) || (item.url && item.url.trim()) || (item.file && item.file.trim()) || (item.src && item.src.trim()));
+    });
+  }
+
+  /**
+   * Checks if a wish record matches the selected creation date filter.
+   * @param {Object} w - Wish record.
+   * @param {string} dateFilter - Filter value ('all', 'today', '7d', '30d').
+   * @returns {boolean}
+   */
+  function matchesDateFilter(w, dateFilter) {
+    if (!dateFilter || dateFilter === "all") return true;
+    if (!w || !w.created_at) return false;
+
+    const createdTime = new Date(w.created_at).getTime();
+    if (isNaN(createdTime)) return false;
+
+    const now = Date.now();
+
+    if (dateFilter === "today") {
+      const createdDate = new Date(w.created_at);
+      const today = new Date();
+      return (
+        createdDate.getFullYear() === today.getFullYear() &&
+        createdDate.getMonth() === today.getMonth() &&
+        createdDate.getDate() === today.getDate()
+      );
+    }
+
+    if (dateFilter === "7d") {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      return (now - createdTime >= 0) && (now - createdTime <= sevenDaysMs);
+    }
+
+    if (dateFilter === "30d") {
+      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+      return (now - createdTime >= 0) && (now - createdTime <= thirtyDaysMs);
+    }
+
+    return true;
+  }
+
+  /* ============================================================
+     5. ADMIN CREATE / EDIT BRIDGE
      ============================================================ */
   /**
    * Authoritative Admin -> Quick Editor launcher.
@@ -78,7 +160,7 @@
   }
 
   /* ============================================================
-     5. DATA LOADING & SYNCHRONIZATION
+     6. DATA LOADING & SYNCHRONIZATION
      ============================================================ */
   /**
    * Sets the active wishes data array and refreshes the table view.
@@ -100,26 +182,49 @@
   }
 
   /* ============================================================
-     6. SEARCH, SORT & FILTERING
+     7. SEARCH, SORT & FILTERING
      ============================================================ */
   /**
-   * Filters and sorts the wishes list based on toolbar search term and sort selection.
+   * Filters and sorts the wishes list based on toolbar search term, media filter, date filter, and sort selection.
    * @returns {Array} Processed wishes array ready for display.
    */
   function getProcessedWishes() {
     const searchInput = document.getElementById(SELECTORS.searchInput);
     const sortSelect = document.getElementById(SELECTORS.sortSelect);
+    const mediaSelect = document.getElementById(SELECTORS.filterMedia);
+    const dateSelect = document.getElementById(SELECTORS.filterDate);
 
     const searchTerm = (searchInput?.value || "").toLowerCase().trim();
     const sortVal = sortSelect?.value || "newest";
+    const mediaVal = mediaSelect?.value || "all";
+    const dateVal = dateSelect?.value || "all";
 
+    // 1. Search filter (Recipient Name, Sender Name, UUID)
     let filtered = wishesState.filter(w => {
+      if (!searchTerm) return true;
       const name = (w.recipient_name || "").toLowerCase();
       const sender = (w.sender_name || "").toLowerCase();
       const id = (w.id || "").toLowerCase();
       return name.includes(searchTerm) || sender.includes(searchTerm) || id.includes(searchTerm);
     });
 
+    // 2. Media presence filter
+    if (mediaVal === "music") {
+      filtered = filtered.filter(hasMusic);
+    } else if (mediaVal === "video") {
+      filtered = filtered.filter(hasVideo);
+    } else if (mediaVal === "photos") {
+      filtered = filtered.filter(hasPhotos);
+    } else if (mediaVal === "text_only") {
+      filtered = filtered.filter(w => !hasMusic(w) && !hasVideo(w) && !hasPhotos(w));
+    }
+
+    // 3. Creation date filter
+    if (dateVal !== "all") {
+      filtered = filtered.filter(w => matchesDateFilter(w, dateVal));
+    }
+
+    // 4. Existing Sort
     if (sortVal === "oldest") {
       filtered.reverse();
     } else if (sortVal === "name") {
@@ -130,7 +235,7 @@
   }
 
   /* ============================================================
-     7. TABLE RENDERING
+     8. TABLE RENDERING
      ============================================================ */
   /**
    * Renders the Wishes table in the Admin Studio view.
@@ -144,8 +249,20 @@
     if (typeof data !== "undefined") wishesState = Array.isArray(data) ? data : [];
     if (typeof isError !== "undefined") isQueryError = !!isError;
 
+    // Update search clear button visibility
+    const searchInput = document.getElementById(SELECTORS.searchInput);
+    const searchClearBtn = document.getElementById(SELECTORS.searchClearBtn);
+    if (searchClearBtn) {
+      const hasSearchVal = Boolean(searchInput && searchInput.value && searchInput.value.trim().length > 0);
+      searchClearBtn.style.display = hasSearchVal ? "inline-flex" : "none";
+    }
+
     // Error State
     if (isQueryError) {
+      const countBadge = document.getElementById(SELECTORS.countBadge);
+      if (countBadge) {
+        countBadge.textContent = "Showing 0 of 0 wishes";
+      }
       tbody.innerHTML = `
         <tr>
           <td colspan="6" style="text-align:center;color:#ef4444;padding:32px;">
@@ -158,14 +275,23 @@
 
     const filtered = getProcessedWishes();
 
+    // Update live count badge: Showing X of Y wishes
+    const countBadge = document.getElementById(SELECTORS.countBadge);
+    if (countBadge) {
+      countBadge.textContent = `Showing ${filtered.length} of ${wishesState.length} wishes`;
+    }
+
     tbody.innerHTML = "";
 
     // Empty State
     if (filtered.length === 0) {
-      const searchInput = document.getElementById(SELECTORS.searchInput);
-      const isSearching = !!searchInput?.value?.trim();
-      const emptyMsg = isSearching
-        ? "No wishes match your search criteria. 🔍"
+      const isSearchingOrFiltering = Boolean(
+        (searchInput?.value?.trim()) ||
+        (document.getElementById(SELECTORS.filterMedia)?.value && document.getElementById(SELECTORS.filterMedia)?.value !== "all") ||
+        (document.getElementById(SELECTORS.filterDate)?.value && document.getElementById(SELECTORS.filterDate)?.value !== "all")
+      );
+      const emptyMsg = isSearchingOrFiltering
+        ? "No wishes match your search or filter criteria. 🔍"
         : "No stored wishes found. Create a wish using the public wish generator! ✨";
 
       tbody.innerHTML = `
@@ -351,6 +477,33 @@
       searchInput.addEventListener("input", () => { render(); });
     }
 
+    // Search Clear Button Listener
+    const searchClearBtn = document.getElementById(SELECTORS.searchClearBtn);
+    if (searchClearBtn && !searchClearBtn.__wishesBound) {
+      searchClearBtn.__wishesBound = true;
+      searchClearBtn.addEventListener("click", () => {
+        if (searchInput) {
+          searchInput.value = "";
+          searchInput.focus();
+        }
+        render();
+      });
+    }
+
+    // Media Filter Dropdown Listener
+    const mediaFilter = document.getElementById(SELECTORS.filterMedia);
+    if (mediaFilter && !mediaFilter.__wishesBound) {
+      mediaFilter.__wishesBound = true;
+      mediaFilter.addEventListener("change", () => { render(); });
+    }
+
+    // Date Filter Dropdown Listener
+    const dateFilter = document.getElementById(SELECTORS.filterDate);
+    if (dateFilter && !dateFilter.__wishesBound) {
+      dateFilter.__wishesBound = true;
+      dateFilter.addEventListener("change", () => { render(); });
+    }
+
     // Sort Dropdown Listener
     const sortSelect = document.getElementById(SELECTORS.sortSelect);
     if (sortSelect && !sortSelect.__wishesBound) {
@@ -398,7 +551,11 @@
     deleteWish,
     duplicateWish,
     getProcessedWishes,
-    openWishEditor
+    openWishEditor,
+    hasMusic,
+    hasVideo,
+    hasPhotos,
+    matchesDateFilter
   });
 
 })(window);

@@ -1289,6 +1289,46 @@ Accomplished in Phase 31A:
 Next Step:
 - Phase 31A manual browser UAT review and approval.
 
+============================================================
+31. PHASE 31B-1 — WISHES MANAGEMENT SEARCH & FILTER TOOLBAR EXPANSION
+============================================================
 
+STATUS: IMPLEMENTED & VERIFIED ✅
 
-
+Accomplished in Phase 31B-1:
+1. Search Clear Button:
+   - Added `#btn-wishes-search-clear` inside `.table-search` in `admin.html`.
+   - Toggles dynamically (`inline-flex` when input has text, `none` when empty).
+   - Clicking clears the search field, focuses the input, and re-renders the table without refetching from the database.
+2. Media Presence Filter:
+   - Added `#wishes-filter-media` in `admin.html` with 5 options:
+     - `all` — All Media Types
+     - `music` — 🎵 Has Music (`music_url` non-empty)
+     - `video` — 🎥 Has Video (`video_url` non-empty)
+     - `photos` — 📸 Has Photos (`gallery_json` contains valid image/media items)
+     - `text_only` — 📝 Text Only (no music, no video, no photos)
+3. Creation Date Filter:
+   - Added `#wishes-filter-date` in `admin.html` with 4 options:
+     - `all` — All Time
+     - `today` — Created Today (local calendar day match)
+     - `7d` — Last 7 Days (rolling 7-day window)
+     - `30d` — Last 30 Days (rolling 30-day window)
+4. Live Result Count Badge:
+   - Added `#wishes-count-badge` in `admin.html` displaying `Showing X of Y wishes`.
+   - Real-time reactivity on search input, search clear, media filter change, date filter change, and dataset mutations.
+5. Processing Pipeline Architecture:
+   - Extended `getProcessedWishes()` in `js/admin/admin-wishes.js`:
+     `Raw wishes -> Search filter -> Media presence filter -> Creation date filter -> Existing sort -> Render`.
+   - Purely in-memory operations with 0 redundant Supabase network calls.
+6. Design & Responsive Preservation:
+   - Added `.btn-search-clear` and `.table-count-badge` styles in `css/admin/admin-components.css`.
+   - Preserved all existing colors, glassmorphism tokens, and responsive toolbar flex wrapping.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_ux.js` (22/22 tests passed).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 432 / 432 automated tests passed (100% pass rate).
+8. Sacred Invariants Preserved:
+   - Public Wish Page untouched.
+   - Quick Editor and Studio Editor untouched.
+   - Secure Server-Side Delete and Duplication untouched.
+   - Database schema and RLS policies untouched.

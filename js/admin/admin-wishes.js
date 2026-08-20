@@ -95,17 +95,132 @@
    * @returns {boolean}
    */
   function hasPhotos(w) {
-    if (!w) return false;
+    return getPhotoCount(w) > 0;
+  }
+
+  /**
+   * Returns valid photo count in wish record.
+   * @param {Object} w - Wish record.
+   * @returns {number} Photo count.
+   */
+  function getPhotoCount(w) {
+    if (!w) return 0;
     let raw = w.gallery_json;
     if (typeof raw === "string") {
-      try { raw = JSON.parse(raw); } catch (e) { return false; }
+      try { raw = JSON.parse(raw); } catch (e) { return 0; }
     }
-    if (!Array.isArray(raw) || raw.length === 0) return false;
-    return raw.some(item => {
+    if (!Array.isArray(raw) || raw.length === 0) return 0;
+    return raw.filter(item => {
       if (!item) return false;
       if (typeof item === "string") return item.trim().length > 0;
       return Boolean((item.image && item.image.trim()) || (item.url && item.url.trim()) || (item.file && item.file.trim()) || (item.src && item.src.trim()));
-    });
+    }).length;
+  }
+
+  /**
+   * Returns count of letter lines in wish record.
+   * @param {Object} w - Wish record.
+   * @returns {number} Line count.
+   */
+  function getLetterCount(w) {
+    if (!w) return 0;
+    let lines = w.letter_lines;
+    if (typeof lines === "string") {
+      try { lines = JSON.parse(lines); } catch (e) { lines = lines.split("\n"); }
+    }
+    if (!Array.isArray(lines) || lines.length === 0) return 0;
+    return lines.filter(l => typeof l === "string" && l.trim().length > 0).length;
+  }
+
+  /**
+   * Returns count of timeline milestones in wish record.
+   * @param {Object} w - Wish record.
+   * @returns {number} Milestone count.
+   */
+  function getTimelineCount(w) {
+    if (!w) return 0;
+    let raw = w.timeline_json;
+    if (typeof raw === "string") {
+      try { raw = JSON.parse(raw); } catch (e) { return 0; }
+    }
+    if (!Array.isArray(raw) || raw.length === 0) return 0;
+    return raw.filter(m => m && (m.title || m.date || m.desc || m.year)).length;
+  }
+
+  /**
+   * Extracts #bw-start offset in seconds from media URL.
+   * @param {string} url - Media URL.
+   * @returns {number} Start offset in seconds.
+   */
+  function getMediaOffset(url) {
+    if (!url || typeof url !== "string") return 0;
+    const match = url.match(/#bw-start=(\d+)/i);
+    return match ? (parseInt(match[1], 10) || 0) : 0;
+  }
+
+  /**
+   * Formats seconds into MM:SS display string.
+   * @param {number} sec - Offset seconds.
+   * @returns {string} MM:SS string.
+   */
+  function formatOffset(sec) {
+    if (!sec || isNaN(sec) || sec <= 0) return "00:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+
+  /**
+   * Generates safe HTML string representing content and media badges for a wish.
+   * Does NOT mutate the wish object.
+   * @param {Object} w - Wish record.
+   * @returns {string} HTML string of badges.
+   */
+  function renderContentBadges(w) {
+    if (!w) return `<div class="wish-media-badges"><span class="content-badge badge-text-only" title="📝 Text-only wish">📝 Text Only</span></div>`;
+    const badges = [];
+
+    const musicActive = hasMusic(w);
+    const videoActive = hasVideo(w);
+    const photoCount = getPhotoCount(w);
+    const letterCount = getLetterCount(w);
+    const timelineCount = getTimelineCount(w);
+
+    // 1. Music Indicator
+    if (musicActive) {
+      const offset = getMediaOffset(w.music_url);
+      const tooltip = offset > 0 ? `🎵 Music attached (starts at ${formatOffset(offset)})` : "🎵 Music attached";
+      badges.push(`<span class="content-badge badge-music" title="${escapeHtml(tooltip)}">🎵 Music</span>`);
+    }
+
+    // 2. Video Indicator
+    if (videoActive) {
+      const offset = getMediaOffset(w.video_url);
+      const tooltip = offset > 0 ? `🎥 Video attached (starts at ${formatOffset(offset)})` : "🎥 Video attached";
+      badges.push(`<span class="content-badge badge-video" title="${escapeHtml(tooltip)}">🎥 Video</span>`);
+    }
+
+    // 3. Photos Indicator
+    if (photoCount > 0) {
+      badges.push(`<span class="content-badge badge-photos" title="📸 ${photoCount} Photos in Gallery">📸 ${photoCount}</span>`);
+    }
+
+    // 4. Letter Indicator
+    if (letterCount > 0) {
+      badges.push(`<span class="content-badge badge-letter" title="📜 ${letterCount} Letter Lines">📜 ${letterCount}</span>`);
+    }
+
+    // 5. Timeline Indicator
+    if (timelineCount > 0) {
+      badges.push(`<span class="content-badge badge-timeline" title="⏳ ${timelineCount} Timeline Milestones">⏳ ${timelineCount}</span>`);
+    }
+
+    // 6. Text Only Indicator (if no music, video, or photos)
+    if (!musicActive && !videoActive && photoCount === 0) {
+      badges.unshift(`<span class="content-badge badge-text-only" title="📝 Text-only wish (no media)">📝 Text Only</span>`);
+    }
+
+    return `<div class="wish-media-badges">${badges.join("")}</div>`;
   }
 
   /**
@@ -560,7 +675,7 @@
       if (pageInfo) pageInfo.textContent = "Page 1 of 1";
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align:center;color:#ef4444;padding:32px;">
+          <td colspan="7" style="text-align:center;color:#ef4444;padding:32px;">
             ⚠️ Unable to load wishes from Supabase database. Check database connectivity.
           </td>
         </tr>
@@ -589,7 +704,7 @@
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">
+          <td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">
             ${emptyMsg}
           </td>
         </tr>
@@ -608,6 +723,7 @@
       const passcodeText = escapeHtml(w.pass_code || "1234");
       const dateText = w.created_at ? new Date(w.created_at).toLocaleDateString() : "Recent";
       const rawId = escapeHtml(w.id || "");
+      const contentBadgesHtml = renderContentBadges(w);
 
       tr.innerHTML = `
         <td>
@@ -620,6 +736,7 @@
           </div>
         </td>
         <td>${senderName}</td>
+        <td>${contentBadgesHtml}</td>
         <td><span class="status-badge active">🔑 ${passcodeText}</span></td>
         <td><button class="btn-sm" onclick="window.adminApp ? window.adminApp.copyWishUrl('${fullUrl}') : (window.AdminCore && window.AdminCore.copyWishUrl('${fullUrl}'))">📋 Copy UUID Link</button></td>
         <td>${escapeHtml(dateText)}</td>
@@ -920,6 +1037,12 @@
     hasMusic,
     hasVideo,
     hasPhotos,
+    getPhotoCount,
+    getLetterCount,
+    getTimelineCount,
+    getMediaOffset,
+    formatOffset,
+    renderContentBadges,
     matchesDateFilter,
     getSortState,
     setSortState,

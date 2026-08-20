@@ -1414,3 +1414,34 @@ Accomplished in Phase 31B-3:
    - Quick Editor and Studio Editor untouched.
    - Secure Server-Side Delete and Duplication untouched.
    - Database schema and RLS policies untouched.
+
+## 34. PHASE 31B-4 — WISHES TABLE RICH CONTENT & MEDIA INDICATORS
+
+1. Dedicated Content & Media Table Column:
+   - Added `<th>Content & Media</th>` to the Wishes table in `admin.html`.
+   - Updated empty and error state table rows to span all 7 columns (`colspan="7"`).
+2. Indicator Helpers & Robust Parsing:
+   - `getPhotoCount(w)`: Parses `gallery_json` (handles array and JSON string) and counts valid photo objects (`image`, `url`, `file`, `src`).
+   - `getLetterCount(w)`: Parses `letter_lines` (handles array, JSON string, or newline-delimited string) and counts non-empty lines.
+   - `getTimelineCount(w)`: Parses `timeline_json` (handles array or JSON string) and counts milestone objects (`title`, `date`, `desc`, `year`).
+   - `getMediaOffset(url)`: Extracts `#bw-start=SEC` start offset timestamp from media URLs.
+   - `formatOffset(sec)`: Formats numeric seconds into clean `MM:SS` display format.
+   - `renderContentBadges(w)`: Generates safe, compact HTML badges without mutating the source wish object.
+3. Visual Indicator Badges:
+   - 🎵 `Music`: Rendered when `music_url` is valid. Tooltip shows start offset (e.g. `🎵 Music attached (starts at 00:30)`).
+   - 🎥 `Video`: Rendered when `video_url` is valid. Tooltip shows start offset (e.g. `🎥 Video attached (starts at 01:45)`).
+   - 📸 `Photos (N)`: Rendered when `photoCount > 0` (e.g. `📸 3 Photos in Gallery`).
+   - 📜 `Letter (N)`: Rendered when `letterCount > 0` (e.g. `📜 5 Letter Lines`).
+   - ⏳ `Timeline (N)`: Rendered when `timelineCount > 0` (e.g. `⏳ 4 Timeline Milestones`).
+   - 📝 `Text Only`: Rendered when wish has no music, video, or photos.
+4. Glassmorphic Styling & Layout:
+   - Added `.wish-media-badges` and `.content-badge` variant classes in `css/admin/admin-components.css` (`.badge-music`, `.badge-video`, `.badge-photos`, `.badge-letter`, `.badge-timeline`, `.badge-text-only`).
+   - Clean micro-hover transitions and lightweight tooltip descriptions.
+5. In-Memory Processing & Zero Network Overhead:
+   - Indicators are derived entirely during rendering from in-memory `wishesState`.
+   - 0 additional Supabase database queries or backend API calls.
+6. Public API Exports:
+   - Exported `getPhotoCount`, `getLetterCount`, `getTimelineCount`, `getMediaOffset`, `formatOffset`, `renderContentBadges` on `window.AdminWishes`.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_indicators.js` (24 unit & integration tests).
+   - Total regression suite: 502 / 502 automated tests passing (100% pass rate).

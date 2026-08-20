@@ -1655,19 +1655,55 @@
         paginationState.currentPage = 1;
         render();
       });
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          if (searchInput.value && searchInput.value.length > 0) {
+            e.preventDefault();
+            clearSearch();
+          } else {
+            searchInput.blur();
+          }
+        }
+      });
     }
 
-    // Search Clear Button Listener (resets to page 1)
+    // Search Clear Button Listener (resets to page 1, preserves other filters)
     const searchClearBtn = document.getElementById(SELECTORS.searchClearBtn);
     if (searchClearBtn && !searchClearBtn.__wishesBound) {
       searchClearBtn.__wishesBound = true;
       searchClearBtn.addEventListener("click", () => {
-        if (searchInput) {
-          searchInput.value = "";
-          searchInput.focus();
+        clearSearch();
+      });
+    }
+
+    // Global Keyboard Shortcut ('/' to focus search field when in Wishes tab)
+    if (typeof document !== "undefined" && !document.__wishesGlobalKeyBound) {
+      document.__wishesGlobalKeyBound = true;
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          const activeEl = document.activeElement;
+          const targetTag = (activeEl && activeEl.tagName) ? activeEl.tagName.toUpperCase() : "";
+          const isEditable = targetTag === "INPUT" || targetTag === "TEXTAREA" || targetTag === "SELECT" || (activeEl && activeEl.isContentEditable);
+          if (isEditable) return;
+
+          // Check if Wishes view is active / visible
+          const viewWishes = document.getElementById("view-wishes");
+          const isWishesActive = viewWishes && (!viewWishes.style.display || viewWishes.style.display !== "none" || viewWishes.classList.contains("active"));
+          if (!isWishesActive) return;
+
+          // Check if modal or editor overlay is open
+          const modalOpen = typeof document.querySelector === "function" && Boolean(document.querySelector(".modal.active, .admin-editor-panel.active, #wish-editor-modal.active, #modal-overlay.active"));
+          if (modalOpen) return;
+
+          const searchInputEl = document.getElementById(SELECTORS.searchInput);
+          if (searchInputEl) {
+            e.preventDefault();
+            searchInputEl.focus();
+            if (typeof searchInputEl.select === "function") {
+              searchInputEl.select();
+            }
+          }
         }
-        paginationState.currentPage = 1;
-        render();
       });
     }
 
@@ -1869,6 +1905,22 @@
   }
 
   /**
+   * Clears search input, resets pagination to page 1, and re-renders wishes table.
+   * Preserves active media and date filters and selections.
+   */
+  function clearSearch() {
+    const searchInput = document.getElementById(SELECTORS.searchInput);
+    if (searchInput) {
+      searchInput.value = "";
+      if (typeof searchInput.focus === "function") {
+        searchInput.focus();
+      }
+    }
+    paginationState.currentPage = 1;
+    render();
+  }
+
+  /**
    * Resets all search and filter dropdowns to default values and re-renders table at page 1.
    */
   function resetFilters() {
@@ -1888,6 +1940,7 @@
   window.AdminWishes = Object.freeze({
     init,
     render,
+    clearSearch,
     resetFilters,
     setWishes,
     getWishes,

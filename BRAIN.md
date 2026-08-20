@@ -1602,6 +1602,28 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 569 / 569 automated tests passing (100% pass rate).
 
+## 40. PHASE 31B-10 — WISHES TABLE MANAGEMENT UX BATCH
+
+1. Visual Row Selection Highlighting:
+   - Added `.admin-table tbody tr.selected-row td` (`background: rgba(168, 85, 247, 0.12) !important;`) and `.selected-row:hover td` (`background: rgba(168, 85, 247, 0.18) !important;`) in `css/admin/admin-components.css`.
+   - `AdminWishes.render()` automatically attaches `.selected-row` to `<tr>` elements when their UUID is in `selectedWishIds`.
+   - `AdminWishes.updateSelectionUI()` dynamically toggles `.selected-row` on all rendered `<tr>` elements upon checkbox state changes without full table re-render.
+2. In-Memory Stale Selection Auto-Pruning:
+   - `render()` automatically prunes stale or deleted UUIDs from `selectedWishIds` against current `wishesState`, ensuring the selection set never holds dangling references.
+3. Empty State & Quick Filter Reset:
+   - In empty search/filter states, displays `#btn-wishes-empty-reset-filters` (`✕ Reset Filters`).
+   - Clicking `#btn-wishes-empty-reset-filters` clears search input, resets media & date dropdowns to "all", resets pagination to page 1, and renders the full wishes list.
+   - Exported `resetFilters()` on authoritative `window.AdminWishes` public API.
+4. Bulk Action Workflow Unified Consistency:
+   - Standardized selection count synchronization across all 4 bulk buttons (`Copy Links`, `Export`, `Duplicate Selected`, `Delete Selected`).
+   - Preserved global UUID selection persistence across pagination, search, media/date filters, sorting, and page size changes.
+   - Guaranteed zero backend mutations, zero Storage modifications, and zero secret exposures.
+5. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_management_ux.js` (17 unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 586 / 586 automated tests passing (100% pass rate).
+
+
 
 
 

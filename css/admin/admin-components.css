@@ -343,10 +343,42 @@
   font-size: 0.88rem;
   color: var(--text-main);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s;
 }
 
 .admin-table tr:hover td {
   background: rgba(168, 85, 247, 0.05);
+}
+
+.admin-table tbody tr.selected-row td {
+  background: rgba(168, 85, 247, 0.12) !important;
+}
+
+.admin-table tbody tr.selected-row:hover td {
+  background: rgba(168, 85, 247, 0.18) !important;
+}
+
+.btn-wishes-reset-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 14px;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: var(--radius-sm, 8px);
+  color: #c084fc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.15s;
+}
+
+.btn-wishes-reset-filters:hover {
+  background: rgba(168, 85, 247, 0.35);
+  border-color: rgba(168, 85, 247, 0.7);
+  color: #ffffff;
+  transform: scale(1.02);
 }
 
 .user-cell {

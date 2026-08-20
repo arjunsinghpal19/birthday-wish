@@ -670,7 +670,7 @@
       }
     }
 
-    // 3. Update row checkboxes in tbody
+    // 3. Update row checkboxes in tbody and toggle .selected-row on <tr>
     const tbody = document.getElementById(SELECTORS.tbody);
     const rowCheckboxes = (tbody && typeof tbody.querySelectorAll === "function")
       ? tbody.querySelectorAll(".wish-row-checkbox")
@@ -681,7 +681,16 @@
       rowCheckboxes.forEach(cb => {
         const id = cb.dataset ? cb.dataset.id : (typeof cb.getAttribute === "function" ? cb.getAttribute("data-id") : null);
         if (id) {
-          cb.checked = selectedWishIds.has(id.trim());
+          const isSel = selectedWishIds.has(id.trim());
+          cb.checked = isSel;
+          const tr = (typeof cb.closest === "function") ? cb.closest("tr") : null;
+          if (tr && tr.classList) {
+            if (isSel) {
+              tr.classList.add("selected-row");
+            } else {
+              tr.classList.remove("selected-row");
+            }
+          }
         }
       });
     }
@@ -878,6 +887,16 @@
       return;
     }
 
+    // Prune any stale IDs in selectedWishIds that no longer exist in wishesState
+    if (wishesState && wishesState.length > 0 && selectedWishIds.size > 0) {
+      const validIdSet = new Set(wishesState.map(w => w && w.id ? w.id.trim() : "").filter(Boolean));
+      selectedWishIds.forEach(id => {
+        if (!validIdSet.has(id)) {
+          selectedWishIds.delete(id);
+        }
+      });
+    }
+
     const allFiltered = getFilteredAndSortedWishes();
     const paginated = getProcessedWishes();
 
@@ -896,11 +915,15 @@
       const emptyMsg = isSearchingOrFiltering
         ? "No wishes match your search or filter criteria. 🔍"
         : "No stored wishes found. Create a wish using the public wish generator! ✨";
+      const resetBtnHtml = isSearchingOrFiltering
+        ? `<br><button type="button" class="btn-wishes-reset-filters" id="btn-wishes-empty-reset-filters">✕ Reset Filters</button>`
+        : "";
 
       tbody.innerHTML = `
         <tr>
           <td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">
-            ${emptyMsg}
+            <div>${emptyMsg}</div>
+            ${resetBtnHtml}
           </td>
         </tr>
       `;
@@ -921,6 +944,10 @@
       const rawId = escapeHtml(w.id || "");
       const contentBadgesHtml = renderContentBadges(w);
       const isSelected = selectedWishIds.has(rawId);
+
+      if (isSelected) {
+        tr.classList.add("selected-row");
+      }
 
       tr.innerHTML = `
         <td class="td-checkbox">
@@ -1790,8 +1817,13 @@
     if (tbody && !tbody.__wishesActionsBound) {
       tbody.__wishesActionsBound = true;
 
-      // Click Actions (Edit, Duplicate, Delete)
+      // Click Actions (Edit, Duplicate, Delete, Reset Filters)
       tbody.addEventListener("click", async (e) => {
+        if (e.target && (e.target.id === "btn-wishes-empty-reset-filters" || (typeof e.target.closest === "function" && e.target.closest("#btn-wishes-empty-reset-filters")))) {
+          resetFilters();
+          return;
+        }
+
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
         const action = btn.dataset.action;
@@ -1822,12 +1854,27 @@
     }
   }
 
+  /**
+   * Resets all search and filter dropdowns to default values and re-renders table at page 1.
+   */
+  function resetFilters() {
+    const searchInput = document.getElementById(SELECTORS.searchInput);
+    const mediaSelect = document.getElementById(SELECTORS.filterMedia);
+    const dateSelect = document.getElementById(SELECTORS.filterDate);
+    if (searchInput) searchInput.value = "";
+    if (mediaSelect) mediaSelect.value = "all";
+    if (dateSelect) dateSelect.value = "all";
+    paginationState.currentPage = 1;
+    render();
+  }
+
   /* ============================================================
      12. AUTHORITATIVE PUBLIC API
      ============================================================ */
   window.AdminWishes = Object.freeze({
     init,
     render,
+    resetFilters,
     setWishes,
     getWishes,
     deleteWish,

@@ -241,12 +241,19 @@
                   <option value="sender_desc">Sender (Z-A)</option>
                 </select>
                 <div class="table-count-badge" id="wishes-count-badge">Showing 0 of 0 wishes</div>
+                <div class="table-selection-badge" id="wishes-selection-badge" style="display: none;">
+                  <span id="wishes-selected-count">0</span> selected
+                  <button type="button" id="btn-wishes-clear-selection" class="btn-clear-selection" title="Clear selection">✕ Clear</button>
+                </div>
               </div>
             </div>
 
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th class="th-checkbox">
+                    <input type="checkbox" id="wishes-select-all" class="table-checkbox" title="Select all visible wishes" aria-label="Select all visible wishes">
+                  </th>
                   <th class="th-sortable" data-sort="recipient" tabindex="0" role="button" aria-label="Sort by recipient name">
                     <span class="th-content">Recipient Name <span class="sort-icon" id="sort-icon-recipient">↕</span></span>
                   </th>

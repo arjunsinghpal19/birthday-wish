@@ -23,6 +23,10 @@
     filterMedia: "wishes-filter-media",
     filterDate: "wishes-filter-date",
     countBadge: "wishes-count-badge",
+    selectionBadge: "wishes-selection-badge",
+    selectedCount: "wishes-selected-count",
+    clearSelectionBtn: "btn-wishes-clear-selection",
+    selectAllCheckbox: "wishes-select-all",
     createBtn: "btn-create-new-wish-wishes",
     createBtnFallback: "btn-create-new-wish-admin",
     pageSizeSelect: "wishes-page-size",
@@ -38,6 +42,7 @@
   let wishesState = [];
   let isQueryError = false;
   let onStateChangeHook = null;
+  let selectedWishIds = new Set();
   let currentSort = {
     field: "created",    // "created" | "recipient" | "sender"
     direction: "desc"    // "asc" | "desc"
@@ -494,7 +499,156 @@
   }
 
   /* ============================================================
-     7. ADMIN CREATE / EDIT BRIDGE
+     7. BULK SELECTION HELPERS (PHASE 31B-5)
+     ============================================================ */
+  /**
+   * Returns array of currently selected wish UUIDs.
+   * @returns {string[]} Array of selected UUIDs.
+   */
+  function getSelectedIds() {
+    return Array.from(selectedWishIds);
+  }
+
+  /**
+   * Checks if a wish UUID is currently selected.
+   * @param {string} id - Wish UUID.
+   * @returns {boolean} True if selected.
+   */
+  function isWishSelected(id) {
+    if (!id || typeof id !== "string") return false;
+    return selectedWishIds.has(id.trim());
+  }
+
+  /**
+   * Selects a single wish by UUID.
+   * @param {string} id - Wish UUID.
+   */
+  function selectWish(id) {
+    if (!id || typeof id !== "string") return;
+    const cleanId = id.trim();
+    if (!cleanId) return;
+    selectedWishIds.add(cleanId);
+    updateSelectionUI();
+  }
+
+  /**
+   * Deselects a single wish by UUID.
+   * @param {string} id - Wish UUID.
+   */
+  function deselectWish(id) {
+    if (!id || typeof id !== "string") return;
+    const cleanId = id.trim();
+    selectedWishIds.delete(cleanId);
+    updateSelectionUI();
+  }
+
+  /**
+   * Toggles selection state for a wish UUID.
+   * @param {string} id - Wish UUID.
+   */
+  function toggleWishSelection(id) {
+    if (!id || typeof id !== "string") return;
+    const cleanId = id.trim();
+    if (selectedWishIds.has(cleanId)) {
+      selectedWishIds.delete(cleanId);
+    } else {
+      selectedWishIds.add(cleanId);
+    }
+    updateSelectionUI();
+  }
+
+  /**
+   * Selects all wishes currently visible on the active page.
+   */
+  function selectAllVisible() {
+    const visible = getProcessedWishes();
+    visible.forEach(w => {
+      if (w && w.id) selectedWishIds.add(w.id.trim());
+    });
+    updateSelectionUI();
+  }
+
+  /**
+   * Deselects all wishes currently visible on the active page.
+   */
+  function deselectAllVisible() {
+    const visible = getProcessedWishes();
+    visible.forEach(w => {
+      if (w && w.id) selectedWishIds.delete(w.id.trim());
+    });
+    updateSelectionUI();
+  }
+
+  /**
+   * Clears all selected wish UUIDs globally.
+   */
+  function clearSelection() {
+    selectedWishIds.clear();
+    updateSelectionUI();
+  }
+
+  /**
+   * Synchronizes select-all header checkbox, selection counter badge, and row checkboxes.
+   */
+  function updateSelectionUI() {
+    const visible = getProcessedWishes();
+    const selectAllBox = document.getElementById(SELECTORS.selectAllCheckbox);
+    const selectionBadge = document.getElementById(SELECTORS.selectionBadge);
+    const selectedCountEl = document.getElementById(SELECTORS.selectedCount);
+    const clearBtn = document.getElementById(SELECTORS.clearSelectionBtn);
+
+    const totalSelected = selectedWishIds.size;
+
+    // 1. Update selection badge & count
+    if (selectedCountEl) {
+      selectedCountEl.textContent = String(totalSelected);
+    }
+    if (selectionBadge) {
+      selectionBadge.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (clearBtn) {
+      clearBtn.style.display = totalSelected > 0 ? "inline-block" : "none";
+    }
+
+    // 2. Update header select-all checkbox (checked / unchecked / indeterminate)
+    if (selectAllBox) {
+      if (visible.length === 0) {
+        selectAllBox.checked = false;
+        selectAllBox.indeterminate = false;
+      } else {
+        const selectedInVisibleCount = visible.filter(w => w && w.id && selectedWishIds.has(w.id.trim())).length;
+        if (selectedInVisibleCount === 0) {
+          selectAllBox.checked = false;
+          selectAllBox.indeterminate = false;
+        } else if (selectedInVisibleCount === visible.length) {
+          selectAllBox.checked = true;
+          selectAllBox.indeterminate = false;
+        } else {
+          selectAllBox.checked = false;
+          selectAllBox.indeterminate = true;
+        }
+      }
+    }
+
+    // 3. Update row checkboxes in tbody
+    const tbody = document.getElementById(SELECTORS.tbody);
+    const rowCheckboxes = (tbody && typeof tbody.querySelectorAll === "function")
+      ? tbody.querySelectorAll(".wish-row-checkbox")
+      : ((typeof document !== "undefined" && typeof document.querySelectorAll === "function")
+        ? document.querySelectorAll(".wish-row-checkbox")
+        : []);
+    if (rowCheckboxes && typeof rowCheckboxes.forEach === "function") {
+      rowCheckboxes.forEach(cb => {
+        const id = cb.dataset ? cb.dataset.id : (typeof cb.getAttribute === "function" ? cb.getAttribute("data-id") : null);
+        if (id) {
+          cb.checked = selectedWishIds.has(id.trim());
+        }
+      });
+    }
+  }
+
+  /* ============================================================
+     8. ADMIN CREATE / EDIT BRIDGE
      ============================================================ */
   /**
    * Authoritative Admin -> Quick Editor launcher.
@@ -675,11 +829,12 @@
       if (pageInfo) pageInfo.textContent = "Page 1 of 1";
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center;color:#ef4444;padding:32px;">
+          <td colspan="8" style="text-align:center;color:#ef4444;padding:32px;">
             ⚠️ Unable to load wishes from Supabase database. Check database connectivity.
           </td>
         </tr>
       `;
+      updateSelectionUI();
       return;
     }
 
@@ -704,11 +859,12 @@
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px;">
+          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">
             ${emptyMsg}
           </td>
         </tr>
       `;
+      updateSelectionUI();
       return;
     }
 
@@ -724,8 +880,12 @@
       const dateText = w.created_at ? new Date(w.created_at).toLocaleDateString() : "Recent";
       const rawId = escapeHtml(w.id || "");
       const contentBadgesHtml = renderContentBadges(w);
+      const isSelected = selectedWishIds.has(rawId);
 
       tr.innerHTML = `
+        <td class="td-checkbox">
+          <input type="checkbox" class="table-checkbox wish-row-checkbox" data-id="${rawId}" ${isSelected ? "checked" : ""} aria-label="Select wish for ${recipientName}">
+        </td>
         <td>
           <div class="user-cell">
             <div class="user-avatar">${avatarInitial}</div>
@@ -751,12 +911,15 @@
       `;
       tbody.appendChild(tr);
     });
+
+    // Synchronize bulk selection UI controls
+    updateSelectionUI();
   }
 
   const SYSTEM_CONFIG_UUID = "00000000-0000-0000-0000-000000000001";
 
   /* ============================================================
-     8. ROW ACTIONS (REAL DELETE & REAL DUPLICATE)
+     10. ROW ACTIONS (REAL DELETE & REAL DUPLICATE)
      ============================================================ */
   /**
    * Deletes a wish record from Supabase table 'public.wishes' and refreshes live dashboard state.
@@ -795,6 +958,10 @@
       if (!res || !res.success) {
         throw new Error(res?.error || "Failed to delete wish from database");
       }
+
+      // Remove from selection Set if present and update UI
+      selectedWishIds.delete(cleanId);
+      updateSelectionUI();
 
       if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
         window.AdminCore.showToast("Wish record deleted 🗑️");
@@ -992,6 +1159,28 @@
       });
     }
 
+    // Select-All Header Checkbox Listener (toggles visible items on active page)
+    const selectAllBox = document.getElementById(SELECTORS.selectAllCheckbox);
+    if (selectAllBox && !selectAllBox.__wishesBound) {
+      selectAllBox.__wishesBound = true;
+      selectAllBox.addEventListener("change", () => {
+        if (selectAllBox.checked) {
+          selectAllVisible();
+        } else {
+          deselectAllVisible();
+        }
+      });
+    }
+
+    // Clear Selection Button Listener
+    const clearSelBtn = document.getElementById(SELECTORS.clearSelectionBtn);
+    if (clearSelBtn && !clearSelBtn.__wishesBound) {
+      clearSelBtn.__wishesBound = true;
+      clearSelBtn.addEventListener("click", () => {
+        clearSelection();
+      });
+    }
+
     // Create New Wish Button Listener
     const createBtn = document.getElementById(SELECTORS.createBtn) || document.getElementById(SELECTORS.createBtnFallback);
     if (createBtn && !createBtn.__wishesBound) {
@@ -1001,10 +1190,12 @@
       });
     }
 
-    // Event Delegation for Table Action Buttons
+    // Event Delegation for Table Row Checkboxes & Action Buttons
     const tbody = document.getElementById(SELECTORS.tbody);
     if (tbody && !tbody.__wishesActionsBound) {
       tbody.__wishesActionsBound = true;
+
+      // Click Actions (Edit, Duplicate, Delete)
       tbody.addEventListener("click", async (e) => {
         const btn = e.target.closest("button[data-action]");
         if (!btn) return;
@@ -1018,11 +1209,26 @@
           await deleteWish(id, btn);
         }
       });
+
+      // Change Action (Row Checkbox Toggle)
+      tbody.addEventListener("change", (e) => {
+        const cb = e.target.closest(".wish-row-checkbox");
+        if (!cb) return;
+        const id = cb.dataset.id;
+        if (id) {
+          if (cb.checked) {
+            selectedWishIds.add(id.trim());
+          } else {
+            selectedWishIds.delete(id.trim());
+          }
+          updateSelectionUI();
+        }
+      });
     }
   }
 
   /* ============================================================
-     11. AUTHORITATIVE PUBLIC API
+     12. AUTHORITATIVE PUBLIC API
      ============================================================ */
   window.AdminWishes = Object.freeze({
     init,
@@ -1051,7 +1257,16 @@
     setPage,
     getPageSize,
     setPageSize,
-    getTotalPages
+    getTotalPages,
+    getSelectedIds,
+    isWishSelected,
+    selectWish,
+    deselectWish,
+    toggleWishSelection,
+    selectAllVisible,
+    deselectAllVisible,
+    clearSelection,
+    updateSelectionUI
   });
 
 })(window);

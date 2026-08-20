@@ -1443,5 +1443,35 @@ Accomplished in Phase 31B-3:
 6. Public API Exports:
    - Exported `getPhotoCount`, `getLetterCount`, `getTimelineCount`, `getMediaOffset`, `formatOffset`, `renderContentBadges` on `window.AdminWishes`.
 7. Automated Test Validation:
-   - Created `scratch/test_phase31b_wishes_indicators.js` (24 unit & integration tests).
-   - Total regression suite: 502 / 502 automated tests passing (100% pass rate).
+   - Created `scratch/test_phase31b_wishes_indicators.js` (21 unit & integration tests).
+   - Total regression suite: 499 / 499 automated tests passing (100% pass rate).
+
+## 35. PHASE 31B-5 — WISHES TABLE BULK SELECTION FOUNDATION
+
+1. Row Checkbox & Selection State:
+   - Added compact checkbox `<input type="checkbox" class="table-checkbox wish-row-checkbox" data-id="${rawId}">` to each Wishes table row.
+   - Authoritative in-memory state: `selectedWishIds = new Set()` storing canonical UUID strings.
+   - 0 row index dependency; selection follows UUID identity across pagination, sorting, and filtering.
+2. Select-All Header Checkbox:
+   - Added `#wishes-select-all` checkbox to table `<thead>`.
+   - Supports 3 distinct states:
+     - `checked`: when all visible items on active page are selected.
+     - `unchecked`: when no visible items on active page are selected.
+     - `indeterminate`: when some, but not all, visible items on active page are selected.
+   - Clicking select-all toggles selection ONLY for the visible items on the active page.
+3. Selection Count & Clear Control:
+   - Added `#wishes-selection-badge` displaying `<span id="wishes-selected-count">N</span> selected` near toolbar.
+   - Added `#btn-wishes-clear-selection` (`✕ Clear`) to immediately clear all selections with 0 database requests.
+4. Seamless Multi-Feature Integration:
+   - **Pagination**: Selections persist across page navigation (Page 1, Page 2, Page 3+) and page size changes (`5`, `10`, `25`, `50`, `All`).
+   - **Search & Filters**: Selections persist across search queries, media filters, and date filters without losing selected UUIDs.
+   - **Sorting**: Column sorting preserves all selected items.
+   - **Row Actions**: Deleting a wish removes its UUID from `selectedWishIds`; duplicating or creating a wish does not auto-select new items.
+5. In-Memory Processing & Zero Backend Overhead:
+   - 100% client-side operation with 0 Supabase network queries during selection changes.
+   - Zero destructive bulk actions or privileged API changes introduced in this phase.
+6. Public API Exports:
+   - Exported `getSelectedIds`, `isWishSelected`, `selectWish`, `deselectWish`, `toggleWishSelection`, `selectAllVisible`, `deselectAllVisible`, `clearSelection`, `updateSelectionUI` on `window.AdminWishes`.
+7. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_selection.js` (32 unit & integration tests).
+   - Total regression suite: 531 / 531 automated tests passing (100% pass rate).

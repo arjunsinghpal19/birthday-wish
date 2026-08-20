@@ -102,6 +102,38 @@
   white-space: nowrap;
 }
 
+.table-selection-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 20px;
+  color: #60a5fa;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-clear-selection {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-clear-selection:hover {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+}
+
 .filter-select {
   padding: 9px 14px;
   background: rgba(20, 10, 32, 0.8);
@@ -132,6 +164,24 @@
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-glass);
   font-weight: 600;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  text-align: center;
+  padding: 14px 8px !important;
+}
+
+.table-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--purple-accent, #a855f7);
+  border-radius: 4px;
+  vertical-align: middle;
 }
 
 .admin-table th.th-sortable {

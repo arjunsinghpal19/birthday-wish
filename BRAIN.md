@@ -1623,6 +1623,29 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 586 / 586 automated tests passing (100% pass rate).
 
+## 41. PHASE 31B-11 — WISHES ADVANCED SEARCH & FILTERING
+
+1. Enhanced Multi-Token Search:
+   - Upgraded search pipeline in `js/admin/admin-wishes.js` to support multi-token AND matching across recipient name, sender name, full UUID & UUID substrings, passcodes (`pass_code`), and memory notes (`memory_text`).
+   - Query string is whitespace-tokenized and trimmed; every token must match at least one searchable field on the target record.
+2. Strict Combined Filtering Semantics (AND Logic):
+   - Search query, media filter (`all`, `music`, `video`, `photos`, `text_only`), and creation date filter (`all`, `today`, `7d`, `30d`) operate with strict intersection (AND) semantics.
+   - Preserves active sort ordering and auto-clamps pagination to valid page ranges.
+3. Filter & Selection State Consistency:
+   - Global UUID selections in `selectedWishIds` are preserved when records are filtered out of current view.
+   - Bulk action toolbar counts (`Copy Links`, `Export`, `Duplicate`, `Delete`) accurately reflect total selected records regardless of active filters.
+   - In-memory stale UUID auto-pruning ensures non-existent records are never retained.
+4. Quick Reset & Empty State Resilience:
+   - Empty search/filter state displays contextual message and `#btn-wishes-empty-reset-filters` (`✕ Reset Filters`).
+   - `AdminWishes.resetFilters()` public API resets search text and all filter selects to default, resets pagination to page 1, and re-renders full dataset while maintaining selections.
+5. Zero Network / Zero Backend Invariant:
+   - 100% client-side in-memory filtering against `wishesState`. 0 Supabase network queries, 0 database alterations, 0 Storage alterations, 0 secret exposure.
+6. Automated Test Validation:
+   - Created `scratch/test_phase31b_wishes_advanced_filters.js` (20 unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 606 / 606 automated tests passing (100% pass rate).
+
+
 
 
 

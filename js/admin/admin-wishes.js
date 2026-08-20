@@ -767,13 +767,27 @@
       setSortFromDropdown(sortSelect.value);
     }
 
-    // 1. Search filter (Recipient Name, Sender Name, UUID)
+    // 1. Search filter (Recipient Name, Sender Name, UUID, Passcode, Memory Text)
     let filtered = wishesState.filter(w => {
+      if (!w) return false;
       if (!searchTerm) return true;
+      const tokens = searchTerm.split(/\s+/).filter(Boolean);
+      if (tokens.length === 0) return true;
+
       const name = (w.recipient_name || "").toLowerCase();
       const sender = (w.sender_name || "").toLowerCase();
       const id = (w.id || "").toLowerCase();
-      return name.includes(searchTerm) || sender.includes(searchTerm) || id.includes(searchTerm);
+      const pass = (w.pass_code || "").toLowerCase();
+      const memory = (w.memory_text || "").toLowerCase();
+
+      // Every search token must match at least one searchable field
+      return tokens.every(token =>
+        name.includes(token) ||
+        sender.includes(token) ||
+        id.includes(token) ||
+        pass.includes(token) ||
+        memory.includes(token)
+      );
     });
 
     // 2. Media presence filter

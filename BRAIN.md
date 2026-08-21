@@ -1999,3 +1999,75 @@ Accomplished in Phase 31B-3:
 4. Test Suite & Verification:
    - All 34 tests in `scratch/test_phase31b_view_preferences.js` passing 100%.
    - All 135 total regression tests passing with 0 failures.
+
+## 53. STABLE 1.8 RELEASE CHECKPOINT — WISHES MANAGEMENT & VIEW CONTROLS COMPLETE
+
+### 1. Checkpoint Overview
+- **Release Version**: Stable 1.8
+- **Git Tag**: `v1.8`
+- **Baseline Git HEAD**: `a391140`
+- **Scope**: Finalization of the complete Wishes Management system and Table View Controls pipeline (Phases 31B-1 through 31B-14.8).
+
+### 2. Accepted Functionality & Features (VERIFIED)
+- **Wishes Search & Filter Pipeline**:
+  - Live search across Recipient Name, Sender Name, and UUID substrings.
+  - Media filters: All, Music, Video, Photos, Text-only.
+  - Date range filters: All, Today, Last 7 Days, Last 30 Days.
+  - Quick search clear (`Escape` key, click `×`, `/` global focus shortcut).
+  - Dynamic result count badge (`Showing X of Y wishes`).
+- **Table Sorting & Pagination**:
+  - Client-side sorting on Recipient, Sender, and Created date with ascending/descending indicators.
+  - Pagination controls with page size selector (10, 25, 50, all) and page clamping.
+- **Rich Content & Media Badges**:
+  - Visual indicators for letter count, reasons, memory timeline, wishes count, music, video, and photos.
+  - Space-controlled `.col-media` (`max-width: 250px;`) with natural 3+2 badge wrapping.
+- **Bulk Operations Toolbar**:
+  - Row checkboxes, select-all visible checkbox with indeterminate state handling.
+  - Multi-page selection persistence.
+  - Bulk Copy UUID Links, Bulk Export (JSON/CSV), Bulk Duplicate, and Secure Bulk Delete with 2-step confirmation.
+- **Quick View Modal System**:
+  - Structured card hierarchy: Letter -> Memory -> Reasons -> Wishes, Photos -> Timeline -> Music -> Video.
+  - 4-column Customization summary (Theme, Font, Gift Box, Music Mode).
+  - Gallery thumbnail grid with full-screen Image Preview Lightbox.
+  - Birthday normalization (supporting 8 distinct schema variations).
+- **Table View Controls**:
+  - Comfortable Mode (~58–68px row height, 36px avatar, 32px action buttons, 22px badges).
+  - Compact Mode (~42–48px row height, 28px avatar, 28px action buttons, 18px badges).
+  - Columns Popover (`🎛️ Columns ▾`) with independent visibility toggles for Sender, Content & Media, Passcode, Public Link, and Created At.
+  - Protected columns (Selection, Recipient, Actions) permanently visible.
+  - `↺ Reset View` restoring Comfortable density and revealing all columns without mutating business state.
+  - `localStorage` persistence under `'bw_admin_wishes_view_prefs'`.
+  - Created At formatted in Indian 12-hour format on strictly **TWO lines** (`DD/MM/YYYY` / `h:mm:ss AM/PM`).
+  - Public Link button formatted as compact horizontal **`🔗 Copy`** (`white-space: nowrap !important;`).
+  - Actions column strictly protected with 4 buttons (`👁️`, `✏️`, `📋`, `🗑️`) on **ONE horizontal line** with zero viewport clipping.
+
+### 3. Automated Validation (VERIFIED)
+- **View Controls Test Suite** (`scratch/test_phase31b_view_preferences.js`): 34 Passed, 0 Failed.
+- **Indicators Test Suite** (`scratch/test_phase31b_wishes_indicators.js`): 21 Passed, 0 Failed.
+- **Quick View Test Suite** (`scratch/test_phase31b_wishes_quick_view.js`): 44 Passed, 0 Failed.
+- **Search & Filter Test Suite** (`scratch/test_phase31b_wishes_ux.js`): 22 Passed, 0 Failed.
+- **Productivity Test Suite** (`scratch/test_phase31b_wishes_productivity.js`): 14 Passed, 0 Failed.
+- **Bulk & Filter Regression Suites**: 100% Passed.
+- **Total Regression Suite**: 135 Passed, 0 Failed (100% PASS).
+- **JS Syntax Check (`validate_syntax.js` / `node -c`)**: 42/42 files valid (0 syntax errors).
+- **Secrets Audit (`audit_git_secrets.js`)**: 0 secret leaks found.
+- **Git Diff Check (`git diff --check`)**: 0 whitespace or formatting errors.
+
+### 4. Manual UAT Status
+- **Table View Density (Comfortable vs Compact)**: VERIFIED by manual browser review in Phase 31B-14.8.
+- **Action Buttons & Media 3+2 Layout**: VERIFIED by manual browser review in Phase 31B-14.8.
+- **Created At Two-Line Layout & Public Link Copy**: VERIFIED by manual browser review in Phase 31B-14.8.
+- **Production Smoke Verification**: To be performed after Vercel deployment.
+
+### 5. Protected Subsystems (VERIFIED UNTOUCHED)
+- Public Wish Page (`index.html`, `js/app.js`, `css/style.css`, `js/modules/renderers.js`)
+- Quick Editor (`js/modules/editor/*`)
+- Studio Editor (`js/admin/admin-wish-editor.js`, `css/admin/admin-editor.css`)
+- Supabase & Storage (`js/config.js`, `js/database.js`, `js/storage.js`, `js/supabase.js`)
+- Serverless API Endpoints (`api/*`)
+
+### 6. Known Issues
+- None affecting Stable 1.8 functionality.
+
+### 7. Next Planned Work (PLANNED)
+- Standalone feature planning (Phase 31B-15 / Phase 31C / Media Orphan Scanner) remains completely separate from Stable 1.8.

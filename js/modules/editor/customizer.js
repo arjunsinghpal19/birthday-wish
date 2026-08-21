@@ -1235,15 +1235,21 @@
                 toastFn("⚠️ Unable to sync wish to cloud. Please try again.");
                 return;
               }
+              const EMOJI_CAKE = "\u{1F382}";
+              const EMOJI_SPARKLES = "\u{2728}";
+              const EMOJI_GIFT = "\u{1F381}";
+              const EMOJI_HEART = "\u{1F496}";
+
               const trimmedName = (recipientName || "").trim();
-              let greetingHeader = "Hey! 🎂✨";
+              let greetingHeader = `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
               if (trimmedName && trimmedName !== "Friend") {
-                greetingHeader = `Hey ${trimmedName}! 🎂✨`;
+                greetingHeader = `Hey ${trimmedName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
               }
 
-              const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${currentUrl}`;
-              const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-              window.open(waUrl, "_blank");
+              const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${currentUrl}`;
+              const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+              const win = window.open(waUrl, "_blank");
+              if (!win) window.location.href = waUrl;
             };
           }
 

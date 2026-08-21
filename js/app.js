@@ -482,6 +482,12 @@ function initShare() {
     });
   }
 
+  // Unicode-safe emoji constants for share messages
+  const EMOJI_CAKE = "\u{1F382}";
+  const EMOJI_SPARKLES = "\u{2728}";
+  const EMOJI_GIFT = "\u{1F381}";
+  const EMOJI_HEART = "\u{1F496}";
+
   // Native Share / WhatsApp Button
   const shareBtn = document.getElementById("native-share-btn");
   if (shareBtn) {
@@ -493,14 +499,14 @@ function initShare() {
       }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}` : `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
+      const shareMsg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${shareUrl}`;
 
       if (navigator.share) {
         try {
           await navigator.share({
             title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
-            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:`,
+            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:`,
             url: shareUrl,
           });
           return;
@@ -508,8 +514,9 @@ function initShare() {
       }
 
       // WhatsApp direct fallback
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
-      window.open(waUrl, "_blank");
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
+      const win = window.open(waUrl, "_blank");
+      if (!win) location.href = waUrl;
     });
   }
 
@@ -524,8 +531,8 @@ function initShare() {
       }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
-      const greeting = displayName ? `Hey ${displayName}! 🎂✨` : `Hey! 🎂✨`;
-      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nKhol kar dekho 🎁:\n${shareUrl}`;
+      const greeting = displayName ? `Hey ${displayName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}` : `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
+      const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${shareUrl}`;
       const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
       const win = window.open(waUrl, "_blank");
       if (!win) location.href = waUrl;

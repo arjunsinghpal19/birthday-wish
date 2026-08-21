@@ -54,7 +54,7 @@
     if (!url) return;
     const cleanUrl = (String(url).startsWith("http://") || String(url).startsWith("https://"))
       ? String(url)
-      : `${window.location.origin}/index.html?id=${url}`;
+      : `${window.location.origin}/?w=${encodeURIComponent(url)}`;
 
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       navigator.clipboard.writeText(cleanUrl).then(() => {

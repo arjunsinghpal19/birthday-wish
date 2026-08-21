@@ -1574,7 +1574,11 @@
 
     const wishId = res.id;
     if (wishId) {
-      const shareUrl = `${window.location.origin}/index.html?id=${wishId}`;
+      const recipientName = (editorState.wish && editorState.wish.recipient_name)
+        ? editorState.wish.recipient_name.trim()
+        : (document.getElementById("editor-recipient-name")?.value || "").trim();
+      const nameParam = recipientName ? `&name=${encodeURIComponent(recipientName)}` : "";
+      const shareUrl = `${window.location.origin}/?w=${encodeURIComponent(wishId)}${nameParam}`;
       if (window.AdminCore && typeof window.AdminCore.copyWishUrl === "function") {
         window.AdminCore.copyWishUrl(shareUrl);
       } else if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {

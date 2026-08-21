@@ -244,7 +244,18 @@
                 <div class="table-selection-badge" id="wishes-selection-badge" style="display: none;">
                   <span id="wishes-selected-count">0</span> selected
                   <button type="button" id="btn-wishes-bulk-copy-links" class="btn-bulk-copy-links" title="Copy public share links of selected wishes" aria-label="Copy public share links of selected wishes">📋 Copy Links (<span id="wishes-bulk-copy-links-count">0</span>)</button>
-                  <button type="button" id="btn-wishes-bulk-export" class="btn-bulk-export" title="Export selected wishes" aria-label="Export selected wishes">📥 Export (<span id="wishes-bulk-export-count">0</span>)</button>
+                  <div class="bulk-export-container" style="position: relative; display: inline-flex;">
+                    <button type="button" id="btn-wishes-bulk-export" class="btn-bulk-export" title="Export selected wishes (JSON/CSV)" aria-label="Export selected wishes" aria-haspopup="true" aria-expanded="false">📥 Export (<span id="wishes-bulk-export-count">0</span>) ▾</button>
+                    <div id="wishes-export-popover" class="bulk-export-popover" style="display: none;">
+                      <div class="export-popover-header">Export Selected (<span id="wishes-export-popover-count">0</span>)</div>
+                      <button type="button" id="btn-export-json" class="export-option-btn" title="Export selected as JSON file">
+                        <span class="icon">📄</span> JSON
+                      </button>
+                      <button type="button" id="btn-export-csv" class="export-option-btn" title="Export selected as CSV spreadsheet">
+                        <span class="icon">📊</span> CSV
+                      </button>
+                    </div>
+                  </div>
                   <button type="button" id="btn-wishes-bulk-duplicate" class="btn-bulk-duplicate" title="Duplicate selected wishes" aria-label="Duplicate selected wishes">📋 Duplicate Selected (<span id="wishes-bulk-duplicate-count">0</span>)</button>
                   <button type="button" id="btn-wishes-bulk-delete" class="btn-bulk-delete" title="Delete selected wishes" aria-label="Delete selected wishes">🗑️ Delete Selected (<span id="wishes-bulk-delete-count">0</span>)</button>
                   <button type="button" id="btn-wishes-clear-selection" class="btn-clear-selection" title="Clear selection">✕ Clear</button>
@@ -305,7 +316,8 @@
               <h2>Digital Asset Manager</h2>
               <p>Supabase Storage <code>wish-media</code> bucket: images, videos & voice notes</p>
             </div>
-            <div style="display:flex;gap:10px;">
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button type="button" class="btn-secondary" id="btn-scan-orphan-media" title="Scan Supabase Storage for Unused Files">🔍 Scan Storage</button>
               <input type="file" id="dam-direct-upload-input" multiple style="display:none;">
               <button class="btn-primary" id="btn-upload-media-admin" onclick="document.getElementById('dam-direct-upload-input').click()">☁️ Upload New Asset</button>
             </div>
@@ -345,6 +357,14 @@
                 <span id="dam-percent-text">—% Used</span>
               </div>
             </div>
+
+            <!-- Media Storage Scanner Summary Bar -->
+            <div class="dam-scan-summary-bar" id="dam-scan-summary">
+              <span class="scan-pill" id="scan-summary-status">🔍 Scanner Ready</span>
+              <span class="scan-pill total">Total: <strong id="scan-count-total">0</strong></span>
+              <span class="scan-pill used">🔗 Used: <strong id="scan-count-used">0</strong></span>
+              <span class="scan-pill unused">⚠️ Unused: <strong id="scan-count-orphan">0</strong></span>
+            </div>
           </div>
 
           <!-- DAM Filter Chips & Toolbar -->
@@ -355,7 +375,7 @@
               <button class="chip-btn" data-damfilter="videos">📹 Videos <span class="count" id="count-videos">0</span></button>
               <button class="chip-btn" data-damfilter="audio">🎙 Audio <span class="count" id="count-audio">0</span></button>
               <button class="chip-btn" data-damfilter="used">🔗 Used Files <span class="count" id="count-used">0</span></button>
-              <button class="chip-btn" data-damfilter="unused">⭕ Unused <span class="count" id="count-unused">0</span></button>
+              <button class="chip-btn" data-damfilter="unused" data-legacy-filter="orphan">⚠️ Unused Files <span class="count" id="count-unused">0</span></button>
               <button class="chip-btn" data-damfilter="favorites">⭐ Favorites <span class="count" id="count-favorites">0</span></button>
               <button class="chip-btn" data-damfilter="recent">🕒 Recent <span class="count" id="count-recent">0</span></button>
             </div>

@@ -2071,3 +2071,41 @@ Accomplished in Phase 31B-3:
 
 ### 7. Next Planned Work (PLANNED)
 - Standalone feature planning (Phase 31B-15 / Phase 31C / Media Orphan Scanner) remains completely separate from Stable 1.8.
+
+============================================================
+54. PHASE 31C — MEDIA REFERENCE EXTRACTION ENGINE & UNUSED MEDIA SCANNER (PHASE 31C-1 & 31C-2A)
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31C-1 & Phase 31C-2A:
+1. Authoritative Deep Media Reference Extraction Engine (`MediaReferenceEngine` in `js/admin/admin-media.js`):
+   - Categorizes references into 5 distinct types (`STORAGE`, `LOCAL`, `DATA_URL`, `EXTERNAL`, `INVALID`).
+   - Normalizes storage paths, stripping `#bw-start=\d+` start-time fragments, query parameters (`?t=...`, `?token=...`), and URL encoding (`%20`, `%2F`).
+   - Deeply inspects active wishes: `music_url`, `video_url`, `gallery_json` (objects with `.image`, `.url`, `.src`, or plain string URLs), `timeline_json` (milestone photos), `cover_image`, `avatar`.
+   - Local repository assets (`assets/audio/...`, `images/...`) and external URLs (YouTube/Vimeo) are safely shielded and never classified as storage references.
+   - Builds queryable lookup map: `isReferenced(canonicalPath)`, `getReferences(canonicalPath)`, `getAllReferencedPaths()`, `getReferencedCount()`, `getAllReferences()`.
+2. Digital Asset Manager Unused Media Scanner:
+   - `AdminMedia.scanStorage(activeWishes)`: Read-only storage scanning engine comparing inventory from `StorageModule.listAllMedia()` against active wish references.
+   - Header scan trigger button `[ 🔍 Scan Storage ]` styled with Admin Dashboard dark/purple theme (`.btn-secondary`).
+   - Scanner summary status bar: `Total: N`, `🔗 Used: X`, `⚠️ Unused: Y`.
+   - Filter chips: `📂 All Files`, `📸 Images`, `📹 Videos`, `🎙 Audio`, `🔗 Used Files`, `⚠️ Unused Files`, `⭐ Favorites`, `🕒 Recent`.
+   - Asset cards clearly display `🔗 [Recipient Name]` for referenced assets and `⚠️ Unused` for unreferenced assets.
+   - Zero deletion logic in this phase (100% read-only).
+3. Wishes Bulk Export Popover (`#wishes-export-popover`):
+   - Converted single export button into an interactive format selector: `[ 📥 Export (N) ▾ ]`.
+   - Compact popover menu with `📄 JSON` and `📊 CSV` export options.
+   - Preserves all table states (search query, filters, sort, page, selected IDs).
+   - Closes on option selection, clicking outside, or pressing `Escape`.
+4. Automated Test Validation:
+   - `scratch/test_phase31c_media_reference_engine.js`: 27/27 PASS.
+   - `scratch/test_phase31c_orphan_scanner_export.js`: 40/40 PASS.
+   - Full regression suite: 228 / 228 PASS (100% pass rate).
+   - 42/42 JS files syntax valid.
+   - 0 secret leaks found.
+   - `git diff --check`: 0 whitespace errors.
+5. Sacred Invariants Preserved:
+   - Public Wish Page untouched.
+   - Quick Editor and Studio Editor untouched.
+   - Database schema and RLS policies untouched.
+   - Supabase Storage bucket policies untouched.

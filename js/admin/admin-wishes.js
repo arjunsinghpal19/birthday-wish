@@ -29,6 +29,10 @@
     bulkCopyLinksCount: "wishes-bulk-copy-links-count",
     bulkExportBtn: "btn-wishes-bulk-export",
     bulkExportCount: "wishes-bulk-export-count",
+    exportPopover: "wishes-export-popover",
+    exportPopoverCount: "wishes-export-popover-count",
+    exportJsonBtn: "btn-export-json",
+    exportCsvBtn: "btn-export-csv",
     bulkDuplicateBtn: "btn-wishes-bulk-duplicate",
     bulkDuplicateCount: "wishes-bulk-duplicate-count",
     bulkDeleteBtn: "btn-wishes-bulk-delete",
@@ -956,6 +960,8 @@
     const bulkCopyLinksCount = document.getElementById(SELECTORS.bulkCopyLinksCount);
     const bulkExportBtn = document.getElementById(SELECTORS.bulkExportBtn);
     const bulkExportCount = document.getElementById(SELECTORS.bulkExportCount);
+    const exportPopoverCount = document.getElementById(SELECTORS.exportPopoverCount);
+    const exportPopover = document.getElementById(SELECTORS.exportPopover);
     const bulkDuplicateBtn = document.getElementById(SELECTORS.bulkDuplicateBtn);
     const bulkDuplicateCount = document.getElementById(SELECTORS.bulkDuplicateCount);
     const bulkDeleteBtn = document.getElementById(SELECTORS.bulkDeleteBtn);
@@ -974,6 +980,9 @@
     if (bulkExportCount) {
       bulkExportCount.textContent = String(totalSelected);
     }
+    if (exportPopoverCount) {
+      exportPopoverCount.textContent = String(totalSelected);
+    }
     if (bulkDuplicateCount) {
       bulkDuplicateCount.textContent = String(totalSelected);
     }
@@ -988,6 +997,10 @@
     }
     if (bulkExportBtn) {
       bulkExportBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
+    }
+    if (exportPopover && totalSelected === 0) {
+      exportPopover.style.display = "none";
+      if (bulkExportBtn) bulkExportBtn.setAttribute("aria-expanded", "false");
     }
     if (bulkDuplicateBtn) {
       bulkDuplicateBtn.style.display = totalSelected > 0 ? "inline-flex" : "none";
@@ -2071,7 +2084,7 @@
       });
     }
 
-    // Document click to close columns popover
+    // Document click to close columns popover & export popover
     if (typeof document !== "undefined" && typeof document.addEventListener === "function" && !document.__wishesPopoverBound) {
       document.__wishesPopoverBound = true;
       document.addEventListener("click", (e) => {
@@ -2081,6 +2094,15 @@
           if (e.target && !popover.contains(e.target) && e.target !== toggleBtn) {
             popover.style.display = "none";
             if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+          }
+        }
+
+        const expPopover = document.getElementById(SELECTORS.exportPopover);
+        const expToggleBtn = document.getElementById(SELECTORS.bulkExportBtn);
+        if (expPopover && expPopover.style.display !== "none") {
+          if (e.target && !expPopover.contains(e.target) && e.target !== expToggleBtn && (!expToggleBtn || !expToggleBtn.contains(e.target))) {
+            expPopover.style.display = "none";
+            if (expToggleBtn) expToggleBtn.setAttribute("aria-expanded", "false");
           }
         }
       });
@@ -2116,6 +2138,14 @@
       document.__wishesGlobalKeyBound = true;
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
+          const expPopover = document.getElementById(SELECTORS.exportPopover);
+          if (expPopover && expPopover.style.display !== "none") {
+            e.preventDefault();
+            expPopover.style.display = "none";
+            const expToggleBtn = document.getElementById(SELECTORS.bulkExportBtn);
+            if (expToggleBtn) expToggleBtn.setAttribute("aria-expanded", "false");
+            return;
+          }
           const popover = document.getElementById(SELECTORS.columnsPopover);
           if (popover && popover.style.display !== "none") {
             e.preventDefault();
@@ -2288,12 +2318,42 @@
       });
     }
 
-    // Bulk Export Button Listener
+    // Bulk Export Button Listener & Popover Handlers
     const bulkExpBtn = document.getElementById(SELECTORS.bulkExportBtn);
+    const expPopover = document.getElementById(SELECTORS.exportPopover);
     if (bulkExpBtn && !bulkExpBtn.__wishesBound) {
       bulkExpBtn.__wishesBound = true;
-      bulkExpBtn.addEventListener("click", async () => {
+      bulkExpBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (expPopover) {
+          const isOpen = expPopover.style.display !== "none";
+          expPopover.style.display = isOpen ? "none" : "flex";
+          bulkExpBtn.setAttribute("aria-expanded", String(!isOpen));
+        } else {
+          exportSelectedWishes("json", bulkExpBtn);
+        }
+      });
+    }
+
+    const expJsonBtn = document.getElementById(SELECTORS.exportJsonBtn);
+    if (expJsonBtn && !expJsonBtn.__wishesBound) {
+      expJsonBtn.__wishesBound = true;
+      expJsonBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (expPopover) expPopover.style.display = "none";
+        if (bulkExpBtn) bulkExpBtn.setAttribute("aria-expanded", "false");
         await exportSelectedWishes("json", bulkExpBtn);
+      });
+    }
+
+    const expCsvBtn = document.getElementById(SELECTORS.exportCsvBtn);
+    if (expCsvBtn && !expCsvBtn.__wishesBound) {
+      expCsvBtn.__wishesBound = true;
+      expCsvBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        if (expPopover) expPopover.style.display = "none";
+        if (bulkExpBtn) bulkExpBtn.setAttribute("aria-expanded", "false");
+        await exportSelectedWishes("csv", bulkExpBtn);
       });
     }
 

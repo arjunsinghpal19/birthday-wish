@@ -148,6 +148,7 @@
   window.adminApp = {
     showToast,
     copyWishUrl,
+    scanStorage: (...args) => (window.AdminMedia && window.AdminMedia.scanStorage) ? window.AdminMedia.scanStorage(...args) : null,
     deleteWish: (id) => (window.AdminWishes && window.AdminWishes.deleteWish) ? window.AdminWishes.deleteWish(id) : null,
     duplicateWish: (id) => (window.AdminWishes && window.AdminWishes.duplicateWish) ? window.AdminWishes.duplicateWish(id) : null,
     logEvent: (...args) => (window.AdminLogs && window.AdminLogs.log) ? window.AdminLogs.log(...args) : null,

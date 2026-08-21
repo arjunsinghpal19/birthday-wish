@@ -1667,9 +1667,79 @@ Accomplished in Phase 31B-3:
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 620 / 620 automated tests passing (100% pass rate).
 
+## 43. PHASE 31B-13 / 31B-13.2 / 31B-13.3 — WISHES QUICK VIEW & ACTION EFFICIENCY (FINAL BUG FIX PASS)
 
+1. Quick View Inspection Dashboard & Content Cards:
+   - Implemented dynamic, high-performance modal inspector (`#wishes-quick-view-overlay`) in `js/admin/admin-wishes.js`.
+   - Accessible via `👁️` row action button (`data-action="view"`) or authoritative `AdminWishes.openQuickView(wishId)`.
+   - **Compact UUID Control**: Formatted as readable inline code with adjacent compact `[ 📋 Copy UUID ]` button positioned toward the right side on a single row without oversized flex-grow stretching.
+   - **Open Public Page Control**: Styled standard HTML anchor link (`🌐 Open Public Page ↗`) with canonical URL `/?w=UUID`, `target="_blank"`, `rel="noopener noreferrer"`, and zero blocking async handlers or delayed operations.
+   - **Comprehensive Birthday Normalization & Parsing**:
+     - Accurately parses and normalizes all 8 database and legacy date formats into `{day, month, year}`:
+       1. Direct object `{day: 17, month: 8, year: 2001}` or `{year: 2001, month: 8, day: 17}`.
+       2. JSON-stringified object `'{"day":17,"month":8,"year":2001}'` or `'{"year":2001,"month":8,"day":17}'`.
+       3. CamelCase `birthDate` object `{day: 17, month: 8, year: 2001}`.
+       4. CamelCase JSON string `'{"day":17,"month":8,"year":2001}'`.
+       5. Legacy `d/m/y` fields `{d: 17, m: 8, y: 2001}`.
+       6. Plain date strings `DD/MM/YYYY` (e.g. `"17/08/2001"`) and `YYYY-MM-DD` (e.g. `"2001-08-17"`).
+       7. Strict validation: day (1–31), month (1–12), year (1900–2100).
+       8. Fallback: Displays clean `"Not specified"` if missing or invalid without guessing, mutating records, or throwing errors.
+   - **Customization & Gift No-Wrap Single-Line Layout**:
+     - Styled customization summary row tags (`🎨 Theme`, `🔤 Font`, `🍰 Cake`, `🎁 Gift`) with `white-space: nowrap;` so labels like `🎁 Gift: Attached (View →)` stay cleanly on a single line on desktop.
+   - **Indian 12-Hour Date/Time**: Formatted created timestamps as `DD/MM/YYYY, h:mm:ss A` in `Asia/Kolkata` timezone.
+   - **Content & Highlights Clickable Cards**:
+     - *Basic Info*: Birthday, Recipient, Sender.
+     - *Content Cards*: `[ 💖 Wishes (N) ]`, `[ 💭 Reasons (N) ]`, `[ 📝 Memory ]`, `[ 💌 Letter (N) ]`.
+## 43. PHASE 31B-13 / 31B-13.2 / 31B-13.3 / 31B-13.4 — WISHES MANAGEMENT QUICK VIEW & GALLERY LIGHTBOX
 
+1. Ultra-Compact UUID Control & Public Page Link:
+   - Header UUID control laid out as `[ UUID text ................................ ] [ 📋 Copy UUID ]` with monospace font, subtle background, ellipsis truncation, and a content-sized, right-aligned button (`flex: 0 0 auto; width: auto;`).
+   - `🌐 Open Public Page ↗` control rendered as a canonical HTML link opening `/?w=UUID` in a new tab (`target="_blank"`, `rel="noopener noreferrer"`) without blocking async intercepts or unnecessary event overhead.
 
+2. Comprehensive Birthday Parsing & Normalization:
+   - `normalizeBirthDate(w)` supports all project candidate representations:
+     - Direct object: `{ day: 17, month: 8, year: 2001 }` or `{ d, m, y }`
+     - JSON-stringified object: `'{"day":17,"month":8,"year":2001}'`
+     - CamelCase object: `w.birthDate = { day: 17, month: 8, year: 2001 }`
+     - CamelCase JSON string: `'{"day":17,"month":8,"year":2001}'`
+     - Legacy fields: `w.d, w.m, w.y` or `w.day, w.month, w.year`
+     - Date strings: `"17/08/2001"`, `"17-08-2001"`, `"2001-08-17"`
+   - Normalizes to `{ day, month, year }` and formats display strictly as `DD/MM/YYYY` (e.g. `17/08/2001`).
+   - Boundary validation: day (1-31), month (1-12), year (1900-2100).
+   - Missing/invalid fallback: Safely renders `Not specified`.
 
+3. Authoritative Theme & Font Customization Schema Resolution:
+   - `resolveTheme(w)`: Checks custom schema `w.letter_theme` first, then fallbacks `w.letterTheme`, `w.lt`, `w.theme_id`, `w.theme`, defaulting to `"default"`.
+   - `resolveFont(w)`: Checks custom schema `w.letter_font` first, then fallbacks `w.letterFont`, `w.lf`, `w.font_id`, `w.font`, defaulting to `"default"`.
+   - Resolves accurately without mutating source wish data or converting valid non-default values to default.
 
+4. Guaranteed Card Order & 4-Column Customization Row:
+   - **Content Cards Order**: Strictly ordered as `[ 💌 Letter ]`, `[ 📝 Memory ]`, `[ 💭 Reasons ]`, `[ 💖 Wishes ]`.
+   - **Media Cards Order**: Strictly ordered as `[ 📸 Photos ]`, `[ ⏳ Timeline ]`, `[ 🎵 Music ]`, `[ 🎥 Video ]`.
+   - **Customization & Gift Row**: Exactly 4 equal 1-line columns (`🎨 Theme: X`, `🔤 Font: X`, `🍰 Cake: X`, `🎁 Gift: Attached (View →)`).
+     - Applied `white-space: nowrap; text-overflow: ellipsis; overflow: hidden;` to ensure no wrapping to second line.
+     - Interactive `(View →)` on Gift tag directly opens the Gift detail view inside the modal.
 
+5. Interactive In-Modal Image Lightbox (`#wishes-gallery-lightbox`):
+   - Clicking `View ↗` or gallery thumbnails opens an internal glassmorphic lightbox overlay (`z-index: 100000; position: fixed; inset: 0; background: rgba(5,2,10,0.92)`).
+   - Supports `data:image/...;base64,...`, HTTPS URLs, and item object formats (`item.image`, `item.url`, `item.src`).
+   - Lightbox header displays `Photo X of Y` indicator and `✕` close button (`#btn-gallery-lightbox-close`).
+   - Lightbox image navigation: `‹` previous and `›` next buttons, plus `ArrowLeft` and `ArrowRight` keyboard shortcuts.
+   - Robust fallback on error: displays `🖼️ Image preview unavailable` without exposing raw Base64 strings.
+   - Backdrop click and `Escape` key close the Lightbox overlay first before Quick View.
+
+6. Top-Right Floating Modal Feedback Toast:
+   - Dedicated `#wishes-quick-view-toast` element positioned at top-right inside the modal card (`right: 52px; z-index: 10000`).
+   - Toast on Copy UUID: `"📋 UUID copied to clipboard!"`.
+   - Toast on Copy Link: `"🔗 Shareable link copied to clipboard!"`.
+
+7. Complete State Preservation & Zero-Mutation Invariant:
+   - Search query, filters (media & date), sort state, pagination page, and row selections are 100% preserved across all Quick View and Lightbox operations.
+   - 0 Supabase mutations, 0 database writes, 0 API changes, 0 secret exposures.
+   - Passcodes are strictly protected and never displayed in plaintext.
+   - Master configuration row (`00000000-0000-0000-0000-000000000001`) retains deletion and duplication protection.
+
+8. Automated Test Validation:
+   - Updated `scratch/test_phase31b_wishes_quick_view.js` (38 comprehensive unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 658 / 658 automated tests passing (100% pass rate).

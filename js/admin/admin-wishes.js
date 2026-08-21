@@ -41,12 +41,42 @@
     prevPageBtn: "btn-wishes-prev-page",
     nextPageBtn: "btn-wishes-next-page",
     pageInfo: "wishes-page-info",
-    paginationContainer: "wishes-pagination-container"
+    paginationContainer: "wishes-pagination-container",
+    densitySelect: "wishes-density-select",
+    columnsToggleBtn: "btn-wishes-columns-toggle",
+    columnsPopover: "wishes-columns-popover",
+    resetViewBtn: "btn-wishes-reset-view"
   };
 
   /* ============================================================
-     2. MODULE STATE
+     2. MODULE STATE & VIEW PREFERENCES (PHASE 31B-14)
      ============================================================ */
+  const VIEW_PREFS_STORAGE_KEY = "bw_admin_wishes_view_prefs";
+
+  const DEFAULT_VIEW_PREFERENCES = Object.freeze({
+    density: "comfortable", // "comfortable" | "compact"
+    visibleColumns: Object.freeze({
+      sender: true,
+      media: true,
+      passcode: true,
+      uuid: true,
+      created: true
+    })
+  });
+
+  const COLUMN_DISPLAY_NAMES = Object.freeze({
+    sender: "Sender",
+    media: "Content & Media",
+    passcode: "Passcode",
+    uuid: "Public Link",
+    created: "Created At"
+  });
+
+  let viewPreferences = {
+    density: "comfortable",
+    visibleColumns: { ...DEFAULT_VIEW_PREFERENCES.visibleColumns }
+  };
+
   let wishesState = [];
   let isQueryError = false;
   let onStateChangeHook = null;
@@ -59,6 +89,325 @@
     currentPage: 1,
     pageSize: 10
   };
+
+  /* ============================================================
+     2B. VIEW PREFERENCES HELPERS (PHASE 31B-14)
+     ============================================================ */
+  /**
+   * Loads view preferences from browser storage safely.
+   * @returns {Object} Active view preferences.
+   */
+  function loadViewPreferences() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const raw = window.localStorage.getItem(VIEW_PREFS_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            const density = (parsed.density === "compact" || parsed.density === "comfortable") ? parsed.density : "comfortable";
+            const visibleColumns = { ...DEFAULT_VIEW_PREFERENCES.visibleColumns };
+            if (parsed.visibleColumns && typeof parsed.visibleColumns === "object") {
+              Object.keys(DEFAULT_VIEW_PREFERENCES.visibleColumns).forEach(col => {
+                if (typeof parsed.visibleColumns[col] === "boolean") {
+                  visibleColumns[col] = parsed.visibleColumns[col];
+                }
+              });
+            }
+            viewPreferences = { density, visibleColumns };
+            return viewPreferences;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("AdminWishes: Failed to load view preferences from storage, using defaults", e);
+    }
+    viewPreferences = {
+      density: "comfortable",
+      visibleColumns: { ...DEFAULT_VIEW_PREFERENCES.visibleColumns }
+    };
+    return viewPreferences;
+  }
+
+  /**
+   * Saves current view preferences to browser storage safely without exposing sensitive data.
+   */
+  function saveViewPreferences() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        const payload = {
+          density: viewPreferences.density,
+          visibleColumns: { ...viewPreferences.visibleColumns }
+        };
+        window.localStorage.setItem(VIEW_PREFS_STORAGE_KEY, JSON.stringify(payload));
+      }
+    } catch (e) {
+      console.warn("AdminWishes: Failed to save view preferences to storage", e);
+    }
+  }
+
+  /**
+   * Returns current view preferences copy.
+   * @returns {Object}
+   */
+  function getViewPreferences() {
+    return {
+      density: viewPreferences.density,
+      visibleColumns: { ...viewPreferences.visibleColumns }
+    };
+  }
+
+  /**
+   * Sets table density ('comfortable' or 'compact').
+   * @param {string} density
+   */
+  function setDensity(density) {
+    const validDensity = (density === "compact") ? "compact" : "comfortable";
+    viewPreferences.density = validDensity;
+    saveViewPreferences();
+    applyViewPreferences();
+  }
+
+  /**
+   * Gets current table density.
+   * @returns {string}
+   */
+  function getDensity() {
+    return viewPreferences.density;
+  }
+
+  /**
+   * Sets visibility of a non-essential column.
+   * @param {string} col - Column key ('sender', 'media', 'passcode', 'uuid', 'created').
+   * @param {boolean} isVisible
+   * @param {boolean} [silent=false] - Whether to suppress toast feedback.
+   */
+  function setColumnVisibility(col, isVisible, silent = false) {
+    if (!col || !(col in DEFAULT_VIEW_PREFERENCES.visibleColumns)) return;
+    const nextVal = Boolean(isVisible);
+    const prevVal = viewPreferences.visibleColumns[col] !== false;
+    viewPreferences.visibleColumns[col] = nextVal;
+    saveViewPreferences();
+    applyViewPreferences();
+    render();
+
+    if (!silent && prevVal !== nextVal && window.AdminCore && typeof window.AdminCore.showToast === "function") {
+      const colName = COLUMN_DISPLAY_NAMES[col] || col;
+      window.AdminCore.showToast(`${colName} column ${nextVal ? "shown" : "hidden"}`);
+    }
+  }
+
+  /**
+   * Gets visibility of a column.
+   * @param {string} col
+   * @returns {boolean}
+   */
+  function getColumnVisibility(col) {
+    if (col === "select" || col === "recipient" || col === "actions") return true;
+    return viewPreferences.visibleColumns[col] !== false;
+  }
+
+  /**
+   * Returns visible columns dictionary including essential columns.
+   * @returns {Object}
+   */
+  function getVisibleColumns() {
+    return {
+      select: true,
+      recipient: true,
+      ...viewPreferences.visibleColumns,
+      actions: true
+    };
+  }
+
+  /**
+   * Computes the number of currently visible columns.
+   * @returns {number}
+   */
+  function getVisibleColumnCount() {
+    let count = 3; // select, recipient, actions (always visible)
+    const cols = viewPreferences.visibleColumns;
+    if (cols.sender !== false) count++;
+    if (cols.media !== false) count++;
+    if (cols.passcode !== false) count++;
+    if (cols.uuid !== false) count++;
+    if (cols.created !== false) count++;
+    return count;
+  }
+
+  /**
+   * Resets table view preferences to defaults without touching search, filters, sorting, pagination, or selections.
+   */
+  function resetView() {
+    viewPreferences = {
+      density: "comfortable",
+      visibleColumns: { ...DEFAULT_VIEW_PREFERENCES.visibleColumns }
+    };
+    saveViewPreferences();
+    applyViewPreferences();
+    render();
+    if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
+      window.AdminCore.showToast("Table view reset to default preferences ✨");
+    }
+  }
+
+  /**
+   * Applies view preference classes and control values to the DOM.
+   */
+  function applyViewPreferences() {
+    const wishesView = typeof document.getElementById === "function" ? document.getElementById("view-wishes") : null;
+    const wishesPanel = wishesView && typeof wishesView.querySelector === "function" ? wishesView.querySelector(".table-panel") : null;
+    const wishesTable = wishesView && typeof wishesView.querySelector === "function" ? wishesView.querySelector("table.admin-table") : null;
+    const tbody = typeof document.getElementById === "function" ? document.getElementById(SELECTORS.tbody) : null;
+    const parentTable = tbody && typeof tbody.closest === "function" ? tbody.closest("table") : null;
+    const parentPanel = tbody && typeof tbody.closest === "function" ? tbody.closest(".table-panel") : null;
+    const allTablePanels = typeof document.querySelectorAll === "function" ? document.querySelectorAll("#view-wishes .table-panel, .table-panel") : [];
+    const allTables = typeof document.querySelectorAll === "function" ? document.querySelectorAll("#view-wishes table.admin-table, table.admin-table") : [];
+
+    const targetList = [
+      wishesPanel,
+      wishesTable,
+      parentTable,
+      parentPanel,
+      ...(Array.isArray(allTablePanels) ? allTablePanels : Array.from(allTablePanels || [])),
+      ...(Array.isArray(allTables) ? allTables : Array.from(allTables || []))
+    ].filter(Boolean);
+
+    const targetSet = new Set(targetList);
+
+    targetSet.forEach(el => {
+      if (!el || !el.classList) return;
+      // Density
+      el.classList.remove("table-density-comfortable", "table-density-compact");
+      el.classList.add(`table-density-${viewPreferences.density}`);
+
+      // Column visibility classes
+      Object.keys(DEFAULT_VIEW_PREFERENCES.visibleColumns).forEach(col => {
+        const cls = `hide-col-${col}`;
+        if (viewPreferences.visibleColumns[col] === false) {
+          el.classList.add(cls);
+        } else {
+          el.classList.remove(cls);
+        }
+      });
+    });
+
+    // Update density dropdown if in DOM
+    const densitySelect = typeof document.getElementById === "function" ? document.getElementById(SELECTORS.densitySelect) : null;
+    if (densitySelect) {
+      densitySelect.value = viewPreferences.density;
+    }
+
+    // Update column checkboxes if in DOM
+    const colCheckboxes = typeof document.querySelectorAll === "function" ? document.querySelectorAll(".col-toggle-checkbox") : [];
+    if (colCheckboxes && typeof colCheckboxes.forEach === "function") {
+      colCheckboxes.forEach(cb => {
+        const col = cb.dataset ? cb.dataset.col : null;
+        if (col && col in viewPreferences.visibleColumns) {
+          cb.checked = viewPreferences.visibleColumns[col] !== false;
+        }
+      });
+    }
+  }
+
+  /**
+   * Ensures view controls (density select, column dropdown, reset view button) exist in the toolbar DOM.
+   */
+  function ensureViewControlsDOM() {
+    const filterGroup = typeof document.querySelector === "function" ? document.querySelector(".table-filter-group") : null;
+    if (!filterGroup) return;
+
+    // 1. Density Select
+    if (!document.getElementById(SELECTORS.densitySelect)) {
+      const densitySelect = document.createElement("select");
+      densitySelect.className = "filter-select";
+      densitySelect.id = SELECTORS.densitySelect;
+      densitySelect.title = "Table row density";
+      densitySelect.setAttribute("aria-label", "Table row density");
+      densitySelect.innerHTML = `
+        <option value="comfortable">📐 Comfortable</option>
+        <option value="compact">⚡ Compact</option>
+      `;
+      densitySelect.value = viewPreferences.density;
+      filterGroup.appendChild(densitySelect);
+    }
+
+    // 2. Columns Popover Menu
+    if (!document.getElementById(SELECTORS.columnsToggleBtn)) {
+      const menuWrap = document.createElement("div");
+      menuWrap.className = "columns-menu-wrap";
+      menuWrap.innerHTML = `
+        <button type="button" class="btn-filter-toggle" id="${SELECTORS.columnsToggleBtn}" title="Show or hide table columns" aria-expanded="false" aria-haspopup="true">
+          🎛️ Columns ▾
+        </button>
+        <div class="columns-popover" id="${SELECTORS.columnsPopover}" style="display: none;" role="menu">
+          <div class="popover-header">
+            <div class="popover-title">TABLE COLUMNS</div>
+          </div>
+          <div class="popover-col-list">
+            <label class="col-toggle-item" title="Toggle Sender column">
+              <input type="checkbox" class="col-toggle-checkbox" data-col="sender" ${viewPreferences.visibleColumns.sender !== false ? "checked" : ""}>
+              <span>Sender</span>
+            </label>
+            <label class="col-toggle-item" title="Toggle Content & Media column">
+              <input type="checkbox" class="col-toggle-checkbox" data-col="media" ${viewPreferences.visibleColumns.media !== false ? "checked" : ""}>
+              <span>Content & Media</span>
+            </label>
+            <label class="col-toggle-item" title="Toggle Passcode column">
+              <input type="checkbox" class="col-toggle-checkbox" data-col="passcode" ${viewPreferences.visibleColumns.passcode !== false ? "checked" : ""}>
+              <span>Passcode</span>
+            </label>
+            <label class="col-toggle-item" title="Toggle Public Link column">
+              <input type="checkbox" class="col-toggle-checkbox" data-col="uuid" ${viewPreferences.visibleColumns.uuid !== false ? "checked" : ""}>
+              <span>Public Link</span>
+            </label>
+            <label class="col-toggle-item" title="Toggle Created At column">
+              <input type="checkbox" class="col-toggle-checkbox" data-col="created" ${viewPreferences.visibleColumns.created !== false ? "checked" : ""}>
+              <span>Created At</span>
+            </label>
+          </div>
+          <div class="popover-footer">
+            <div class="popover-pinned-title">Always visible</div>
+            <div class="popover-pinned-list">
+              <div class="popover-pinned-item"><span class="popover-check-icon">✓</span> Selection</div>
+              <div class="popover-pinned-item"><span class="popover-check-icon">✓</span> Recipient</div>
+              <div class="popover-pinned-item"><span class="popover-check-icon">✓</span> Actions</div>
+            </div>
+          </div>
+        </div>
+      `;
+      filterGroup.appendChild(menuWrap);
+    }
+
+    // 3. Reset View Button
+    if (!document.getElementById(SELECTORS.resetViewBtn)) {
+      const resetBtn = document.createElement("button");
+      resetBtn.type = "button";
+      resetBtn.className = "btn-reset-view";
+      resetBtn.id = SELECTORS.resetViewBtn;
+      resetBtn.title = "Reset table view to default density and columns";
+      resetBtn.setAttribute("aria-label", "Reset table view preferences");
+      resetBtn.textContent = "↺ Reset View";
+      filterGroup.appendChild(resetBtn);
+    }
+
+    // Ensure table headers have column classes
+    const theads = typeof document.querySelectorAll === "function"
+      ? document.querySelectorAll("#view-wishes table.admin-table thead, table.admin-table thead")
+      : [];
+    const colClasses = ["col-select", "col-recipient", "col-sender", "col-media", "col-passcode", "col-uuid", "col-created", "col-actions"];
+    if (theads && typeof theads.forEach === "function") {
+      theads.forEach(thead => {
+        if (thead && typeof thead.querySelectorAll === "function") {
+          const ths = thead.querySelectorAll("th");
+          ths.forEach((th, idx) => {
+            if (colClasses[idx] && th.classList && !th.classList.contains(colClasses[idx])) {
+              th.classList.add(colClasses[idx]);
+            }
+          });
+        }
+      });
+    }
+  }
 
   /* ============================================================
      3. SANITIZATION HELPER
@@ -874,6 +1223,9 @@
     // Update sort header indicators
     updateSortIndicators();
 
+    // Apply active view preferences (density and column visibility classes)
+    applyViewPreferences();
+
     // Update search clear button visibility
     const searchInput = document.getElementById(SELECTORS.searchInput);
     const searchClearBtn = document.getElementById(SELECTORS.searchClearBtn);
@@ -881,6 +1233,8 @@
       const hasSearchVal = Boolean(searchInput && searchInput.value && searchInput.value.trim().length > 0);
       searchClearBtn.style.display = hasSearchVal ? "inline-flex" : "none";
     }
+
+    const visibleColSpan = getVisibleColumnCount();
 
     // Error State
     if (isQueryError) {
@@ -892,7 +1246,7 @@
       if (pageInfo) pageInfo.textContent = "Page 1 of 1";
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align:center;color:#ef4444;padding:32px;">
+          <td colspan="${visibleColSpan}" style="text-align:center;color:#ef4444;padding:32px;">
             ⚠️ Unable to load wishes from Supabase database. Check database connectivity.
           </td>
         </tr>
@@ -935,7 +1289,7 @@
 
       tbody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">
+          <td colspan="${visibleColSpan}" style="text-align:center;color:var(--text-muted);padding:32px;">
             <div>${emptyMsg}</div>
             ${resetBtnHtml}
           </td>
@@ -954,7 +1308,7 @@
       const senderName = escapeHtml(w.sender_name || "Friend");
       const avatarInitial = escapeHtml((w.recipient_name || "W").charAt(0).toUpperCase());
       const passcodeText = escapeHtml(w.pass_code || "1234");
-      const dateText = w.created_at ? new Date(w.created_at).toLocaleDateString() : "Recent";
+      const formattedCreated = formatIndianDateTime(w.created_at);
       const rawId = escapeHtml(w.id || "");
       const contentBadgesHtml = renderContentBadges(w);
       const isSelected = selectedWishIds.has(rawId);
@@ -963,25 +1317,39 @@
         tr.classList.add("selected-row");
       }
 
+      // Format created date and time for controlled 2-line presentation
+      let createdCellHtml = `<span class="created-date">${escapeHtml(formattedCreated)}</span>`;
+      if (formattedCreated && formattedCreated.includes(", ")) {
+        const [dPart, tPart] = formattedCreated.split(", ");
+        createdCellHtml = `
+          <div class="created-cell" title="${escapeHtml(formattedCreated)}">
+            <span class="created-date">${escapeHtml(dPart)}</span>
+            <span class="created-time">${escapeHtml(tPart)}</span>
+          </div>
+        `;
+      } else {
+        createdCellHtml = `<div class="created-cell" title="${escapeHtml(formattedCreated)}"><span class="created-date">${escapeHtml(formattedCreated)}</span></div>`;
+      }
+
       tr.innerHTML = `
-        <td class="td-checkbox">
+        <td class="td-checkbox col-select">
           <input type="checkbox" class="table-checkbox wish-row-checkbox" data-id="${rawId}" ${isSelected ? "checked" : ""} aria-label="Select wish for ${recipientName}">
         </td>
-        <td>
+        <td class="col-recipient">
           <div class="user-cell">
             <div class="user-avatar">${avatarInitial}</div>
-            <div>
-              <strong>${recipientName}</strong>
-              <div style="font-size:0.75rem;color:var(--text-dim);">ID: ${escapeHtml(shortId)}</div>
+            <div class="user-name-wrap" title="${recipientName}">
+              <strong class="user-name-text">${recipientName}</strong>
+              <div class="user-id-subtext" style="font-size:0.75rem;color:var(--text-dim);">ID: ${escapeHtml(shortId)}</div>
             </div>
           </div>
         </td>
-        <td>${senderName}</td>
-        <td>${contentBadgesHtml}</td>
-        <td><span class="status-badge active">🔑 ${passcodeText}</span></td>
-        <td><button class="btn-sm" onclick="window.adminApp ? window.adminApp.copyWishUrl('${fullUrl}') : (window.AdminCore && window.AdminCore.copyWishUrl('${fullUrl}'))">📋 Copy UUID Link</button></td>
-        <td>${escapeHtml(dateText)}</td>
-        <td>
+        <td class="col-sender" title="${senderName}"><span class="sender-name-text">${senderName}</span></td>
+        <td class="col-media">${contentBadgesHtml}</td>
+        <td class="col-passcode"><span class="status-badge active">🔑 ${passcodeText}</span></td>
+        <td class="col-uuid"><button class="btn-sm btn-copy-link" title="Copy Public Link" aria-label="Copy Public Link" onclick="window.adminApp ? window.adminApp.copyWishUrl('${fullUrl}') : (window.AdminCore && window.AdminCore.copyWishUrl('${fullUrl}'))">🔗 Copy</button></td>
+        <td class="col-created">${createdCellHtml}</td>
+        <td class="col-actions">
           <div class="action-btns">
             <button class="btn-icon" title="Quick View" data-action="view" data-id="${rawId}">👁️</button>
             <button class="btn-icon" title="Edit Wish" data-action="edit" data-id="${rawId}">✏️</button>
@@ -1647,6 +2015,11 @@
       onStateChangeHook = onStateChangeCallback;
     }
 
+    // Load stored view preferences and ensure DOM controls are present
+    loadViewPreferences();
+    ensureViewControlsDOM();
+    applyViewPreferences();
+
     // Search Input Listener (resets to page 1)
     const searchInput = document.getElementById(SELECTORS.searchInput);
     if (searchInput && !searchInput.__wishesBound) {
@@ -1676,11 +2049,81 @@
       });
     }
 
-    // Global Keyboard Shortcut ('/' to focus search, Escape to close lightbox/Quick View, Arrow keys for photo nav)
+    // Density Selector Listener
+    const densitySelect = document.getElementById(SELECTORS.densitySelect);
+    if (densitySelect && !densitySelect.__wishesBound) {
+      densitySelect.__wishesBound = true;
+      densitySelect.addEventListener("change", () => {
+        setDensity(densitySelect.value);
+      });
+    }
+
+    // Columns Toggle Popover Listener
+    const colsToggleBtn = document.getElementById(SELECTORS.columnsToggleBtn);
+    const colsPopover = document.getElementById(SELECTORS.columnsPopover);
+    if (colsToggleBtn && colsPopover && !colsToggleBtn.__wishesBound) {
+      colsToggleBtn.__wishesBound = true;
+      colsToggleBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = colsPopover.style.display !== "none";
+        colsPopover.style.display = isOpen ? "none" : "flex";
+        colsToggleBtn.setAttribute("aria-expanded", String(!isOpen));
+      });
+    }
+
+    // Document click to close columns popover
+    if (typeof document !== "undefined" && typeof document.addEventListener === "function" && !document.__wishesPopoverBound) {
+      document.__wishesPopoverBound = true;
+      document.addEventListener("click", (e) => {
+        const popover = document.getElementById(SELECTORS.columnsPopover);
+        const toggleBtn = document.getElementById(SELECTORS.columnsToggleBtn);
+        if (popover && popover.style.display !== "none") {
+          if (e.target && !popover.contains(e.target) && e.target !== toggleBtn) {
+            popover.style.display = "none";
+            if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+          }
+        }
+      });
+    }
+
+    // Column Checkboxes delegation/listeners
+    const colCheckboxes = typeof document.querySelectorAll === "function" ? document.querySelectorAll(".col-toggle-checkbox") : [];
+    if (colCheckboxes && typeof colCheckboxes.forEach === "function") {
+      colCheckboxes.forEach(cb => {
+        if (!cb.__wishesBound) {
+          cb.__wishesBound = true;
+          cb.addEventListener("change", () => {
+            const col = cb.dataset ? cb.dataset.col : null;
+            if (col) {
+              setColumnVisibility(col, cb.checked);
+            }
+          });
+        }
+      });
+    }
+
+    // Reset View Button Listener
+    const resetViewBtn = document.getElementById(SELECTORS.resetViewBtn);
+    if (resetViewBtn && !resetViewBtn.__wishesBound) {
+      resetViewBtn.__wishesBound = true;
+      resetViewBtn.addEventListener("click", () => {
+        resetView();
+      });
+    }
+
+    // Global Keyboard Shortcut ('/' to focus search, Escape to close popover/lightbox/Quick View, Arrow keys for photo nav)
     if (typeof document !== "undefined" && typeof document.addEventListener === "function" && !document.__wishesGlobalKeyBound) {
       document.__wishesGlobalKeyBound = true;
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
+          const popover = document.getElementById(SELECTORS.columnsPopover);
+          if (popover && popover.style.display !== "none") {
+            e.preventDefault();
+            popover.style.display = "none";
+            const toggleBtn = document.getElementById(SELECTORS.columnsToggleBtn);
+            if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+            return;
+          }
           const lightbox = document.getElementById("wishes-gallery-lightbox");
           if (lightbox && lightbox.style.display !== "none" && activeGalleryPreviewIndex !== null) {
             e.preventDefault();
@@ -2022,7 +2465,7 @@
     if (isNaN(date.getTime())) return "Recent";
 
     try {
-      return date.toLocaleString("en-IN", {
+      const formatted = date.toLocaleString("en-IN", {
         timeZone: "Asia/Kolkata",
         day: "2-digit",
         month: "2-digit",
@@ -2032,6 +2475,7 @@
         second: "2-digit",
         hour12: true
       });
+      return formatted.replace(/\b(am|pm)\b/gi, (m) => m.toUpperCase());
     } catch (e) {
       // Manual fallback formatter
       const pad = (n) => String(n).padStart(2, "0");
@@ -3026,9 +3470,19 @@
     isGalleryLightboxOpen,
     normalizeBirthDate,
     formatBirthDateDisplay,
+    formatIndianDateTime,
     resolveWishTheme,
     resolveWishFont,
-    resolveWishCake
+    resolveWishCake,
+    getDensity,
+    setDensity,
+    getColumnVisibility,
+    setColumnVisibility,
+    resetView,
+    getViewPreferences,
+    loadViewPreferences,
+    saveViewPreferences,
+    applyViewPreferences
   });
 
 })(window);

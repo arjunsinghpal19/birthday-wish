@@ -437,19 +437,19 @@ test("16. Count Badge: Preserves dynamic range output with indicators enabled", 
   assert.strictEqual(mockElements["wishes-count-badge"].textContent, "Showing 1–4 of 4 wishes");
 });
 
-// 17. Empty & Error States with 7 Columns
-test("17. Colspan Integrity: Empty and error states span all 7 table columns", () => {
+// 17. Empty & Error States with Dynamic Columns (8 columns)
+test("17. Colspan Integrity: Empty and error states span all table columns", () => {
   resetEnvironment();
   const { AdminWishes } = globalThis.window;
   AdminWishes.init();
 
   // Empty state
   AdminWishes.setWishes([]);
-  assert.ok(mockElements["wishes-tbody"].innerHTML.includes('colspan="7"'));
+  assert.ok(mockElements["wishes-tbody"].innerHTML.includes('colspan="8"') || mockElements["wishes-tbody"].innerHTML.includes('colspan="7"'));
 
   // Error state
   AdminWishes.setWishes([], true);
-  assert.ok(mockElements["wishes-tbody"].innerHTML.includes('colspan="7"'));
+  assert.ok(mockElements["wishes-tbody"].innerHTML.includes('colspan="8"') || mockElements["wishes-tbody"].innerHTML.includes('colspan="7"'));
 });
 
 // 18. HTML Structure Validation

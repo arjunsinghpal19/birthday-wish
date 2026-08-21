@@ -959,6 +959,64 @@ runTest("38. Security: system baseline configuration row remains protected", () 
   assert(overlay.innerHTML.includes("System Baseline Config"));
 });
 
+// ============================================================
+// 8. TABLE CREATED FORMAT & COPY LINK BUTTON TESTS (39 - 44)
+// ============================================================
+
+runTest("39. Table: formatIndianDateTime formats ISO timestamp to Indian 12-hour format (DD/MM/YYYY, h:mm:ss A)", () => {
+  const { windowMock } = resetEnvironment();
+  const res = windowMock.AdminWishes.formatIndianDateTime("2026-08-20T21:11:24.000Z");
+  // 2026-08-20T21:11:24.000Z in Asia/Kolkata (+05:30) is 21/08/2026, 2:41:24 AM
+  assert(res.includes("21/08/2026"), `Expected date 21/08/2026 in ${res}`);
+  assert(res.includes("2:41:24"), `Expected time 2:41:24 in ${res}`);
+  assert(res.includes("AM"), `Expected AM in ${res}`);
+});
+
+runTest("40. Table: formatIndianDateTime gracefully handles null/empty/invalid input", () => {
+  const { windowMock } = resetEnvironment();
+  assert.strictEqual(windowMock.AdminWishes.formatIndianDateTime(null), "Recent");
+  assert.strictEqual(windowMock.AdminWishes.formatIndianDateTime(""), "Recent");
+  assert.strictEqual(windowMock.AdminWishes.formatIndianDateTime("invalid-date-string"), "Recent");
+});
+
+runTest("41. Table: render() formats Created column with .created-cell, .created-date and .created-time", () => {
+  const { windowMock } = resetEnvironment();
+  windowMock.AdminWishes.setWishes(mockWishes);
+  windowMock.AdminWishes.render();
+
+  const tbody = mockElements["wishes-tbody"];
+  assert(tbody.innerHTML.includes("created-cell"), "Table body should contain .created-cell");
+  assert(tbody.innerHTML.includes("created-date"), "Table body should contain .created-date");
+  assert(tbody.innerHTML.includes("created-time"), "Table body should contain .created-time");
+  assert(tbody.innerHTML.includes("21/08/2026"), "Table body should contain formatted Indian date");
+});
+
+runTest("42. Table: render() displays compact '🔗 Copy' button with accessible title", () => {
+  const { windowMock } = resetEnvironment();
+  windowMock.AdminWishes.setWishes(mockWishes);
+  windowMock.AdminWishes.render();
+
+  const tbody = mockElements["wishes-tbody"];
+  assert(tbody.innerHTML.includes("🔗 Copy"), "Table body should render '🔗 Copy'");
+  assert(tbody.innerHTML.includes("btn-copy-link"), "Table body should include btn-copy-link class");
+  assert(tbody.innerHTML.includes('title="Copy Public Link"'), "Table copy button should have accessible title");
+  assert(!tbody.innerHTML.includes("📋 Copy UUID Link"), "Old wide '📋 Copy UUID Link' should be replaced");
+});
+
+runTest("43. Table: render() handles wishes with missing created_at cleanly", () => {
+  const { windowMock } = resetEnvironment();
+  windowMock.AdminWishes.setWishes(mockWishes);
+  windowMock.AdminWishes.render();
+
+  const tbody = mockElements["wishes-tbody"];
+  assert(tbody.innerHTML.includes("Recent"), "Minimal wish should display fallback 'Recent'");
+});
+
+runTest("44. Quick View: formatIndianDateTime is accessible and exported from AdminWishes module", () => {
+  const { windowMock } = resetEnvironment();
+  assert.strictEqual(typeof windowMock.AdminWishes.formatIndianDateTime, "function");
+});
+
 console.log("============================================================");
 console.log(`📊 PHASE 31B-13.4 TEST RESULTS: ${passed} Passed, ${failed} Failed`);
 console.log("============================================================");
@@ -966,6 +1024,6 @@ console.log("============================================================");
 if (failed > 0) {
   process.exit(1);
 } else {
-  console.log("🎉 ALL 38 PHASE 31B-13.4 QUICK VIEW TESTS PASSED SUCCESSFULLY!");
+  console.log("🎉 ALL 44 PHASE 31B-13.4 QUICK VIEW TESTS PASSED SUCCESSFULLY!");
   process.exit(0);
 }

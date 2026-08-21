@@ -1743,3 +1743,259 @@ Accomplished in Phase 31B-3:
    - Updated `scratch/test_phase31b_wishes_quick_view.js` (38 comprehensive unit & integration tests).
    - Validated JS syntax across all 42 JS files (42/42 valid).
    - Total regression suite: 658 / 658 automated tests passing (100% pass rate).
+
+## 44. PHASE 31B-14 — WISHES TABLE VIEW CUSTOMIZATION & DENSITY CONTROLS
+
+1. Table Density Modes ('comfortable' vs 'compact'):
+   - Implemented dynamic table row density switching between `comfortable` (default spacious row height, comfortable padding) and `compact` (streamlined row height, reduced cell padding, tighter text line-height).
+   - Dynamically attaches `.table-density-comfortable` or `.table-density-compact` to the table panel and `.admin-table`.
+   - Exposed authoritative public API: `AdminWishes.getDensity()` and `AdminWishes.setDensity(mode)`.
+
+2. Dynamic Column Visibility Toggling:
+   - Supports toggling non-essential columns (`sender`, `media`, `passcode`, `uuid`, `created`) via interactive Columns popover menu (`#btn-wishes-columns-toggle`, `#wishes-columns-popover`).
+   - Essential columns (`select`, `recipient`, `actions`) remain protected and always visible to ensure core navigation and management operations are never impaired.
+   - Dynamically attaches `.hide-col-<column>` CSS classes to the table element to instantly toggle visibility with zero reflow glitches.
+   - Dynamic `colspan` calculation in `render()` for empty and error states dynamically adapts to current visible column count.
+   - Exposed authoritative public API: `AdminWishes.getColumnVisibility(col)` and `AdminWishes.setColumnVisibility(col, isVisible)`.
+
+3. Persistent Storage with Resilient Fallback:
+   - View preferences (density and column visibility) are automatically persisted to `localStorage` under `bw_admin_wishes_view_prefs`.
+   - Automatically rehydrates on initialization. If `localStorage` is empty, disabled, or contains corrupted JSON, gracefully falls back to default settings without throwing errors.
+   - Exposed public API: `AdminWishes.getViewPreferences()`, `AdminWishes.saveViewPreferences()`, `AdminWishes.loadViewPreferences()`, and `AdminWishes.applyViewPreferences()`.
+
+4. Reset View Preferences Workflow:
+   - `#btn-wishes-reset-view` in toolbar restores default comfortable density and reveals all columns simultaneously.
+   - Exposed public API: `AdminWishes.resetView()`.
+   - Completely decoupled from data filters: resetting view preferences preserves active search queries, media/date filters, sort state, pagination page, and selected wishes (`selectedWishIds`).
+
+5. State Preservation & Security Invariants:
+   - Complete state preservation across density switches and column toggles (selected rows stay selected, pagination page intact, search/filter intact).
+   - 0 backend mutations, 0 Supabase network queries, 0 storage changes, 0 secret exposures.
+
+6. Automated Test Validation:
+   - Created `scratch/test_phase31b_view_preferences.js` (14 comprehensive unit & integration tests).
+   - Validated JS syntax across all 42 JS files (42/42 valid).
+   - Total regression suite: 672 / 672 automated tests passing (100% pass rate).
+
+## 45. PHASE 31B-14.1 — TABLE VIEW CONTROLS UX REFINEMENT & VISUAL VERIFICATION
+
+1. Unmistakable Visual Density Difference (Comfortable vs Compact):
+   - **Comfortable** (~60–70px row height): 14px 16px cell padding, 36px circular avatar, comfortable 1.45 line-height, 32px action buttons, spacious badge spacing.
+   - **Compact** (~40–46px row height): 5px 12px cell padding, 28px circular avatar, tight 1.2 line-height, 24px action buttons (`.btn-icon`, `.btn-copy-link`), micro media badges (`padding: 1.5px 5px; font-size: 0.65rem`), tighter cell gaps (`7px`).
+   - Density dropdown labels clearly distinct: `📐 Comfortable` and `⚡ Compact`.
+
+2. Modernized Self-Explanatory Columns Popover:
+   - Clearly separated into `TABLE COLUMNS` header and `Always visible` pinned footer.
+   - Optional columns: Sender, Content & Media, Passcode, Public Link, Created At.
+   - Pinned columns with check indicators: Selection, Recipient, Actions (protected from toggling).
+   - Updated header label from confusing "UUID Link" / "Link (UUID)" to clean "Public Link".
+
+3. Non-Blocking Column Toggle Toast Feedback:
+   - Toast feedback instantly confirms state transitions: `"[Column Name] column [shown|hidden]"`.
+   - Table updates immediately with zero reflow glitches, zero network requests, and zero state mutation.
+
+4. Decoupled Reset View Workflow:
+   - `#btn-wishes-reset-view` restores comfortable density and all optional columns.
+   - Displays toast: `"Table view reset to default preferences ✨"`.
+   - 100% preserves search queries, media/date filters, sort field/direction, pagination page/size, and `selectedWishIds`.
+
+5. Automated Test Suite & Integrity Validation:
+   - Expanded `scratch/test_phase31b_view_preferences.js` to 20 comprehensive unit and integration tests.
+   - Verified 100% pass rate across all regression suites.
+
+## 46. PHASE 31B-14.2 — ACTUAL TABLE VIEW CONTROLS VISUAL FIX
+
+1. Root Cause Analysis & Architectural Fix:
+   - **Multi-table querySelector Mismatch**: In `admin.html`, `#view-dashboard` contains the first `.table-panel` and `table.admin-table` on the page. Previously, `applyViewPreferences()` used `document.querySelector(".table-panel")` and `document.querySelector("table.admin-table")`, which selected only the Dashboard's Recent Wishes table and failed to apply `.table-density-compact` and `.hide-col-*` classes to `#view-wishes .table-panel` and `#view-wishes table.admin-table`.
+   - Fixed by targeting `#view-wishes .table-panel`, `#view-wishes table.admin-table`, `tbody.closest("table")`, `tbody.closest(".table-panel")`, and all table panels / tables across views.
+
+2. Visual Density Distinction & CSS High-Specificity Rules:
+   - **Comfortable**: `14px 16px` padding, `36px` avatar, `32px` action buttons, `1.45` line-height (~60–70px row height).
+   - **Compact**: `4px 10px` cell padding, `28px` avatar, `22px` action buttons, `18px` / `0.62rem` micro media badges with single-line `flex-wrap: nowrap`, `1.15` line-height (~40–44px row height).
+   - Added high-specificity CSS selectors targeting `.table-panel.table-density-*`, `table.admin-table.table-density-*`, and inner cells.
+
+3. One-Line "🔗 Copy Link" Table Button:
+   - Fixed text wrapping by setting `white-space: nowrap !important; display: inline-flex !important; align-items: center !important; gap: 5px !important; flex: none !important; width: auto !important;` on `.btn-copy-link`.
+   - Styled `.col-uuid` with `white-space: nowrap !important; min-width: 108px; text-align: center;`.
+   - In Compact mode: `.btn-copy-link` scales down to `height: 22px; font-size: 0.68rem; padding: 2px 7px;` staying strictly on ONE horizontal line.
+
+4. True Column Collapse & Layout Reflow:
+   - Enhanced `.hide-col-*` CSS selectors with `table.admin-table.hide-col-<key> .col-<key> { display: none !important; }` and `.table-panel.hide-col-<key> .col-<key> { display: none !important; }` across all 5 optional columns (`sender`, `media`, `passcode`, `uuid`, `created`).
+   - Dynamic colspan correctly adjusts on empty/error states (decrements from 8 down to 3).
+
+5. Test Suite & Regression Verification:
+   - Created 26-test suite in `scratch/test_phase31b_view_preferences.js` verifying density states, multi-table targeting, CSS computed values, one-line Copy Link, column collapse, toasts, and state preservation.
+   - All 127 automated tests passing with 0 errors.
+
+## 47. PHASE 31B-14.3 — TABLE COLUMN WIDTH BALANCING & MEDIA BADGE LAYOUT REFINEMENT
+
+1. Root Cause Identification:
+   - Previously, `.wish-media-badges` had a hard-coded container cap (`max-width: 260px`). Even when the Content & Media table column had 350–400px+ of available table width, the badge container restricted badge flow to 260px, forcing 5 badges (Music, Video, Photos, Letter, Timeline) to wrap across 3 lines.
+   - Fixed-content columns (`col-passcode`, `col-uuid`, `col-created`, `col-actions`) lacked `width: 1%` shrink-to-fit declarations, consuming excessive space at the expense of `.col-media`.
+
+2. Column Width Balancing Architecture:
+   - Set `width: 1%; white-space: nowrap;` on fixed-content columns:
+     - `.col-uuid`: `min-width: 92px;` (tightly sized for `🔗 Copy Link` on 1 line).
+     - `.col-passcode`: `min-width: 78px;`
+     - `.col-created`: `min-width: 110px;`
+     - `.col-actions`: `min-width: 130px;`
+   - Flexible columns receive maximum allocated table space:
+     - `.col-media`: `min-width: 220px;` with `.wish-media-badges { max-width: none; width: 100%; }`.
+     - `.col-recipient`: `min-width: 140px;`
+     - `.col-sender`: `min-width: 95px;`
+
+3. Media Badge Sizing in Comfortable & Compact Modes:
+   - **Comfortable**: Badges styled with `padding: 2.5px 7px; font-size: 0.70rem; height: 22px; gap: 3px; border-radius: 10px;`. All 5 badges fit side-by-side on ONE line on standard desktop viewports (~258px total), or wrap gracefully into at most 2 balanced lines without forcing excessive row height.
+   - **Compact**: Badges styled with `padding: 1.5px 5px !important; font-size: 0.62rem !important; height: 18px !important; line-height: 1 !important; border-radius: 4px !important; gap: 2px !important;`. Total width for 5 badges is ~202px, easily fitting on a single horizontal line and maintaining ~40–44px row height.
+
+4. Dynamic Visibility & Layout Reflow:
+   - Hiding `Public Link` collapses `.col-uuid` with `display: none !important;`, automatically reallocating ~92px to `.col-media`.
+   - Hiding `Content & Media` collapses `.col-media` with `display: none !important;` with zero blank column gaps.
+   - Reset View restores Comfortable mode with all 8 columns in balanced harmony.
+
+5. Test Suite & Verification:
+   - Expanded `scratch/test_phase31b_view_preferences.js` to 32 comprehensive tests.
+   - 100% pass across all regression suites (133 total tests passing, 0 failures).
+
+## 48. PHASE 31B-14.4 — FINAL TABLE WIDTH / VIEWPORT FIT FIX
+
+1. Root Cause Identification:
+   - Aggressive column min-widths (`col-media: 220px`, `col-recipient: 140px`, `col-actions: 130px`, `col-created: 110px`, `col-sender: 95px`, `col-uuid: 92px`, `col-passcode: 78px`, `col-select: 44px`) combined with large horizontal cell padding (`14px 16px` = 32px per cell * 8 columns = 256px padding) forced the minimum table width to 1149px.
+   - On standard desktop/laptop viewports (1280px–1366px), where the available width inside `.table-panel` is 888px–974px (after accounting for 280px sidebar, 64px viewport padding, and 48px panel padding), the table exceeded the container by 175–261px, pushing the `Actions` column off-screen and creating unwanted horizontal clipping.
+
+2. Fluid, Space-Aware Architecture:
+   - **Cell Padding Optimization**: Reduced Comfortable cell padding to `10–12px 10px` and Compact to `4–5px 8px`, saving ~100px of table width while maintaining spacious visual aesthetics.
+   - **Removed Forced Min-Widths**: Replaced rigid min-widths with fluid `width: auto` on flexible content columns (`col-recipient`, `col-sender`, `col-media`) and `width: 1%` shrink-to-fit on static columns (`col-passcode`, `col-uuid`, `col-created`, `col-actions`).
+   - **Protected Actions Column**: Sized `.col-actions` to `width: 1%; white-space: nowrap; text-align: right;` with 28px icon buttons in Comfortable and 22px in Compact, ensuring the 4 action buttons (View, Edit, Duplicate, Delete) are 100% visible on all viewports without clipping.
+   - **Copy Link Sizing**: Allowed `.btn-copy-link` to wrap naturally into 2 lines if needed (`🔗 Copy`<br>`Link`), preventing `.col-uuid` from artificially widening the table.
+   - **Media Badges Natural Wrapping**: Styled `.wish-media-badges` to wrap naturally across 1–2 lines without forcing the table to expand beyond its container.
+
+3. Viewport Fit & Verification:
+   - Verified the entire Wishes table fits 100% inside `#view-wishes .table-panel` on standard viewports (scrollWidth <= clientWidth).
+   - Zero horizontal page overflow or layout clipping.
+   - All 32 automated tests passing with 0 errors across 133 total regression tests.
+
+## 49. PHASE 31B-14.5 — FINAL COMFORTABLE DENSITY & CREATED DATE/TIME VISUAL RESTORE
+
+1. Root Cause Identification:
+   - In Phase 31B-14.4, aggressive compression across table cells and typography reduced Comfortable mode's visual scale too much, causing it to appear cramped instead of spacious.
+   - The Created At date/time column styling was overly compressed.
+   - The Public Link button text "🔗 Copy Link" caused awkward vertical stacking on constrained columns.
+
+2. Visual Scale & Typography Restoration:
+   - **Comfortable Density Restored**:
+     - Cell padding: `12px 10px` (generous vertical breathing room, space-efficient horizontal padding).
+     - Recipient Avatar: `36px × 36px` (restored full admin studio visual scale).
+     - Recipient Name: `0.92rem` (semi-bold, clean readability).
+     - Recipient ID: `0.74rem` (crisp subtext).
+     - Sender Name: `0.86rem`.
+     - Content Badges: `22px` height, `0.70rem` font, `2.5px 7px` padding, `8px` radius.
+     - Action Buttons: `28px × 28px` with `0.85rem` icon size.
+   - **Compact Density Kept Ultra-Dense**:
+     - Cell padding: `4px 8px`, `26px` avatar, `16px` micro badges, `22px` action buttons.
+
+3. Created At Date/Time Two-Line Architecture:
+   - Structured in DOM as `.created-cell` with `.created-date` and `.created-time`.
+   - **Comfortable**: `.created-date` (0.84rem, font-weight 500) and `.created-time` (0.78rem, text-dim) stacked vertically with 2px gap and 1.25 line-height for clean readability.
+   - **Compact**: `.created-date` (0.70rem) and `.created-time` (0.64rem, opacity 0.75) stacked cleanly with 0px gap and 1.1 line-height.
+
+4. Public Link Table Button Refinement:
+   - Updated table row button label to `🔗 Copy` (icon LEFT, text RIGHT, on ONE horizontal line).
+   - Styled with `display: inline-flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 4px !important; white-space: nowrap !important; line-height: 1 !important;`.
+   - Added accessible `title="Copy Public Link"` and `aria-label="Copy Public Link"`.
+   - Copies canonical `/?w=UUID` with standard toast feedback.
+
+5. Test Suite & Verification:
+   - Expanded `scratch/test_phase31b_view_preferences.js` to 34 comprehensive tests.
+   - 100% pass across all regression suites (135 total tests passing, 0 failures).
+
+## 50. PHASE 31B-14.6 — FINAL TABLE PROPORTION, MEDIA WIDTH & DENSITY BALANCING
+
+1. Root Cause Identification:
+   - Previously, `.wish-media-badges` had `width: 100%` and `.col-media` lacked a `max-width` constraint, causing the Content & Media column to expand excessively across the table (~290px+) in an attempt to keep all badges on 1 line.
+   - This squeezed the remaining columns (`col-recipient`, `col-sender`, `col-passcode`, `col-uuid`, `col-created`), making Comfortable mode look compressed and unnatural.
+   - Compact mode was tuned too small (avatar 26px, badges 16px, text 0.78rem, buttons 22px), making it feel microscopic rather than dense and readable.
+
+2. Media Column & Badge Width Control:
+   - Sized `.col-media` with `width: auto; max-width: 250px;`.
+   - Sized `.wish-media-badges` with `display: flex; flex-wrap: wrap; gap: 3px 4px; width: auto; max-width: 100%;` (removed `width: 100%`).
+   - Badges wrap naturally (e.g. 3 on line 1, 2 on line 2) without dominating table width or squeezing adjacent columns.
+
+3. Comfortable Mode Scale Restoration:
+   - Row height: ~58–68px
+   - Avatar: `36px × 36px`
+   - Recipient Name: `0.94rem` (font-weight 600)
+   - Recipient ID Subtext: `0.75rem`
+   - Sender Name: `0.88rem`
+   - Badges: `22px` height, `0.70rem` font, `2.5px 7px` padding, `8px` radius
+   - Passcode badge: `padding: 4px 9px; font-size: 0.75rem;`
+   - Action buttons: `28px × 28px` with `0.85rem` icon size
+   - Created At: `0.84rem` date (Line 1) / `0.78rem` time (Line 2) in 2-line layout
+   - Public Link: `🔗 Copy` (single-line horizontal button)
+
+4. Compact Mode Readable Dense Tuning:
+   - Row height: ~42–48px
+   - Avatar: `28px × 28px` (increased from 26px, readable and clear)
+   - Recipient Name: `0.82rem` (increased from 0.78rem)
+   - Recipient ID Subtext: `0.66rem`
+   - Sender Name: `0.80rem`
+   - Badges: `18px` height, `0.64rem` font, `1.5px 5px` padding (increased from 16px)
+   - Passcode badge: `padding: 2px 6px; font-size: 0.66rem; height: 18px;`
+   - Action buttons: `24px × 24px` with `0.74rem` icon size
+   - Created At: `0.72rem` date (Line 1) / `0.66rem` time (Line 2) in 2-line layout
+   - Public Link: `🔗 Copy` (single-line horizontal button, height 22px)
+
+5. Test Suite & Verification:
+   - 34 comprehensive tests in `scratch/test_phase31b_view_preferences.js` passing 100%.
+   - 135 total regression tests passing with 0 failures.
+
+## 51. PHASE 31B-14.7 — FINAL ACTION BUTTON SCALE & MEDIA 3+2 BALANCE
+
+1. Scope & Objective:
+   - Moderately increase the Action buttons (`👁️`, `✏️`, `📋`, `🗑️`) from `28px` to `30px` in Comfortable mode, and from `24px` to `26px` in Compact mode.
+   - Confirm and preserve the Media 3+2 natural wrapping layout (`.col-media { width: auto; max-width: 250px; }` and `.wish-media-badges { width: auto; max-width: 100%; flex-wrap: wrap; }`).
+
+2. Action Button Sizing Updates in `css/admin/admin-components.css`:
+   - **Comfortable Mode**:
+     - `.btn-icon`: `width: 30px !important; height: 30px !important; min-width: 30px !important; font-size: 0.88rem; border-radius: 6px;`
+     - `.action-btns`: `gap: 3px;`
+   - **Compact Mode**:
+     - `.btn-icon`: `width: 26px !important; height: 26px !important; min-width: 26px !important; font-size: 0.78rem !important; border-radius: 4px !important;`
+     - `.action-btns`: `gap: 2px !important;`
+   - **Horizontal Protection**: `.col-actions` remains `width: 1%; white-space: nowrap; text-align: right;` with all 4 buttons staying strictly on one horizontal line.
+
+3. Verified Invariants:
+   - Media 3+2 natural wrapping layout (e.g. `🎵 Music  🎥 Video  📸 6` / `📝 4  ⏳ 4`) is accepted and maintained.
+   - Created At remains strictly **TWO lines** in both Comfortable and Compact modes (`.created-cell` with `.created-date` and `.created-time`).
+   - Public Link table button remains strictly **`🔗 Copy`** on ONE line (`white-space: nowrap !important;`).
+   - Table fits 100% inside `#view-wishes .table-panel` with zero horizontal page overflow.
+
+4. Test Suite & Verification:
+   - All 34 tests in `scratch/test_phase31b_view_preferences.js` passing 100%.
+   - All 135 total regression tests passing with 0 failures.
+
+## 52. PHASE 31B-14.8 — FINAL ACTION BUTTON SCALE RESTORE
+
+1. Scope & Objective:
+   - Restore the full administrative visual scale of the Action buttons (`👁️`, `✏️`, `📋`, `🗑️`) by upgrading Comfortable mode to `32px × 32px` (matching the original base button scale) and Compact mode to `28px × 28px`.
+   - Maintain all existing column allocations, Media max-width (250px), Created At (two-line), and Public Link (`🔗 Copy`).
+
+2. Action Button Sizing Updates in `css/admin/admin-components.css`:
+   - **Comfortable Mode**:
+     - `.btn-icon`: `width: 32px !important; height: 32px !important; min-width: 32px !important; font-size: 0.90rem; border-radius: 7px;`
+     - `.action-btns`: `gap: 3px;`
+   - **Compact Mode**:
+     - `.btn-icon`: `width: 28px !important; height: 28px !important; min-width: 28px !important; font-size: 0.80rem !important; border-radius: 4px !important;`
+     - `.action-btns`: `gap: 2px !important;`
+   - **Horizontal Protection**: `.col-actions` remains `width: 1%; white-space: nowrap; text-align: right;` with all 4 buttons staying strictly on one horizontal line.
+
+3. Verified Invariants:
+   - Extra width added by 32px buttons is only 8px total across 4 buttons, fitting effortlessly with zero viewport clipping.
+   - Media 3+2 natural wrapping layout remains active and accepted.
+   - Created At remains strictly **TWO lines** in both Comfortable and Compact modes (`.created-cell` with `.created-date` and `.created-time`).
+   - Public Link table button remains strictly **`🔗 Copy`** on ONE line (`white-space: nowrap !important;`).
+   - Table fits 100% inside `#view-wishes .table-panel` with zero horizontal page overflow.
+
+4. Test Suite & Verification:
+   - All 34 tests in `scratch/test_phase31b_view_preferences.js` passing 100%.
+   - All 135 total regression tests passing with 0 failures.

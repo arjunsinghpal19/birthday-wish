@@ -514,7 +514,7 @@ function initShare() {
       }
 
       // WhatsApp direct fallback
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMsg)}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
       const win = window.open(waUrl, "_blank");
       if (!win) location.href = waUrl;
     });
@@ -533,7 +533,7 @@ function initShare() {
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}` : `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
       const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${shareUrl}`;
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(waText)}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       const win = window.open(waUrl, "_blank");
       if (!win) location.href = waUrl;
     });

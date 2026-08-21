@@ -1247,7 +1247,7 @@
               }
 
               const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${currentUrl}`;
-              const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+              const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
               const win = window.open(waUrl, "_blank");
               if (!win) window.location.href = waUrl;
             };

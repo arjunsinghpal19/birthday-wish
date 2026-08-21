@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * TEST SUITE: PHASE 31C-2B BIRTHDAY SHARE FLOW HOTFIX (PASS 2 - UNICODE SAFE)
+ * TEST SUITE: PHASE 31C-2B BIRTHDAY SHARE FLOW HOTFIX (PASS 3 - DIRECT API)
  * Tests Quick Editor WhatsApp share, Public Wish Page WhatsApp share,
  * Admin Wish Editor Save & Share canonical URL, and OG metadata.
  * ============================================================================
@@ -33,15 +33,16 @@ function test(name, fn) {
 }
 
 console.log("============================================================");
-console.log("🚀 STARTING PHASE 31C-2B SHARE FLOW HOTFIX TEST SUITE (PASS 2)");
+console.log("🚀 STARTING PHASE 31C-2B SHARE FLOW HOTFIX TEST SUITE (PASS 3)");
 console.log("============================================================\n");
 
-// --- PART A: QUICK EDITOR WHATSAPP SHARE & UNICODE ESCAPE CONSTANTS ---
+// --- PART A: QUICK EDITOR WHATSAPP SHARE (DIRECT API ENDPOINT) ---
 console.log("--- PART A: QUICK EDITOR WHATSAPP SHARE ---");
 
-test("A1. Quick Editor uses modern wa.me endpoint", () => {
-  assert.ok(customizerCode.includes("https://wa.me/?text="), "Must use wa.me endpoint");
-  assert.ok(!customizerCode.includes("api.whatsapp.com/send?text="), "Must not use legacy api.whatsapp.com");
+test("A1. Quick Editor uses direct api.whatsapp.com/send endpoint", () => {
+  assert.ok(customizerCode.includes("https://api.whatsapp.com/send?text="), "Must use direct api.whatsapp.com/send endpoint");
+  assert.ok(!customizerCode.includes("https://wa.me/?text="), "Must NOT use wa.me in Quick Editor");
+  assert.ok(!customizerCode.includes("https://wa.me?text="), "Must NOT use wa.me in Quick Editor");
 });
 
 test("A2. Quick Editor defines explicit Unicode code point constants", () => {
@@ -65,7 +66,7 @@ test("A5. Quick Editor uses encodeURIComponent for entire message", () => {
   assert.ok(customizerCode.includes("encodeURIComponent(msg)"), "Must encode msg via encodeURIComponent");
 });
 
-// --- PART B: PUBLIC WISH PAGE WHATSAPP SHARE ---
+// --- PART B: PUBLIC WISH PAGE WHATSAPP SHARE (DIRECT API ENDPOINT) ---
 console.log("\n--- PART B: PUBLIC WISH PAGE WHATSAPP SHARE ---");
 
 test("B1. Public Wish Page contains #whatsapp-share-btn button in DOM", () => {
@@ -79,8 +80,10 @@ test("B2. Public Wish Page defines explicit Unicode code point constants", () =>
   assert.ok(appCode.includes('\\u{1F496}'), "Must define EMOJI_HEART in app.js");
 });
 
-test("B3. Public Wish Page handles WhatsApp share with wa.me endpoint", () => {
-  assert.ok(appCode.includes("https://wa.me/?text=${encodeURIComponent(waText)}"), "Must use wa.me endpoint with waText");
+test("B3. Public Wish Page handles WhatsApp share with direct api.whatsapp.com/send endpoint", () => {
+  assert.ok(appCode.includes("https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}"), "Must use direct api.whatsapp.com/send with waText");
+  assert.ok(!appCode.includes("https://wa.me/?text="), "Must NOT use wa.me in app.js");
+  assert.ok(!appCode.includes("https://wa.me?text="), "Must NOT use wa.me in app.js");
 });
 
 test("B4. Public Wish Page WhatsApp message format matches required text and constants", () => {
@@ -89,8 +92,8 @@ test("B4. Public Wish Page WhatsApp message format matches required text and con
   assert.ok(appCode.includes("Hey ${displayName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}"), "Must place displayName before cake and sparkles");
 });
 
-test("B5. Native share fallback also uses wa.me endpoint and Unicode constants", () => {
-  assert.ok(appCode.includes("https://wa.me/?text=${encodeURIComponent(shareMsg)}"), "Fallback must use wa.me with shareMsg");
+test("B5. Native share fallback also uses direct api.whatsapp.com/send endpoint", () => {
+  assert.ok(appCode.includes("https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}"), "Fallback must use api.whatsapp.com/send with shareMsg");
 });
 
 // --- PART C: RUNTIME UNICODE CODE POINT & ENCODING VERIFICATION ---
@@ -131,7 +134,7 @@ test("C5. Runtime message contains ZERO replacement characters (\\uFFFD)", () =>
   assert.strictEqual(msg.indexOf("\uFFFD"), -1);
 });
 
-test("C6. Generated wa.me URL contains exact required UTF-8 hex sequences", () => {
+test("C6. Generated direct api.whatsapp.com URL contains exact required UTF-8 hex sequences", () => {
   const EMOJI_CAKE = "\u{1F382}";
   const EMOJI_SPARKLES = "\u{2728}";
   const EMOJI_GIFT = "\u{1F381}";
@@ -142,13 +145,21 @@ test("C6. Generated wa.me URL contains exact required UTF-8 hex sequences", () =
   const greeting = `Hey ${recipientName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
   const msg = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${currentUrl}`;
 
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 
+  assert.ok(waUrl.startsWith("https://api.whatsapp.com/send?text="), "URL must start with direct api.whatsapp.com/send");
   assert.ok(waUrl.includes("%F0%9F%8E%82"), "Must contain encoded cake %F0%9F%8E%82");
   assert.ok(waUrl.includes("%E2%9C%A8"), "Must contain encoded sparkles %E2%9C%A8");
   assert.ok(waUrl.includes("%F0%9F%8E%81"), "Must contain encoded gift %F0%9F%8E%81");
   assert.ok(waUrl.includes("%F0%9F%92%96"), "Must contain encoded heart %F0%9F%92%96");
   assert.ok(!waUrl.includes("%EF%BF%BD"), "Must NEVER contain %EF%BF%BD replacement character encoding");
+});
+
+test("C7. Minimal control test URL generation (Hello 🎂✨🎁💖)", () => {
+  const testText = "Hello 🎂✨🎁💖";
+  const encoded = encodeURIComponent(testText);
+  const directUrl = `https://api.whatsapp.com/send?text=${encoded}`;
+  assert.strictEqual(directUrl, "https://api.whatsapp.com/send?text=Hello%20%F0%9F%8E%82%E2%9C%A8%F0%9F%8E%81%F0%9F%92%96");
 });
 
 // --- PART D: PUBLIC URL CLEANUP (ADMIN WISH EDITOR SAVE & SHARE) ---

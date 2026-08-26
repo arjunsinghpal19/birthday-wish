@@ -1,97 +1,16 @@
-/**
- * ============================================================================
- * MODULE: Admin Security & Access Control (js/modules/admin-security.js)
- * Phase 25 Modular Extraction
- * ============================================================================
- *
- * RESPONSIBILITY:
- *   Manages creator authentication gates, master PIN verification, multi-step
- *   password recovery flows, emergency developer triggers, and modal display states.
- *
- * DOES NOT OWN:
- *   - Database CRUD operations (Owned by js/database.js)
- *   - Cloud media storage buckets (Owned by js/storage.js)
- *   - Wish token codecs or URL routing (Owned by js/modules/wish-codec.js & js/app.js)
- *   - Customizer editing forms or field synchronization (Owned by js/modules/editor/*)
- *   - Future Admin Dashboard & Wish Management UI (Intentionally separate)
- *
- * AUTHENTICATION ARCHITECTURE:
- *   - Primary validation is performed by `window.PasswordService.verifyPassword()`
- *     against Supabase database with bcrypt cryptographic hashing.
- *   - Master password updates are persisted to Supabase via `window.PasswordService.updatePassword()`.
- *   - Successful authentication writes `sessionStorage.setItem("admin_authenticated", "true")`.
- *
- * PASSWORD SERVICE INTEGRATION:
- *   - Consumes `window.PasswordService` provided by `js/database.js`.
- *   - Does NOT rewrite or replace the underlying authentication provider.
- *
- * RECOVERY FLOWS (3 Approved Methods):
- *   1. Email OTP: Dispatches verification codes via `/api/send-otp`.
- *   2. Emergency Backup Code: Compares against configured emergency recovery key.
- *   3. Secret Security Question: Validates answers via `/api/auth` or Supabase settings.
- *
- * CALLERS:
- *   - `initCustomizerModal()` in `js/modules/editor/customizer.js` (invokes `checkAdminAccess()`)
- *   - Footer lock button (`#footer-admin-lock-btn`)
- *   - Keyboard shortcut `Ctrl + Shift + E`
- *   - Emergency shortcut `Ctrl + Shift + Alt + A`
- *   - Secret double-click on `#loading-logo-glow` and `.letter-title`
- *
- * DOM CONTRACT:
- *   - Modal: `#admin-login-modal`, `#admin-modal-close-btn`
- *   - Tab Buttons & Content: `.admin-tab-btn`, `.admin-tab-content`
- *   - Login Tab: `#admin-login-pass`, `#admin-login-submit-btn`, `#admin-login-error`
- *   - Change Tab: `#admin-old-pass`, `#admin-new-pass`, `#admin-confirm-pass`, `#admin-change-submit-btn`
- *   - Forgot Tab: `#admin-tab-forgot`, `#card-method-email`, `#card-method-backup`, `#card-method-question`
- *   - Floating Action Button: `#customizer-toggle-btn.admin-visible`
- *
- * GLOBAL API EXPOSED:
- *   - `window.getAdminPassword`
- *   - `window.initAdminSecurityModal`
- *   - `window.handleUnlock`
- *   - `window.promptForAdminAccess`
- *   - `window.checkAdminAccess`
- *
- * LIFECYCLE:
- *   - Initialized at application boot via `checkAdminAccess()` when customizer initializes.
- *
- * SECURITY BOUNDARY:
- *   - Pure UI gate & state controller for creator permissions.
- *   - Causes 0 unexpected database writes on modal open, close, typing, or failed login.
- *
- * FUTURE ADMIN DASHBOARD SEPARATION:
- *   - Future Admin Dashboard (My Wishes, Storage Stats, Analytics, etc.) is
- *     architecturally separated and will be built as independent dashboard modules.
- * ============================================================================
- */
-
 (function (root) {
   "use strict";
 
-  /**
-   * Safe helper resolving showToast across modules.
-   * @param {string} msg - Notification message text.
-   */
   function safeToast(msg) {
     const toastFn = root.showToast || (typeof showToast === "function" ? showToast : (m) => console.log(m));
     toastFn(msg);
   }
 
-  /**
-   * Safe DOM helper resolving cached elements or standard getElementById.
-   * @param {string} id - Element ID.
-   * @returns {HTMLElement|null}
-   */
   function getEl(id) {
     if (root.DOM && typeof root.DOM.get === "function") return root.DOM.get(id);
     return document.getElementById(id);
   }
 
-  /**
-   * Supabase single source of truth password service proxy.
-   * @param {boolean} forceRefresh - Whether to force a fresh fetch from database.
-   * @returns {Promise<string|null>}
-   */
   async function getAdminPassword(forceRefresh = false) {
     if (root.PasswordService && typeof root.PasswordService.getPassword === "function") {
       return await root.PasswordService.getPassword(forceRefresh);
@@ -99,11 +18,17 @@
     return null;
   }
 
-  /**
-   * Initializes the Admin Security Modal, tab navigation, eye toggles,
-   * unlock verification, password changes, and 3-step recovery flow.
-   * @returns {void}
-   */
+  function clearSecurityInputs() {
+    ["admin-login-pass", "admin-old-pass", "admin-new-pass", "admin-confirm-pass", "admin-reset-new-pass", "admin-reset-confirm-pass", "recovery-backup-input", "recovery-otp-input"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ""; el.classList.remove("input-error"); }
+    });
+    ["admin-login-error", "admin-change-error", "email-otp-error", "backup-code-error", "admin-setnew-error"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+  }
+
   function initAdminSecurityModal() {
     if (root.PasswordService && typeof root.PasswordService.initRealtime === "function") {
       root.PasswordService.initRealtime();
@@ -121,83 +46,31 @@
     const newPassInput = document.getElementById("admin-new-pass");
     const confirmPassInput = document.getElementById("admin-confirm-pass");
     const changeSubmitBtn = document.getElementById("admin-change-submit-btn");
-
     if (!modal) return;
+    if (closeBtn) closeBtn.onclick = () => { clearSecurityInputs(); modal.classList.remove("open"); };
+    modal.onclick = (e) => { if (e.target === modal) { clearSecurityInputs(); modal.classList.remove("open"); } };
 
-    const clearAllPasswordInputs = () => {
-      if (loginPassInput) {
-        loginPassInput.value = "";
-        loginPassInput.classList.remove("input-error");
-      }
-      if (oldPassInput) {
-        oldPassInput.value = "";
-        oldPassInput.classList.remove("input-error");
-      }
-      if (newPassInput) {
-        newPassInput.value = "";
-        newPassInput.classList.remove("input-error");
-      }
-      if (confirmPassInput) {
-        confirmPassInput.value = "";
-        confirmPassInput.classList.remove("input-error");
-      }
-      const resetNew = document.getElementById("admin-reset-new-pass");
-      if (resetNew) {
-        resetNew.value = "";
-        resetNew.classList.remove("input-error");
-      }
-      const resetConf = document.getElementById("admin-reset-confirm-pass");
-      if (resetConf) {
-        resetConf.value = "";
-        resetConf.classList.remove("input-error");
-      }
-      const errLogin = document.getElementById("admin-login-error");
-      if (errLogin) errLogin.style.display = "none";
-      const errChange = document.getElementById("admin-change-error");
-      if (errChange) errChange.style.display = "none";
-      const errOtp = document.getElementById("email-otp-error");
-      if (errOtp) errOtp.style.display = "none";
-      const errBackup = document.getElementById("backup-code-error");
-      if (errBackup) errBackup.style.display = "none";
-      const errQuest = document.getElementById("question-answer-error");
-      if (errQuest) errQuest.style.display = "none";
-      const errSetNew = document.getElementById("admin-setnew-error");
-      if (errSetNew) errSetNew.style.display = "none";
-    };
-
-    // Close modal
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        clearAllPasswordInputs();
-        modal.classList.remove("open");
-      };
-    }
-    modal.onclick = (e) => {
-      if (e.target === modal) {
-        clearAllPasswordInputs();
-        modal.classList.remove("open");
-      }
-    };
-
-    // Eye Toggle (Show/Hide Password) for all password fields
-    document.querySelectorAll(".eye-toggle").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const targetId = btn.dataset.target;
+    document.querySelectorAll(".pass-input-wrap .eye-toggle").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const targetId = btn.getAttribute("data-target") || btn.dataset.target;
         const input = document.getElementById(targetId);
         if (!input) return;
-        if (input.type === "password") {
-          input.type = "text";
-          btn.textContent = "👁️‍🗨️";
-        } else {
-          input.type = "password";
-          btn.textContent = "👁️";
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        const openSvg = btn.querySelector(".eye-open");
+        const closedSvg = btn.querySelector(".eye-closed");
+        if (openSvg && closedSvg) {
+          openSvg.style.display = isPass ? "none" : "block";
+          closedSvg.style.display = isPass ? "block" : "none";
         }
+        btn.setAttribute("aria-label", isPass ? "Hide password" : "Show password");
       });
     });
 
     tabBtns.forEach(btn => {
       btn.onclick = () => {
-        clearAllPasswordInputs();
+        clearSecurityInputs();
         const tabName = btn.dataset.tab;
         tabBtns.forEach(b => b.classList.remove("active"));
         tabContents.forEach(c => { c.classList.remove("active"); c.style.display = "none"; });
@@ -215,84 +88,92 @@
             subContent.classList.add("active");
             subContent.style.display = "block";
           }
-          if (activeSub === "forgot" && typeof resetToMethods === "function") {
-            resetToMethods();
-          }
+          if (activeSub === "forgot" && typeof resetToMethods === "function") resetToMethods();
         }
       };
     });
 
-    // Sub-Tab navigation within SECURITY tab (Change Password vs Forgot Password)
     const subtabBtns = document.querySelectorAll(".security-subtab-btn");
     const subtabContents = document.querySelectorAll(".security-subtab-content");
 
     subtabBtns.forEach(btn => {
       btn.onclick = () => {
-        clearAllPasswordInputs();
+        clearSecurityInputs();
         const subName = btn.dataset.subtab;
-        subtabBtns.forEach(b => {
-          b.classList.remove("active");
-          b.style.background = "transparent";
-          b.style.borderColor = "transparent";
-          b.style.color = "#94a3b8";
-        });
-        subtabContents.forEach(c => {
-          c.classList.remove("active");
-          c.style.display = "none";
-        });
+        subtabBtns.forEach(b => b.classList.remove("active"));
+        subtabContents.forEach(c => { c.classList.remove("active"); c.style.display = "none"; });
 
         btn.classList.add("active");
-        btn.style.background = "rgba(168,85,247,0.2)";
-        btn.style.borderColor = "rgba(168,85,247,0.4)";
-        btn.style.color = "#fff";
-
         const targetSub = document.getElementById(`security-subtab-${subName}`);
         if (targetSub) {
           targetSub.classList.add("active");
           targetSub.style.display = "block";
         }
-        if (subName === "forgot" && typeof resetToMethods === "function") {
-          resetToMethods();
-        }
+        if (subName === "forgot" && typeof resetToMethods === "function") resetToMethods();
       };
     });
 
-    // Tab 1: Unlock Submission (Strict Supabase Password Validation)
-    async function handleUnlock() {
+    let failedAttempts = 0;
+    let cooldownRemaining = 0;
+    let cooldownIntervalId = null;
+
+    function triggerCooldown(seconds) {
+      cooldownRemaining = seconds;
+      if (cooldownIntervalId) clearInterval(cooldownIntervalId);
+
+      const updateBtns = () => {
+        const label = `Please wait (${cooldownRemaining}s)`;
+        if (loginSubmitBtn) { loginSubmitBtn.disabled = true; loginSubmitBtn.textContent = label; }
+        if (openDashboardBtn) { openDashboardBtn.disabled = true; openDashboardBtn.textContent = label; }
+      };
+
+      updateBtns();
+      cooldownIntervalId = setInterval(() => {
+        cooldownRemaining--;
+        if (cooldownRemaining <= 0) {
+          clearInterval(cooldownIntervalId);
+          cooldownIntervalId = null;
+          if (loginSubmitBtn) { loginSubmitBtn.disabled = false; loginSubmitBtn.textContent = "Unlock Quick Editor 🔓"; }
+          if (openDashboardBtn) { openDashboardBtn.disabled = false; openDashboardBtn.textContent = "Open Admin Dashboard 🚀"; }
+        } else {
+          updateBtns();
+        }
+      }, 1000);
+    }
+
+    async function verifyPasswordSubmission(onSuccess) {
+      if (cooldownRemaining > 0) {
+        safeToast(`Too many attempts. Please wait ${cooldownRemaining}s ⏳`);
+        return;
+      }
+
       const entered = (loginPassInput?.value || "").trim();
       if (!entered) {
         safeToast("Please enter Admin Password 🔑");
-        if (loginPassInput) {
-          loginPassInput.classList.add("input-error");
-          loginPassInput.focus();
-        }
+        if (loginPassInput) { loginPassInput.classList.add("input-error"); loginPassInput.focus(); }
         return;
       }
 
       safeToast("⏳ Verifying Admin Password...");
-      const errorMsgEl = document.getElementById("admin-login-error");
-
       const isValid = root.PasswordService ? await root.PasswordService.verifyPassword(entered) : false;
 
       if (isValid) {
+        failedAttempts = 0;
+        if (cooldownIntervalId) { clearInterval(cooldownIntervalId); cooldownIntervalId = null; cooldownRemaining = 0; }
         sessionStorage.setItem("admin_authenticated", "true");
-        if (loginPassInput) {
-          loginPassInput.value = "";
-          loginPassInput.classList.remove("input-error");
-        }
+        sessionStorage.setItem("admin_auth_timestamp", String(Date.now()));
+        if (root.AdminLogs?.log) root.AdminLogs.log("ADMIN_LOGIN", "Creator session authenticated successfully", "SUCCESS");
+        if (loginPassInput) { loginPassInput.value = ""; loginPassInput.classList.remove("input-error"); }
+        const errorMsgEl = document.getElementById("admin-login-error");
         if (errorMsgEl) errorMsgEl.style.display = "none";
         modal.classList.remove("open");
         const fab = document.getElementById("customizer-toggle-btn");
         if (fab) fab.classList.add("admin-visible");
-        safeToast("👑 Admin Mode Activated!");
-        const customizerModal = document.getElementById("customizer-modal");
-        if (customizerModal) customizerModal.classList.add("open");
+        if (typeof onSuccess === "function") onSuccess();
       } else {
-        if (loginPassInput) {
-          loginPassInput.value = "";
-          loginPassInput.classList.add("input-error");
-          loginPassInput.focus();
-        }
+        failedAttempts++;
+        if (root.AdminLogs?.log) root.AdminLogs.log("AUTH_FAILED", `Failed password attempt (Attempt ${failedAttempts})`, "WARNING");
+        if (loginPassInput) { loginPassInput.value = ""; loginPassInput.classList.add("input-error"); loginPassInput.focus(); }
 
         const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal.querySelector(".modal-content") || modal;
         if (modalCard) {
@@ -301,58 +182,35 @@
           modalCard.classList.add("shake-error");
         }
 
-        if (errorMsgEl) {
-          errorMsgEl.style.display = "flex";
-        }
+        const errorMsgEl = document.getElementById("admin-login-error");
+        if (errorMsgEl) errorMsgEl.style.display = "flex";
 
-        safeToast("Incorrect Admin Password ❌");
+        if (failedAttempts >= 8) {
+          triggerCooldown(30);
+          safeToast("Too many incorrect attempts. Cooldown: 30s ⏳");
+        } else if (failedAttempts >= 5) {
+          triggerCooldown(15);
+          safeToast("Too many incorrect attempts. Cooldown: 15s ⏳");
+        } else {
+          safeToast("Incorrect Admin Password ❌");
+        }
       }
     }
 
-    // Tab 1 Action 2: Open Admin Dashboard Button Handler
+    async function handleUnlock() {
+      await verifyPasswordSubmission(() => {
+        safeToast("👑 Admin Mode Activated!");
+        const customizerModal = document.getElementById("customizer-modal");
+        if (customizerModal) customizerModal.classList.add("open");
+      });
+    }
+
     const openDashboardBtn = document.getElementById("admin-open-dashboard-btn");
-
     async function handleOpenDashboard() {
-      const entered = (loginPassInput?.value || "").trim();
-      if (!entered) {
-        safeToast("Please enter Admin Password to open Dashboard 🔑");
-        if (loginPassInput) {
-          loginPassInput.classList.add("input-error");
-          loginPassInput.focus();
-        }
-        return;
-      }
-
-      safeToast("⏳ Verifying Admin Password...");
-      const isValid = root.PasswordService ? await root.PasswordService.verifyPassword(entered) : false;
-
-      if (isValid) {
-        sessionStorage.setItem("admin_authenticated", "true");
-        if (loginPassInput) {
-          loginPassInput.value = "";
-          loginPassInput.classList.remove("input-error");
-        }
-        modal.classList.remove("open");
-        const fab = document.getElementById("customizer-toggle-btn");
-        if (fab) fab.classList.add("admin-visible");
+      await verifyPasswordSubmission(() => {
         safeToast("👑 Admin Mode Activated! Opening Dashboard...");
         window.location.href = "admin.html";
-      } else {
-        if (loginPassInput) {
-          loginPassInput.value = "";
-          loginPassInput.classList.add("input-error");
-          loginPassInput.focus();
-        }
-        const modalCard = modal.querySelector(".admin-modal-content") || modal.querySelector(".modal-card") || modal.querySelector(".modal-content") || modal;
-        if (modalCard) {
-          modalCard.classList.remove("shake-error");
-          void modalCard.offsetWidth;
-          modalCard.classList.add("shake-error");
-        }
-        const errorMsgEl = document.getElementById("admin-login-error");
-        if (errorMsgEl) errorMsgEl.style.display = "flex";
-        safeToast("Incorrect Admin Password ❌");
-      }
+      });
     }
 
     if (loginSubmitBtn) loginSubmitBtn.onclick = handleUnlock;
@@ -366,7 +224,6 @@
       });
     }
 
-    // Tab 2: Change Password Submission
     if (changeSubmitBtn) {
       changeSubmitBtn.onclick = async () => {
         const oldVal = (oldPassInput?.value || "").trim();
@@ -374,41 +231,25 @@
         const confirmVal = (confirmPassInput?.value || "").trim();
 
         if (!oldVal) {
-          safeToast("Please enter your Current / Old Password! ⚠️");
+          safeToast("Please enter your Current Password! ⚠️");
           if (oldPassInput) oldPassInput.focus();
           return;
         }
 
         const isOldCorrect = root.PasswordService ? await root.PasswordService.verifyPassword(oldVal) : false;
         if (!isOldCorrect) {
-          safeToast("Current Old Password is wrong ❌");
-          if (oldPassInput) {
-            oldPassInput.classList.add("input-error");
-            oldPassInput.focus();
-          }
+          safeToast("Current Password is wrong ❌");
+          if (oldPassInput) { oldPassInput.classList.add("input-error"); oldPassInput.focus(); }
           return;
         }
-        if (!newVal) {
-          safeToast("New Password cannot be empty! ⚠️");
-          if (newPassInput) newPassInput.focus();
-          return;
-        }
-        if (newVal.length < 4) {
+        if (!newVal || newVal.length < 4) {
           safeToast("Password must be at least 4 characters! ⚠️");
           if (newPassInput) newPassInput.focus();
           return;
         }
-        if (newVal.length > 20) {
-          safeToast("Password cannot exceed 20 characters! ⚠️");
-          if (newPassInput) newPassInput.focus();
-          return;
-        }
         if (newVal !== confirmVal) {
-          safeToast("New Passwords do not match! ❌");
-          if (confirmPassInput) {
-            confirmPassInput.classList.add("input-error");
-            confirmPassInput.focus();
-          }
+          safeToast("Passwords do not match! ❌");
+          if (confirmPassInput) { confirmPassInput.classList.add("input-error"); confirmPassInput.focus(); }
           return;
         }
 
@@ -429,7 +270,6 @@
       };
     }
 
-    // TAB 3: APPROVED MULTI-STEP RECOVERY FLOW HANDLERS
     const forgotTab = document.getElementById("security-subtab-forgot") || document.getElementById("admin-tab-forgot");
     let resetToMethods = () => {};
 
@@ -437,117 +277,223 @@
       const stepChoose = document.getElementById("forgot-step-choose-method");
       const substepEmail = document.getElementById("forgot-substep-email");
       const substepBackup = document.getElementById("forgot-substep-backup");
-      const substepQuestion = document.getElementById("forgot-substep-question");
       const stepNewPass = document.getElementById("forgot-step-newpass");
 
       const cardEmail = document.getElementById("card-method-email");
       const cardBackup = document.getElementById("card-method-backup");
-      const cardQuestion = document.getElementById("card-method-question");
       const backBtns = document.querySelectorAll(".btn-back-to-methods");
 
+      const allSubsteps = [stepChoose, substepEmail, substepBackup, stepNewPass];
       const showSubstep = (activeSubstep) => {
-        if (stepChoose) stepChoose.style.display = "none";
-        if (substepEmail) substepEmail.style.display = "none";
-        if (substepBackup) substepBackup.style.display = "none";
-        if (substepQuestion) substepQuestion.style.display = "none";
-        if (stepNewPass) stepNewPass.style.display = "none";
-
-        if (activeSubstep) activeSubstep.style.display = "block";
+        allSubsteps.forEach(el => { if (el) el.style.display = (el === activeSubstep ? "block" : "none"); });
       };
-
-      resetToMethods = () => {
-        if (stepChoose) stepChoose.style.display = "block";
-        if (substepEmail) substepEmail.style.display = "none";
-        if (substepBackup) substepBackup.style.display = "none";
-        if (substepQuestion) substepQuestion.style.display = "none";
-        if (stepNewPass) stepNewPass.style.display = "none";
-      };
+      resetToMethods = () => showSubstep(stepChoose);
 
       if (cardEmail) {
-        cardEmail.addEventListener("click", () => {
+        cardEmail.addEventListener("click", async () => {
           showSubstep(substepEmail);
           const emailInput = document.getElementById("recovery-email-input");
-          const savedEmail = (localStorage.getItem("admin_recovery_email") || "").trim();
-          if (emailInput && savedEmail) emailInput.value = savedEmail;
+          if (emailInput) {
+            try {
+              const dbSettings = root.DatabaseModule?.getSecuritySettings ? await root.DatabaseModule.getSecuritySettings() : null;
+              if (dbSettings && dbSettings.admin_recovery_email) {
+                emailInput.value = dbSettings.admin_recovery_email;
+              }
+            } catch (e) {}
+          }
         });
       }
+
+      function normalizeRecoveryTimestamp(timestamp) {
+        if (!timestamp || (typeof timestamp !== "string" && typeof timestamp !== "number" && !(timestamp instanceof Date))) {
+          return null;
+        }
+        const ms = new Date(timestamp).getTime();
+        return Number.isFinite(ms) ? ms : null;
+      }
+
+      const getActiveRecoveryCode = () => {
+        return (sessionStorage.getItem("bw_active_recovery_code") || document.getElementById("forgot-backup-code-display")?.textContent || "").trim();
+      };
+
+      const updateAllRecoveryCodeElements = (newCode) => {
+        if (!newCode) return;
+        document.querySelectorAll("#forgot-backup-code-display, #sec-code-display, .sec-backup-code-val").forEach(el => {
+          el.textContent = newCode;
+        });
+      };
 
       if (cardBackup) {
-        cardBackup.addEventListener("click", () => {
+        cardBackup.addEventListener("click", async () => {
           showSubstep(substepBackup);
+          try {
+            const dbSettings = root.DatabaseModule?.getSecuritySettings ? await root.DatabaseModule.getSecuritySettings() : null;
+            const hasServerCode = !!dbSettings?.has_recovery_code;
+            const serverCodeTime = dbSettings?.recovery_code_updated_at;
+            const sessionCode = sessionStorage.getItem("bw_active_recovery_code");
+            const sessionTime = sessionStorage.getItem("bw_active_recovery_code_time");
+
+            const normSession = normalizeRecoveryTimestamp(sessionTime);
+            const normServer = normalizeRecoveryTimestamp(serverCodeTime);
+
+            if (hasServerCode && sessionCode && normSession !== null && normServer !== null && normSession === normServer) {
+              updateAllRecoveryCodeElements(sessionCode);
+            } else {
+              sessionStorage.removeItem("bw_active_recovery_code");
+              sessionStorage.removeItem("bw_active_recovery_code_time");
+              updateAllRecoveryCodeElements("••••-••••-••••-••••");
+            }
+          } catch (e) {
+            updateAllRecoveryCodeElements("••••-••••-••••-••••");
+          }
         });
       }
 
-      if (cardQuestion) {
-        cardQuestion.onclick = async () => {
-          const errEl = document.getElementById("question-answer-error");
-          if (errEl) {
-            errEl.style.display = "none";
-            errEl.textContent = "";
+      const qeCopyBtn = document.querySelector("#forgot-substep-backup .btn-copy-code-action");
+      if (qeCopyBtn) {
+        qeCopyBtn.onclick = async (e) => {
+          e.preventDefault();
+          const code = getActiveRecoveryCode();
+          if (!code || code.includes("•")) {
+            safeToast("No active code generated in this tab. Click Generate New Code ⚠️");
+            return;
           }
-          const qInp = document.getElementById("recovery-question-input");
-          if (qInp) qInp.value = "";
+          try {
+            if (navigator?.clipboard?.writeText) await navigator.clipboard.writeText(code);
+            const orig = qeCopyBtn.innerHTML;
+            qeCopyBtn.innerHTML = "✓ Copied!";
+            qeCopyBtn.style.borderColor = "#22c55e";
+            setTimeout(() => { qeCopyBtn.innerHTML = orig; qeCopyBtn.style.borderColor = "rgba(255, 255, 255, 0.2)"; }, 1500);
+            safeToast("📋 Backup code copied to clipboard!");
+          } catch (err) { console.error("Copy error:", err); }
+        };
+      }
 
-          showSubstep(substepQuestion);
-          const label = document.getElementById("forgot-question-label");
-          if (label) {
-            let questionText = "Who is your best friend?";
-            if (root.DatabaseModule) {
-              try {
-                const sec = await root.DatabaseModule.getSecuritySettings();
-                if (sec && sec.custom_secret_question) {
-                  questionText = sec.custom_secret_question;
-                }
-              } catch (e) {}
-            } else if (localStorage.getItem("custom_secret_question")) {
-              questionText = localStorage.getItem("custom_secret_question");
+      const qeDlBtn = document.querySelector("#forgot-substep-backup .btn-download-code-action");
+      if (qeDlBtn) {
+        qeDlBtn.onclick = (e) => {
+          e.preventDefault();
+          const code = getActiveRecoveryCode();
+          if (!code || code.includes("•")) {
+            safeToast("No active code generated in this tab. Click Generate New Code ⚠️");
+            return;
+          }
+          const txt = `Wish Studio - Emergency Backup Code\nGenerated: ${new Date().toLocaleString()}\nCode: ${code}\nKeep this code secure.`;
+          const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+          const a = document.createElement("a");
+          const dlUrl = URL.createObjectURL(blob);
+          a.href = dlUrl;
+          a.download = "WishStudio-Backup-Code.txt";
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(dlUrl), 1000);
+          safeToast("📥 WishStudio-Backup-Code.txt downloaded!");
+        };
+      }
+
+      const qePrintBtn = document.querySelector("#forgot-substep-backup .btn-print-code-action");
+      if (qePrintBtn) {
+        qePrintBtn.onclick = (e) => {
+          e.preventDefault();
+          const code = getActiveRecoveryCode();
+          if (!code || code.includes("•")) {
+            safeToast("No active code generated in this tab. Click Generate New Code ⚠️");
+            return;
+          }
+          const pw = window.open ? window.open("", "_blank") : null;
+          if (pw) {
+            pw.document.write(`<!DOCTYPE html><html><head><title>Emergency Recovery Code</title><style>body{font-family:sans-serif;padding:24px;text-align:center;background:#0F0A1C;color:#fff;}.card{border:2px dashed #F7C94A;padding:20px;border-radius:12px;max-width:380px;margin:auto;background:#1B1530;}.code{font-family:monospace;font-size:24px;font-weight:bold;letter-spacing:3px;color:#F7C94A;margin:12px 0;padding:10px;background:#120D24;border-radius:8px;}</style></head><body><div class="card"><h2>👑 Wish Studio</h2><p>Emergency Recovery Code</p><div class="code">${code}</div><p style="font-size:12px;color:#CBD5E1;">Generated: ${new Date().toLocaleString()}</p></div><script>window.onload=function(){window.print();};<\/script></body></html>`);
+            pw.document.close();
+          }
+        };
+      }
+
+      const qeRegenBtn = document.querySelector("#forgot-substep-backup .btn-regen-code-action");
+      if (qeRegenBtn) {
+        qeRegenBtn.onclick = async (e) => {
+          e.preventDefault();
+          const segment = () => Math.floor(0x1000 + Math.random() * 0xF000).toString(16).toUpperCase();
+          const newCode = `WS-${segment()}-${segment()}-${segment()}`;
+          safeToast("⏳ Hashing and persisting new Emergency Recovery Code...");
+          try {
+            const apiUrl = root.getApiUrl ? root.getApiUrl("/api/auth") : "/api/auth";
+            const res = await fetch(apiUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "save-recovery-code", code: newCode })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+              sessionStorage.setItem("bw_active_recovery_code", newCode);
+              if (data.updatedAt) sessionStorage.setItem("bw_active_recovery_code_time", data.updatedAt);
+              updateAllRecoveryCodeElements(newCode);
+
+              const backupCard = document.getElementById("forgot-backup-card-wrapper");
+              if (backupCard) {
+                backupCard.style.transform = "scale(1.03)";
+                backupCard.style.borderColor = "#22c55e";
+                setTimeout(() => { backupCard.style.transform = "scale(1)"; backupCard.style.borderColor = "#F7C94A"; }, 1000);
+              }
+              safeToast("✓ New Emergency Recovery Code Generated & Hashed on Server! ✅");
+            } else {
+              safeToast(data.message || data.error || "Failed to persist recovery code on server ❌");
             }
-            label.textContent = "Question: " + questionText;
+          } catch (err) {
+            safeToast("Network error saving recovery code ❌");
           }
         };
       }
 
       backBtns.forEach(btn => {
-        btn.addEventListener("click", resetToMethods);
+        btn.onclick = () => {
+          clearSecurityInputs();
+          resetToMethods();
+        };
       });
 
-      // ── METHOD 1: RECOVERY EMAIL OTP ──
-      const sendOtpBtn = document.getElementById("btn-send-email-otp");
+      let emailCooldown = 0;
+      let emailTimerId = null;
+      const sendEmailOtpBtn = document.getElementById("btn-send-email-otp");
       const verifyOtpBtn = document.getElementById("btn-verify-email-otp");
-      let cooldownTimer = null;
 
-      const refreshSvg = `<svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`;
-      const startTimer = (seconds) => {
-        if (!sendOtpBtn) return;
-        let left = seconds;
-        sendOtpBtn.disabled = true;
-        sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP (${left}s)</span>`;
-        if (cooldownTimer) clearInterval(cooldownTimer);
-        cooldownTimer = setInterval(() => {
-          left--;
-          if (left <= 0) {
-            clearInterval(cooldownTimer);
-            sendOtpBtn.disabled = false;
-            sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP</span>`;
+      function startTimer(seconds) {
+        emailCooldown = seconds;
+        if (emailTimerId) clearInterval(emailTimerId);
+        const updateBtn = () => {
+          if (sendEmailOtpBtn) {
+            sendEmailOtpBtn.disabled = true;
+            sendEmailOtpBtn.textContent = `Resend OTP (${emailCooldown}s)`;
+          }
+        };
+        updateBtn();
+        emailTimerId = setInterval(() => {
+          emailCooldown--;
+          if (emailCooldown <= 0) {
+            clearInterval(emailTimerId);
+            emailTimerId = null;
+            if (sendEmailOtpBtn) {
+              sendEmailOtpBtn.disabled = false;
+              sendEmailOtpBtn.textContent = "Send OTP 📧";
+            }
           } else {
-            sendOtpBtn.innerHTML = `${refreshSvg}<span>Resend OTP (${left}s)</span>`;
+            updateBtn();
           }
         }, 1000);
-      };
+      }
 
-      if (sendOtpBtn) {
-        sendOtpBtn.addEventListener("click", async () => {
+      if (sendEmailOtpBtn) {
+        sendEmailOtpBtn.addEventListener("click", async () => {
+          if (emailCooldown > 0) return;
           const emailInput = document.getElementById("recovery-email-input");
           const errEl = document.getElementById("email-otp-error");
           const email = (emailInput?.value || "").trim();
 
           if (!email || !email.includes("@")) {
-            if (errEl) { errEl.textContent = "❌ Please enter a valid recovery email"; errEl.style.display = "flex"; }
-            safeToast("Please enter a valid recovery email ⚠️");
+            if (errEl) { errEl.textContent = "❌ Please enter a valid email address"; errEl.style.display = "flex"; }
+            safeToast("Please enter a valid email address ⚠️");
             return;
           }
 
-          safeToast("⏳ Requesting Recovery OTP...");
+          safeToast("⏳ Sending Recovery OTP...");
           try {
             const apiUrl = root.getApiUrl ? root.getApiUrl("/api/send-otp") : "/api/send-otp";
             const res = await fetch(apiUrl, {
@@ -597,6 +543,9 @@
             const data = await res.json();
             if (res.ok && data.valid) {
               if (errEl) errEl.style.display = "none";
+              const group = document.getElementById("otp-enter-group");
+              if (group) group.style.display = "none";
+              if (otpInp) otpInp.value = "";
               safeToast("✓ OTP Verified! Enter your new Admin password:");
               showSubstep(stepNewPass);
             } else {
@@ -609,95 +558,54 @@
         });
       }
 
-      // ── METHOD 2: BACKUP CODE ──
       const verifyBackupBtn = document.getElementById("btn-verify-backup-code");
       if (verifyBackupBtn) {
-        verifyBackupBtn.addEventListener("click", () => {
+        verifyBackupBtn.addEventListener("click", async () => {
           const inp = document.getElementById("recovery-backup-input");
           const errEl = document.getElementById("backup-code-error");
           const code = (inp?.value || "").trim();
 
-          const savedCode = (localStorage.getItem("admin_recovery_code") || "WS-9F8A-3E21-7B04").trim();
-          if (code && code.toUpperCase() === savedCode.toUpperCase()) {
-            if (errEl) errEl.style.display = "none";
-            safeToast("✓ Backup Code Verified! Enter your new Admin password:");
-            showSubstep(stepNewPass);
-          } else {
-            if (errEl) { errEl.textContent = "❌ Invalid Emergency Backup Code!"; errEl.style.display = "flex"; }
-            safeToast("Invalid Emergency Backup Code! ❌");
-          }
-        });
-      }
-
-      // ── METHOD 3: SECURITY QUESTION ──
-      const verifyQuestBtn = document.getElementById("btn-verify-question-answer");
-      const questInput = document.getElementById("recovery-question-input");
-
-      if (questInput && verifyQuestBtn) {
-        questInput.onkeydown = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (verifyQuestBtn.onclick) verifyQuestBtn.onclick();
-          }
-        };
-      }
-
-      if (verifyQuestBtn) {
-        verifyQuestBtn.onclick = async () => {
-          const inp = document.getElementById("recovery-question-input");
-          const errEl = document.getElementById("question-answer-error");
-          const ans = (inp?.value || "").trim();
-
-          if (!ans) {
-            if (errEl) { errEl.textContent = "❌ Please enter a secret answer!"; errEl.style.display = "flex"; }
-            safeToast("Please enter secret answer ⚠️");
+          if (!code || code.length < 8) {
+            if (errEl) { errEl.textContent = "❌ Please enter your Emergency Recovery Code!"; errEl.style.display = "flex"; }
+            safeToast("Please enter your Emergency Recovery Code ⚠️");
             return;
           }
 
-          safeToast("⏳ Verifying Secret Answer...");
+          safeToast("⏳ Verifying Emergency Recovery Code...");
           try {
             const apiUrl = root.getApiUrl ? root.getApiUrl("/api/auth") : "/api/auth";
             const res = await fetch(apiUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "verify-question", answer: ans })
+              body: JSON.stringify({ action: "verify-recovery-code", code: code.toUpperCase() })
             });
             const data = await res.json();
+
             if (res.ok && (data.valid === true || data.valid === "true")) {
-              if (errEl) {
-                errEl.style.display = "none";
-                errEl.textContent = "";
-              }
-
+              if (errEl) errEl.style.display = "none";
+              if (inp) inp.value = "";
               try {
-                showSubstep(stepNewPass);
-              } catch (substepErr) {
-                console.error("❌ Exception during showSubstep:", substepErr);
-              }
-
-              const targetNewPass = stepNewPass || document.getElementById("forgot-step-newpass");
-              if (targetNewPass) {
-                targetNewPass.style.display = "block";
-              }
-
-              safeToast("✓ Secret Answer Verified! Enter your new Admin password:");
+                sessionStorage.removeItem("bw_active_recovery_code");
+                sessionStorage.removeItem("bw_active_recovery_code_time");
+                if (typeof updateAllRecoveryCodeElements === "function") {
+                  updateAllRecoveryCodeElements("••••-••••-••••-••••");
+                }
+              } catch (e) {}
+              safeToast("✓ Emergency Recovery Code Verified! Enter your new Admin password:");
+              showSubstep(stepNewPass);
               return;
             }
 
-            // Invalid answer branch
-            if (errEl) {
-              errEl.textContent = "❌ Invalid Secret Answer!";
-              errEl.style.display = "flex";
-            }
-            safeToast("Invalid Secret Answer! ❌");
+            const errMsg = data.error || data.message || "Invalid Emergency Recovery Code!";
+            if (errEl) { errEl.textContent = "❌ " + errMsg; errEl.style.display = "flex"; }
+            safeToast(errMsg + " ❌");
           } catch (e) {
-            console.error("❌ Exception during Security Question verification:", e);
-            safeToast("Network error verifying Secret Answer ❌");
+            if (errEl) { errEl.textContent = "❌ Invalid Emergency Recovery Code!"; errEl.style.display = "flex"; }
+            safeToast("Invalid Emergency Recovery Code! ❌");
           }
-        };
+        });
       }
 
-      // ── STEP 2: SAVE NEW PASSWORD ──
       const saveNewPassBtn = document.getElementById("admin-save-newpass-btn");
       if (saveNewPassBtn) {
         saveNewPassBtn.addEventListener("click", async () => {
@@ -739,120 +647,35 @@
             if (errEl) errEl.style.display = "none";
           } else {
             safeToast("Failed to persist password to Supabase ❌");
-            if (errEl) {
-              errEl.textContent = "❌ Failed to update password on Supabase";
-              errEl.style.display = "flex";
-            }
+            if (errEl) { errEl.textContent = "❌ Failed to update password on Supabase"; errEl.style.display = "flex"; }
           }
         });
       }
     }
   }
 
-  /**
-   * Resets the Admin Security modal UI presentation state to the "Unlock Editor" tab.
-   *
-   * Architectural Note:
-   *   Admin Security modal tab state is intentionally reset to Unlock Editor on every fresh
-   *   modal opening. This prevents Change Password / Forgot Password from remaining selected
-   *   across separate security sessions. This helper changes only presentation state and does
-   *   not alter authentication, password, recovery, or session state.
-   *
-   * Responsibility:
-   *   - Sets the active Admin Security tab to "Unlock Editor".
-   *   - Clears active state from Change Password and Forgot Password tab buttons.
-   *   - Hides corresponding panels and displays #admin-tab-login.
-   *   - Idempotent and safe to call on any modal open action.
-   *
-   * @returns {void}
-   */
   function resetAdminSecurityDefaultTab() {
-    const tabBtns = document.querySelectorAll(".admin-tab-btn");
-    const tabContents = document.querySelectorAll(".admin-tab-content");
-
-    tabBtns.forEach(btn => {
-      if (btn.dataset.tab === "admin" || btn.dataset.tab === "login") {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
+    document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === "admin" || btn.dataset.tab === "login");
+    });
+    document.querySelectorAll(".admin-tab-content").forEach(content => {
+      const isDefault = content.id === "admin-tab-admin" || content.id === "admin-tab-login";
+      content.classList.toggle("active", isDefault);
+      content.style.display = isDefault ? "block" : "none";
     });
 
-    tabContents.forEach(content => {
-      if (content.id === "admin-tab-admin" || content.id === "admin-tab-login") {
-        content.classList.add("active");
-        content.style.display = "block";
-      } else {
-        content.classList.remove("active");
-        content.style.display = "none";
-      }
+    document.querySelectorAll(".security-subtab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.subtab === "change");
+    });
+    document.querySelectorAll(".security-subtab-content").forEach(c => {
+      const isChange = c.id === "security-subtab-change";
+      c.classList.toggle("active", isChange);
+      c.style.display = isChange ? "block" : "none";
     });
 
-    // Reset security subtabs if present
-    const subtabBtns = document.querySelectorAll(".security-subtab-btn");
-    const subtabContents = document.querySelectorAll(".security-subtab-content");
-    subtabBtns.forEach(btn => {
-      if (btn.dataset.subtab === "change") {
-        btn.classList.add("active");
-        btn.style.background = "rgba(168,85,247,0.2)";
-        btn.style.borderColor = "rgba(168,85,247,0.4)";
-        btn.style.color = "#fff";
-      } else {
-        btn.classList.remove("active");
-        btn.style.background = "transparent";
-        btn.style.borderColor = "transparent";
-        btn.style.color = "#94a3b8";
-      }
-    });
-    subtabContents.forEach(c => {
-      if (c.id === "security-subtab-change") {
-        c.classList.add("active");
-        c.style.display = "block";
-      } else {
-        c.classList.remove("active");
-        c.style.display = "none";
-      }
-    });
-
-    // Clear all password inputs and error states
-    const inputsToClear = [
-      "admin-login-pass",
-      "admin-old-pass",
-      "admin-new-pass",
-      "admin-confirm-pass",
-      "admin-reset-new-pass",
-      "admin-reset-confirm-pass",
-      "recovery-backup-input",
-      "recovery-question-input",
-      "recovery-otp-input"
-    ];
-    inputsToClear.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.value = "";
-        el.classList.remove("input-error");
-      }
-    });
-
-    const errorIds = [
-      "admin-login-error",
-      "admin-change-error",
-      "email-otp-error",
-      "backup-code-error",
-      "question-answer-error",
-      "admin-setnew-error"
-    ];
-    errorIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = "none";
-    });
+    clearSecurityInputs();
   }
 
-  /**
-   * Opens Admin authentication modal, resets tab presentation state to Unlock Editor,
-   * and focuses the password input.
-   * @returns {void}
-   */
   function promptForAdminAccess() {
     const modal = document.getElementById("admin-login-modal");
     if (modal) {
@@ -863,20 +686,11 @@
     }
   }
 
-  /**
-   * Initializes Admin Security Modal and binds all security triggers,
-   * keyboard shortcuts, secret double-click gestures, and URL params.
-   * @returns {void}
-   */
   function checkAdminAccess() {
     initAdminSecurityModal();
 
     const footerLockBtn = document.getElementById("footer-admin-lock-btn");
-    if (footerLockBtn) {
-      footerLockBtn.addEventListener("click", () => {
-        promptForAdminAccess();
-      });
-    }
+    if (footerLockBtn) footerLockBtn.addEventListener("click", () => promptForAdminAccess());
 
     const params = new URLSearchParams(location.search);
     const isEditParam = params.has("edit") || params.has("admin");
@@ -891,7 +705,6 @@
       localStorage.removeItem("is_admin_user");
     }
 
-    // Keyboard shortcut: Ctrl + Shift + E toggles admin mode with password
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "e") {
         e.preventDefault();
@@ -899,59 +712,44 @@
       }
     });
 
-    // Secret Double-Click on Lock Screen "✨ Happy Birthday ✨" Logo
     const lockLogo = document.getElementById("loading-logo-glow");
     if (lockLogo) {
-      let tapCount = 0;
-      let tapTimer = null;
+      let tapCount = 0, tapTimer = null;
       lockLogo.addEventListener("click", () => {
         tapCount++;
         clearTimeout(tapTimer);
-        if (tapCount >= 2) {
-          tapCount = 0;
-          promptForAdminAccess();
-        } else {
-          tapTimer = setTimeout(() => { tapCount = 0; }, 400);
-        }
+        if (tapCount >= 2) { tapCount = 0; promptForAdminAccess(); }
+        else { tapTimer = setTimeout(() => { tapCount = 0; }, 400); }
       });
     }
 
-    // Secret Double-Click on Letter Title ("Happy Birthday, [Name]") in Letter Card
-    const letterTitles = document.querySelectorAll(".letter-title, #letter-title");
-    letterTitles.forEach(el => {
-      let tapCount = 0;
-      let tapTimer = null;
-      el.addEventListener("click", () => {
-        tapCount++;
-        clearTimeout(tapTimer);
-        if (tapCount >= 2) {
-          tapCount = 0;
-          promptForAdminAccess();
-        } else {
-          tapTimer = setTimeout(() => { tapCount = 0; }, 400);
-        }
-      });
+    window.addEventListener("storage", (e) => {
+      if (e.key === "bw_admin_auth_sync") {
+        try {
+          const syncData = JSON.parse(e.newValue);
+          if (syncData && syncData.action === "logout") {
+            sessionStorage.removeItem("admin_authenticated");
+            sessionStorage.removeItem("admin_session_token");
+            sessionStorage.removeItem("admin_auth_timestamp");
+            if (fab) fab.classList.remove("admin-visible");
+            const customizerModal = getEl("customizer-modal");
+            if (customizerModal) customizerModal.classList.remove("open", "active");
+          }
+        } catch (err) {}
+      }
     });
   }
 
-  // ─── EMERGENCY DEVELOPER SHORTCUT (Ctrl + Shift + Alt + A) ───
-  window.addEventListener("keydown", (e) => {
-    if (e.ctrlKey && e.shiftKey && e.altKey && (e.key === "a" || e.key === "A" || e.key === "r" || e.key === "R")) {
-      e.preventDefault();
-      safeToast("⚡ Emergency Developer Reset Triggered! Admin Unlocked 🔓");
-      const fab = getEl("customizer-toggle-btn");
-      if (fab) fab.classList.add("admin-visible");
-      const adminModal = getEl("admin-login-modal");
-      if (adminModal) adminModal.classList.remove("open");
-      const customizerModal = getEl("customizer-modal");
-      if (customizerModal) customizerModal.classList.add("open");
-    }
+  root.AdminSecurityModule = Object.freeze({
+    checkAdminAccess,
+    promptForAdminAccess,
+    getAdminPassword
   });
 
-  // Expose on root (window) for app.js and editor/customizer.js callers
-  root.getAdminPassword = getAdminPassword;
-  root.initAdminSecurityModal = initAdminSecurityModal;
-  root.promptForAdminAccess = promptForAdminAccess;
-  root.checkAdminAccess = checkAdminAccess;
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", checkAdminAccess);
+  } else {
+    checkAdminAccess();
+  }
 
-})(typeof window !== "undefined" ? window : this);
+})(window);

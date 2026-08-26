@@ -316,9 +316,14 @@
         exp.classList.add(`font-style-${CONFIG.letterFont}`);
       }
 
-      exp.classList.remove("theme-royalgold", "theme-galaxy", "theme-rosegold");
-      if (CONFIG.letterTheme && CONFIG.letterTheme !== "default") {
-        exp.classList.add(`theme-${CONFIG.letterTheme}`);
+      exp.classList.remove("theme-default", "theme-royalgold", "theme-galaxy", "theme-rosegold", "theme-sapphire", "theme-emerald-luxe");
+      const resolvedTheme = (root.ThemeRegistry && typeof root.ThemeRegistry.resolveTheme === "function")
+        ? root.ThemeRegistry.resolveTheme(CONFIG.letterTheme)
+        : (CONFIG.letterTheme || "default");
+      if (resolvedTheme && resolvedTheme !== "default") {
+        exp.classList.add(`theme-${resolvedTheme}`);
+      } else {
+        exp.classList.add("theme-default");
       }
     }
   }
@@ -424,15 +429,26 @@
     }
   }
 
+  function getEscapeHtml() {
+    if (root.escapeHtml && typeof root.escapeHtml === "function") {
+      return root.escapeHtml;
+    }
+    if (typeof escapeHtml === "function") {
+      return escapeHtml;
+    }
+    return (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"));
+  }
+
   function renderReasonsGrid() {
     const reasonsGrid = document.getElementById("reasons-grid");
     if (reasonsGrid) {
       reasonsGrid.innerHTML = "";
+      const esc = getEscapeHtml();
       (CONFIG.reasons || []).forEach((r, i) => {
         const el = document.createElement("div");
         el.className = "info-card glass reveal";
         el.style.setProperty("--i", i);
-        el.innerHTML = `<span class="icon">${r.icon}</span><h3>${r.title}</h3><p>${r.text}</p>`;
+        el.innerHTML = `<span class="icon">${esc(r.icon || '✨')}</span><h3>${esc(r.title || '')}</h3><p>${esc(r.text || '')}</p>`;
         reasonsGrid.appendChild(el);
       });
     }
@@ -446,25 +462,31 @@
     const deck = document.getElementById("gallery-deck");
     if (deck) {
       deck.innerHTML = "";
+      const esc = getEscapeHtml();
       (CONFIG.gallery || []).forEach((g, i) => {
         const el = document.createElement("div");
         el.className = "polaroid reveal";
-        el.style.setProperty("--rot", g.rot + "deg");
+        el.style.setProperty("--rot", (g.rot || 0) + "deg");
         el.style.setProperty("--i", i);
         const bg = `hsl(${(i * 47) % 360} 70% 75%)`;
         const zoomSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
         const zoomBtnHtml = g.image ? `<button class="photo-zoom-btn" type="button" title="Expand Photo HD">${zoomSvg}</button>` : "";
+        const safeCap = esc(g.cap || "");
+        const safeImage = esc(g.image || "");
+        const safeEmoji = esc(g.emoji || "📸");
+        const safeSecretNote = esc(g.secretNote || "A special memory ❤️");
+
         const frontContent = g.image
-          ? `<div class="frame"><img src="${g.image}" alt="${g.cap}">${zoomBtnHtml}</div><div class="cap">${g.cap}</div>`
-          : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
-        const backContent = `<div class="polaroid-back"><p>${g.secretNote || "A special memory ❤️"}</p><span class="tap-hint">Tap to flip back</span></div>`;
+          ? `<div class="frame"><img src="${safeImage}" alt="${safeCap}">${zoomBtnHtml}</div><div class="cap">${safeCap}</div>`
+          : `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${safeEmoji}</div><div class="cap">${safeCap}</div>`;
+        const backContent = `<div class="polaroid-back"><p>${safeSecretNote}</p><span class="tap-hint">Tap to flip back</span></div>`;
         el.innerHTML = `<div class="polaroid-inner"><div class="polaroid-front">${frontContent}</div>${backContent}</div>`;
         if (g.image) {
           const img = el.querySelector("img");
           if (img) {
             img.addEventListener("error", () => {
               const front = el.querySelector(".polaroid-front");
-              if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${g.emoji}</div><div class="cap">${g.cap}</div>`;
+              if (front) front.innerHTML = `<div class="frame" style="background:linear-gradient(135deg,${bg},#fff0f6);">${safeEmoji}</div><div class="cap">${safeCap}</div>`;
             });
             img.addEventListener("click", (e) => {
               e.stopPropagation();
@@ -500,12 +522,13 @@
       const isRevealed = Boolean(window.letterTyped || (postContent && !postContent.classList.contains("post-letter-hidden")));
 
       tl.innerHTML = "";
+      const esc = getEscapeHtml();
       (CONFIG.timeline || []).forEach((t, i) => {
         const el = document.createElement("div");
         el.className = isRevealed ? "timeline-item reveal in-view" : "timeline-item reveal";
-        el.dataset.icon = t.icon;
+        el.dataset.icon = t.icon || "⏳";
         el.style.setProperty("--i", i);
-        el.innerHTML = `<span class="t-date">${t.date}</span><h4>${t.title}</h4><p>${t.text}</p>`;
+        el.innerHTML = `<span class="t-date">${esc(t.date || '')}</span><h4>${esc(t.title || '')}</h4><p>${esc(t.text || '')}</p>`;
         tl.appendChild(el);
       });
       requestAnimationFrame(() => {
@@ -518,7 +541,9 @@
   function updateCornerFlowers() {
     const flowers = document.querySelectorAll(".corner-flower");
     if (flowers.length) {
-      flowers.forEach(f => f.textContent = "🌸");
+      flowers.forEach(f => {
+        f.textContent = "";
+      });
     }
   }
 

@@ -1132,7 +1132,39 @@
       const values = readAllValues();
       applyAllValues(values);
 
-      // Save to localStorage
+      const activeUuid = cfg._activeWishUuid || (root.CONFIG && root.CONFIG._activeWishUuid) || null;
+
+      // For an EXISTING wish: Persist edited values to canonical Supabase DB row
+      if (activeUuid) {
+        const buildUrlFn = root.buildRecipientShareUrl || (typeof buildRecipientShareUrl === "function" ? buildRecipientShareUrl : null);
+        let persistSuccess = false;
+
+        if (typeof buildUrlFn === "function") {
+          const res = await buildUrlFn(values.nameVal, { persist: true });
+          if (res) persistSuccess = true;
+        } else if (root.ShareModule && typeof root.ShareModule.buildShareUrl === "function") {
+          const res = await root.ShareModule.buildShareUrl(cfg, values.nameVal, { persist: true });
+          if (res) persistSuccess = true;
+        } else if (root.DatabaseModule && typeof root.DatabaseModule.updateWish === "function") {
+          const res = await root.DatabaseModule.updateWish(activeUuid, cfg);
+          if (res) persistSuccess = true;
+        }
+
+        if (!persistSuccess) {
+          const toastFn = root.showToast || ((m) => console.warn(m));
+          toastFn("⚠️ Could not save changes to this wish. Please try again.");
+          return;
+        }
+
+        // Broadcast cross-tab sync event
+        try {
+          if (typeof localStorage !== "undefined") {
+            localStorage.setItem("bw_wish_sync_timestamp", String(Date.now()));
+          }
+        } catch (e) {}
+      }
+
+      // Save to localStorage draft
       const saveData = JSON.parse(JSON.stringify(cfg));
       if (cfg._activeWishUuid) {
         saveData._activeWishUuid = cfg._activeWishUuid;
@@ -1264,11 +1296,14 @@
               }
               if (navigator.share) {
                 try {
-                  await navigator.share({
-                    title: `Birthday Wish for ${recipientName}`,
-                    text: `🎉 Surprise Birthday Wish for ${recipientName}! Click link to open:`,
-                    url: currentUrl
-                  });
+                  const payload = (window.ShareModule && typeof window.ShareModule.buildNativeSharePayload === "function")
+                    ? window.ShareModule.buildNativeSharePayload(currentUrl, recipientName)
+                    : {
+                        title: recipientName ? `🎁 Birthday Surprise for ${recipientName}` : "🎁 Birthday Surprise!",
+                        text: `🎂✨ Maine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nEk chhota sa surprise tumhara wait kar raha hai… 💝\n\n👇 Link open karke dekho — I hope tumhe ye pasand aayega! 🥰`,
+                        url: currentUrl
+                      };
+                  await navigator.share(payload);
                 } catch(e) {}
               } else {
                 toastFn("📋 Link copied! Paste anywhere to share.");

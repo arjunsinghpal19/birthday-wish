@@ -504,13 +504,18 @@ function initShare() {
 
       if (navigator.share) {
         try {
-          await navigator.share({
-            title: displayName ? `Happy Birthday ${displayName}!` : "Happy Birthday Surprise!",
-            text: `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:`,
-            url: shareUrl,
-          });
+          const payload = (window.ShareModule && typeof window.ShareModule.buildNativeSharePayload === "function")
+            ? window.ShareModule.buildNativeSharePayload(shareUrl, displayName)
+            : {
+                title: displayName ? `🎁 Birthday Surprise for ${displayName}` : "🎁 Birthday Surprise!",
+                text: `🎂✨ Maine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nEk chhota sa surprise tumhara wait kar raha hai… 💝\n\n👇 Link open karke dekho — I hope tumhe ye pasand aayega! 🥰`,
+                url: shareUrl,
+              };
+          await navigator.share(payload);
           return;
-        } catch (e) {}
+        } catch (e) {
+          return;
+        }
       }
 
       // WhatsApp direct fallback

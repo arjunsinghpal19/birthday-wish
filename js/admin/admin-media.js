@@ -36,6 +36,7 @@
     percentText: "dam-percent-text",
     kpiStorage: "kpi-storage-used",
     previewModal: "asset-preview-modal",
+    btnClosePreviewX: "btn-close-preview-modal-x",
     modalFilename: "asset-modal-filename",
     modalViewer: "asset-modal-viewer",
     modalMeta: "asset-modal-meta",
@@ -46,7 +47,50 @@
     scanStatus: "scan-summary-status",
     scanCountTotal: "scan-count-total",
     scanCountUsed: "scan-count-used",
-    scanCountOrphan: "scan-count-orphan"
+    scanCountOrphan: "scan-count-orphan",
+    unusedSelectionBar: "dam-unused-selection-bar",
+    unusedCountText: "unused-selected-count-text",
+    unusedSizeText: "unused-selected-size-text",
+    btnSelectAllUnused: "btn-select-all-unused",
+    btnReviewUnused: "btn-review-unused-cleanup",
+    btnClearUnusedSelection: "btn-clear-unused-selection",
+    unusedCleanupModal: "unused-cleanup-modal",
+    unusedModalCount: "unused-modal-file-count",
+    unusedModalSize: "unused-modal-total-size",
+    unusedModalList: "unused-modal-file-list",
+    btnCloseUnusedX: "btn-close-unused-modal-x",
+    btnCancelUnused: "btn-cancel-unused-review",
+    btnConfirmUnused: "btn-confirm-unused-review",
+    btnStartUnusedCleanup: "btn-start-unused-cleanup",
+    btnConfirmDeleteUnused: "btn-confirm-delete-unused",
+    btnBackToUnusedReview: "btn-back-to-unused-review",
+    unusedModalWarningBox: "unused-modal-warning-box",
+    unusedModalDangerBox: "unused-modal-danger-box",
+    unusedModalReviewFooter: "unused-modal-review-footer",
+    unusedModalConfirmFooter: "unused-modal-confirm-footer",
+    unusedModalStatusBadge: "unused-modal-status-badge",
+    unusedConfirmCountText: "unused-confirm-count-text",
+    unusedConfirmSizeText: "unused-confirm-size-text",
+    inspectorModal: "asset-inspector-modal",
+    inspectorCloseBtn: "btn-close-inspector",
+    inspectorCloseXBtn: "btn-close-inspector-modal-x",
+    inspectorCopyUrlBtn: "btn-inspector-copy-url",
+    inspectorCopyPathBtn: "btn-inspector-copy-path",
+    inspectorDownloadBtn: "btn-inspector-download",
+    inspectorMediaPreview: "inspector-media-preview",
+    inspectorFileName: "inspector-file-name",
+    inspectorFilePath: "inspector-file-path",
+    inspectorFileFolder: "inspector-file-folder",
+    inspectorFileSize: "inspector-file-size",
+    inspectorFileMime: "inspector-file-mimetype",
+    inspectorFileDate: "inspector-file-date",
+    inspectorStatusBadge: "inspector-status-badge",
+    inspectorUsedSection: "inspector-used-section",
+    inspectorUnusedSection: "inspector-unused-section",
+    inspectorReferencesList: "inspector-references-list",
+    inspectorRefCountText: "inspector-ref-count-text",
+    inspectorSelectCleanupBtn: "btn-inspector-select-cleanup",
+    sortSelect: "dam-sort-select"
   };
 
   /* ============================================================
@@ -55,10 +99,27 @@
   let realStorageFiles = [];
   let cachedActiveWishes = [];
   let currentDamFilter = "all";
+  let currentDamSort = "newest";
   let currentDamEventFilter = "all";
   let damSearchQuery = "";
   let selectedFilePaths = new Set();
+  let selectedUnusedPaths = new Set();
   let onEventHook = null;
+
+  /**
+   * Safe HTML escaping utility to prevent XSS.
+   * @param {string} str - Raw string.
+   * @returns {string} Escaped HTML string.
+   */
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   /* ============================================================
      2.5. MEDIA REFERENCE EXTRACTION ENGINE (Phase 31C-1)
@@ -75,8 +136,22 @@
     LOCAL: "LOCAL",           // Local/default repository asset (e.g. assets/audio/...)
     DATA_URL: "DATA_URL",     // Inline Base64 image payload (data:image/...)
     EXTERNAL: "EXTERNAL",     // External HTTP/HTTPS URL (YouTube, Vimeo, CDN)
-    INVALID: "INVALID"        // Empty, null, undefined or malformed type
+    UNKNOWN: "UNKNOWN"        // Malformed, empty, or unresolvable path
   });
+
+  /**
+   * Formats byte size into human readable string.
+   * @param {number} bytes
+   * @returns {string} Formatted size (e.g. "1.2 MB", "200.0 KB").
+   */
+  function formatSize(bytes) {
+    if (typeof formatBytes === "function") return formatBytes(bytes);
+    if (typeof window !== "undefined" && typeof window.formatBytes === "function") return window.formatBytes(bytes);
+    const b = Number(bytes) || 0;
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   /**
    * Classifies a media reference string into its architectural category.
@@ -429,7 +504,10 @@
     }
 
     updateStorageAnalytics();
-    renderDamGrid();
+    const mediaView = typeof document !== "undefined" ? document.getElementById("view-media") : null;
+    if (!mediaView || mediaView.classList.contains("active")) {
+      renderDamGrid();
+    }
     return realStorageFiles;
   }
 
@@ -456,7 +534,11 @@
     try {
       let wishes = activeWishes;
       if (!Array.isArray(wishes)) {
-        if (cachedActiveWishes && cachedActiveWishes.length > 0) {
+        if (window.AdminWishes && typeof window.AdminWishes.getAllWishes === "function") {
+          wishes = window.AdminWishes.getAllWishes();
+        } else if (window.AdminCore && Array.isArray(window.AdminCore.wishes)) {
+          wishes = window.AdminCore.wishes;
+        } else if (cachedActiveWishes && cachedActiveWishes.length > 0) {
           wishes = cachedActiveWishes;
         } else if (window.AdminDashboard && typeof window.AdminDashboard.fetchWishes === "function") {
           const res = await window.AdminDashboard.fetchWishes();
@@ -467,6 +549,11 @@
       }
 
       await loadStorageMediaData(wishes);
+
+      // Rescan Safety (Phase 31C-3): Invalidate/prune stale unused selections
+      const validUnusedSet = new Set(realStorageFiles.filter(f => isAssetEligibleForUnusedManagement(f)).map(f => f.path));
+      selectedUnusedPaths = new Set([...selectedUnusedPaths].filter(p => validUnusedSet.has(p)));
+      updateUnusedSelectionUI();
 
       let usedCount = 0;
       let orphanCount = 0;
@@ -568,14 +655,481 @@
     const scanTotal = document.getElementById(SELECTORS.scanCountTotal); if (scanTotal) scanTotal.textContent = String(realStorageFiles.length);
     const scanUsed = document.getElementById(SELECTORS.scanCountUsed); if (scanUsed) scanUsed.textContent = String(usedCount);
     const scanOrphan = document.getElementById(SELECTORS.scanCountOrphan); if (scanOrphan) scanOrphan.textContent = String(unusedCount);
+
+    // Synchronize unused selection UI
+    updateUnusedSelectionUI();
+  }
+
+  /* ============================================================
+     3.5. UNUSED ASSET MANAGEMENT & SELECTION (Phase 31C-3)
+     Guarded, read-only selection and inspection engine for unlinked
+     Supabase Storage assets. Strictly protects used assets and
+     local/external URLs from cleanup selection.
+     ============================================================ */
+
+  /**
+   * Safety guardrail: checks if a file is strictly eligible for unused management.
+   * @param {Object|string} fileOrPath - File object or storage path.
+   * @returns {boolean} True if strictly unreferenced Supabase storage file.
+   */
+  function isAssetEligibleForUnusedManagement(fileOrPath) {
+    if (!fileOrPath) return false;
+    let file = typeof fileOrPath === "string"
+      ? realStorageFiles.find(f => f.path === fileOrPath || f.canonicalPath === fileOrPath)
+      : fileOrPath;
+
+    if (!file || typeof file !== "object") return false;
+
+    // 1. Must be strictly classified as NOT used
+    if (file.isUsed === true) return false;
+
+    // 2. Must have zero active references
+    if (Array.isArray(file.references) && file.references.length > 0) return false;
+
+    // 3. Must have a valid canonical storage path
+    const canonical = normalizeStoragePath(file.path || file.canonicalPath || file.publicUrl);
+    if (!canonical) return false;
+
+    // 4. Must NOT be local, external, or data URL
+    const refType = classifyReference(file.path || file.publicUrl || "");
+    if (refType === ReferenceType.LOCAL || refType === ReferenceType.EXTERNAL || refType === ReferenceType.DATA_URL) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Selects an individual unused asset for cleanup review after validating guardrails.
+   * @param {string} path - Storage path.
+   * @returns {boolean} True if successfully selected.
+   */
+  function selectUnusedAsset(path) {
+    if (!path || typeof path !== "string") return false;
+    const file = realStorageFiles.find(f => f.path === path || f.canonicalPath === path);
+    if (!isAssetEligibleForUnusedManagement(file)) {
+      console.warn("AdminMedia: Asset not eligible for unused management:", path);
+      return false;
+    }
+    selectedUnusedPaths.add(file.path);
+    updateUnusedSelectionUI();
+    return true;
+  }
+
+  /**
+   * Deselects an unused asset from cleanup review.
+   * @param {string} path - Storage path.
+   * @returns {boolean} True if removed.
+   */
+  function deselectUnusedAsset(path) {
+    if (!path) return false;
+    const removed = selectedUnusedPaths.delete(path);
+    updateUnusedSelectionUI();
+    return removed;
+  }
+
+  /**
+   * Toggles selection of an unused asset.
+   * @param {string} path - Storage path.
+   * @returns {boolean} True if selected after toggle, false if deselected or rejected.
+   */
+  function toggleUnusedAsset(path) {
+    if (selectedUnusedPaths.has(path)) {
+      deselectUnusedAsset(path);
+      return false;
+    } else {
+      return selectUnusedAsset(path);
+    }
+  }
+
+  /**
+   * Selects all eligible unused assets in storage.
+   * @returns {number} Total number of selected unused assets.
+   */
+  function selectAllUnused() {
+    const eligible = realStorageFiles.filter(f => isAssetEligibleForUnusedManagement(f));
+    eligible.forEach(f => selectedUnusedPaths.add(f.path));
+    updateUnusedSelectionUI();
+    renderDamGrid();
+    return selectedUnusedPaths.size;
+  }
+
+  /**
+   * Clears the current unused asset selection.
+   */
+  function clearUnusedSelection() {
+    selectedUnusedPaths.clear();
+    updateUnusedSelectionUI();
+    renderDamGrid();
+  }
+
+  /**
+   * Returns array of currently selected unused file objects.
+   * @returns {Array<Object>}
+   */
+  function getSelectedUnusedAssets() {
+    return realStorageFiles.filter(f => selectedUnusedPaths.has(f.path) && isAssetEligibleForUnusedManagement(f));
+  }
+
+  /**
+   * Returns count of currently selected unused file objects.
+   * @returns {number}
+   */
+  function getSelectedUnusedCount() {
+    return getSelectedUnusedAssets().length;
+  }
+
+  /**
+   * Returns sum of sizes (in bytes) of all currently selected unused files.
+   * @returns {number}
+   */
+  function getSelectedUnusedTotalSize() {
+    return getSelectedUnusedAssets().reduce((sum, f) => sum + (Number(f.size) || 0), 0);
+  }
+
+  /**
+   * Synchronizes the Unused Files Selection Bar and button counts in DOM.
+   */
+  function updateUnusedSelectionUI() {
+    const selectedAssets = getSelectedUnusedAssets();
+    const count = selectedAssets.length;
+    const totalSize = getSelectedUnusedTotalSize();
+    const format = typeof formatBytes === "function" ? formatBytes : (b => `${b} B`);
+
+    const selectionBar = document.getElementById(SELECTORS.unusedSelectionBar);
+    const countText = document.getElementById(SELECTORS.unusedCountText);
+    const sizeText = document.getElementById(SELECTORS.unusedSizeText);
+    const btnCount = document.getElementById("unused-cleanup-btn-count");
+
+    if (selectionBar) {
+      selectionBar.style.display = count > 0 ? "flex" : "none";
+    }
+    if (countText) {
+      countText.textContent = `${count} unused file${count === 1 ? "" : "s"} selected`;
+    }
+    if (sizeText) {
+      sizeText.textContent = `(Total: ${format(totalSize)})`;
+    }
+    if (btnCount) {
+      btnCount.textContent = String(count);
+    }
+
+    // Update checkboxes on rendered cards
+    const checkboxes = document.querySelectorAll(".dam-unused-checkbox");
+    checkboxes.forEach(cb => {
+      const p = cb.dataset.path;
+      cb.checked = selectedUnusedPaths.has(p);
+      const card = cb.closest(".dam-asset-card");
+      if (card) {
+        if (selectedUnusedPaths.has(p)) card.classList.add("selected-unused");
+        else card.classList.remove("selected-unused");
+      }
+    });
+  }
+
+  /**
+   * Authoritative, fresh pre-deletion safety validation.
+   * Cross-references active wishes and MediaReferenceEngine to protect against race conditions and invalid paths.
+   * @returns {{ validAssets: Array<Object>, skippedAssets: Array<{ path: string, reason: string }> }}
+   */
+  function validateSelectedUnusedForDeletion() {
+    const validAssets = [];
+    const skippedAssets = [];
+
+    let wishes = [];
+    if (window.AdminWishes && typeof window.AdminWishes.getAllWishes === "function") {
+      wishes = window.AdminWishes.getAllWishes();
+    } else if (window.AdminCore && Array.isArray(window.AdminCore.wishes)) {
+      wishes = window.AdminCore.wishes;
+    } else if (Array.isArray(cachedActiveWishes)) {
+      wishes = cachedActiveWishes;
+    }
+
+    let refMap = null;
+    const refEngine = (typeof MediaReferenceEngine !== "undefined" && MediaReferenceEngine) || (window.MediaReferenceEngine || (window.AdminMedia && window.AdminMedia.ReferenceEngine));
+    if (refEngine && typeof refEngine.buildReferenceMap === "function") {
+      refMap = refEngine.buildReferenceMap(wishes);
+    }
+
+    selectedUnusedPaths.forEach(path => {
+      // 1. Path must be non-empty string
+      if (!path || typeof path !== "string" || path.trim() === "") {
+        skippedAssets.push({ path, reason: "Empty or invalid path" });
+        return;
+      }
+
+      // 2. Reject local assets
+      if (path.startsWith("assets/") || path.startsWith("./assets/") || path.startsWith("images/")) {
+        skippedAssets.push({ path, reason: "Local repository asset — protected from deletion" });
+        return;
+      }
+
+      // 3. Reject external URLs
+      if (path.startsWith("http://") || path.startsWith("https://")) {
+        skippedAssets.push({ path, reason: "External URL — protected from storage deletion" });
+        return;
+      }
+
+      // 4. Reject Data URLs
+      if (path.startsWith("data:")) {
+        skippedAssets.push({ path, reason: "Inline Data URL — protected" });
+        return;
+      }
+
+      // 5. Must belong to wish-media bucket folder
+      const isValidBucketFolder = path.startsWith("photos/") || path.startsWith("videos/") || path.startsWith("audio/");
+      if (!isValidBucketFolder) {
+        skippedAssets.push({ path, reason: "Path outside wish-media bucket folder structure" });
+        return;
+      }
+
+      // 6. Must exist in current storage catalog
+      const fileObj = realStorageFiles.find(f => f.path === path || f.canonicalPath === path);
+      if (!fileObj) {
+        skippedAssets.push({ path, reason: "File not found in current storage catalog" });
+        return;
+      }
+
+      // 7. Must have ZERO references in fresh reference scan and not marked isUsed
+      const isRef = refMap ? refMap.isReferenced(path) : false;
+      const refs = refMap ? refMap.getReferences(path) : (fileObj.references || []);
+      if (isRef || refs.length > 0 || fileObj.isUsed) {
+        const refNames = refs.map(r => r.recipientName || r.wishId).filter(Boolean).join(", ");
+        skippedAssets.push({ path, reason: `Asset is referenced by active wish: ${refNames || fileObj.usedInName}` });
+        return;
+      }
+
+      // Passed all safety validation checks
+      validAssets.push(fileObj);
+    });
+
+    return { validAssets, skippedAssets };
+  }
+
+  /**
+   * Sets the modal view state: "review" (inspection) or "confirm" (final confirmation).
+   * @param {"review"|"confirm"|"deleting"} state
+   * @param {Object} [customData]
+   */
+  function setUnusedModalState(state, customData = {}) {
+    const warningBox = document.getElementById(SELECTORS.unusedModalWarningBox);
+    const dangerBox = document.getElementById(SELECTORS.unusedModalDangerBox);
+    const reviewFooter = document.getElementById(SELECTORS.unusedModalReviewFooter);
+    const confirmFooter = document.getElementById(SELECTORS.unusedModalConfirmFooter);
+    const statusBadge = document.getElementById(SELECTORS.unusedModalStatusBadge);
+    const countConfirm = document.getElementById(SELECTORS.unusedConfirmCountText);
+    const sizeConfirm = document.getElementById(SELECTORS.unusedConfirmSizeText);
+    const btnConfirmDelete = document.getElementById(SELECTORS.btnConfirmDeleteUnused);
+    const btnBack = document.getElementById(SELECTORS.btnBackToUnusedReview);
+    const format = typeof formatBytes === "function" ? formatBytes : (b => `${b} B`);
+
+    if (state === "review") {
+      if (warningBox) warningBox.style.display = "flex";
+      if (dangerBox) dangerBox.style.display = "none";
+      if (reviewFooter) reviewFooter.style.display = "flex";
+      if (confirmFooter) confirmFooter.style.display = "none";
+      if (statusBadge) {
+        statusBadge.textContent = "Verified Unused";
+        statusBadge.className = "stat-val status-safe";
+        statusBadge.style.color = "";
+      }
+      if (btnConfirmDelete) {
+        btnConfirmDelete.disabled = false;
+        btnConfirmDelete.textContent = "⚠️ Confirm Permanent Deletion";
+      }
+      if (btnBack) btnBack.disabled = false;
+    } else if (state === "confirm") {
+      if (warningBox) warningBox.style.display = "none";
+      if (dangerBox) dangerBox.style.display = "flex";
+      if (reviewFooter) reviewFooter.style.display = "none";
+      if (confirmFooter) confirmFooter.style.display = "flex";
+      if (statusBadge) {
+        statusBadge.textContent = "Pending Deletion";
+        statusBadge.className = "stat-val";
+        statusBadge.style.color = "#f87171";
+      }
+      const count = customData.count !== undefined ? customData.count : getSelectedUnusedCount();
+      const size = customData.size !== undefined ? customData.size : getSelectedUnusedTotalSize();
+      if (countConfirm) countConfirm.textContent = String(count);
+      if (sizeConfirm) sizeConfirm.textContent = format(size);
+      if (btnConfirmDelete) {
+        btnConfirmDelete.disabled = false;
+        btnConfirmDelete.textContent = `⚠️ Confirm Permanent Deletion (${count} ${count === 1 ? 'File' : 'Files'})`;
+      }
+      if (btnBack) btnBack.disabled = false;
+    } else if (state === "deleting") {
+      if (btnConfirmDelete) {
+        btnConfirmDelete.disabled = true;
+        btnConfirmDelete.textContent = "Deleting Storage Files... ⏳";
+      }
+      if (btnBack) btnBack.disabled = true;
+    }
+  }
+
+  /**
+   * Opens the Unused Files Review / Inspection modal.
+   * Safe inspection workflow: displays file list and size breakdown without mutating storage.
+   */
+  function openUnusedReviewModal() {
+    const selectedAssets = getSelectedUnusedAssets();
+    if (selectedAssets.length === 0) {
+      if (typeof showToast === "function") {
+        showToast("No unused files selected for review ⚠️");
+      }
+      return;
+    }
+
+    const modal = document.getElementById(SELECTORS.unusedCleanupModal);
+    const countEl = document.getElementById(SELECTORS.unusedModalCount);
+    const sizeEl = document.getElementById(SELECTORS.unusedModalSize);
+    const listEl = document.getElementById(SELECTORS.unusedModalList);
+    const format = typeof formatBytes === "function" ? formatBytes : (b => `${b} B`);
+
+    const totalSize = getSelectedUnusedTotalSize();
+
+    if (countEl) countEl.textContent = String(selectedAssets.length);
+    if (sizeEl) sizeEl.textContent = format(totalSize);
+
+    if (listEl) {
+      listEl.innerHTML = selectedAssets.map(f => {
+        const dateStr = f.created_at ? new Date(f.created_at).toLocaleDateString() : "—";
+        const icon = f.folder === "photos" ? "📸" : f.folder === "videos" ? "🎥" : "🎙";
+        return `
+          <tr>
+            <td class="unused-file-name" title="${f.name || f.path}">
+              <span class="file-icon">${icon}</span>
+              <strong>${f.name || f.path}</strong>
+            </td>
+            <td class="unused-file-path"><code>${f.path || f.canonicalPath}</code></td>
+            <td class="unused-file-size">${format(f.size || 0)}</td>
+            <td class="unused-file-date">${dateStr}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    setUnusedModalState("review");
+
+    if (modal) {
+      modal.classList.add("open");
+    }
+  }
+
+  /**
+   * Moves from review state to final deletion confirmation state after running pre-validation.
+   */
+  function proceedToUnusedDeletionConfirmation() {
+    const { validAssets, skippedAssets } = validateSelectedUnusedForDeletion();
+
+    if (validAssets.length === 0) {
+      if (typeof showToast === "function") {
+        showToast("No selected files are eligible for safe deletion (protected or invalid) ⚠️");
+      }
+      clearUnusedSelection();
+      closeUnusedReviewModal();
+      return;
+    }
+
+    if (skippedAssets.length > 0) {
+      if (typeof showToast === "function") {
+        showToast(`⚠️ ${skippedAssets.length} file(s) skipped (referenced or protected)`);
+      }
+      skippedAssets.forEach(sa => deselectUnusedAsset(sa.path));
+    }
+
+    const validSize = validAssets.reduce((acc, f) => acc + (Number(f.size) || 0), 0);
+    setUnusedModalState("confirm", { count: validAssets.length, size: validSize });
+  }
+
+  /**
+   * Executes the validated permanent deletion of selected unused files from Supabase Storage.
+   * Tracks per-file success/failure to handle partial failures accurately.
+   */
+  async function executeUnusedMediaCleanup() {
+    const { validAssets, skippedAssets } = validateSelectedUnusedForDeletion();
+
+    if (validAssets.length === 0) {
+      if (typeof showToast === "function") {
+        showToast("No files eligible for deletion ⚠️");
+      }
+      closeUnusedReviewModal();
+      return;
+    }
+
+    setUnusedModalState("deleting");
+
+    const succeededPaths = [];
+    const failedPaths = [];
+
+    for (const file of validAssets) {
+      try {
+        let ok = false;
+        if (window.StorageModule && typeof window.StorageModule.deleteMedia === "function") {
+          ok = await window.StorageModule.deleteMedia(file.path);
+        } else if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
+          ok = await window.StorageModule.deleteMultipleMedia([file.path]);
+        }
+        if (ok) {
+          succeededPaths.push(file.path);
+        } else {
+          failedPaths.push({ path: file.path, name: file.name, reason: "Storage API returned false" });
+        }
+      } catch (err) {
+        failedPaths.push({ path: file.path, name: file.name, reason: err.message || "Exception during delete" });
+      }
+    }
+
+    // Update state: remove succeeded files
+    if (succeededPaths.length > 0) {
+      realStorageFiles = realStorageFiles.filter(f => !succeededPaths.includes(f.path));
+      succeededPaths.forEach(p => selectedUnusedPaths.delete(p));
+      updateStorageAnalytics();
+      renderDamGrid();
+
+      if (typeof onEventHook === "function") {
+        onEventHook("MEDIA_CLEANUP_EXECUTE", `Deleted ${succeededPaths.length} unused asset(s) from Supabase Storage`);
+      }
+    }
+
+    // Feedback and modal closing
+    if (failedPaths.length === 0) {
+      closeUnusedReviewModal();
+      if (typeof showToast === "function") {
+        showToast(`Successfully deleted ${succeededPaths.length} unused storage file${succeededPaths.length === 1 ? "" : "s"} 🗑️✨`);
+      }
+    } else {
+      setUnusedModalState("review");
+      closeUnusedReviewModal();
+      const failMsg = failedPaths.map(f => f.name || f.path).join(", ");
+      if (succeededPaths.length > 0) {
+        if (typeof showToast === "function") {
+          showToast(`Deleted ${succeededPaths.length} file(s). Failed to delete ${failedPaths.length}: ${failMsg} ⚠️`);
+        }
+      } else {
+        if (typeof showToast === "function") {
+          showToast(`Failed to delete selected files: ${failMsg} ❌`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Closes the Unused Files Review modal.
+   */
+  function closeUnusedReviewModal() {
+    const modal = document.getElementById(SELECTORS.unusedCleanupModal);
+    if (modal) {
+      modal.classList.remove("open");
+    }
+    setUnusedModalState("review");
   }
 
   /* ============================================================
      4. FILTERING & SEARCH
      ============================================================ */
   /**
-   * Filters the media items array according to current chip filter, event tag, and search query.
-   * @returns {Array} Filtered list of files.
+   * Filters and sorts the media items array according to current chip filter, event tag, search query, and sort order.
+   * @returns {Array} Filtered and sorted list of files.
    */
   function getFilteredFiles() {
     let items = realStorageFiles;
@@ -586,10 +1140,10 @@
     else if (currentDamFilter === "audio") items = items.filter(f => f.folder === "audio");
     else if (currentDamFilter === "used") items = items.filter(f => f.isUsed);
     else if (currentDamFilter === "orphan" || currentDamFilter === "unused") items = items.filter(f => !f.isUsed);
-    else if (currentDamFilter === "favorites") items = items.filter(f => f.isFavorite);
+    else if (currentDamFilter === "favorites") items = items.filter(f => !!f.isFavorite);
     else if (currentDamFilter === "recent") {
       const weekAgo = Date.now() - 7 * 86400000;
-      items = items.filter(f => new Date(f.created_at).getTime() > weekAgo);
+      items = items.filter(f => new Date(f.created_at || 0).getTime() > weekAgo);
     }
 
     // 2. Event Tag Filter
@@ -609,7 +1163,23 @@
       );
     }
 
-    return items;
+    // 4. Sorting (Non-destructive, creates a shallow copy)
+    const sorted = [...items];
+    if (currentDamSort === "newest") {
+      sorted.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    } else if (currentDamSort === "oldest") {
+      sorted.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    } else if (currentDamSort === "largest") {
+      sorted.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0));
+    } else if (currentDamSort === "smallest") {
+      sorted.sort((a, b) => (Number(a.size) || 0) - (Number(b.size) || 0));
+    } else if (currentDamSort === "name_asc") {
+      sorted.sort((a, b) => (a.name || a.path || "").localeCompare(b.name || b.path || "", undefined, { sensitivity: "base", numeric: true }));
+    } else if (currentDamSort === "name_desc") {
+      sorted.sort((a, b) => (b.name || b.path || "").localeCompare(a.name || a.path || "", undefined, { sensitivity: "base", numeric: true }));
+    }
+
+    return sorted;
   }
 
   /* ============================================================
@@ -640,21 +1210,26 @@
 
     items.forEach(file => {
       const card = document.createElement("div");
-      card.className = "glass-card dam-asset-card";
+      const isUnused = !file.isUsed;
+      const isSelectedUnused = isUnused && selectedUnusedPaths.has(file.path);
+      card.className = `glass-card dam-asset-card ${isUnused ? "unused-card" : ""} ${isSelectedUnused ? "selected-unused" : ""}`;
 
       let previewHtml = "";
       if (file.folder === "photos") {
         previewHtml = `<img src="${file.publicUrl}" alt="${file.name}" onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend', '<div class=\\'gallery-emoji-tile\\'>📷</div>');">`;
       } else if (file.folder === "videos") {
-        previewHtml = `<video src="${file.publicUrl}" preload="metadata" muted></video>`;
+        previewHtml = `<video src="${file.publicUrl}#t=0.001" preload="metadata" muted playsinline></video>`;
       } else {
         previewHtml = `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;"><span style="font-size:3.2rem;color:var(--gold);">🎙</span><span style="font-size:0.75rem;color:var(--text-muted);">${file.name}</span></div>`;
       }
 
-      const isChecked = selectedFilePaths.has(file.path);
       const usedBadgeHtml = file.isUsed 
         ? `<span class="used-badge" title="Linked to Wish: ${file.usedInName}">🔗 ${file.usedInName}</span>` 
         : `<span class="used-badge unused" title="No active wish references this storage file">⚠️ Unused</span>`;
+
+      const checkboxHtml = isUnused
+        ? `<input type="checkbox" class="dam-file-checkbox dam-unused-checkbox" data-path="${file.path}" ${isSelectedUnused ? "checked" : ""} style="cursor:pointer;" title="Select unused file for cleanup">`
+        : `<input type="checkbox" class="dam-file-checkbox" data-path="${file.path}" disabled title="Linked to Wish: ${file.usedInName} — Protected from Cleanup" style="opacity:0.25;cursor:not-allowed;">`;
 
       card.innerHTML = `
         <div class="dam-preview-box">
@@ -667,6 +1242,7 @@
 
           <!-- Hover Action Overlay -->
           <div class="hover-actions-overlay">
+            <button class="overlay-btn" title="ℹ️ Details & Usage" onclick="window.adminApp ? window.adminApp.openAssetInspector('${file.path}') : (window.AdminMedia && window.AdminMedia.openAssetInspector('${file.path}'))">ℹ️</button>
             <button class="overlay-btn" title="👁️ Preview" onclick="window.adminApp ? window.adminApp.openAssetPreview('${file.publicUrl}', '${file.name}', '${file.folder}', '${format(file.size)}') : (window.AdminMedia && window.AdminMedia.openAssetPreview('${file.publicUrl}', '${file.name}', '${file.folder}', '${format(file.size)}'))">👁️</button>
             <a class="overlay-btn" title="📥 Download" href="${file.publicUrl}" download target="_blank" style="text-decoration:none;">📥</a>
             <button class="overlay-btn" title="📋 Copy URL" onclick="window.adminApp ? window.adminApp.copyWishUrl('${file.publicUrl}') : (window.AdminCore && window.AdminCore.copyWishUrl('${file.publicUrl}'))">📋</button>
@@ -677,8 +1253,8 @@
 
         <div class="asset-info-box">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <input type="checkbox" class="dam-file-checkbox" data-path="${file.path}" ${isChecked ? "checked" : ""} style="cursor:pointer;">
-            <div class="asset-title" title="${file.name}">${file.name}</div>
+            ${checkboxHtml}
+            <div class="asset-title" title="Click to inspect: ${file.name}" style="cursor:pointer;" onclick="window.adminApp ? window.adminApp.openAssetInspector('${file.path}') : (window.AdminMedia && window.AdminMedia.openAssetInspector('${file.path}'))">${file.name}</div>
           </div>
           <div class="asset-owner-row">
             <span>Owner: <strong>${file.owner}</strong></span>
@@ -686,22 +1262,24 @@
           </div>
           <div class="asset-meta-row">
             <span>${format(file.size)}</span>
-            <span style="color:${file.isUsed ? '#4ade80' : '#f87171'};font-size:0.75rem;font-weight:600;">${file.isUsed ? '🔗 Used' : '⚠️ Unused'}</span>
+            <span style="color:${file.isUsed ? '#4ade80' : '#f87171'};font-size:0.75rem;font-weight:600;cursor:pointer;" onclick="window.adminApp ? window.adminApp.openAssetInspector('${file.path}') : (window.AdminMedia && window.AdminMedia.openAssetInspector('${file.path}'))" title="Click to view references">${file.isUsed ? '🔗 Used' : '⚠️ Unused'}</span>
             <span>${new Date(file.created_at).toLocaleDateString()}</span>
           </div>
         </div>
       `;
 
-      const chk = card.querySelector(".dam-file-checkbox");
+      const chk = card.querySelector(".dam-unused-checkbox");
       if (chk) {
         chk.addEventListener("change", (e) => {
-          if (e.target.checked) selectedFilePaths.add(file.path);
-          else selectedFilePaths.delete(file.path);
+          if (e.target.checked) selectUnusedAsset(file.path);
+          else deselectUnusedAsset(file.path);
         });
       }
 
       container.appendChild(card);
     });
+
+    updateUnusedSelectionUI();
   }
 
   /**
@@ -726,7 +1304,9 @@
     if (dlBtn) dlBtn.href = url;
     if (copyBtn) {
       copyBtn.onclick = () => {
-        if (typeof copyWishUrl === "function") copyWishUrl(url);
+        if (typeof window.copyWishUrl === "function") window.copyWishUrl(url);
+        else if (window.AdminCore && typeof window.AdminCore.copyWishUrl === "function") window.AdminCore.copyWishUrl(url);
+        else if (typeof copyWishUrl === "function") copyWishUrl(url);
       };
     }
 
@@ -741,6 +1321,470 @@
     modal.classList.add("open");
   }
 
+  /**
+   * Closes the Asset Preview lightbox modal and safely terminates active media playback.
+   */
+  function closeAssetPreview() {
+    const viewerEl = document.getElementById(SELECTORS.modalViewer);
+    if (viewerEl) {
+      const mediaElements = viewerEl.querySelectorAll("video, audio");
+      mediaElements.forEach(media => {
+        try {
+          media.pause();
+          media.currentTime = 0;
+          media.removeAttribute("src");
+          media.src = "";
+          if (typeof media.load === "function") media.load();
+        } catch (e) {}
+      });
+      viewerEl.innerHTML = "";
+    }
+    const modal = document.getElementById(SELECTORS.previewModal);
+    if (modal) {
+      modal.classList.remove("open");
+    }
+  }
+
+  /**
+   * Helper to format a wish reference field name into user-friendly display text.
+   * @param {string} field - Raw field identifier (e.g. "gallery_json[0]", "music_url").
+   * @returns {string} User-friendly formatted label.
+   */
+  function formatReferenceField(field) {
+    if (!field || typeof field !== "string") return "General Reference";
+    if (field === "music_url") return "🎵 Background Music";
+    if (field === "video_url") return "🎥 Video Wish";
+    if (field.startsWith("gallery_json") || field.startsWith("gallery")) return "🖼️ Photo Gallery";
+    if (field.startsWith("timeline_json") || field.startsWith("timeline") || field.startsWith("memory_timeline")) return "⏳ Memory Timeline";
+    if (field === "cover_image") return "✨ Cover Image";
+    if (field === "avatar") return "👤 Recipient Avatar";
+    return `🔗 ${field}`;
+  }
+
+  let activeInspectorAudio = null;
+  let activeInspectorAudioCleanup = null;
+
+  /**
+   * Safely pauses and releases any active inspector audio instance.
+   */
+  function cleanupActiveInspectorAudio() {
+    if (typeof activeInspectorAudioCleanup === "function") {
+      try { activeInspectorAudioCleanup(); } catch (e) {}
+      activeInspectorAudioCleanup = null;
+    }
+    if (activeInspectorAudio) {
+      try {
+        activeInspectorAudio.pause();
+        activeInspectorAudio.src = "";
+        if (typeof activeInspectorAudio.load === "function") {
+          activeInspectorAudio.load();
+        }
+      } catch (e) {}
+      activeInspectorAudio = null;
+    }
+  }
+
+  /**
+   * Formats seconds into MM:SS display format.
+   * @param {number} seconds
+   * @returns {string}
+   */
+  function formatAudioTime(seconds) {
+    if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  }
+
+  /**
+   * Renders the custom luxury dark-themed audio player inside the inspector preview box.
+   * @param {HTMLElement} container - Inspector preview container.
+   * @param {Object} file - Media asset record.
+   */
+  function renderCustomAudioPlayer(container, file) {
+    if (!container || !file) return;
+
+    cleanupActiveInspectorAudio();
+
+    const safeName = escapeHtml(file.name || "audio.mp3");
+    const safeUrl = escapeHtml(file.publicUrl || "");
+    const sizeStr = formatSize(file.size || 0);
+
+    container.innerHTML = `
+      <div class="inspector-audio-player" id="inspector-custom-audio-player">
+        <div class="inspector-audio-header">
+          <div class="inspector-audio-waveform-icon">
+            <span>🎙️</span>
+          </div>
+          <div class="inspector-audio-track-details">
+            <div class="inspector-audio-name" title="${safeName}">${safeName}</div>
+            <div class="inspector-audio-badge">Audio Clip • ${sizeStr}</div>
+          </div>
+        </div>
+
+        <audio id="inspector-audio-element" src="${safeUrl}" preload="metadata" style="display:none;"></audio>
+
+        <div class="inspector-audio-timeline">
+          <span class="inspector-audio-time-label" id="inspector-audio-cur-time">0:00</span>
+          <div class="inspector-audio-seekbar-wrapper">
+            <input type="range" class="inspector-audio-seekbar" id="inspector-audio-seekbar" min="0" max="100" value="0" step="0.1" aria-label="Playback progress">
+          </div>
+          <span class="inspector-audio-time-label" id="inspector-audio-total-time">0:00</span>
+        </div>
+
+        <div class="inspector-audio-controls">
+          <button type="button" class="inspector-audio-btn-play" id="inspector-audio-play-btn" title="Play audio" aria-label="Play audio">
+            <span class="play-icon" id="inspector-audio-play-icon">▶</span>
+          </button>
+          <div class="inspector-audio-volume-control">
+            <button type="button" class="inspector-audio-btn-mute" id="inspector-audio-mute-btn" title="Mute / Unmute" aria-label="Mute or unmute">🔊</button>
+            <input type="range" class="inspector-audio-volume-slider" id="inspector-audio-volume-slider" min="0" max="1" step="0.05" value="1" aria-label="Volume">
+          </div>
+        </div>
+
+        <div class="inspector-audio-error-banner" id="inspector-audio-error-banner" style="display:none;">
+          <span>⚠️ Audio could not be loaded</span>
+        </div>
+      </div>
+    `;
+
+    const audio = container.querySelector("#inspector-audio-element");
+    const playBtn = container.querySelector("#inspector-audio-play-btn");
+    const playIcon = container.querySelector("#inspector-audio-play-icon");
+    const seekbar = container.querySelector("#inspector-audio-seekbar");
+    const curTimeEl = container.querySelector("#inspector-audio-cur-time");
+    const totalTimeEl = container.querySelector("#inspector-audio-total-time");
+    const muteBtn = container.querySelector("#inspector-audio-mute-btn");
+    const volSlider = container.querySelector("#inspector-audio-volume-slider");
+    const errBanner = container.querySelector("#inspector-audio-error-banner");
+
+    if (!audio) return;
+    activeInspectorAudio = audio;
+
+    let isDraggingSeekbar = false;
+    let previousVolume = 1;
+
+    function updateSeekbarVisual(pct) {
+      if (seekbar) {
+        const p = Math.max(0, Math.min(100, pct));
+        seekbar.style.background = `linear-gradient(to right, var(--gold, #fbbf24) ${p}%, rgba(255, 255, 255, 0.15) ${p}%)`;
+      }
+    }
+
+    function updateVolumeIcon(vol, isMuted) {
+      if (!muteBtn) return;
+      if (isMuted || vol === 0) {
+        muteBtn.textContent = "🔇";
+      } else if (vol < 0.5) {
+        muteBtn.textContent = "🔉";
+      } else {
+        muteBtn.textContent = "🔊";
+      }
+    }
+
+    // 1. Play / Pause
+    if (playBtn) {
+      playBtn.addEventListener("click", () => {
+        if (audio.paused || audio.ended) {
+          if (audio.ended) {
+            audio.currentTime = 0;
+          }
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.catch === "function") {
+            playPromise.catch(err => {
+              console.warn("Inspector audio playback error:", err);
+              if (errBanner) errBanner.style.display = "flex";
+            });
+          }
+        } else {
+          audio.pause();
+        }
+      });
+    }
+
+    // 2. Audio State Listeners
+    audio.addEventListener("play", () => {
+      if (playBtn) playBtn.classList.add("playing");
+      if (playIcon) playIcon.textContent = "⏸";
+      if (playBtn) {
+        playBtn.title = "Pause audio";
+        playBtn.setAttribute("aria-label", "Pause audio");
+      }
+    });
+
+    audio.addEventListener("pause", () => {
+      if (playBtn) playBtn.classList.remove("playing");
+      if (playIcon) playIcon.textContent = "▶";
+      if (playBtn) {
+        playBtn.title = "Play audio";
+        playBtn.setAttribute("aria-label", "Play audio");
+      }
+    });
+
+    const onMeta = () => {
+      if (isFinite(audio.duration) && audio.duration > 0 && totalTimeEl) {
+        totalTimeEl.textContent = formatAudioTime(audio.duration);
+      }
+    };
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("durationchange", onMeta);
+    audio.addEventListener("canplay", onMeta);
+
+    audio.addEventListener("timeupdate", () => {
+      if (!isDraggingSeekbar && isFinite(audio.duration) && audio.duration > 0) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        if (seekbar) seekbar.value = pct;
+        updateSeekbarVisual(pct);
+        if (curTimeEl) curTimeEl.textContent = formatAudioTime(audio.currentTime);
+      }
+    });
+
+    audio.addEventListener("ended", () => {
+      if (playBtn) playBtn.classList.remove("playing");
+      if (playIcon) playIcon.textContent = "▶";
+      if (playBtn) {
+        playBtn.title = "Replay audio";
+        playBtn.setAttribute("aria-label", "Replay audio");
+      }
+      if (seekbar) {
+        seekbar.value = 0;
+        updateSeekbarVisual(0);
+      }
+      if (curTimeEl) curTimeEl.textContent = formatAudioTime(0);
+    });
+
+    audio.addEventListener("error", () => {
+      if (errBanner) errBanner.style.display = "flex";
+      if (playBtn) {
+        playBtn.disabled = true;
+        playBtn.style.opacity = "0.5";
+      }
+    });
+
+    // 3. Seeking Interaction
+    if (seekbar) {
+      seekbar.addEventListener("input", () => {
+        isDraggingSeekbar = true;
+        const pct = parseFloat(seekbar.value) || 0;
+        updateSeekbarVisual(pct);
+        if (isFinite(audio.duration) && audio.duration > 0 && curTimeEl) {
+          const previewSec = (pct / 100) * audio.duration;
+          curTimeEl.textContent = formatAudioTime(previewSec);
+        }
+      });
+
+      seekbar.addEventListener("change", () => {
+        isDraggingSeekbar = false;
+        const pct = parseFloat(seekbar.value) || 0;
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          audio.currentTime = (pct / 100) * audio.duration;
+        }
+      });
+    }
+
+    // 4. Volume / Mute Interaction
+    if (volSlider) {
+      volSlider.addEventListener("input", () => {
+        const val = parseFloat(volSlider.value) || 0;
+        audio.volume = val;
+        audio.muted = (val === 0);
+        if (val > 0) previousVolume = val;
+        updateVolumeIcon(val, audio.muted);
+      });
+    }
+
+    if (muteBtn) {
+      muteBtn.addEventListener("click", () => {
+        audio.muted = !audio.muted;
+        if (audio.muted) {
+          if (volSlider) volSlider.value = 0;
+          updateVolumeIcon(0, true);
+        } else {
+          const restoreVal = previousVolume > 0 ? previousVolume : 1;
+          audio.volume = restoreVal;
+          if (volSlider) volSlider.value = restoreVal;
+          updateVolumeIcon(restoreVal, false);
+        }
+      });
+    }
+
+    activeInspectorAudioCleanup = () => {
+      // Clean up scoped listeners if needed
+    };
+  }
+
+  /**
+   * Opens the Media Asset Details & Usage Inspector modal.
+   * Read-only modal displaying metadata, preview, and all referencing wishes.
+   * @param {string|Object} fileOrPath - File object or storage path.
+   */
+  function openAssetInspector(fileOrPath) {
+    cleanupActiveInspectorAudio();
+
+    const path = typeof fileOrPath === "string" ? fileOrPath : (fileOrPath && (fileOrPath.path || fileOrPath.canonicalPath));
+    let file = typeof fileOrPath === "object" && fileOrPath !== null
+      ? fileOrPath
+      : realStorageFiles.find(f => f.path === path || f.canonicalPath === path || f.id === path);
+
+    if (!file) {
+      if (typeof showToast === "function") showToast("Asset details not found ⚠️");
+      return;
+    }
+
+    const modal = document.getElementById(SELECTORS.inspectorModal);
+    if (!modal) return;
+
+    const format = formatSize;
+
+    // Ensure references are populated
+    let refs = Array.isArray(file.references) ? [...file.references] : [];
+    if (refs.length === 0 && file.usedInUuid) {
+      refs = [{
+        wishId: file.usedInUuid,
+        recipientName: file.usedInName || "Wish",
+        field: "general"
+      }];
+    }
+
+    // Safety live check with MediaReferenceEngine if available
+    let wishes = [];
+    if (window.AdminWishes && typeof window.AdminWishes.getAllWishes === "function") {
+      wishes = window.AdminWishes.getAllWishes();
+    } else if (window.AdminCore && Array.isArray(window.AdminCore.wishes)) {
+      wishes = window.AdminCore.wishes;
+    } else if (Array.isArray(cachedActiveWishes)) {
+      wishes = cachedActiveWishes;
+    }
+
+    const refEngine = (typeof MediaReferenceEngine !== "undefined" && MediaReferenceEngine) ||
+                      (window.MediaReferenceEngine || (window.AdminMedia && window.AdminMedia.ReferenceEngine));
+    if (refEngine && typeof refEngine.buildReferenceMap === "function" && wishes.length > 0) {
+      const refMap = refEngine.buildReferenceMap(wishes);
+      const liveRefs = refMap.getReferences(file.path || file.canonicalPath);
+      if (liveRefs.length > 0) {
+        refs = liveRefs;
+      }
+    }
+
+    const isUsed = refs.length > 0 || !!file.isUsed;
+
+    // 1. Preview
+    const previewEl = document.getElementById(SELECTORS.inspectorMediaPreview);
+    if (previewEl) {
+      if (file.folder === "photos") {
+        previewEl.innerHTML = `<img src="${file.publicUrl}" alt="${file.name}" style="max-width:100%;max-height:260px;object-fit:contain;border-radius:8px;">`;
+      } else if (file.folder === "videos") {
+        previewEl.innerHTML = `<video src="${file.publicUrl}" controls style="max-width:100%;max-height:260px;border-radius:8px;"></video>`;
+      } else if (file.folder === "audio") {
+        renderCustomAudioPlayer(previewEl, file);
+      } else {
+        previewEl.innerHTML = `<div style="text-align:center;padding:24px;"><span style="font-size:3rem;">📁</span><p style="color:var(--text-muted);font-size:0.82rem;margin-top:8px;">${file.name}</p></div>`;
+      }
+    }
+
+    // 2. Metadata
+    const nameEl = document.getElementById(SELECTORS.inspectorFileName);
+    const pathEl = document.getElementById(SELECTORS.inspectorFilePath);
+    const folderEl = document.getElementById(SELECTORS.inspectorFileFolder);
+    const sizeEl = document.getElementById(SELECTORS.inspectorFileSize);
+    const mimeEl = document.getElementById(SELECTORS.inspectorFileMime);
+    const dateEl = document.getElementById(SELECTORS.inspectorFileDate);
+    const statusBadge = document.getElementById(SELECTORS.inspectorStatusBadge);
+
+    if (nameEl) nameEl.textContent = file.name || "—";
+    if (pathEl) pathEl.textContent = file.path || file.canonicalPath || "—";
+    if (folderEl) folderEl.textContent = (file.folder || "general").toUpperCase();
+    if (sizeEl) sizeEl.textContent = format(file.size || 0);
+    if (mimeEl) mimeEl.textContent = file.mimetype || (file.folder === "photos" ? "image/jpeg" : file.folder === "videos" ? "video/mp4" : "audio/mpeg");
+    if (dateEl) dateEl.textContent = file.created_at ? new Date(file.created_at).toLocaleString() : "—";
+
+    // 3. Usage Linkage
+    const usedSec = document.getElementById(SELECTORS.inspectorUsedSection);
+    const unusedSec = document.getElementById(SELECTORS.inspectorUnusedSection);
+    const refCountText = document.getElementById(SELECTORS.inspectorRefCountText);
+    const refsList = document.getElementById(SELECTORS.inspectorReferencesList);
+
+    if (statusBadge) {
+      if (isUsed) {
+        statusBadge.className = "used-badge";
+        statusBadge.textContent = `🔗 Used (${refs.length || 1})`;
+        statusBadge.style.background = "rgba(74, 222, 128, 0.15)";
+        statusBadge.style.color = "#86efac";
+      } else {
+        statusBadge.className = "used-badge unused";
+        statusBadge.textContent = "⚠️ Unused";
+        statusBadge.style.background = "rgba(239, 68, 68, 0.15)";
+        statusBadge.style.color = "#fca5a5";
+      }
+    }
+
+    if (isUsed) {
+      if (usedSec) usedSec.style.display = "block";
+      if (unusedSec) unusedSec.style.display = "none";
+      if (refCountText) refCountText.textContent = String(refs.length || 1);
+      if (refsList) {
+        refsList.innerHTML = refs.map(r => `
+          <tr>
+            <td><strong>${r.recipientName || file.usedInName || "Wish"}</strong></td>
+            <td><code style="font-size:0.75rem;color:var(--gold);">${r.wishId || "—"}</code></td>
+            <td><span style="color:#c084fc;font-size:0.78rem;">${formatReferenceField(r.field)}</span></td>
+          </tr>
+        `).join("");
+      }
+    } else {
+      if (usedSec) usedSec.style.display = "none";
+      if (unusedSec) unusedSec.style.display = "block";
+    }
+
+    // 4. Copy & Action Buttons
+    const copyUrlBtn = document.getElementById(SELECTORS.inspectorCopyUrlBtn);
+    const copyPathBtn = document.getElementById(SELECTORS.inspectorCopyPathBtn);
+    const dlBtn = document.getElementById(SELECTORS.inspectorDownloadBtn);
+    const cleanupBtn = document.getElementById(SELECTORS.inspectorSelectCleanupBtn);
+
+    if (copyUrlBtn) {
+      copyUrlBtn.onclick = () => {
+        if (typeof window.copyWishUrl === "function") window.copyWishUrl(file.publicUrl);
+        else if (window.AdminCore && typeof window.AdminCore.copyWishUrl === "function") window.AdminCore.copyWishUrl(file.publicUrl);
+        else if (typeof copyWishUrl === "function") copyWishUrl(file.publicUrl);
+      };
+    }
+
+    if (copyPathBtn) {
+      copyPathBtn.onclick = () => {
+        if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          navigator.clipboard.writeText(file.path || file.canonicalPath);
+          if (typeof showToast === "function") showToast("Storage path copied to clipboard! 📌");
+        } else if (typeof window.copyWishUrl === "function") {
+          window.copyWishUrl(file.path || file.canonicalPath);
+        }
+      };
+    }
+
+    if (dlBtn) dlBtn.href = file.publicUrl;
+
+    if (cleanupBtn) {
+      cleanupBtn.onclick = () => {
+        closeAssetInspector();
+        selectUnusedAsset(file.path);
+        openUnusedReviewModal();
+      };
+    }
+
+    modal.classList.add("open");
+  }
+
+  /**
+   * Closes the Media Asset Details & Usage Inspector modal.
+   */
+  function closeAssetInspector() {
+    cleanupActiveInspectorAudio();
+    const modal = document.getElementById(SELECTORS.inspectorModal);
+    if (modal) {
+      modal.classList.remove("open");
+    }
+  }
+
   /* ============================================================
      6. ASSET ACTIONS & CLEANUP TOOLS
      ============================================================ */
@@ -752,33 +1796,31 @@
     if (typeof window.confirm === "function" && !window.confirm("Are you sure you want to delete this media asset from Supabase Storage?")) return;
     if (typeof showToast === "function") showToast("Deleting asset... ⏳");
 
+    let ok = false;
     if (window.StorageModule && typeof window.StorageModule.deleteMedia === "function") {
-      const ok = await window.StorageModule.deleteMedia(path);
-      if (ok) {
-        realStorageFiles = realStorageFiles.filter(f => f.path !== path);
-        updateStorageAnalytics();
-        renderDamGrid();
-        if (typeof onEventHook === "function") onEventHook("MEDIA_DELETE", `Deleted cloud asset: ${path}`);
-        if (typeof showToast === "function") showToast("Asset deleted from Supabase Storage 🗑️");
-        return;
-      }
+      ok = await window.StorageModule.deleteMedia(path);
     }
 
-    realStorageFiles = realStorageFiles.filter(f => f.path !== path);
-    updateStorageAnalytics();
-    renderDamGrid();
-    if (typeof showToast === "function") showToast("Asset removed from library 🗑️");
+    if (ok) {
+      realStorageFiles = realStorageFiles.filter(f => f.path !== path);
+      deselectUnusedAsset(path);
+      updateStorageAnalytics();
+      renderDamGrid();
+      if (typeof onEventHook === "function") onEventHook("MEDIA_DELETE", `Deleted cloud asset: ${path}`);
+      if (typeof showToast === "function") showToast("Asset deleted from Supabase Storage 🗑️");
+    } else {
+      if (typeof showToast === "function") showToast("Failed to delete asset from Supabase Storage ❌");
+    }
   }
 
   /**
    * Prompts to rename a media asset in the catalog.
    * @param {string} path - Cloud file path.
-   * @param {string} currentName - Current filename.
+   * @param {string} currentName - Existing display name.
    */
   function renameAsset(path, currentName) {
-    if (typeof window.prompt !== "function") return;
-    const newName = window.prompt("Enter new filename for asset:", currentName);
-    if (!newName || newName === currentName) return;
+    const newName = typeof window.prompt === "function" ? window.prompt("Rename media asset:", currentName) : null;
+    if (!newName || newName.trim() === "" || newName === currentName) return;
 
     const file = realStorageFiles.find(f => f.path === path);
     if (file) {
@@ -802,44 +1844,29 @@
     if (typeof showToast === "function") showToast(`Deleting ${selectedFilePaths.size} files... ⏳`);
     const pathsArray = Array.from(selectedFilePaths);
 
+    let ok = false;
     if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
-      await window.StorageModule.deleteMultipleMedia(pathsArray);
+      ok = await window.StorageModule.deleteMultipleMedia(pathsArray);
     }
 
-    realStorageFiles = realStorageFiles.filter(f => !selectedFilePaths.has(f.path));
-    selectedFilePaths.clear();
-    updateStorageAnalytics();
-    renderDamGrid();
-
-    if (typeof onEventHook === "function") onEventHook("MEDIA_CLEANUP", `Bulk deleted ${pathsArray.length} assets`);
-    if (typeof showToast === "function") showToast("Selected files deleted 🗑️");
+    if (ok) {
+      realStorageFiles = realStorageFiles.filter(f => !selectedFilePaths.has(f.path));
+      selectedFilePaths.clear();
+      updateStorageAnalytics();
+      renderDamGrid();
+      if (typeof onEventHook === "function") onEventHook("MEDIA_CLEANUP", `Bulk deleted ${pathsArray.length} assets`);
+      if (typeof showToast === "function") showToast("Selected files deleted from Supabase Storage 🗑️");
+    } else {
+      if (typeof showToast === "function") showToast("Failed to delete selected files from Supabase Storage ❌");
+    }
   }
 
   /**
-   * Deletes all unlinked media files in bulk.
+   * Triggers review of all unused media files in bulk.
    */
   async function deleteUnusedAssets() {
-    const unusedFiles = realStorageFiles.filter(f => !f.isUsed);
-    if (unusedFiles.length === 0) {
-      if (typeof showToast === "function") showToast("Zero unused files found — All assets are currently linked! ✨");
-      return;
-    }
-
-    if (typeof window.confirm === "function" && !window.confirm(`Clean up ${unusedFiles.length} unused media file(s) not linked to any wish?`)) return;
-
-    if (typeof showToast === "function") showToast(`Cleaning up ${unusedFiles.length} unused files... ⏳`);
-    const pathsArray = unusedFiles.map(f => f.path);
-
-    if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
-      await window.StorageModule.deleteMultipleMedia(pathsArray);
-    }
-
-    realStorageFiles = realStorageFiles.filter(f => f.isUsed);
-    updateStorageAnalytics();
-    renderDamGrid();
-
-    if (typeof onEventHook === "function") onEventHook("MEDIA_CLEANUP", `Safe cleanup removed ${unusedFiles.length} unlinked files`);
-    if (typeof showToast === "function") showToast(`🧹 Successfully cleaned up ${unusedFiles.length} unused files! ✨`);
+    selectAllUnused();
+    openUnusedReviewModal();
   }
 
   /**
@@ -859,16 +1886,20 @@
     if (typeof showToast === "function") showToast(`Deleting ${tempFiles.length} temp files... ⏳`);
     const pathsArray = tempFiles.map(f => f.path);
 
+    let ok = false;
     if (window.StorageModule && typeof window.StorageModule.deleteMultipleMedia === "function") {
-      await window.StorageModule.deleteMultipleMedia(pathsArray);
+      ok = await window.StorageModule.deleteMultipleMedia(pathsArray);
     }
 
-    realStorageFiles = realStorageFiles.filter(f => !pathsArray.includes(f.path));
-    updateStorageAnalytics();
-    renderDamGrid();
-
-    if (typeof onEventHook === "function") onEventHook("MEDIA_CLEANUP", `Deleted ${tempFiles.length} old temp files`);
-    if (typeof showToast === "function") showToast(`⏳ Cleaned up ${tempFiles.length} old temp files! ✨`);
+    if (ok) {
+      realStorageFiles = realStorageFiles.filter(f => !pathsArray.includes(f.path));
+      updateStorageAnalytics();
+      renderDamGrid();
+      if (typeof onEventHook === "function") onEventHook("MEDIA_CLEANUP", `Deleted ${tempFiles.length} old temp files`);
+      if (typeof showToast === "function") showToast(`⏳ Cleaned up ${tempFiles.length} old temp files! ✨`);
+    } else {
+      if (typeof showToast === "function") showToast("Failed to delete old temporary files from Supabase Storage ❌");
+    }
   }
 
   /* ============================================================
@@ -908,7 +1939,7 @@
      8. EVENT HANDLERS & INITIALIZATION
      ============================================================ */
   /**
-   * Initializes DAM filter chips, search input, event filter dropdown, and cleanup tools.
+   * Initializes DAM filter chips, search input, event filter dropdown, unused toolbar, and cleanup tools.
    * @param {Function} [onEventCallback] - Callback triggered when media mutations occur.
    */
   function init(onEventCallback) {
@@ -932,12 +1963,22 @@
       }
     });
 
+    // DAM Sort Dropdown
+    const sortSelect = document.getElementById(SELECTORS.sortSelect);
+    if (sortSelect && !sortSelect.__damBound) {
+      sortSelect.__damBound = true;
+      sortSelect.addEventListener("change", (e) => {
+        currentDamSort = (e && e.target && e.target.value) || (sortSelect ? sortSelect.value : "newest");
+        renderDamGrid();
+      });
+    }
+
     // DAM Event Filter Dropdown
     const eventSelect = document.getElementById(SELECTORS.eventFilter);
     if (eventSelect && !eventSelect.__damBound) {
       eventSelect.__damBound = true;
       eventSelect.addEventListener("change", (e) => {
-        currentDamEventFilter = e.target.value;
+        currentDamEventFilter = (e && e.target && e.target.value) || (eventSelect ? eventSelect.value : "all");
         renderDamGrid();
       });
     }
@@ -947,7 +1988,7 @@
     if (damSearchInput && !damSearchInput.__damBound) {
       damSearchInput.__damBound = true;
       damSearchInput.addEventListener("input", (e) => {
-        damSearchQuery = e.target.value.trim();
+        damSearchQuery = ((e && e.target && typeof e.target.value === "string") ? e.target.value : (damSearchInput ? damSearchInput.value : "")).trim();
         renderDamGrid();
       });
     }
@@ -958,6 +1999,134 @@
       scanBtn.__damBound = true;
       scanBtn.addEventListener("click", () => {
         scanStorage();
+      });
+    }
+
+    // Phase 31C-3: Unused Files Selection Bar Buttons
+    const btnSelectAllUnused = document.getElementById(SELECTORS.btnSelectAllUnused);
+    if (btnSelectAllUnused && !btnSelectAllUnused.__damBound) {
+      btnSelectAllUnused.__damBound = true;
+      btnSelectAllUnused.addEventListener("click", () => {
+        selectAllUnused();
+      });
+    }
+
+    const btnReviewUnused = document.getElementById(SELECTORS.btnReviewUnused);
+    if (btnReviewUnused && !btnReviewUnused.__damBound) {
+      btnReviewUnused.__damBound = true;
+      btnReviewUnused.addEventListener("click", () => {
+        openUnusedReviewModal();
+      });
+    }
+
+    const btnClearUnused = document.getElementById(SELECTORS.btnClearUnusedSelection);
+    if (btnClearUnused && !btnClearUnused.__damBound) {
+      btnClearUnused.__damBound = true;
+      btnClearUnused.addEventListener("click", () => {
+        clearUnusedSelection();
+      });
+    }
+
+    // Phase 31C-3 / 31C-4: Unused Review & Cleanup Modal Controls
+    const btnCloseX = document.getElementById(SELECTORS.btnCloseUnusedX);
+    if (btnCloseX && !btnCloseX.__damBound) {
+      btnCloseX.__damBound = true;
+      btnCloseX.addEventListener("click", closeUnusedReviewModal);
+    }
+
+    const btnCancel = document.getElementById(SELECTORS.btnCancelUnused);
+    if (btnCancel && !btnCancel.__damBound) {
+      btnCancel.__damBound = true;
+      btnCancel.addEventListener("click", closeUnusedReviewModal);
+    }
+
+    const btnStartCleanup = document.getElementById(SELECTORS.btnStartUnusedCleanup);
+    if (btnStartCleanup && !btnStartCleanup.__damBound) {
+      btnStartCleanup.__damBound = true;
+      btnStartCleanup.addEventListener("click", proceedToUnusedDeletionConfirmation);
+    }
+
+    const btnBackToReview = document.getElementById(SELECTORS.btnBackToUnusedReview);
+    if (btnBackToReview && !btnBackToReview.__damBound) {
+      btnBackToReview.__damBound = true;
+      btnBackToReview.addEventListener("click", () => {
+        setUnusedModalState("review");
+      });
+    }
+
+    const btnConfirmDelete = document.getElementById(SELECTORS.btnConfirmDeleteUnused);
+    if (btnConfirmDelete && !btnConfirmDelete.__damBound) {
+      btnConfirmDelete.__damBound = true;
+      btnConfirmDelete.addEventListener("click", executeUnusedMediaCleanup);
+    }
+
+    const unusedModal = document.getElementById(SELECTORS.unusedCleanupModal);
+    if (unusedModal && !unusedModal.__damBound) {
+      unusedModal.__damBound = true;
+      unusedModal.addEventListener("click", (e) => {
+        if (e.target === unusedModal) closeUnusedReviewModal();
+      });
+    }
+
+    if (typeof document.addEventListener === "function" && !document.__unusedModalEscBound) {
+      document.__unusedModalEscBound = true;
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeUnusedReviewModal();
+      });
+    }
+
+    // Phase 31C-5: Asset Details & Usage Inspector Modal Controls
+    const btnCloseInspector = document.getElementById(SELECTORS.inspectorCloseBtn);
+    if (btnCloseInspector && !btnCloseInspector.__damBound) {
+      btnCloseInspector.__damBound = true;
+      btnCloseInspector.addEventListener("click", closeAssetInspector);
+    }
+
+    const btnCloseInspectorX = document.getElementById(SELECTORS.inspectorCloseXBtn);
+    if (btnCloseInspectorX && !btnCloseInspectorX.__damBound) {
+      btnCloseInspectorX.__damBound = true;
+      btnCloseInspectorX.addEventListener("click", closeAssetInspector);
+    }
+
+    const inspectorModal = document.getElementById(SELECTORS.inspectorModal);
+    if (inspectorModal && !inspectorModal.__damBound) {
+      inspectorModal.__damBound = true;
+      inspectorModal.addEventListener("click", (e) => {
+        if (e.target === inspectorModal) closeAssetInspector();
+      });
+    }
+
+    if (typeof document.addEventListener === "function" && !document.__inspectorModalEscBound) {
+      document.__inspectorModalEscBound = true;
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeAssetInspector();
+      });
+    }
+
+    // Asset Preview Lightbox Modal Controls
+    const btnClosePreviewX = document.getElementById(SELECTORS.btnClosePreviewX);
+    if (btnClosePreviewX && !btnClosePreviewX.__damBound) {
+      btnClosePreviewX.__damBound = true;
+      btnClosePreviewX.addEventListener("click", closeAssetPreview);
+    }
+
+    const previewModal = document.getElementById(SELECTORS.previewModal);
+    if (previewModal && !previewModal.__damBound) {
+      previewModal.__damBound = true;
+      previewModal.addEventListener("click", (e) => {
+        if (e.target === previewModal) closeAssetPreview();
+      });
+    }
+
+    if (typeof document.addEventListener === "function" && !document.__previewModalEscBound) {
+      document.__previewModalEscBound = true;
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          const pModal = document.getElementById(SELECTORS.previewModal);
+          if (pModal && pModal.classList.contains("open")) {
+            closeAssetPreview();
+          }
+        }
       });
     }
 
@@ -1003,14 +2172,70 @@
     scanStorage,
     render: renderDamGrid,
     getFiles: () => [...realStorageFiles],
-    setFiles: (files) => { realStorageFiles = Array.isArray(files) ? files : []; updateStorageAnalytics(); renderDamGrid(); },
+    setFiles: (files) => {
+      realStorageFiles = Array.isArray(files) ? files : [];
+      const validUnusedSet = new Set(realStorageFiles.filter(f => isAssetEligibleForUnusedManagement(f)).map(f => f.path));
+      selectedUnusedPaths = new Set([...selectedUnusedPaths].filter(p => validUnusedSet.has(p)));
+      updateStorageAnalytics();
+      renderDamGrid();
+    },
     openAssetPreview,
+    closeAssetPreview,
+    openAssetInspector,
+    closeAssetInspector,
+    renderCustomAudioPlayer,
+    cleanupActiveInspectorAudio,
+    formatAudioTime,
+    formatReferenceField,
     deleteSingleAsset,
     renameAsset,
     deleteSelectedAssets,
     deleteUnusedAssets,
     deleteOldTempAssets,
     updateStorageAnalytics,
+    selectUnusedAsset,
+    deselectUnusedAsset,
+    toggleUnusedAsset,
+    selectAllUnused,
+    clearUnusedSelection,
+    getSelectedUnusedAssets,
+    getSelectedUnusedCount,
+    getSelectedUnusedTotalSize,
+    openUnusedReviewModal,
+    closeUnusedReviewModal,
+    setUnusedModalState,
+    proceedToUnusedDeletionConfirmation,
+    validateSelectedUnusedForDeletion,
+    executeUnusedMediaCleanup,
+    getFilteredFiles,
+    setSort: (s) => {
+      currentDamSort = s || "newest";
+      const el = typeof document !== "undefined" ? document.getElementById(SELECTORS.sortSelect) : null;
+      if (el) el.value = currentDamSort;
+      renderDamGrid();
+    },
+    getSort: () => currentDamSort,
+    setFilter: (f) => {
+      currentDamFilter = f || "all";
+      if (typeof document !== "undefined") {
+        const chipBtns = document.querySelectorAll(".dam-filter-bar .chip-btn");
+        chipBtns.forEach(btn => {
+          if (btn.dataset && btn.dataset.damfilter === currentDamFilter) btn.classList.add("active");
+          else if (btn.classList) btn.classList.remove("active");
+        });
+      }
+      renderDamGrid();
+    },
+    getFilter: () => currentDamFilter,
+    toggleFavorite: (path) => {
+      const file = realStorageFiles.find(f => f.path === path || f.canonicalPath === path);
+      if (file) {
+        file.isFavorite = !file.isFavorite;
+        updateStorageAnalytics();
+        renderDamGrid();
+      }
+    },
+    isAssetEligibleForUnusedManagement,
     ReferenceEngine: MediaReferenceEngine
   });
 

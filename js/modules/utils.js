@@ -229,18 +229,39 @@
    *   - Performs 0 database writes.
    *   - Does not modify Supabase, UUIDs, audio/video, or admin security state.
    */
+  /**
+   * ============================================================
+   * 9. CANONICAL HTML SANITIZATION UTILITY (Phase 31H-5 P0-A)
+   * ============================================================
+   * Converts unsafe HTML characters (&, <, >, ", ') into safe HTML entities.
+   * Preserves normal Unicode characters, emojis, and valid punctuation.
+   *
+   * @param {any} str - Input text or value.
+   * @returns {string} Sanitized string safe for DOM interpolation.
+   */
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   function ensureLineHighlight(line) {
     if (!line) return "";
     if (line.includes('class="highlight"') || line.includes("class='highlight'")) {
       return line;
     }
-    if (line.includes("everything you are.")) {
-      return line.replace("everything you are.", '<span class="highlight">everything you are.</span>');
+    const safe = escapeHtml(line);
+    if (safe.includes("everything you are.")) {
+      return safe.replace("everything you are.", '<span class="highlight">everything you are.</span>');
     }
-    if (line.includes("everything you are")) {
-      return line.replace("everything you are", '<span class="highlight">everything you are</span>');
+    if (safe.includes("everything you are")) {
+      return safe.replace("everything you are", '<span class="highlight">everything you are</span>');
     }
-    return line;
+    return safe;
   }
 
   // Export all public symbols globally on root
@@ -251,6 +272,7 @@
   root.getZodiacSign = getZodiacSign;
   root.getOrdinalDay = getOrdinalDay;
   root.loadYouTubeIFrameAPI = loadYouTubeIFrameAPI;
+  root.escapeHtml = escapeHtml;
   root.ensureLineHighlight = ensureLineHighlight;
 
 })(typeof window !== "undefined" ? window : globalThis);

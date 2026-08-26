@@ -1,61 +1,829 @@
 /* ==========================================================================
-   ADMIN STUDIO — RESPONSIVE OVERRIDES (css/admin/admin-responsive.css)
-   Baseline Responsive Navigation & Drawer Rules (Phase 29B-3B Baseline)
+   ADMIN STUDIO — RESPONSIVE MASTER STYLESHEET (css/admin/admin-responsive.css)
+   Phase 31J Pass #2: Mobile Dashboard Containment + Right Actions + 3-Col Media
+   Strict Preservation: Zero Functional / Security / Sharing / Logic Mutations
    ========================================================================== */
 
 * {
   box-sizing: border-box;
 }
 
-/* Tablet & Mobile Sidebar Drawer (<= 1024px) */
+/* Base Modal Overlay & Centering (Desktop / Tablet / Mobile) */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(8, 4, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Base Table Responsive Wrapper */
+.table-responsive-wrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  display: block;
+  margin-bottom: 16px;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+}
+
+.table-responsive-wrapper table.admin-table {
+  min-width: 600px;
+  width: 100%;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.table-responsive-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+}
+
+/* Dashboard Header Actions Default */
+.dash-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   1. TABLET LANDSCAPE & LARGE TABLETS (<= 1024px)
+   ========================================================================== */
 @media (max-width: 1024px) {
+  /* Sidebar Drawer Navigation */
   .admin-sidebar {
     transform: translateX(-100%);
+    box-shadow: none;
+    z-index: 999;
   }
+
   .admin-sidebar.open {
     transform: translateX(0);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(168, 85, 247, 0.35);
   }
+
   .admin-main {
     margin-left: 0;
+    width: 100%;
+    max-width: 100vw;
   }
+
   .mobile-toggle {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 1.4rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-glass, rgba(255, 255, 255, 0.12));
+    color: #fff;
+    cursor: pointer;
+  }
+
+  /* Admin Wish Studio Layout Collapse */
+  .admin-editor-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .admin-editor-summary-col {
+    position: static;
   }
 }
 
-/* Tablet Portrait & Small Screens (<= 768px) */
+/* ==========================================================================
+   2. TABLET PORTRAIT & MEDIUM SCREENS (<= 960px)
+   ========================================================================== */
+@media (max-width: 960px) {
+  /* Dashboard Analytics & Overview Grids Collapse */
+  .dash-analytics-grid,
+  .dash-overview-subgrid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dash-overview-subgrid > div,
+  .dash-overview-subgrid .table-panel,
+  .dash-overview-right-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .view-header .view-actions,
+  .view-header > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
+   3. SMALL TABLETS & LARGE MOBILE (<= 768px)
+   ========================================================================== */
 @media (max-width: 768px) {
   .admin-header-actions {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Settings, Themes, Security & Backup Grids */
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .themes-catalog-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Dashboard Overview Containment & Right-Aligned Header Actions */
+  .dash-panel-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-bottom: 14px !important;
+    gap: 8px !important;
+  }
+
+  .dash-panel-title {
+    font-size: 1.1rem !important;
+    margin: 0 !important;
+    color: #fff !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .dash-panel-header .btn-dash-header-action {
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: max-content !important;
+    white-space: nowrap !important;
+    padding: 5px 12px !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .dash-overview-right-col {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* DAM Asset Inspector & Unused Media Modals */
+  .inspector-modal-body {
+    grid-template-columns: 1fr !important;
+    padding-right: 0 !important;
+  }
+
+  .inspector-meta-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .unused-modal-stats {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Wishes Management Table Toolbar & Filters */
+  .table-search {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .table-filter-group {
+    width: 100% !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .table-filter-group select {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 130px;
+  }
+
+  /* Security Recovery Channels Grid */
+  .recovery-channel-selector {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Audit Logs Toolbar & Result Count */
+  .logs-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .logs-filter-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .logs-search-input {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .logs-select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #logs-count-badge {
+    align-self: flex-start;
+    margin-top: 2px;
+  }
+
+  /* Audit Logs Header Actions Layout: Row 1 (Export CSV + Export JSON), Row 2 (Clear Logs) */
+  #view-logs .view-actions,
+  .logs-actions-group {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-top: 4px;
+  }
+
+  #view-logs .view-actions #btn-export-logs-csv,
+  .logs-actions-group #btn-export-logs-csv {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: calc(50% - 4px) !important;
+    max-width: calc(50% - 4px) !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    font-size: 0.80rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    order: 1 !important;
+  }
+
+  #view-logs .view-actions #btn-export-logs-json,
+  .logs-actions-group #btn-export-logs-json {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: calc(50% - 4px) !important;
+    max-width: calc(50% - 4px) !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    font-size: 0.80rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    order: 2 !important;
+  }
+
+  #view-logs .view-actions #btn-clear-logs,
+  .logs-actions-group #btn-clear-logs {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 38px !important;
+    padding: 0 16px !important;
+    font-size: 0.82rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    order: 3 !important;
+  }
+
+  /* DAM 3-Column Mobile & Tablet Grid (Issue 4) */
+  .dam-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .filter-chips-group {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: visible !important;
+    flex-wrap: unset !important;
+    padding: 0 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .filter-chips-group .chip-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 8px 6px !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 4px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .filter-chips-group .chip-btn .count {
+    font-size: 0.70rem !important;
+    padding: 1px 4px !important;
+    margin-left: 2px !important;
   }
 }
 
-/* Mobile Navbar & Dashboard Grid (<= 640px) */
+/* ==========================================================================
+   4. STANDARD MOBILE SCREENS (<= 640px)
+   ========================================================================== */
 @media (max-width: 640px) {
   .admin-navbar {
-    padding: 0 16px;
+    padding: 0 14px;
+    height: 62px;
+    gap: 8px;
   }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
   .admin-viewport {
     padding: 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
+
   .nav-search {
     display: none;
   }
+
   .metrics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+
+  /* Admin Wish Studio Form Grid Collapse */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .media-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px;
+  }
+
+  /* Table Toolbar & Actions Layout */
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .table-filter-group select,
+  .table-filter-group button,
+  .table-filter-group .columns-menu-wrap {
+    width: 100%;
+  }
+
+  .table-selection-badge {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+    white-space: normal;
+    padding: 8px 12px;
+  }
+
+  /* Pagination Responsive Flow */
+  .table-pagination {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .pagination-size-group {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .pagination-controls {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .storage-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* Dashboard Header Actions Layout: Row 1 (Copy + Export), Row 2 (Refresh) */
+  .dash-header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .dash-header-actions #btn-dash-copy-summary {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: calc(50% - 4px) !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 0.8rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .dash-header-actions .bulk-export-container {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: calc(50% - 4px) !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    box-sizing: border-box !important;
+  }
+
+  .dash-header-actions .bulk-export-container #btn-dash-export-report {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    height: 38px !important;
+    padding: 0 8px !important;
+    font-size: 0.8rem !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .dash-header-actions #btn-refresh-dashboard {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    margin: 0 !important;
+    height: 40px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Passkey Action Buttons Mobile Full-Height Stacking */
+  .passkey-actions-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  #btn-register-passkey,
+  #btn-remove-passkey,
+  .passkey-actions-row #btn-register-passkey,
+  .passkey-actions-row #btn-remove-passkey {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 20px !important;
+    border-radius: 10px !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Backup Action Buttons Mobile Sizing */
+  #btn-export-backup,
+  #btn-select-backup-file,
+  .btn-select-backup {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 
-/* Mobile Small (<= 480px) */
+/* ==========================================================================
+   5. COMPACT MOBILE SCREENS (<= 480px)
+   ========================================================================== */
 @media (max-width: 480px) {
   .admin-viewport {
     padding: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Mobile Navbar */
+  .admin-navbar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+
+  .nav-actions {
+    gap: 6px;
+  }
+
+  .status-indicator {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .status-text {
+    display: inline;
+    font-size: 0.72rem;
+  }
+
+  .public-site-link {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  /* Dashboard Panel Headers at <= 480px */
+  .dash-panel-header {
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dash-panel-title {
+    font-size: 1.05rem !important;
+  }
+
+  .dash-panel-header .btn-dash-header-action {
+    padding: 5px 10px !important;
+    font-size: 0.74rem !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: max-content !important;
+    margin-left: auto !important;
+  }
+
+  /* Dashboard Overview Storage Grid Collapse */
+  .dash-storage-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .dash-storage-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .dash-storage-capacity-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 8px 10px !important;
+  }
+
+  /* Dashboard Overview System Activity Wrapping */
+  #dash-recent-activity-list,
+  #dash-recent-activity-list li {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    box-sizing: border-box !important;
+  }
+
+  /* DAM 3-Column Mobile Grid Spacing */
+  .filter-chips-group {
+    gap: 6px !important;
+  }
+
+  .filter-chips-group .chip-btn {
+    padding: 7px 3px !important;
+    font-size: 0.74rem !important;
+    gap: 3px !important;
+  }
+
+  .filter-chips-group .chip-btn .count {
+    font-size: 0.68rem !important;
+    padding: 1px 3px !important;
+  }
+
+  /* Security Recovery Journey Cards Normalization */
+  .recovery-journey-box {
+    padding: 14px;
+  }
+
+  .recovery-step-panel > div,
+  .recovery-card-section {
+    padding: 16px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .form-group[style*="max-width"],
+  #sec-email-otp-box,
+  #sec-rec-email-otp-box {
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Regenerate Emergency Code Confirmation Dialog */
+  #regen-confirm-modal .glass-panel {
+    padding: 20px 16px !important;
+    width: 94% !important;
+    max-width: 440px !important;
+  }
+
+  #regen-confirm-modal .glass-panel div[style*="display:flex"] {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #btn-regen-cancel,
+  #btn-regen-confirm {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Wishes Quick View Modal Mobile Padding */
+  .wishes-quick-view-overlay {
+    padding: 10px !important;
+  }
+
+  .quick-view-card {
+    max-height: 94vh !important;
+    border-radius: 14px !important;
+  }
+
+  /* Unused Media & Asset Modals */
+  .unused-modal-box,
+  .inspector-modal-box,
+  .asset-modal-box {
+    width: 96% !important;
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Touch-friendly Tabs */
+  .sec-subnav-tabs {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sec-tab-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 
-/* Mobile Extra Small (<= 375px) */
+/* ==========================================================================
+   6. EXTRA-SMALL MOBILE SCREENS (<= 375px)
+   ========================================================================== */
 @media (max-width: 375px) {
   .admin-viewport {
     padding: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-navbar {
+    padding: 0 6px;
+    gap: 4px;
+  }
+
+  .nav-actions {
+    gap: 4px;
+  }
+
+  .status-indicator {
+    padding: 4px 6px;
+    font-size: 0.68rem;
+  }
+
+  .public-site-link {
+    padding: 4px 6px;
+    font-size: 0.68rem;
+  }
+
+  .view-title h2 {
+    font-size: 1.35rem;
+  }
+
+  .metric-card {
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-size: 1.6rem;
+  }
+
+  .glass-panel {
+    padding: 14px !important;
+  }
+
+  .editor-card {
+    padding: 14px !important;
+  }
+
+  .table-panel {
+    padding: 12px !important;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-sm {
+    font-size: 0.78rem;
+  }
+
+  /* 375px Compact Panel Headers */
+  .dash-panel-header {
+    gap: 6px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .dash-panel-title {
+    font-size: 0.98rem !important;
+  }
+
+  .dash-panel-header .btn-dash-header-action {
+    padding: 4px 8px !important;
+    font-size: 0.70rem !important;
+  }
+
+  /* 375px Tight Grid Padding for 3-Column Chips */
+  .filter-chips-group {
+    gap: 4px !important;
+  }
+
+  .filter-chips-group .chip-btn {
+    padding: 6px 2px !important;
+    font-size: 0.69rem !important;
+    gap: 2px !important;
+  }
+
+  .filter-chips-group .chip-btn .count {
+    font-size: 0.64rem !important;
+    padding: 1px 2px !important;
   }
 }

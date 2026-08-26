@@ -37,14 +37,13 @@
 
   /**
    * Helper utility stripping HTML markup tags from formatted customizer letter lines.
+   * Uses safe tag-stripping to avoid DOM parsing execution vectors.
    * @param {string} html - HTML string.
    * @returns {string} Plain text string.
    */
   function stripHtml(html) {
     if (!html) return "";
-    const tmp = document.createElement("div");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    return String(html).replace(/<[^>]*>/g, "");
   }
 
   /**
@@ -70,13 +69,18 @@
     container.innerHTML = "";
     const cfg = getConfig();
     const lines = Array.isArray(cfg.letterLines) ? cfg.letterLines : [];
+    const esc = (root.escapeHtml && typeof root.escapeHtml === "function")
+      ? root.escapeHtml
+      : (typeof escapeHtml === "function" ? escapeHtml : (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")));
+
     lines.forEach((line, i) => {
       const group = document.createElement("div");
       group.className = "form-group";
+      const cleanLine = esc(stripHtml(line));
       group.innerHTML = `
         <label>Letter Line ${i + 1}</label>
         <small class="field-hint">Birthday letter ka ${i === 0 ? "pehla" : i === 1 ? "doosra" : i === 2 ? "teesra" : "last"} paragraph</small>
-        <textarea class="letter-line-input" rows="2" data-index="${i}">${stripHtml(line)}</textarea>
+        <textarea class="letter-line-input" rows="2" data-index="${i}">${cleanLine}</textarea>
       `;
       container.appendChild(group);
     });

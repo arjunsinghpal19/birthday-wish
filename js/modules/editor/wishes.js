@@ -45,6 +45,10 @@
     container.innerHTML = "";
     const cfg = getConfig();
     const wishes = Array.isArray(cfg.wishes) ? cfg.wishes : [];
+    const esc = (root.escapeHtml && typeof root.escapeHtml === "function")
+      ? root.escapeHtml
+      : (typeof escapeHtml === "function" ? escapeHtml : (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")));
+
     wishes.forEach((w, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
@@ -54,7 +58,7 @@
           <button type="button" class="item-delete-btn" data-type="wish" data-index="${i}" title="Delete">✕</button>
         </div>
         <div class="form-group">
-          <textarea class="wish-input" rows="2" data-index="${i}">${w}</textarea>
+          <textarea class="wish-input" rows="2" data-index="${i}">${esc(w || '')}</textarea>
         </div>
       `;
       container.appendChild(group);

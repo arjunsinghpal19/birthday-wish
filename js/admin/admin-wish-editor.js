@@ -242,7 +242,13 @@
      4. DATA CONVERSION & HYDRATION
      ============================================================ */
   function normalizeWishRecordToConfig(record) {
-    if (!record) return deepClone(DEFAULT_ADMIN_CONFIG);
+    if (!record) {
+      const freshCfg = deepClone(DEFAULT_ADMIN_CONFIG);
+      freshCfg.letterTheme = (window.AdminThemes && typeof window.AdminThemes.getActiveDefaultThemeId === "function")
+        ? window.AdminThemes.getActiveDefaultThemeId()
+        : "default";
+      return freshCfg;
+    }
 
     const cfg = deepClone(DEFAULT_ADMIN_CONFIG);
     cfg.name = record.recipient_name || record.name || record.n || "";
@@ -278,7 +284,9 @@
     }
 
     cfg.cakeFlavor = record.cake_flavor || record.cakeFlavor || record.ck || "default";
-    cfg.letterTheme = record.letter_theme || record.letterTheme || record.lt || "default";
+    cfg.letterTheme = (window.ThemeRegistry && typeof window.ThemeRegistry.resolveTheme === "function")
+      ? window.ThemeRegistry.resolveTheme(record)
+      : (record.letter_theme || record.letterTheme || record.lt || "default");
     cfg.letterFont = record.letter_font || record.letterFont || record.lf || "default";
     cfg.memory = record.memory_text || record.memory || record.mem || "";
 
@@ -408,7 +416,24 @@
     // 3. Birthday Letter
     const themeEl = document.getElementById("adm-input-letter-theme");
     const fontEl = document.getElementById("adm-input-letter-font");
-    if (themeEl) themeEl.value = cfg.letterTheme || "default";
+    if (themeEl) {
+      if (window.ThemeRegistry && typeof window.ThemeRegistry.getAll === "function") {
+        const allThemes = window.ThemeRegistry.getAll();
+        const currentThemeVal = (typeof window.ThemeRegistry.resolveTheme === "function")
+          ? window.ThemeRegistry.resolveTheme(cfg.letterTheme)
+          : (cfg.letterTheme || "default");
+        themeEl.innerHTML = allThemes.map(t => {
+          const sel = t.id === currentThemeVal ? "selected" : "";
+          const label = (window.ThemeRegistry && typeof window.ThemeRegistry.getOptionLabel === "function")
+            ? window.ThemeRegistry.getOptionLabel(t.id)
+            : `${t.icon || "✨"} ${t.displayName}`;
+          return `<option value="${escapeHtml(t.id)}" ${sel}>${escapeHtml(label)}</option>`;
+        }).join("");
+        themeEl.value = currentThemeVal;
+      } else {
+        themeEl.value = cfg.letterTheme || "default";
+      }
+    }
     if (fontEl) fontEl.value = cfg.letterFont || "default";
     renderLetterLines();
 
@@ -1297,13 +1322,30 @@
     }
 
     if (themeEl) {
-      const themeNames = {
-        default: "Original",
-        royalgold: "Royal Gold",
-        galaxy: "Midnight Galaxy",
-        rosegold: "Rose Gold"
-      };
-      themeEl.textContent = themeNames[cfg.letterTheme] || "Original";
+      const resolvedThemeId = (window.ThemeRegistry && typeof window.ThemeRegistry.resolveTheme === "function")
+        ? window.ThemeRegistry.resolveTheme(cfg.letterTheme)
+        : (cfg.letterTheme || "default");
+      const themeDisplayName = (window.ThemeRegistry && typeof window.ThemeRegistry.getDisplayName === "function")
+        ? window.ThemeRegistry.getDisplayName(resolvedThemeId)
+        : resolvedThemeId;
+      themeEl.textContent = themeDisplayName;
+
+      const livePreviewEl = document.getElementById("adm-theme-live-preview");
+      if (livePreviewEl) {
+        const themeDef = (window.ThemeRegistry && typeof window.ThemeRegistry.getById === "function")
+          ? window.ThemeRegistry.getById(resolvedThemeId)
+          : null;
+        if (themeDef && themeDef.palette) {
+          livePreviewEl.innerHTML = `
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${themeDef.palette.accent};border:1px solid rgba(255,255,255,0.4);" title="Accent: ${themeDef.palette.accent}"></span>
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${themeDef.palette.paperBg};border:1px solid rgba(255,255,255,0.4);" title="Paper: ${themeDef.palette.paperBg}"></span>
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${themeDef.palette.envelope};border:1px solid rgba(255,255,255,0.4);" title="Envelope: ${themeDef.palette.envelope}"></span>
+            <span style="color:var(--text-muted);">${escapeHtml(themeDef.badge || "")}</span>
+          `;
+        } else {
+          livePreviewEl.innerHTML = "";
+        }
+      }
     }
 
     if (fontEl) {
@@ -1391,7 +1433,12 @@
     editorState.activeWishUuid = null;
     editorState.isDirty = false;
     editorState.isSaving = false;
-    editorState.config = deepClone(DEFAULT_ADMIN_CONFIG);
+
+    const freshCfg = deepClone(DEFAULT_ADMIN_CONFIG);
+    freshCfg.letterTheme = (window.AdminThemes && typeof window.AdminThemes.getActiveDefaultThemeId === "function")
+      ? window.AdminThemes.getActiveDefaultThemeId()
+      : "default";
+    editorState.config = freshCfg;
 
     renderForm();
     switchTab("wish-editor");
@@ -1414,12 +1461,8 @@
     try {
       let record = null;
 
-      if (window.AdminWishes && typeof window.AdminWishes.getWishes === "function") {
-        const wishes = window.AdminWishes.getWishes();
-        record = wishes.find(w => w.id === wishId);
-      }
-
-      if (!record && window.DatabaseModule && typeof window.DatabaseModule.getWishRecordById === "function") {
+      // 1. Live Fetch from DB first (guarantees freshest data if edited externally via Quick Editor)
+      if (window.DatabaseModule && typeof window.DatabaseModule.getWishRecordById === "function") {
         record = await window.DatabaseModule.getWishRecordById(wishId);
       }
 
@@ -1429,6 +1472,12 @@
           const { data } = await client.from("wishes").select("*").eq("id", wishId).single();
           record = data;
         }
+      }
+
+      // 2. In-memory cache fallback if DB fetch is unavailable/offline
+      if (!record && window.AdminWishes && typeof window.AdminWishes.getWishes === "function") {
+        const wishes = window.AdminWishes.getWishes();
+        record = wishes.find(w => w.id === wishId);
       }
 
       editorState.config = normalizeWishRecordToConfig(record);
@@ -2911,6 +2960,25 @@
           try { videoPlayer.currentTime = sec; } catch (e) {}
         }
         editorState.isDirty = true;
+      });
+    }
+
+    const customizeThemeBtn = document.getElementById("adm-btn-customize-theme");
+    if (customizeThemeBtn && !customizeThemeBtn.__editorBound) {
+      customizeThemeBtn.__editorBound = true;
+      customizeThemeBtn.addEventListener("click", () => {
+        const themeEl = document.getElementById("adm-input-letter-theme");
+        const currentThemeId = (themeEl && themeEl.value) ? themeEl.value : (editorState.config?.letterTheme || "default");
+        if (window.AdminThemeCustomizer && typeof window.AdminThemeCustomizer.open === "function") {
+          window.AdminThemeCustomizer.open(currentThemeId, {
+            onApply: (selectedThemeId) => {
+              if (themeEl) themeEl.value = selectedThemeId;
+              editorState.config.letterTheme = selectedThemeId;
+              editorState.isDirty = true;
+              updateSummaryPanel();
+            }
+          });
+        }
       });
     }
 

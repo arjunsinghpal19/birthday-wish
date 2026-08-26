@@ -1,53 +1,28 @@
-/**
- * ============================================================================
- * SUPABASE DATABASE MODULE (js/database.js)
- * Manages CRUD operations for table 'public.wishes'.
- * Stores JSON payloads and returns UUID primary keys.
- * ============================================================================
- */
-
 (function (window) {
   "use strict";
 
   const TABLE_NAME = "wishes";
 
-  // Safe helper to encode media start time metadata
   function encodeMediaUrlWithStart(url, startTime) {
     if (!url || typeof url !== "string") return null;
     const clean = url.trim();
     if (!clean) return null;
-    if (window.MediaService && typeof window.MediaService.encodeMediaStartTime === "function") {
-      return window.MediaService.encodeMediaStartTime(clean, startTime) || clean;
-    }
-    if (typeof window.encodeMediaStartTime === "function") {
-      return window.encodeMediaStartTime(clean, startTime) || clean;
-    }
-    return clean;
+    const fn = (window.MediaService && window.MediaService.encodeMediaStartTime) || window.encodeMediaStartTime;
+    return fn ? (fn(clean, startTime) || clean) : clean;
   }
 
-  // Safe helper to decode media start time metadata
   function decodeMediaUrlStart(url) {
     if (!url || typeof url !== "string") return 0;
-    if (window.MediaService && typeof window.MediaService.decodeMediaStartTime === "function") {
-      return window.MediaService.decodeMediaStartTime(url);
-    }
-    if (typeof window.decodeMediaStartTime === "function") {
-      return window.decodeMediaStartTime(url);
-    }
+    const fn = (window.MediaService && window.MediaService.decodeMediaStartTime) || window.decodeMediaStartTime;
+    if (fn) return fn(url);
     const match = url.match(/#bw-start=(\d+)/i);
     return match ? (parseInt(match[1], 10) || 0) : 0;
   }
 
-  // Safe helper to strip media start time metadata
   function stripMediaUrlMetadata(url) {
     if (!url || typeof url !== "string") return "";
-    if (window.MediaService && typeof window.MediaService.stripMediaMetadata === "function") {
-      return window.MediaService.stripMediaMetadata(url);
-    }
-    if (typeof window.stripMediaMetadata === "function") {
-      return window.stripMediaMetadata(url);
-    }
-    return url.replace(/#bw-start=\d+/i, "").replace(/#+$/, "").trim();
+    const fn = (window.MediaService && window.MediaService.stripMediaMetadata) || window.stripMediaMetadata;
+    return fn ? fn(url) : url.replace(/#bw-start=\d+/i, "").replace(/#+$/, "").trim();
   }
 
   async function saveWishRecord(configObj) {
@@ -355,20 +330,10 @@
           };
         }
 
-        if (res.status === 401 || res.status === 403 || res.status === 400) {
-          const errData = await res.json().catch(() => ({}));
-          return {
-            success: false,
-            error: errData.error || `Server rejected bulk deletion (HTTP ${res.status})`,
-            deletedIds: [],
-            failedIds: validIds.map(id => ({ id, error: errData.error || `HTTP ${res.status}` }))
-          };
-        }
-
         if (res.status === 404) {
           return {
             success: false,
-            error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations.",
+            error: "Secure Admin Delete API unavailable.",
             deletedIds: [],
             failedIds: validIds.map(id => ({ id, error: "API unavailable" }))
           };
@@ -385,7 +350,7 @@
         console.warn("⚠️ Secure Admin Delete API unreachable:", apiErr);
         return {
           success: false,
-          error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations.",
+          error: "Secure Admin Delete API unavailable.",
           deletedIds: [],
           failedIds: validIds.map(id => ({ id, error: "Network error" }))
         };
@@ -463,9 +428,6 @@
       }
 
       const record = prepareDuplicatePayload(data);
-
-      console.log("📋 Database DUPLICATE creating copy for:", record.recipient_name, "from source id:", cleanSourceId);
-
       const { data: inserted, error: insertError } = await client
         .from(TABLE_NAME)
         .insert([record])
@@ -477,7 +439,6 @@
         return { success: false, error: insertError ? insertError.message : "Failed to insert duplicate wish record" };
       }
 
-      console.log("✅ Database DUPLICATE created new wish with UUID:", inserted.id);
       return { success: true, newId: inserted.id };
     } catch (e) {
       console.warn("⚠️ DB duplicate exception:", e);
@@ -555,11 +516,7 @@
         }
       });
 
-      // Prepare duplicate payloads
       const duplicatePayloads = sourceRecords.map(r => prepareDuplicatePayload(r));
-
-      console.log(`📋 Database BULK DUPLICATE creating ${duplicatePayloads.length} copies...`);
-
       const { data: insertedRecords, error: insertError } = await client
         .from(TABLE_NAME)
         .insert(duplicatePayloads)
@@ -576,7 +533,6 @@
         };
       }
 
-      console.log(`✅ Database BULK DUPLICATE created ${insertedRecords.length} new wishes.`);
       return {
         success: true,
         createdCount: insertedRecords.length,
@@ -612,22 +568,18 @@
         if (client) {
           const { data, error } = await client
             .from("wishes")
-            .select("admin_password_hash, pass_code, memory_text")
+            .select("pass_code, memory_text")
             .eq("id", "00000000-0000-0000-0000-000000000001")
             .single();
 
           if (!error && data) {
-            // pass_code / admin_password_hash takes primary precedence
-            let cloudPass = data.admin_password_hash || data.pass_code;
-
-            // Fallback to memory_text if pass_code is unpopulated
+            let cloudPass = data.pass_code;
             if (!cloudPass && data.memory_text) {
               try {
                 const parsed = JSON.parse(data.memory_text);
                 if (parsed && parsed.admin_master_password) cloudPass = parsed.admin_master_password;
               } catch (e) {}
             }
-
             if (cloudPass) {
               this._sessionPassword = cloudPass;
               return cloudPass;
@@ -640,11 +592,39 @@
       return this._sessionPassword;
     },
 
+    async _hashPbkdf2Client(password, saltHex) {
+      if (typeof window === "undefined" || !window.crypto || !window.crypto.subtle || !saltHex) return null;
+      try {
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey(
+          "raw",
+          enc.encode(password),
+          { name: "PBKDF2" },
+          false,
+          ["deriveBits"]
+        );
+        const saltBytes = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        const derivedBits = await window.crypto.subtle.deriveBits(
+          {
+            name: "PBKDF2",
+            salt: saltBytes,
+            iterations: 100000,
+            hash: "SHA-256"
+          },
+          keyMaterial,
+          256
+        );
+        return Array.from(new Uint8Array(derivedBits)).map(b => b.toString(16).padStart(2, "0")).join("");
+      } catch (e) {
+        return null;
+      }
+    },
+
     async verifyPassword(inputPassword) {
       if (!inputPassword) return false;
       const cleanInput = inputPassword.trim();
 
-      // Try Serverless API verification (PBKDF2-HMAC-SHA256)
+      // 1. Try Serverless API verification (PBKDF2-HMAC-SHA256)
       try {
         const apiUrl = window.getApiUrl ? window.getApiUrl("/api/auth") : "/api/auth";
         const res = await fetch(apiUrl, {
@@ -658,6 +638,7 @@
             if (data.token && typeof sessionStorage !== "undefined") {
               sessionStorage.setItem("admin_session_token", data.token);
             }
+            this._sessionPassword = cleanInput;
             return true;
           }
           return false;
@@ -666,10 +647,38 @@
         console.warn("⚠️ Serverless Auth verification notice:", err);
       }
 
-      // Local session memory fallback
-      const actualPassword = await this.getPassword();
-      if (!actualPassword) return false;
-      return cleanInput === actualPassword.trim();
+      // 2. Direct Supabase PBKDF2 hash verification fallback
+      try {
+        const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+        if (client) {
+          const { data } = await client
+            .from("wishes")
+            .select("admin_password_hash, admin_password_salt, pass_code, memory_text")
+            .eq("id", "00000000-0000-0000-0000-000000000001")
+            .single();
+
+          if (data) {
+            if (data.admin_password_hash && data.admin_password_salt) {
+              const computed = await this._hashPbkdf2Client(cleanInput, data.admin_password_salt);
+              if (computed && computed === data.admin_password_hash) {
+                this._sessionPassword = cleanInput;
+                return true;
+              }
+            }
+            const fallbackPass = data.pass_code || (data.memory_text && JSON.parse(data.memory_text).admin_master_password);
+            if (fallbackPass && cleanInput === fallbackPass.trim()) {
+              this._sessionPassword = cleanInput;
+              return true;
+            }
+          }
+        }
+      } catch (e) {}
+
+      // 3. Active session memory fallback
+      if (this._sessionPassword && cleanInput === this._sessionPassword.trim()) {
+        return true;
+      }
+      return false;
     },
 
     async updatePassword(newPassword) {
@@ -757,44 +766,66 @@
 
   window.PasswordService = PasswordService;
 
-  // Persistent Security Metadata Storage
   const SECURITY_STORAGE_KEY = "birthday_suite_security_config_v2";
 
-  /**
-   * Persists updated security metadata and configuration options to cloud DB & localStorage.
-   * @param {Object} secObj - Security metadata configuration payload.
-   * @returns {Promise<Object>} Resolved updated security settings object.
-   */
   async function saveSecuritySettings(secObj) {
     try {
       if (secObj.admin_master_password) {
         await PasswordService.updatePassword(secObj.admin_master_password);
       }
 
-      const current = await getSecuritySettings();
+      // Preserve all existing cryptographic hashes & salts from cloud memory_text
+      let existingMemory = {};
+      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      if (client) {
+        try {
+          const { data } = await client
+            .from("wishes")
+            .select("memory_text")
+            .eq("id", "00000000-0000-0000-0000-000000000001")
+            .single();
+          if (data && data.memory_text) {
+            existingMemory = JSON.parse(data.memory_text);
+          }
+        } catch (err) {}
+      }
+
       const updated = {
-        ...current,
+        ...existingMemory,
         ...secObj,
         updated_at: new Date().toISOString()
       };
 
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      // Strip sensitive plaintext credentials from database memory_text and localStorage
+      delete updated.admin_master_password;
+      delete updated.admin_recovery_code;
+
       if (client) {
-        const cloudFields = {
-          recovery_email: updated.admin_recovery_email,
-          recovery_email_verified: updated.recovery_email_verified || false,
-          security_question: updated.custom_secret_question,
-          memory_text: JSON.stringify(updated),
-          updated_at: new Date().toISOString()
-        };
-        await client.from("wishes").update(cloudFields).eq("id", "00000000-0000-0000-0000-000000000001");
+        try {
+          const { error: colErr } = await client.from("wishes").update({
+            recovery_email: updated.admin_recovery_email,
+            recovery_email_verified: updated.recovery_email_verified || false,
+            memory_text: JSON.stringify(updated),
+            updated_at: new Date().toISOString()
+          }).eq("id", "00000000-0000-0000-0000-000000000001");
+
+          // Pre-migration fallback if dedicated columns don't exist
+          if (colErr) {
+            await client.from("wishes").update({
+              memory_text: JSON.stringify(updated),
+              updated_at: new Date().toISOString()
+            }).eq("id", "00000000-0000-0000-0000-000000000001");
+          }
+        } catch (updateErr) {
+          console.warn("⚠️ DatabaseModule: Notice updating security settings:", updateErr);
+        }
       }
 
       const metadataOnly = { ...updated };
-      delete metadataOnly.admin_master_password;
       localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(metadataOnly));
       localStorage.removeItem("admin_master_password");
       localStorage.removeItem("custom_admin_password");
+      localStorage.removeItem("admin_recovery_code");
 
       return updated;
     } catch (e) {
@@ -810,15 +841,13 @@
    */
   async function getSecuritySettings(forceRefresh = false) {
     try {
-      const masterPass = await PasswordService.getPassword(forceRefresh);
       let cloudData = null;
-
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (client) {
         try {
           const { data } = await client
             .from("wishes")
-            .select("recovery_email, recovery_email_verified, security_question, memory_text")
+            .select("recovery_email, recovery_email_verified, backup_code_hash, memory_text, updated_at")
             .eq("id", "00000000-0000-0000-0000-000000000001")
             .single();
           if (data) cloudData = data;
@@ -836,22 +865,26 @@
         try { parsedMemory = JSON.parse(cloudData.memory_text); } catch (e) {}
       }
 
+      const hasBackup = !!(cloudData?.backup_code_hash || parsedMemory.backup_code_hash);
+      const codeTime = parsedMemory.backup_code_updated_at || cloudData?.updated_at || parsedMemory.updated_at || null;
+      const hasPasskey = !!(parsedMemory.passkeys && parsedMemory.passkeys.length > 0);
+
       return {
-        admin_master_password: masterPass,
-        admin_recovery_email: cloudData?.recovery_email || parsedMemory.admin_recovery_email || localData?.admin_recovery_email || localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        admin_recovery_email: cloudData?.recovery_email || parsedMemory.admin_recovery_email || localData?.admin_recovery_email || "",
         recovery_email_verified: cloudData?.recovery_email_verified ?? parsedMemory.recovery_email_verified ?? false,
-        admin_recovery_code: parsedMemory.admin_recovery_code || localData?.admin_recovery_code || localStorage.getItem("admin_recovery_code") || "WS-9F8A-3E21-7B04",
-        custom_secret_question: cloudData?.security_question || parsedMemory.custom_secret_question || localData?.custom_secret_question || localStorage.getItem("custom_secret_question") || "Who is your best friend?",
-        custom_secret_answer: parsedMemory.custom_secret_answer || localData?.custom_secret_answer || localStorage.getItem("custom_secret_answer") || "Shivam"
+        has_recovery_code: hasBackup,
+        recovery_code_updated_at: codeTime,
+        has_passkey: hasPasskey,
+        passkeys_count: (parsedMemory.passkeys || []).length
       };
     } catch (e) {
       return {
-        admin_master_password: await PasswordService.getPassword(),
-        admin_recovery_email: localStorage.getItem("admin_recovery_email") || "admin@example.com",
+        admin_recovery_email: "",
         recovery_email_verified: false,
-        admin_recovery_code: localStorage.getItem("admin_recovery_code") || "WS-9F8A-3E21-7B04",
-        custom_secret_question: localStorage.getItem("custom_secret_question") || "Who is your best friend?",
-        custom_secret_answer: localStorage.getItem("custom_secret_answer") || "Shivam"
+        has_recovery_code: false,
+        recovery_code_updated_at: null,
+        has_passkey: false,
+        passkeys_count: 0
       };
     }
   }

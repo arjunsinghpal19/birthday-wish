@@ -45,6 +45,10 @@
     container.innerHTML = "";
     const cfg = getConfig();
     const timeline = Array.isArray(cfg.timeline) ? cfg.timeline : [];
+    const esc = (root.escapeHtml && typeof root.escapeHtml === "function")
+      ? root.escapeHtml
+      : (typeof escapeHtml === "function" ? escapeHtml : (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")));
+
     timeline.forEach((t, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
@@ -57,21 +61,21 @@
           <div class="emoji-text-row">
             <div>
               <label>Icon</label>
-              <input type="text" class="emoji-input timeline-icon" value="${t.icon}" data-index="${i}" maxlength="4">
+              <input type="text" class="emoji-input timeline-icon" value="${esc(t.icon || '⏳')}" data-index="${i}" maxlength="4">
             </div>
             <div class="text-input">
               <label>Date / Period Label</label>
-              <input type="text" class="timeline-date" value="${t.date}" data-index="${i}">
+              <input type="text" class="timeline-date" value="${esc(t.date || '')}" data-index="${i}">
             </div>
           </div>
         </div>
         <div class="form-group">
           <label>Title</label>
-          <input type="text" class="timeline-title" value="${t.title}" data-index="${i}">
+          <input type="text" class="timeline-title" value="${esc(t.title || '')}" data-index="${i}">
         </div>
         <div class="form-group">
           <label>Description</label>
-          <input type="text" class="timeline-text" value="${t.text}" data-index="${i}">
+          <input type="text" class="timeline-text" value="${esc(t.text || '')}" data-index="${i}">
         </div>
       `;
       container.appendChild(group);

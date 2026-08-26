@@ -119,8 +119,61 @@
     return wishPayload;
   }
 
+  /**
+   * Builds the canonical WhatsApp share message string matching the locked contract.
+   * @param {string} url - Public wish URL.
+   * @param {string} [recipientName] - Recipient name.
+   * @returns {string} Fully formatted multiline message.
+   */
+  function buildWhatsAppMessage(url, recipientName = "") {
+    const EMOJI_CAKE = "\u{1F382}";
+    const EMOJI_SPARKLES = "\u{2728}";
+    const EMOJI_GIFT = "\u{1F381}";
+    const EMOJI_HEART = "\u{1F496}";
+
+    const trimmedName = (recipientName || "").trim();
+    let greetingHeader = `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
+    if (trimmedName && trimmedName !== "Friend") {
+      greetingHeader = `Hey ${trimmedName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
+    }
+
+    return `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${url}`;
+  }
+
+  /**
+   * Builds the canonical WhatsApp intent URL.
+   * @param {string} url - Public wish URL.
+   * @param {string} [recipientName] - Recipient name.
+   * @returns {string} https://api.whatsapp.com/send URL.
+   */
+  function buildWhatsAppUrl(url, recipientName = "") {
+    const msg = buildWhatsAppMessage(url, recipientName);
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  }
+
+  /**
+   * Builds the canonical Native Share payload dictionary for navigator.share().
+   * @param {string} url - Public wish URL.
+   * @param {string} [recipientName] - Recipient name.
+   * @returns {{ title: string, text: string, url: string }}
+   */
+  function buildNativeSharePayload(url, recipientName = "") {
+    const trimmed = (recipientName || "").trim();
+    const name = (trimmed && trimmed !== "Friend") ? trimmed : "";
+    const title = name ? `🎁 Birthday Surprise for ${name}` : "🎁 Birthday Surprise!";
+    const text = `🎂✨ Maine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nEk chhota sa surprise tumhara wait kar raha hai… 💝\n\n👇 Link open karke dekho — I hope tumhe ye pasand aayega! 🥰`;
+    return {
+      title,
+      text,
+      url
+    };
+  }
+
   window.ShareModule = {
     buildShareUrl: generateShareableUrl,
-    parseRoute: parseWishRoute
+    parseRoute: parseWishRoute,
+    buildWhatsAppMessage: buildWhatsAppMessage,
+    buildWhatsAppUrl: buildWhatsAppUrl,
+    buildNativeSharePayload: buildNativeSharePayload
   };
 })(window);

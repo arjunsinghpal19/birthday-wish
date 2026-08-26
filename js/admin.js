@@ -12,13 +12,15 @@
   // Authoritative Modular Subsystems (Phase 28B-9 Modular Architecture)
   const { showToast, formatBytes, copyWishUrl } = window.AdminCore || {};
   const { checkAdminAccessGate, initTabNavigation, initLogout } = window.AdminNavigation || {};
-  const { init: initDashboard, renderKPIs, renderRecentWishes, renderActivityFeed, fetchWishes } = window.AdminDashboard || {};
+  const { init: initDashboard, renderKPIs, renderRecentWishes, renderActivityFeed, renderStorageBreakdown, fetchWishes } = window.AdminDashboard || {};
   const { init: initWishes, render: renderWishesTable, setWishes: setWishesState, getWishes: getWishesState, deleteWish: deleteWishItem, duplicateWish: duplicateWishItem } = window.AdminWishes || {};
+  const { init: initCustomers, render: renderCustomersTable } = window.AdminCustomers || {};
   const { init: initWishEditor } = window.AdminWishEditor || {};
   const { init: initMedia, load: loadStorageMediaData, render: renderDamGrid, getFiles: getStorageFiles } = window.AdminMedia || {};
   const { init: initSecurityHandlers } = window.AdminSecurity || {};
   const { init: initBackupHandlers, exportBackup, importBackup } = window.AdminBackup || {};
   const { init: initLogs, log: logEvent, render: renderLogsTable, getLogs, setLogs } = window.AdminLogs || {};
+  const { init: initSettings, getSettings } = window.AdminSettings || {};
 
   // Cached in-memory active wishes list
   let wishesList = [];
@@ -64,6 +66,14 @@
     if (typeof renderRecentWishes === "function") {
       renderRecentWishes(wishesList, !querySuccess);
     }
+    if (typeof renderCustomersTable === "function") {
+      renderCustomersTable(wishesList);
+    } else if (window.AdminCustomers && typeof window.AdminCustomers.render === "function") {
+      window.AdminCustomers.render(wishesList);
+    }
+    if (typeof renderStorageBreakdown === "function") {
+      renderStorageBreakdown(storageFiles, wishesList);
+    }
     if (typeof renderActivityFeed === "function") {
       renderActivityFeed(activeLogs);
     }
@@ -80,7 +90,17 @@
     if (typeof checkAdminAccessGate === "function" && !checkAdminAccessGate()) return;
 
     // 2. Initialize Navigation & Subsystem Handlers
-    if (typeof initTabNavigation === "function") initTabNavigation();
+    if (typeof initTabNavigation === "function") {
+      initTabNavigation(async (targetTab) => {
+        if (targetTab === "dashboard" || targetTab === "wishes" || targetTab === "customers" || targetTab === "themes") {
+          await loadDashboardData();
+        } else if (targetTab === "media") {
+          if (typeof renderDamGrid === "function") {
+            renderDamGrid();
+          }
+        }
+      });
+    }
     if (typeof initLogout === "function") initLogout();
 
     if (typeof initSecurityHandlers === "function") {
@@ -89,15 +109,28 @@
       });
     }
 
+    if (typeof initCustomers === "function") {
+      initCustomers();
+    } else if (window.AdminCustomers && typeof window.AdminCustomers.init === "function") {
+      window.AdminCustomers.init();
+    }
+
     if (typeof initBackupHandlers === "function") {
       initBackupHandlers(
         () => ({
           wishes: wishesList,
-          logs: typeof getLogs === "function" ? getLogs() : []
+          logs: typeof getLogs === "function" ? getLogs() : [],
+          settings: typeof getSettings === "function" ? getSettings() : null
         }),
-        (restoredWishes, restoredLogs) => {
+        (restoredWishes, restoredLogs, restoredSettings) => {
           wishesList = Array.isArray(restoredWishes) ? restoredWishes : [];
           if (typeof setLogs === "function") setLogs(restoredLogs);
+          if (restoredSettings && window.AdminSettings && typeof window.AdminSettings.saveSettings === "function") {
+            window.AdminSettings.saveSettings(restoredSettings, true);
+            if (typeof window.AdminSettings.populateForm === "function") {
+              window.AdminSettings.populateForm();
+            }
+          }
           loadDashboardData();
         },
         (event, desc) => {
@@ -140,8 +173,41 @@
       });
     }
 
+    if (typeof initSettings === "function") {
+      initSettings();
+    }
+
+    if (window.AdminThemes && typeof window.AdminThemes.init === "function") {
+      window.AdminThemes.init();
+    }
+
     // 3. Initial Data Fetch & Render (Synchronized Wishes & Storage KPIs)
     loadDashboardData();
+
+    // 4. Live Cross-Editor Synchronization Listeners (Window Focus & Visibility)
+    // Ensures return from Quick Editor / external edits instantly updates Dashboard & Wishes table
+    if (typeof window.addEventListener === "function") {
+      window.addEventListener("focus", () => {
+        loadDashboardData();
+      });
+
+      window.addEventListener("storage", (e) => {
+        if (e.key === "bw_wish_sync_timestamp" || e.key === "bw_admin_default_theme") {
+          loadDashboardData();
+          if (window.AdminThemes && typeof window.AdminThemes.init === "function") {
+            window.AdminThemes.init();
+          }
+        }
+      });
+    }
+
+    if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          loadDashboardData();
+        }
+      });
+    }
   });
 
   // Export Global Facade for Backward Compatibility with Inline HTML Onclicks
@@ -153,8 +219,12 @@
     duplicateWish: (id) => (window.AdminWishes && window.AdminWishes.duplicateWish) ? window.AdminWishes.duplicateWish(id) : null,
     logEvent: (...args) => (window.AdminLogs && window.AdminLogs.log) ? window.AdminLogs.log(...args) : null,
     openAssetPreview: (...args) => (window.AdminMedia && window.AdminMedia.openAssetPreview) ? window.AdminMedia.openAssetPreview(...args) : null,
+    openAssetInspector: (...args) => (window.AdminMedia && window.AdminMedia.openAssetInspector) ? window.AdminMedia.openAssetInspector(...args) : null,
+    closeAssetInspector: (...args) => (window.AdminMedia && window.AdminMedia.closeAssetInspector) ? window.AdminMedia.closeAssetInspector(...args) : null,
     deleteSingleAsset: (...args) => (window.AdminMedia && window.AdminMedia.deleteSingleAsset) ? window.AdminMedia.deleteSingleAsset(...args) : null,
-    renameAsset: (...args) => (window.AdminMedia && window.AdminMedia.renameAsset) ? window.AdminMedia.renameAsset(...args) : null
+    renameAsset: (...args) => (window.AdminMedia && window.AdminMedia.renameAsset) ? window.AdminMedia.renameAsset(...args) : null,
+    openThemePreview: (id) => (window.AdminThemes && window.AdminThemes.openThemePreview) ? window.AdminThemes.openThemePreview(id) : null,
+    setDefaultTheme: (id) => (window.AdminThemes && window.AdminThemes.setDefaultTheme) ? window.AdminThemes.setDefaultTheme(id) : null
   };
 
 })(window);

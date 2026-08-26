@@ -539,13 +539,23 @@ section{ position:relative; min-height:100vh; display:flex; align-items:center; 
 }
 .theme-royalgold .letter-body .highlight,
 .theme-galaxy .letter-body .highlight,
-.theme-rosegold .letter-body .highlight {
+.theme-rosegold .letter-body .highlight,
+.theme-sapphire .letter-body .highlight {
   background: transparent !important;
   box-shadow: none !important;
   color: inherit !important;
   padding: 0 !important;
   font-weight: inherit !important;
   display: inline !important;
+}
+.theme-emerald-luxe .letter-body .highlight {
+  background: rgba(16, 185, 129, 0.15) !important;
+  box-shadow: none !important;
+  color: #065f46 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  display: inline-block !important;
 }
 .cursor-caret{ display:inline-block; width:2px; background:#4a3350; margin-left:2px; animation:caretBlink 1s steps(1) infinite; }
 @keyframes caretBlink{ 50%{ opacity:0; } }
@@ -1688,16 +1698,41 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   font-family: 'Outfit', sans-serif !important;
 }
 
+/* ============================================================
+   CORNER DECORATIVE SYSTEM & LIVE THEMES (Phase 31F-4)
+   Reusable theme-specific visual identities and ornaments.
+   ============================================================ */
 .corner-flower {
   position: absolute;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   z-index: 10;
   pointer-events: none;
+  line-height: 1;
+  user-select: none;
   filter: drop-shadow(0 2px 8px rgba(255, 95, 162, 0.4));
   transition: all 0.4s ease;
 }
+
+.corner-flower::before {
+  content: "🌸";
+  display: inline-block;
+}
+
+.corner-flower::after {
+  display: none !important;
+  content: none !important;
+}
+
 .flower-tl {
   top: 14px;
+  left: 18px;
+}
+.flower-tr {
+  top: 14px;
+  right: 18px;
+}
+.flower-bl {
+  bottom: 14px;
   left: 18px;
 }
 .flower-br {
@@ -1705,23 +1740,30 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   right: 18px;
 }
 
-/* Envelope & Letter Color Themes */
-.letter-paper,
-.env-front,
-.env-back,
-.env-top-flap {
+.letter-paper {
   transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, color 0.4s ease;
 }
 
+/* ✨ Default Golden Luxe */
+.theme-default .letter-paper {
+  background: linear-gradient(180deg, #fffaf3 0%, #fff3e6 100%) !important;
+  border: 1.5px solid rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 0 30px rgba(255, 215, 0, 0.3) !important;
+  color: #3a2440 !important;
+}
+.theme-default .corner-flower::before {
+  content: "🌸";
+}
+.theme-default .corner-flower {
+  filter: drop-shadow(0 2px 8px rgba(255, 95, 162, 0.5)) drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));
+}
+
 /* 👑 Vintage Royal Gold */
-.theme-royalgold .letter-paper,
-.theme-royalgold .env-front,
-.theme-royalgold .env-back,
-.theme-royalgold .env-top-flap {
-  background: linear-gradient(135deg, #1c1103 0%, #362408 100%) !important;
-  border: 2px solid #ffd700 !important;
+.theme-royalgold .letter-paper {
+  background: linear-gradient(135deg, #1c170d 0%, #261e10 100%) !important;
+  border: 2px solid #f59e0b !important;
   color: #fff8e7 !important;
-  box-shadow: 0 0 35px rgba(255, 215, 0, 0.45) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 35px rgba(245, 158, 11, 0.45) !important;
 }
 .theme-royalgold .letter-title {
   color: #ffe600 !important;
@@ -1733,19 +1775,19 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
   opacity: 1 !important;
 }
+.theme-royalgold .corner-flower::before {
+  content: "⚜️";
+}
 .theme-royalgold .corner-flower {
-  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9));
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.95)) drop-shadow(0 0 20px rgba(251, 191, 36, 0.7));
 }
 
 /* 🌌 Midnight Galaxy Glow */
-.theme-galaxy .letter-paper,
-.theme-galaxy .env-front,
-.theme-galaxy .env-back,
-.theme-galaxy .env-top-flap {
+.theme-galaxy .letter-paper {
   background: linear-gradient(135deg, #090317 0%, #15062d 50%, #220030 100%) !important;
-  border: 2px solid #f72585 !important;
+  border: 2px solid #a855f7 !important;
   color: #f0f8ff !important;
-  box-shadow: 0 0 40px rgba(247, 37, 133, 0.6) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.65), 0 0 40px rgba(168, 85, 247, 0.55), 0 0 20px rgba(247, 37, 133, 0.4) !important;
 }
 .theme-galaxy .letter-title {
   color: #ff2a85 !important;
@@ -1757,19 +1799,19 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
   opacity: 1 !important;
 }
+.theme-galaxy .corner-flower::before {
+  content: "✨";
+}
 .theme-galaxy .corner-flower {
-  filter: drop-shadow(0 0 12px rgba(247, 37, 133, 0.95)) drop-shadow(0 0 18px rgba(114, 9, 183, 0.8));
+  filter: drop-shadow(0 0 12px rgba(247, 37, 133, 0.95)) drop-shadow(0 0 18px rgba(168, 85, 247, 0.85));
 }
 
 /* 🌸 Rose Gold Pastel */
-.theme-rosegold .letter-paper,
-.theme-rosegold .env-front,
-.theme-rosegold .env-back,
-.theme-rosegold .env-top-flap {
+.theme-rosegold .letter-paper {
   background: linear-gradient(135deg, #24131b 0%, #3d1b2a 100%) !important;
   border: 2px solid #ff8ea9 !important;
   color: #ffffff !important;
-  box-shadow: 0 0 35px rgba(255, 142, 169, 0.5) !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45), 0 0 35px rgba(255, 142, 169, 0.5) !important;
 }
 .theme-rosegold .letter-title {
   color: #ff8ea9 !important;
@@ -1781,8 +1823,59 @@ footer{ position:relative; z-index:2; text-align:center; padding:26px; font-size
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
   opacity: 1 !important;
 }
+.theme-rosegold .corner-flower::before {
+  content: "🌹";
+}
 .theme-rosegold .corner-flower {
-  filter: drop-shadow(0 0 10px rgba(255, 142, 169, 0.85));
+  filter: drop-shadow(0 0 10px rgba(255, 142, 169, 0.85)) drop-shadow(0 0 16px rgba(251, 113, 133, 0.6));
+}
+
+/* 💎 Sapphire Aurora */
+.theme-sapphire .letter-paper {
+  background: linear-gradient(135deg, #071326 0%, #0e274a 50%, #153966 100%) !important;
+  border: 2px solid #38bdf8 !important;
+  color: #f0f9ff !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 38px rgba(56, 189, 248, 0.5) !important;
+}
+.theme-sapphire .letter-title {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.95), 0 0 30px rgba(14, 165, 233, 0.7) !important;
+}
+.theme-sapphire .letter-body,
+.theme-sapphire .letter-body p {
+  color: #f0f9ff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  opacity: 1 !important;
+}
+.theme-sapphire .corner-flower::before {
+  content: "💎";
+}
+.theme-sapphire .corner-flower {
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9)) drop-shadow(0 0 18px rgba(6, 182, 212, 0.75));
+}
+
+/* 🌿 Emerald Luxe */
+.theme-emerald-luxe .letter-paper {
+  background: linear-gradient(135deg, #fffbf0 0%, #fef7e6 100%) !important;
+  border: 2px solid #10b981 !important;
+  color: #14291e !important;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35), 0 0 35px rgba(16, 185, 129, 0.45), 0 0 15px rgba(251, 191, 36, 0.3) !important;
+}
+.theme-emerald-luxe .letter-title {
+  color: #065f46 !important;
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.45), 0 0 20px rgba(245, 158, 11, 0.35) !important;
+}
+.theme-emerald-luxe .letter-body,
+.theme-emerald-luxe .letter-body p {
+  color: #14291e !important;
+  text-shadow: none;
+  opacity: 1 !important;
+}
+.theme-emerald-luxe .corner-flower::before {
+  content: "🌿";
+}
+.theme-emerald-luxe .corner-flower {
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.85)) drop-shadow(0 0 16px rgba(251, 191, 36, 0.65));
 }
 
 @keyframes bounceSlice {

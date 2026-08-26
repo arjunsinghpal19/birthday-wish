@@ -100,40 +100,69 @@
     }
   }
 
+  /**
+   * Deletes a single media file from Supabase Storage bucket 'wish-media'.
+   * Uses the secure serverless Admin Delete Media API (/api/admin-delete-media).
+   * @param {string} path - Target relative storage path (e.g. "photos/123.jpg").
+   * @returns {Promise<boolean>} True if object was deleted, false otherwise.
+   */
   async function deleteMediaFile(path) {
-    try {
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client || !path) return false;
-
-      const { data, error } = await client.storage
-        .from(BUCKET_NAME)
-        .remove([path]);
-
-      if (error) {
-        console.warn("⚠️ Storage Delete Error:", error.message);
-        return false;
-      }
-      return true;
-    } catch (e) {
-      console.warn("⚠️ Storage delete exception:", e);
-      return false;
-    }
+    if (!path || typeof path !== "string") return false;
+    const res = await deleteMultipleMediaFiles([path]);
+    return res;
   }
 
+  /**
+   * Deletes multiple media files from Supabase Storage bucket 'wish-media'.
+   * Uses the secure serverless Admin Delete Media API (/api/admin-delete-media).
+   * @param {string[]} paths - Array of relative storage paths.
+   * @returns {Promise<boolean>} True if objects were deleted, false otherwise.
+   */
   async function deleteMultipleMediaFiles(paths) {
     try {
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client || !Array.isArray(paths) || paths.length === 0) return false;
+      if (!Array.isArray(paths) || paths.length === 0) return false;
+      const validPaths = paths.filter(p => p && typeof p === "string" && p.trim() !== "");
+      if (validPaths.length === 0) return false;
 
-      const { data, error } = await client.storage
-        .from(BUCKET_NAME)
-        .remove(paths);
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) ||
+                    (typeof window !== "undefined" && window.sessionStorage && typeof window.sessionStorage.getItem === "function" && window.sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-delete-media")
+        : "/api/admin-delete-media";
 
-      if (error) {
-        console.warn("⚠️ Storage Bulk Delete Error:", error.message);
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ paths: validPaths, adminToken: token })
+        });
+
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (data.success) {
+            console.log("🗑️ Secure Admin Delete Media API succeeded:", data.deletedCount || validPaths.length);
+            return true;
+          }
+          console.warn("⚠️ Secure Admin Delete Media API reported failure:", data.error);
+          return false;
+        }
+
+        if (res.status === 401 || res.status === 403 || res.status === 400) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn(`⚠️ Secure Admin Delete Media API rejected (HTTP ${res.status}):`, errData.error);
+          return false;
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        console.warn(`⚠️ Secure Admin Delete Media API returned HTTP ${res.status}:`, errData.error);
+        return false;
+      } catch (apiErr) {
+        console.warn("⚠️ Secure Admin Delete Media API unreachable:", apiErr);
         return false;
       }
-      return true;
     } catch (e) {
       console.warn("⚠️ Storage bulk delete exception:", e);
       return false;

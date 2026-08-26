@@ -106,6 +106,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: "No wish UUIDs provided for deletion." });
       }
 
+      const MAX_BULK_LIMIT = 100;
+      if (body.uuids.length > MAX_BULK_LIMIT) {
+        return res.status(400).json({
+          success: false,
+          error: `Bulk deletion request exceeds maximum allowed limit of ${MAX_BULK_LIMIT} wishes per request.`
+        });
+      }
+
       for (const rawId of body.uuids) {
         if (!rawId || typeof rawId !== "string") {
           failedIds.push({ id: String(rawId || ""), error: "Invalid UUID format." });

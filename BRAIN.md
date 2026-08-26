@@ -2097,15 +2097,771 @@ Accomplished in Phase 31C-1 & Phase 31C-2A:
    - Compact popover menu with `📄 JSON` and `📊 CSV` export options.
    - Preserves all table states (search query, filters, sort, page, selected IDs).
    - Closes on option selection, clicking outside, or pressing `Escape`.
+
+============================================================
+55. PHASE 31C-2B — WHATSAPP UNICODE-SAFE SHARE FLOW HOTFIX
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31C-2B:
+- Hardened WhatsApp direct-sharing URL generation (`js/share.js` and `js/admin/admin-wishes.js`) using proper UTF-8 percent-encoding.
+- Escaped custom names, emojis, and multiline greetings without breaking mobile WhatsApp intent handoffs.
+- Verified with targeted test suite (`test_phase31c_share_flow_hotfix.js`: 12/12 PASS).
+
+============================================================
+56. PHASE 31C-3 & 31C-4 — SAFE UNUSED MEDIA CLEANUP & PERMANENT SERVER-SIDE DELETION API
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31C-3 & Phase 31C-4:
+1. Unused Media Selection Foundation:
+   - Checkbox selection specifically scoped to unreferenced / unused storage assets.
+   - Batch selection counter bar with `Select All Unused` / `Deselect All` controls.
+2. Safe Review Flow & Two-Step Confirmation:
+   - Safe Review Modal inspecting candidates before deletion.
+   - Real-time double verification against `MediaReferenceEngine`: if a file was recently attached to a wish, it is instantly blocked with a `Protected (Active Reference)` badge and excluded from deletion.
+3. Verified Server-Side Admin Deletion API (`/api/admin-delete-media.js`):
+   - Secure Vercel Serverless Function utilizing `SUPABASE_SERVICE_ROLE_KEY` server-side only.
+   - Zero `service_role` exposure to client-side browser bundles.
+   - Performs permanent bucket deletion in Supabase Storage `wish-media`.
+   - Post-deletion storage re-scan automatically refreshes inventory and confirms permanent removal.
+
+============================================================
+57. PHASE 31C-5, 5A, 5B, 5C — MEDIA ASSET DETAILS & USAGE INSPECTOR
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished:
+1. Asset Details & Usage Inspector Modal (`#admin-asset-inspector-modal`):
+   - Complete read-only inspector displaying canonical path, folder, storage size, public URL, and mime type.
+   - Media Preview: Full visual preview for photos, video player for MP4/WebM, and custom luxury audio player for MP3/WAV/AAC.
+   - Multi-Wish Reference Table: Lists all wishes referencing the asset with recipient, sender, UUID, and direct link.
+   - Protected status badge for active assets / Safe cleanup CTA for unused assets.
+   - Action controls: Copy Public URL, Copy Storage Path, Download Asset, Close.
+2. Custom Glassmorphism Audio Player (Phase 31C-5C baseline):
+   - Themed dark purple audio player card hiding browser default controls.
+   - Circular gradient Play/Pause button (`▶` / `⏸`), primary gold seek bar, formatted time (`m:ss`), volume slider, and mute button.
+
+============================================================
+58. PHASE 31C-6 & 31C-6A — MEDIA LIBRARY SORTING & WISHES VIEW CONTROLS INTEGRATION
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished:
+1. Media Library Multi-Sort Engine:
+   - 6 sorting modes: Newest First, Oldest First, Largest Size, Smallest Size, Name (A-Z), Name (Z-A).
+   - Memory-efficient in-place sorting of cached file catalog.
+2. Declarative Wishes Table View Controls Integration:
+   - Static HTML declarative layout in `admin.html`.
+   - Density switching (Comfortable / Compact).
+   - Column visibility popover toggling Sender, Media, Passcode, UUID, Created date.
+   - `localStorage` persistence under `'bw_admin_wishes_view_prefs'`.
+
+============================================================
+59. PHASE 31D — DASHBOARD OVERVIEW & KPI FOUNDATION
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31D:
+1. 8 Live KPI Cards (100% Real Supabase DB & Storage Data):
+   - Total Wishes (`#kpi-total-wishes`): Count of active database records.
+   - Recent Wishes (`#kpi-today-wishes`): Count of wishes created today & last 7 days.
+   - Images Uploaded (`#kpi-total-images`): Count in `photos/` folder.
+   - Videos Uploaded (`#kpi-total-videos`): Count in `videos/` folder.
+   - Audio Notes (`#kpi-total-audio`): Count in `audio/` folder.
+   - Storage Used (`#kpi-storage-used`): Total bytes formatted (`formatBytes`).
+   - Unused Media (`#kpi-unused-media`): Unreferenced assets count & cleanup eligible size.
+   - System Status (`#kpi-system-status`): Real-time Supabase DB & Storage connectivity.
+2. Recent Wishes Summary Table:
+   - Top 5 recent wishes with Recipient, Sender, Media badges (📷, 🎥, 🎙️, 💌, 🔑), Created Date.
+   - Integrated actions: 👁️ Quick View, ✏️ Edit Wish, 🔗 Copy Public URL, ↗ Open Public Wish.
+3. Storage Breakdown Overview Widget:
+   - Categorical breakdown of Photos, Videos, Audio counts and sizes.
+   - Unused cleanup shortcut CTA (`Review →`).
+4. Session Activity Feed:
+   - Synchronized with `AdminLogs` for real-time audit logging.
+5. Unified Refresh Coordinator:
+   - Concurrency-locked `AdminDashboard.refresh()` re-querying live sources with loading state and toast notification.
+
+============================================================
+60. PHASE 31D-1 — DASHBOARD ANALYTICS & KPI EXPANSION
+============================================================
+
+STATUS: IMPLEMENTED & AUTOMATED VERIFIED ✅
+
+Accomplished in Phase 31D-1:
+1. Modular Architecture Separation:
+   - Created dedicated `js/admin/admin-dashboard-analytics.js` to prevent monolithic bloat in `admin-dashboard.js`.
+2. Single Unified Data Snapshot Principle:
+   - `createDashboardSnapshot(wishes, storageFiles)` generates one single immutable data snapshot on load/refresh.
+   - All KPIs, Trend charts, Content mix bars, Storage metrics, and Insights derive strictly from this snapshot. Zero duplicate queries.
+3. Chronological Wishes Trend Chart (Native SVG Engine):
+   - 7-Day, 30-Day, and 90-Day period selector with instant client-side switching from cached snapshot.
+   - Pure GPU-accelerated SVG markup with gold stroke, purple gradient area fill (`#dashTrendGrad`), dashed gridlines, and interactive hover nodes with tooltips (`YYYY-MM-DD: N wishes`).
+   - Truthful insufficient-history empty state (`No wishes created in the last X days`).
+4. Content Mix & Feature Adoption:
+   - Exact mathematical breakdown of active wishes featuring Photos/Gallery, Video memories, Voice/Audio notes, Birthday letters, and Passcode protection with proportional gradient progress tracks.
+5. Actionable Operational Insights (Attention Bar):
+   - Concise, truthful operational badges: Storage cleanup alert with direct `Review Unused →` link, daily creation velocity, rich media adoption percentages, and security metrics.
+
+============================================================
+61. PHASE 31D-1A — DASHBOARD UI POLISH + PROJECT BRAIN SYNCHRONIZATION
+============================================================
+
+STATUS: IMPLEMENTED & VERIFIED ✅
+
+Accomplished in Phase 31D-1A:
+1. Header Action Buttons Compact Alignment:
+   - Fixed header buttons (`#btn-dash-view-all-wishes`, `#btn-dash-view-all-media`, `#btn-dash-view-all-logs`) with `.btn-dash-header-action`.
+   - Buttons now sit firmly on the RIGHT (`margin-left: auto`), shrink-wrapped to their content width with clean padding (`5px 12px`).
+2. Insight Action Buttons Shrink-Wrap:
+   - Updated operational insight cards and storage banners (`.btn-dash-insight-action`) to prevent horizontal stretching and ensure compact, right-aligned, vertically centered placement.
+3. System Activity 12-Hour Localized Time Format:
+   - Implemented `formatActivityTime(timeVal)` converting timestamps into standard 12-hour `hh:mm:ss A` format (e.g. `05:30:17 PM`, `09:14:32 AM`).
+   - Replaced raw 24-hour presentation with localized Indian-friendly presentation.
+4. Comprehensive BRAIN.md Synchronization:
+   - Full alignment of project history, invariants, modularity rules, and long-term roadmap.
+
+============================================================
+62. PHASE 31D-1B — FINAL 9-KPI STORAGE INFORMATION ARCHITECTURE (COMPLETE)
+============================================================
+
+1. Information Architecture & Clean 9-Card KPI Layout:
+   - Card 1: Total Wishes (`#kpi-total-wishes`, `#kpi-sub-total-wishes`): Live active database records count.
+   - Card 2: Recent Wishes (`#kpi-today-wishes`, `#kpi-sub-today-wishes`): Count created in selected period / today.
+   - Card 3: Images Uploaded (`#kpi-total-images`, `#kpi-sub-total-images`): Catalog image count & size.
+   - Card 4: Videos Uploaded (`#kpi-total-videos`, `#kpi-sub-total-videos`): Personal and clip video count & size.
+   - Card 5: Audio Notes (`#kpi-total-audio`, `#kpi-sub-total-audio`): Voice note and custom music tune count & size.
+   - Card 6: Storage Used (`#kpi-storage-used`, `#kpi-sub-storage-used`):
+     - Primary: `${format(totalStorageBytes)}` (e.g. `93.9 MB`)
+     - Secondary: `${usagePercentage}% of 1 GB used`
+   - Card 7: Unused Media (`#kpi-unused-media`, `#kpi-sub-unused-media`):
+     - Primary: `${unusedMediaCount}` (e.g. `23`)
+     - Secondary: `${format(unusedStorageBytes)} reclaimable`
+     - Action: Clickable routing directly to Media Library (`window.AdminNavigation.switchTab("media")` and `window.AdminMedia.setFilter("unused")`).
+   - Card 8: Storage Remaining (`#kpi-storage-remaining`, `#kpi-sub-storage-remaining`):
+     - Primary: `${format(remainingStorageBytes)}` (e.g. `930.1 MB`)
+     - Secondary: `${remainingPercentage}% Free of 1 GB`
+   - Card 9: System Status (`#kpi-system-status`, `#kpi-sub-system-status`): `Operational` with `● Online Supabase Pipeline`.
+2. Responsive Auto-Fit Grid:
+   - Defined in `.metrics-grid` (`css/admin/admin-dashboard.css`) with `repeat(auto-fit, minmax(220px, 1fr))` ensuring clean, balanced multi-column distribution without forced or awkward card widths.
+3. Single Source of Truth:
+   - All 9 KPI metrics derive directly from the single cached snapshot created by `AdminDashboardAnalytics.createDashboardSnapshot(wishes, storageFiles)`.
+   - Zero duplicate Supabase queries or divergent calculation paths.
+   - Edge case protection: handles 0 B usage (1 GB remaining, 100% free), normal usage, high usage, and full capacity (0 B remaining, 0% free) without NaN or negative values.
+
+============================================================
+63. PHASE 31E — DASHBOARD SAVE & SHARE (COMPLETE)
+============================================================
+
+1. Structured Text Summary Clipboard Sharing (`copyDashboardSummary`):
+   - Implemented plain-text report generator (`generateSummaryText`) capturing:
+     - Header, timestamp & active analysis period (7D, 30D, or 90D).
+     - Core database & creation volume metrics.
+     - Content mix distribution & feature adoption (photos, videos, audio, letters, passcodes).
+     - Live storage used, percentage used, storage remaining, percentage free of 1 GB, media breakdown with size per type, and reclaimable unused files.
+     - System operational pipeline health.
+   - Copies directly to clipboard with fallback, triggers user confirmation toast and audit logging (`DASHBOARD_SHARE`).
+2. Multi-Format Analytics Export (`exportDashboardReport`):
+   - JSON Export: Structured report containing metadata, metrics, content mix, storage capacity, and daily trend series.
+   - CSV Export: Standard comma-separated report with header metadata, KPI metrics, category distribution, and date-wise daily volume rows.
+   - Triggers browser file download (`wish_studio_dashboard_report_<period>d_<date>.json/csv`), user toast notification, and audit event (`DASHBOARD_EXPORT`).
+3. Clean Header Action Controls:
+   - Compact `[ 📋 Copy Summary ]` and `[ 📥 Export Report ▾ ]` dropdown menu in the Dashboard view header.
+   - Dropdown popover (`#dash-export-popover`) supports instant selection of JSON or CSV reports with outside-click and `Escape` dismissals.
+4. Active Period Preservation:
+   - Summary sharing and file exports strictly respect the currently selected trend period (7 Days, 30 Days, or 90 Days).
+
+============================================================
+64. PERMANENT ARCHITECTURAL RULES & ANTI-MONOLITHIC MODULARITY
+============================================================
+
+CRITICAL NON-NEGOTIABLE RULE:
+Never allow core files (`app.js`, `admin.js`, `admin-dashboard.js`, `admin-wishes.js`) to become monolithic catch-all files.
+
+Before adding new features:
+1. Evaluate module responsibilities.
+2. Maintain: ONE MODULE = ONE CLEAR RESPONSIBILITY.
+3. Modular distribution:
+   - `admin-core.js`: Shared formatting, toasts, link copying, modals.
+   - `admin-navigation.js`: Access gating, tab switching, drawer.
+   - `admin-dashboard.js`: Thin dashboard lifecycle, KPI coordination, recent wishes, activity.
+   - `admin-dashboard-analytics.js`: Unified data snapshot, trend calculation, content mix, SVG charting, operational insights, copy summary & JSON/CSV report exports.
+   - `admin-wishes.js`: Real database wish CRUD, search, filter, sort, pagination, density, bulk operations, Quick View.
+   - `admin-media.js`: Media library, storage scanner, reference engine, asset inspector, safe deletion review.
+   - `admin-wish-editor.js`: Native Admin Wish Studio editor form controls and schema mapping.
+   - `admin-security.js`: Master password, recovery email, emergency codes, security question.
+   - `admin-backup.js`: JSON backup export and restore.
+============================================================
+64. PHASE 31F-1 — THEME FOUNDATION & AUTHORITATIVE THEME REGISTRY (COMPLETE)
+============================================================
+
+1. Single Authoritative Theme Registry (`js/admin/admin-themes.js`):
+   - Created dedicated `AdminThemes.ThemeRegistry` and `window.ThemeRegistry` as the single source of truth for themes.
+   - Authoritative Theme Definitions (Strictly based on existing public CSS/renderer implementations):
+     - `default` (Default Golden Luxe): Classic Warm Gold & Light Parchment (`.theme-default`).
+     - `royalgold` (Vintage Royal Gold): Antique Gold Foil & Dark Parchment (`.theme-royalgold`).
+     - `galaxy` (Midnight Galaxy Glow): Cosmic Night & Vibrant Neon Violet (`.theme-galaxy`).
+     - `rosegold` (Rose Gold Pastel): Soft Pearl Pink & Rose Gold Accents (`.theme-rosegold`).
+   - Eliminated fake/unimplemented options (e.g. `emerald`).
+2. Registry API & Resolution Engine:
+   - `getAll()`: Returns immutable deep clone of all 4 registered themes with full metadata.
+   - `getById(id)`: Case-insensitive, whitespace-trimmed lookup returning theme definition or `null`.
+   - `isValid(id)`: Strict boolean validation for theme IDs.
+   - `getDefault()`: Returns the default theme definition (`default`).
+   - `getDisplayName(id)`: Human-readable name helper with safe fallback.
+   - `resolveTheme(input)`: Safe fallback cascade for any wish object, property, or raw string, guaranteeing a valid registered theme ID (defaulting to `"default"`).
+3. Admin Themes Foundation UI & Non-Destructive Preview:
+   - Dynamic Theme Preset Selector (`#admin-theme-preset`): Populated strictly from `ThemeRegistry.getAll()`.
+   - Themes Catalog Grid (`#admin-themes-grid`): Renders rich glassmorphic cards with visual gradient/paper swatches, category badges, display names, stable ID chips, descriptions, color dots, and status pills.
+   - Non-Destructive Theme Preview Modal (`#modal-theme-preview`): Displays simulated letter, envelope, floral corners, and typography with theme colors without modifying or rewriting wish records.
+   - Preset Switcher: `setDefaultTheme(themeId)` non-destructively switches active default and logs `THEME_DEFAULT_CHANGE` audit events.
+4. Backward Compatibility & Protected Invariants:
+   - Existing wish records (`letter_theme`) remain 100% untouched.
+   - Public rendering engine (`js/modules/renderers.js`), Quick Editor (`js/modules/editor/*`), and shared security (`js/modules/admin-security.js`) remain strictly protected.
+
+============================================================
+65. PHASE 31F-2 / 31F-2A — WISH STATE SYNCHRONIZATION + CROSS-EDITOR CONSISTENCY (COMPLETE)
+============================================================
+
+1. Root Cause & Solution of Cross-Editor State Desynchronization (Quick Editor → Admin Dashboard):
+   - Root Cause Discovered:
+     a. `AdminWishEditor.openEdit(wishId)` previously prioritized in-memory `AdminWishes.getWishes()` cached array without querying live DB row.
+     b. `AdminWishes.openQuickView(wishId)` only queried `wishesState.find()` in-memory list which was not refreshed when an external save occurred in another tab/window.
+     c. Admin Studio lacked window focus, tab visibility, and tab switch synchronization listeners.
+   - Fixes Implemented:
+     a. `AdminWishEditor.openEdit(wishId)` executes a live fetch from DB (`DatabaseModule.getWishRecordById(wishId)` / Supabase) first, with graceful in-memory fallback if offline.
+     b. `AdminWishes.openQuickView(wishId)` renders the in-memory record immediately for zero UI latency, then executes a live row query against Supabase DB to update `wishesState` and re-render the modal with fresh data.
+     c. `admin.js` attaches listeners for `window.focus`, `document.visibilitychange`, `window.storage`, and `initTabNavigation(onTabSwitchCallback)`, automatically triggering `loadDashboardData()` when the user returns to or navigates within Admin Studio.
+   - Normalization Pipeline: `normalizeWishRecordToConfig(record)` authoritatively maps both DB raw column format (`recipient_name`, `letter_theme`, `cake_flavor`, etc.) and short-form payload format (`n`, `lt`, `cf`, etc.), safely resolving themes through `ThemeRegistry.resolveTheme(record)`.
+2. Persistent Default Theme Preset:
+   - Persistent Storage: `localStorage` (`bw_admin_default_theme`) backed with strict validation against `ThemeRegistry.isValid()`. Survives normal page refresh, tab navigation, and browser reopen.
+   - Isolation: Changing global default theme preset applies strictly to newly created wishes (`openNew()`) and NEVER mutates or rewrites existing wishes.
+3. Theme Catalog Action Bar Polish:
+   - Uniform Action Area: Every theme card renders a consistent, robust 2-button layout: `[ 👁️ Preview ]` and `[ ★ Set Default ]` (or `[ ✓ Default ]` disabled pill for active default).
+   - Prevents layout shifting, stretched button boxes, or asymmetric footer spacing.
+4. Comprehensive Field Synchronization Verified Across All Interfaces:
+   - All 15+ persisted Wish fields remain 100% synchronized across Dashboard Wish Studio, Quick Editor, Quick View Modal, and Public Wish Renderer:
+     `recipient_name`, `sender_name`, `birth_date`, `pass_code`, `letter_lines`, `memory_text`, `reasons_json`, `wishes_json`, `gallery_json`, `timeline_json`, `gift_json`, `music_url`, `video_url`, `cake_flavor`, `letter_font`, `letter_theme`.
+
+============================================================
+65A. PHASE 31F-2A HOTFIX — QUICK EDITOR EXISTING-WISH PERSISTENCE (COMPLETE)
+============================================================
+
+1. Actual Code Root Cause Discovered:
+   - In `js/modules/editor/customizer.js`, the "Apply & Save Wish" button (`saveBtn`) previously executed `readAllValues()`, `applyAllValues()`, `localStorage` saving, and `root.updateShareSection()`.
+   - `root.updateShareSection()` calls `buildRecipientShareUrl(undefined, { persist: false })`, which deliberately omitted database persistence.
+   - While the "Share Link" button (`shareLinkBtn`) used `{ persist: true }`, "Apply & Save Wish" was only updating local state and `localStorage` without persisting modifications of existing wishes (`cfg._activeWishUuid`) to the canonical Supabase database row.
+   - As a result, public wishes and Admin Dashboard Quick View retained old persisted database values upon reload or remote view.
+
+2. Why Previous Automated Tests Did Not Catch It (Testing Gap Closed):
+   - Previous tests tested `DatabaseModule.updateWish()` directly instead of simulating the actual click on `saveBtn` (`#customizer-save-btn`) in `customizer.js`.
+   - Test suite was expanded to 39 automated tests in `scratch/test_phase31f_wish_state_sync.js`, now directly executing `customizer-save-btn.click()` and validating end-to-end DB updates for existing UUIDs.
+
+3. Canonical Persistence Path Implemented:
+   - In `saveBtn` click handler:
+     ```javascript
+     const activeUuid = cfg._activeWishUuid || (root.CONFIG && root.CONFIG._activeWishUuid) || null;
+     if (activeUuid) {
+       const res = await buildUrlFn(values.nameVal, { persist: true });
+       if (!res) {
+         toastFn("⚠️ Could not save changes to this wish. Please try again.");
+         return; // Keep modal open, do NOT fake success
+       }
+       localStorage.setItem("bw_wish_sync_timestamp", String(Date.now()));
+     }
+     ```
+   - Routes through existing canonical `buildRecipientShareUrl` -> `ShareModule.buildShareUrl` -> `DatabaseModule.updateWish(activeUuid, publishConfig)`.
+   - ZERO duplicate Supabase or DB code introduced.
+
+4. Sacred Invariants & Protection:
+   - Existing Wish Rule: Updates ONLY the single existing row identified by `activeUuid`. Never falls back to `INSERT`, never generates duplicate UUIDs, and never alters the existing UUID.
+   - New Wish Protection: For fresh wishes (`activeUuid` is null), `Apply & Save` retains local draft behavior and does NOT perform premature database `INSERT`.
+   - Failure Handling: If DB update fails, modal remains open, error toast is displayed, and no misleading "Wish updated!" toast is shown.
+   - Cross-Tab Synchronization: Writes `bw_wish_sync_timestamp` into `localStorage` to immediately notify open Admin Dashboard tabs on the same origin via `storage` event.
+
+
+============================================================
+65B. PHASE 31F-3 — LIVE THEME INTEGRATION + INTERACTIVE PREVIEWS + THEME EXPANSION (COMPLETE)
+============================================================
+
+1. 6 Authoritative Themes in Theme Registry (`js/admin/admin-themes.js`):
+   - Expanded authoritative `THEME_DEFINITIONS` to exactly 6 production-grade themes:
+     1. `default` (Default Golden Luxe): Classic Warm Gold & Light Parchment (`.theme-default`, `✨ Classic`).
+     2. `royalgold` (Vintage Royal Gold): Antique Gold Foil & Dark Parchment (`.theme-royalgold`, `👑 Regal`).
+     3. `galaxy` (Midnight Galaxy Glow): Cosmic Night & Vibrant Neon Violet (`.theme-galaxy`, `🌌 Cosmic`).
+     4. `rosegold` (Rose Gold Pastel): Soft Pearl Pink & Rose Gold Accents (`.theme-rosegold`, `🌸 Romantic`).
+     5. `sapphire` (Sapphire Aurora) [NEW]: Deep Sapphire Midnight & Luminous Aurora Glow (`.theme-sapphire`, `💎 Aurora`, Celestial category, `#38bdf8` accent).
+     6. `emerald-luxe` (Emerald Luxe) [NEW]: Deep Forest Emerald & Warm Champagne Gold (`.theme-emerald-luxe`, `🌿 Luxe`, Luxury category, `#10b981` accent, `#fffbf0` paper).
+   - Strict Anti-Fake Rule: Unimplemented `emerald` placeholder is strictly rejected (`isValid("emerald") === false`).
+
+2. Public Page Theme Rendering Engine (`css/style.css` & `js/modules/renderers.js`):
+   - Added complete CSS rules for `.theme-sapphire` and `.theme-emerald-luxe`:
+     - `.theme-sapphire`: Deep navy/cyan envelope and paper gradient (`#071326` -> `#0e274a` -> `#153966`), cyan border (`#38bdf8`), cyan glowing title shadow, cyan drop-shadow on corner flowers.
+     - `.theme-emerald-luxe`: Forest green envelope (`#0a2318` -> `#133a2a`), ivory parchment letter paper (`#fffbf0` -> `#fef7e6`), deep emerald title (`#065f46`), champagne gold flower drop-shadows.
+   - Updated `updateLetterThemeAndFont()` in `js/modules/renderers.js` to strip all old theme classes and resolve canonical theme IDs before adding `theme-${resolvedTheme}` to `#experience`.
+
+3. Live Admin Wish Studio & Quick Editor Integration:
+   - Dynamic Dropdowns: `#adm-input-letter-theme` in Admin Wish Studio and `#input-letter-theme` in Quick Editor / fallback HTML dynamically reflect all 6 themes.
+   - Live Visual Feedback in Studio: `#adm-theme-live-preview` pill displays active theme palette color swatches live as the user changes the dropdown.
+   - Dynamic Summary Display: `#adm-sum-theme` instantly shows the human-readable display name (`ThemeRegistry.getDisplayName(cfg.letterTheme)`).
+   - Zero DB Preview: Theme preview modal and live summary updates are 100% non-destructive with 0 Supabase DB writes. Only explicit "Save Changes" persists to `letter_theme`.
+
+4. End-to-End Cross-Editor Persistence & Verification:
+   - Canonical `letter_theme` column in Supabase `wishes` table stores the theme ID string.
+   - Automated test suite `scratch/test_phase31f_3_live_themes.js` (25 tests) verifies all 23+ Phase 31F-3 requirements.
+   - Master test runner `scratch/run_all_tests.js` passes 100% across all 32 test suites.
+
+============================================================
+65C. PHASE 31F-4 IMPLEMENTATION DETAILS — THEME VISUAL SYSTEM UPGRADE & PREVIEW MODAL REDESIGN
+============================================================
+
+1. Visual Identity Primitives in Authoritative Theme Registry (`js/admin/admin-themes.js`):
+   - Added structured `visuals` objects to all 6 registered theme definitions:
+     1. `default` (Default Golden Luxe):
+        - Corner Ornaments: Golden blossoms & delicate sparkles (`🌸`).
+        - Atmosphere: Classic Warm Gold & Light Parchment.
+        - Envelopes & Paper: Warm burgundy gradient (`#1f1122` -> `#2a162b`), warm ivory parchment (`#fffaf3` -> `#fff3e6`), gold borders (`1px solid rgba(255, 215, 0, 0.45)`).
+     2. `royalgold` (Vintage Royal Gold):
+        - Corner Ornaments: Ornate Royal Gold Filigree & Baroque Flourishes (`⚜️`).
+        - Atmosphere: Antique Gilded Gold & Regal Dark Velvet.
+        - Envelopes & Paper: Dark bronze gradient (`#18140c` -> `#2c2313`), antique dark parchment (`#1c170d`), double gilded borders (`2px solid #f59e0b`).
+     3. `galaxy` (Midnight Galaxy Glow):
+        - Corner Ornaments: Constellation Star Clusters & Nebula Glow (`✨`).
+        - Atmosphere: Deep Space Nebula & Vibrant Cosmic Glow.
+        - Envelopes & Paper: Cosmic nebula gradient (`#090317` -> `#15062d`), starlight dark parchment (`#0d0b21`), neon purple/pink glow borders (`2px solid #a855f7`).
+     4. `rosegold` (Rose Gold Pastel):
+        - Corner Ornaments: Romantic Rose Blooms & Floating Blush Petals (`🌹`).
+        - Atmosphere: Soft Pearl Pink & Elegant Rose Gold Gilded Glow.
+        - Envelopes & Paper: Romantic wine gradient (`#24131b` -> `#3d1b2a`), blush parchment (`#fff0f5`), rose gold borders (`2px solid #f472b6`).
+     5. `sapphire` (Sapphire Aurora):
+        - Corner Ornaments: Crystalline Starbursts & Aurora Streaks (`💎`).
+        - Atmosphere: Deep Midnight Navy & Cyan Aurora Glow.
+        - Envelopes & Paper: Polar navy gradient (`#071326` -> `#0e274a`), starry midnight parchment (`#0a192f`), cyan aurora borders (`2px solid #38bdf8`).
+     6. `emerald-luxe` (Emerald Luxe):
+        - Corner Ornaments: Botanical Emerald Leaves & Champagne Gold Vines (`🌿`).
+        - Atmosphere: Deep Forest Emerald & Warm Champagne Gold.
+        - Envelopes & Paper: Velvet forest green gradient (`#071a12` -> `#0e2e21`), warm ivory parchment (`#fffbf0`), emerald & gold borders (`2px solid #10b981`).
+
+2. Reusable Corner Decorative System in Public Wish (`css/style.css` & `index.html`):
+   - Added 4 balanced corner ornament positions (`.flower-tl`, `.flower-tr`, `.flower-bl`, `.flower-br`) on `.letter-paper`.
+   - Unified styling across Public Wish and Admin Theme Preview:
+     - Default: `🌸` with warm golden-pink drop shadows.
+     - Royal Gold: `⚜️` with antique gilded glow (`drop-shadow(0 0 10px rgba(245, 158, 11, 0.95))`).
+     - Galaxy: `✨` with cosmic violet neon glow (`drop-shadow(0 0 12px rgba(247, 37, 133, 0.95))`).
+     - Rose Gold: `🌹` with romantic blush glow (`drop-shadow(0 0 10px rgba(255, 142, 169, 0.85))`).
+     - Sapphire: `💎` with crystalline cyan aurora glow (`drop-shadow(0 0 10px rgba(56, 189, 248, 0.9))`).
+     - Emerald Luxe: `🌿` with botanical emerald & champagne gold glow (`drop-shadow(0 0 10px rgba(16, 185, 129, 0.85))`).
+
+3. Admin Theme Preview Workspace Modal Redesign (`css/admin/admin-components.css` & `js/admin/admin-themes.js`):
+   - Centered Glassmorphic Modal: `.theme-preview-backdrop` and `.theme-preview-dialog` with blur, viewport centering, max-width 680px, responsive layout.
+   - Polished Close Button: Uses `.btn-modal-close` component class (circular glassmorphic button with smooth hover/active transitions).
+   - Realistic Preview Presentation: Renders authentic theme envelope, letter paper, 4 theme corner ornaments, stylized title, body snippet, highlight pill, and sign-off.
+   - Clean Action Footer: Non-destructive safety note on the left, `[ Close ]` and `[ ★ Set as Default ]` / `[ ✓ Active Default ]` on the right.
+   - Theme Catalog Grid Polish: Mini envelope previews on theme cards display theme-specific corner ornaments and stylized paper snippets.
+
 4. Automated Test Validation:
-   - `scratch/test_phase31c_media_reference_engine.js`: 27/27 PASS.
-   - `scratch/test_phase31c_orphan_scanner_export.js`: 40/40 PASS.
-   - Full regression suite: 228 / 228 PASS (100% pass rate).
-   - 42/42 JS files syntax valid.
-   - 0 secret leaks found.
-   - `git diff --check`: 0 whitespace errors.
-5. Sacred Invariants Preserved:
-   - Public Wish Page untouched.
-   - Quick Editor and Studio Editor untouched.
-   - Database schema and RLS policies untouched.
-   - Supabase Storage bucket policies untouched.
+   - Created `scratch/test_phase31f_4_theme_visuals.js` (12/12 tests PASS).
+   - Master test runner `scratch/run_all_tests.js` passes 100% across all 33 test suites.
+
+============================================================
+65D. PHASE 31F-4 HOTFIX — THEME VISUAL POLISH, ICON CONSISTENCY, OPEN BORDER & DEFAULT SCOPE
+============================================================
+
+1. Single Authoritative Corner Decoration System:
+   - Root Cause Discovered: `updateCornerFlowers()` in `js/modules/renderers.js` previously set `f.textContent = "🌸"` into each `.corner-flower` span. When a theme like Sapphire loaded, the CSS pseudo-element `::before` rendered `💎` while the span's text content simultaneously rendered `🌸`, causing two stacked duplicate icons in each corner.
+   - Hotfix: `updateCornerFlowers()` now sets `f.textContent = ""` (empty string), and `css/style.css` enforces `.corner-flower::after { display: none !important; }`. The CSS pseudo-element `::before` on `.corner-flower` is the sole authoritative decoration renderer per corner.
+
+2. Single Source of Truth for Theme Icons:
+   - Added canonical `icon` metadata to each theme definition in `THEME_DEFINITIONS` within `js/admin/admin-themes.js`:
+     - `default` → `✨` (Default Golden Luxe)
+     - `royalgold` → `👑` (Vintage Royal Gold)
+     - `galaxy` → `🌌` (Midnight Galaxy Glow)
+     - `rosegold` → `🌸` (Rose Gold Pastel)
+     - `sapphire` → `💎` (Sapphire Aurora)
+     - `emerald-luxe` → `🌿` (Emerald Luxe)
+   - Added `ThemeRegistry.getIcon(id)` and `ThemeRegistry.getOptionLabel(id)` helper methods.
+   - Synchronized all `<select>` dropdowns (`#admin-theme-preset`, `#adm-input-letter-theme`, `#input-letter-theme`) to use the exact same canonical icon + display name representation.
+
+3. Open-Envelope Themed Border & Background (Letter Paper Only):
+   - In `css/style.css`, the letter paper (`.theme-* .letter-paper`) retains its rich theme-specific borders, shadows, backgrounds, and titles across all 6 themes:
+     - Default: `1.5px solid rgba(255, 215, 0, 0.5)` + warm ivory parchment
+     - Royal Gold: `2px solid #f59e0b` + antique dark parchment
+     - Galaxy: `2px solid #a855f7` + starlight dark parchment
+     - Rose Gold: `2px solid #ff8ea9` + blush pearl parchment
+     - Sapphire: `2px solid #38bdf8` + polar midnight parchment
+     - Emerald Luxe: `2px solid #10b981` + warm ivory parchment
+   - Envelope Visual Rollback: Removed theme-specific recoloring from `.env-body` and `.env-flap`. The public closed envelope, flap, borders, and wax seal remain 100% on their original base design (warm pastel envelope with gold borders and pink seal), keeping theme styling focused exclusively on the letter, letter paper, typography, and corner ornaments.
+
+4. Theme Card Action Layout & Button Alignment:
+   - In `css/admin/admin-components.css`, updated `.theme-desc` with `min-height: 52px;`, `.theme-palette-row` with `margin-top: auto;`, and `.theme-card-footer` with `min-height: 60px;`.
+   - Explicitly standardized `.btn-theme-preview`, `.btn-theme-set-default`, and `.btn-theme-active-default` with `height: 32px;` and flex alignment so all cards have identically aligned action buttons on the exact same baseline regardless of description text lengths.
+
+5. Global Default Theme Scope & Quick Editor Protection:
+   - Global Default Setting (`bw_admin_default_theme`) remains strictly within Admin Dashboard (`#view-themes`).
+   - Quick Editor (`js/modules/editor/customizer.js`) remains 100% protected: no "Set Default" or Admin controls. It continues to load and persist the active wish's specific `letter_theme` to the database on save.
+   - When Admin changes global default, existing wishes in the database are NOT overwritten.
+   - New wishes created via `AdminWishes.openNew()` initialize with `AdminThemes.getActiveDefaultThemeId()`.
+
+============================================================
+65E. PHASE 31F-5 IMPLEMENTATION DETAILS — CONTROLLED THEME CUSTOMIZATION & SAFE PALETTE EXTENSIONS
+============================================================
+
+1. Dedicated Customizer Module Architecture (`js/admin/admin-theme-customizer.js`):
+   - Created dedicated `AdminThemeCustomizer` module (16 KB / 440 lines) to prevent `admin-themes.js` from exceeding the 35 KB modularity limit.
+   - Responsibilities: Customizer state, live preview binding, parameter clamping, non-destructive preset persistence (`bw_admin_theme_customization` in localStorage), reset, cancel, and Admin Wish Studio integration.
+   - ThemeRegistry authority preserved in `admin-themes.js`: no duplicated registry or theme definitions.
+
+2. Four Approved Controlled Customization Dimensions:
+   - Glow & Ambient Intensity: `subtle` (0.6x), `balanced` (1.0x), `vibrant` (1.4x) with hard clamp `[0.5, 1.5]`.
+   - Corner Ornament Arrangement: `quad` (all 4 corners), `header-only` (top-2), `minimal` (top-left), `hidden` (none).
+   - Curated Parchment Tone: `default`, `soft`, `deep` tailored per theme using curated gradients within the theme's palette identity.
+   - Letter Border Treatment: `delicate` (1px), `standard` (1.5px/2px), `ornate` (3px double).
+
+3. Envelope Isolation & Public Page Protection:
+   - Zero theme customizer rules apply to `#envelope-scene`, `.env-body`, `.env-flap`, `.wax-seal`, or `.ribbon`. The public closed envelope remains 100% on the original classic design.
+
+4. Quick Editor & Database Safety:
+   - Quick Editor (`js/modules/editor/*`) remains streamlined with its 6-theme dropdown and zero default/customizer controls.
+   - Supabase `wishes` table schema remains 100% unchanged (0 migrations, 0 RLS changes).
+   - Customizer preview is 100% in-memory with 0 database writes.
+
+5. Test Suite & Quality Gates:
+   - Created `scratch/test_phase31f_5_theme_customizer.js` (16/16 tests PASS).
+   - Master test runner `scratch/run_all_tests.js` passes 100% across all **34 test suites**.
+
+============================================================
+65F. PHASE 31F-5A IMPLEMENTATION DETAILS — THEME CATALOG UI POLISH HOTFIX
+============================================================
+
+1. Theme Card Action Overflow Root Cause & Fix:
+   - Root Cause: In `.theme-card-footer`, placing `.theme-status-pill` (~110px) side-by-side with 3 action buttons (`Preview`, `Customize`, `Set Default` totaling ~290px) exceeded the available width of standard 300px-340px grid cards, forcing buttons to overflow and clip horizontally.
+   - Solution: Refactored `.theme-card-footer` into a clean 2-row layout:
+     - Row 1 (`.theme-card-footer-top`): Hosts `${statusPill}` on the left and `${t.badge}` on the right.
+     - Row 2 (`.theme-card-actions`): Utilizes CSS Grid (`grid-template-columns: repeat(3, 1fr)`) with `width: 100%` and `gap: 6px`.
+     - Result: Buttons are guaranteed to occupy equal 1/3 widths, never overflow or get clipped, and maintain exact baseline alignment across all 6 theme cards.
+
+2. Dynamic Registered Theme Count Badge:
+   - Root Cause: Header badge in `admin.html` had stale static text `4 Registered Themes`.
+   - Solution: Attached `id="admin-themes-count-badge"` and updated `renderThemesUI()` in `js/admin/admin-themes.js` to dynamically set `countBadge.textContent = `${themes.length} Registered Themes`` directly deriving from `ThemeRegistry.getAll().length`. Static fallback in `admin.html` updated to `6 Registered Themes`.
+
+============================================================
+65G. PHASE 31G IMPLEMENTATION DETAILS — ADMIN BACKUP + LOGS + SETTINGS FULL SUITE
+============================================================
+
+1. Admin Backup Subsystem Upgrade (`js/admin/admin-backup.js`):
+   - Structured version "2.5" JSON export archive capturing wishes, audit logs, global settings, and active default theme preset without mutating database state.
+   - Deep schema validation on import with duplicate UUID detection.
+   - Explicit user confirmation prompt guard prior to in-memory restore.
+   - Preserves 0 database schema modifications and 0 storage bucket alterations.
+
+2. Admin Logs Subsystem Upgrade (`js/admin/admin-logs.js`):
+   - LocalStorage persistence under `bw_admin_audit_logs` with 100-entry max retention cap.
+   - Automatic sensitive data sanitization filter (redacts passwords, passcodes, recovery codes, and tokens).
+   - Live search input & category filtering (`ALL`, `AUTH`, `WISH`, `MEDIA`, `BACKUP`, `SETTINGS`, `SECURITY`, `SYSTEM`).
+   - RFC-compliant CSV export (`exportLogsCSV()`) and formatted JSON export (`exportLogsJSON()`).
+   - Confirmation-guarded log clearing (`clearLogs()`).
+
+3. Authoritative Settings Subsystem (`js/admin/admin-settings.js`):
+   - Created dedicated, focused `AdminSettings` controller module managing site title, default music track for new wishes, share base URL preference, wishes table page size (10, 25, 50), table density (standard, compact, spacious), delete confirmation toggle, and auto-refresh intervals.
+   - Persisted in `localStorage` under `bw_admin_global_settings`.
+   - Safe isolated reset (`resetSettings()`) that restores defaults without modifying wishes, themes, or credentials.
+   - Strict separation of concerns: `ThemeRegistry` in `js/admin/admin-themes.js` remains the sole authority for theme defaults.
+
+4. Dedicated Stylesheet (`css/admin/admin-settings-suite.css`):
+   - Encapsulates toolbar, category badges, backup summary cards, and settings form layouts without bloating `admin-components.css`.
+
+5. Automated Quality Gates:
+   - Created `scratch/test_phase31g_backup_logs_settings.js` (18/18 PASS).
+   - Master test runner `scratch/run_all_tests.js` passes 100% across all **35 test suites**.
+
+============================================================
+65G-1. PHASE 31G-1 IMPLEMENTATION DETAILS — AUDIT LOGS UI POLISH HOTFIX
+============================================================
+
+1. Audit Logs Category Dropdown Theme:
+   - Root Cause: Native `<select>` opened with browser default light/grey background.
+   - Solution: Styled `.logs-select` in `css/admin/admin-settings-suite.css` with dark theme background `#1B1530`, custom gold SVG chevron arrow, `border: 1px solid rgba(255, 215, 0, 0.25)`, and explicit option background colors `#171126` / `#2b1c4b` on hover/focus. In `admin.html`, inline option styles ensure seamless fallback. Keyboard navigation, accessibility, and category filtering logic remain 100% intact.
+
+2. 12-Hour Timestamp Formatting (`DD/MM/YYYY, hh:mm:ss AM/PM`):
+   - Created canonical `formatLogTimestamp()` helper in `js/admin/admin-logs.js`.
+   - Converts 24-hour timestamps (e.g., `23/08/2026, 20:46:25`) into user-friendly 12-hour format: `23/08/2026, 08:46:25 PM`.
+   - Handles midnight (`12:00:00 AM`), noon (`12:00:00 PM`), single-digit zero-padding, ISO strings, and raw Dates while preserving chronological ordering.
+   - User-facing CSV and JSON exports synchronize to 12-hour format while retaining machine-readable ISO timestamps.
+
+3. Logs Table Column Widths & Single-Line Spacing:
+   - Defined `.logs-table` column classes in `css/admin/admin-settings-suite.css` and `admin.html`:
+     - Timestamp: `width: 220px; min-width: 200px; white-space: nowrap;`
+     - Event Category: `width: 160px; min-width: 140px; white-space: nowrap;`
+     - Description: fluid width
+     - Status: `width: 110px; min-width: 95px; text-align: center;`
+   - Guarantees timestamps remain strictly on one line on desktop without horizontal clipping or overflow.
+
+============================================================
+66. PERMANENT ARCHITECTURAL RULES & ANTI-MONOLITHIC MODULARITY
+============================================================
+
+CRITICAL NON-NEGOTIABLE RULE:
+Never allow core files (`app.js`, `admin.js`, `admin-dashboard.js`, `admin-wishes.js`) to become monolithic catch-all files.
+
+Before adding new features:
+1. Evaluate module responsibilities.
+2. Maintain: ONE MODULE = ONE CLEAR RESPONSIBILITY.
+3. Modular distribution:
+   - `admin-core.js`: Shared formatting, toasts, link copying, modals.
+   - `admin-navigation.js`: Access gating, tab switching, drawer.
+   - `admin-dashboard.js`: Thin dashboard lifecycle, KPI coordination, recent wishes, activity.
+   - `admin-dashboard-analytics.js`: Unified data snapshot, trend calculation, content mix, SVG charting, operational insights, copy summary & JSON/CSV report exports.
+   - `admin-themes.js`: Authoritative Theme Registry, theme metadata, validation, catalog rendering, default persistence & preview foundation.
+   - `admin-theme-customizer.js`: Controlled Theme Customizer workspace UI, live preview binding, parameter clamping & preset defaults.
+   - `admin-wishes.js`: Real database wish CRUD, search, filter, sort, pagination, density, bulk operations, Quick View.
+   - `admin-media.js`: Media library, storage scanner, reference engine, asset inspector, safe deletion review.
+   - `admin-wish-editor.js`: Native Admin Wish Studio editor form controls and schema mapping.
+   - `admin-security.js`: Master password, recovery email, emergency codes, security question.
+   - `admin-backup.js`: Versioned JSON backup export, integrity verification & safe restore.
+   - `admin-logs.js`: Bounded persistent audit logs, category filters, CSV/JSON export & secret redaction.
+   - `admin-settings.js`: Global site preferences, table densities, pagination & auto-refresh coordination.
+
+============================================================
+67. STRICT PROTECTED SYSTEMS & SACRED INVARIANTS
+============================================================
+
+STRICTLY PROTECTED AT ALL TIMES:
+- Public Wish Page: `index.html`, `js/app.js`, `css/style.css`, `js/modules/renderers.js`
+- Quick Editor: `js/modules/editor/*`
+- Share Architecture: Unicode-safe WhatsApp share flow (`js/share.js`)
+- Database & Storage APIs: `js/database.js`, `js/storage.js`, `js/supabase.js`, `js/config.js`
+- Server-Side Admin Deletion: `/api/admin-delete-media.js`
+- Admin Authentication Gate: `js/modules/admin-security.js`
+- MediaReferenceEngine authority: Single source of truth for media usage mapping.
+
+============================================================
+68. MASTER ROADMAP & FUTURE THEMES / BUSINESS SPECIFICATION
+============================================================
+
+ADMIN STUDIO ROADMAP:
+- Phase 31D-1B: Storage Capacity & Final 9-KPI Refinement [COMPLETE]
+- Phase 31E: Dashboard Save & Share [COMPLETE]
+- Phase 31F: Themes Management
+  - Phase 31F-1: Theme Foundation & Authoritative Theme Registry [COMPLETE]
+  - Phase 31F-2: Dynamic Theme Integration in Wish Studio & Editor [COMPLETE]
+  - Phase 31F-2A: Quick Editor Existing-Wish Persistence Hotfix [COMPLETE]
+  - Phase 31F-3: Interactive Live Theme Previews & Theme Expansion (6 Themes) [COMPLETE]
+  - Phase 31F-4: Theme Visual System Upgrade + Rich Theme Decorations + Preview Modal Redesign [COMPLETE]
+  - Phase 31F-4 Hotfix: Theme Visual Polish + Icon Consistency + Open Border + Default Scope [COMPLETE]
+  - Phase 31F-5: Controlled Theme Customization & Safe Palette Extensions [COMPLETE]
+  - Phase 31F-5A: Theme Catalog UI Polish Hotfix (Card Action Overflow + Dynamic Count) [COMPLETE]
+- Phase 31G: Backup + Logs + Settings Full Suite [COMPLETE]
+- Phase 31G-1: Audit Logs UI Polish Hotfix [COMPLETE]
+- Phase 31H: Security Hardening + Shared Security Management [COMPLETE]
+- Phase 31H-1: Security Management Parity + Dashboard Recovery Hotfix [COMPLETE]
+- Phase 31H-2: Security Recovery Hardening + Shared Security Authority Parity (Canonical Recovery Authority Final Architecture) [READY FOR BROWSER MANUAL UAT]
+  - Live Browser Verified Pass: Admin Emergency Recovery Email OTP verified working end-to-end (Send OTP -> Verify OTP -> Identity Verified -> New Master Password -> Database Updated -> Login Pass).
+  - Tab-Scoped sessionStorage & Single Canonical Server Authority: Recognized that `sessionStorage` is tab-scoped and cannot serve as cross-tab authority. The single canonical authority is the server-side PBKDF2 hash (600,000 iterations + 16-byte salt) in Supabase row `00000000-0000-0000-0000-000000000001`.
+  - Server Persistence Lifecycle: When a code is generated, it is sent to `POST /api/auth` (`action: "save-recovery-code"`). Only upon successful HTTP 200 server response is the code saved to the current tab's `sessionStorage` and displayed. If server persistence fails, no code is stored in `sessionStorage` or displayed.
+  - Stale Session Protection: `DatabaseModule.getSecuritySettings()` fetches `has_recovery_code` and `recovery_code_updated_at`. When initializing Admin or Quick Editor, if the session code timestamp differs from server `updated_at`, the stale session code is cleared from `sessionStorage` and masked placeholder `••••-••••-••••-••••` is rendered.
+  - Cross-Tab Parity: Both Admin and Quick Editor verify codes exclusively against `/api/auth`. When Code B is generated in one tab, server hash is updated, and Code A is immediately invalid on both interfaces.
+  - Buffer Parsing Invariant: `parseRequestBody()` across `api/auth.js` and `api/send-otp.js` safely parses Buffer, String, and Object payloads without `Invalid action parameter`.
+  - OTP UI Cleanup & One-Line Layout: `white-space: nowrap !important; flex-shrink: 0 !important;` on verify OTP buttons. Cleaned and concealed OTP input upon successful verification and password update.
+  - Modularity & File Size Invariant: All JS modules strictly < 35 KB:
+    - `api/auth.js`: 20.12 KB (20,605 bytes)
+    - `api/send-otp.js`: 24.28 KB (24,858 bytes)
+    - `js/admin/admin-security.js`: 34.53 KB (35,358 bytes)
+    - `js/database.js`: 34.76 KB (35,597 bytes)
+    - `js/modules/admin-security.js`: 34.94 KB (35,782 bytes)
+    - `css/admin/admin-security.css`: 5.59 KB (5,722 bytes)
+  - Automated Regression & Syntax: 36/36 test suites PASS (100% Green), 37/37 Phase 31H-2 tests PASS, 108/108 JS files valid syntax, 0 git diff errors.
+- Phase 31H-3: API Authorization Hardening [COMPLETE]
+  - Hardened serverless endpoint `api/auth.js` by requiring valid HMAC-SHA256 admin session tokens for privileged mutations (`update`, `save-recovery-code`, `passkey-register`, `passkey-remove`).
+  - Preserved public access for admin authentication ceremony endpoints (`verify`, `verify-recovery-code`, `passkey-challenge`, `passkey-verify`).
+  - Verified 12/12 dedicated authorization tests passing in `scratch/test_phase31h3_api_authorization.js`.
+  - Maintained file size invariant: `api/auth.js` at 32.8 KB (< 35.0 KB).
+- Phase 31H-3R: Passkey Recovery & Real WebAuthn Verification [RESOLVED & VERIFIED]
+  - Genuine Windows Hello platform passkey successfully re-enrolled; biometric fingerprint authentication and Admin session issuance fully verified in browser.
+- Phase 31H-3R-B: WebAuthn Live UAT Test Isolation Forensic Audit [COMPLETE]
+  - Audited all 68 scratch test files and traced the exact root cause of the credential overwrite incident to unisolated live requests in `scratch/test_phase31h3p_live_roundtrip.js`.
+  - Established permanent safety invariant: automated tests must never mutate shared live authentication credentials.
+- Phase 31H-3R-C: WebAuthn Test Isolation Implementation [COMPLETE]
+  - Converted `scratch/test_phase31h3p_live_roundtrip.js` and `scratch/test_phase31h3p_strict_credential_binding.js` to in-memory isolated handler invocation with zero live Supabase REST writes.
+  - Automated tests default to in-memory isolation, ensuring tests can never overwrite, delete, or alter genuine database passkeys.
+  - Updated `scratch/run_all_tests.js` master runner to safely execute all 41 test suites with 100% pass rate.
+  - Zero production application files modified; genuine Windows Hello authentication, Quick Editor, Dashboard, and public wish features preserved.
+- Phase 31H-4: Storage Security Audit [COMPLETE]
+  - Conducted complete read-only forensic audit across Supabase Storage bucket (`wish-media`), client operations (`js/storage.js`), DAM controllers (`js/admin/admin-media.js`), and serverless API endpoints (`api/admin-delete-media.js`).
+  - Verified storage deletion authorization gating, MIME-type and extension validation, path traversal prevention, and metadata parsing invariants.
+  - Verified zero-egress `#t=0.001` metadata preload and preview lifecycle cleanup.
+- Phase 31H-5: Input & XSS Security Hardening [COMPLETE]
+  - Conducted full XSS audit and implemented targeted P0/P1 sanitization hardening without breaking any existing functionality.
+  - Exported canonical `escapeHtml()` utility on `root.escapeHtml` in `js/modules/utils.js`.
+  - Hardened `ensureLineHighlight(line)` in `js/modules/utils.js` with pre-highlight escaping, ensuring user HTML is neutralized while the golden `<span class="highlight">` styling on "everything you are." is preserved.
+  - Hardened public renderers in `js/modules/renderers.js` by escaping Reasons (`r.title`, `r.text`), Gallery (`g.cap`, `g.secretNote`, `g.image`, `g.emoji`), and Timeline (`t.date`, `t.title`, `t.text`).
+  - Hardened Admin Audit Logs table in `js/admin/admin-logs.js` by escaping `log.desc` during `renderLogsTable()`.
+  - Hardened Quick Editor form generators in `js/modules/editor/reasons.js`, `timeline.js`, `wishes.js`, `letter.js`, `gallery.js` against attribute and textarea tag breakout.
+  - Hardened `stripHtml` in `js/modules/editor/letter.js` to use safe regex tag stripping instead of `tmp.innerHTML`.
+  - Added dedicated isolated in-memory test suite `scratch/test_phase31h5_xss_sanitization.js` (11/11 tests passing, 0 live DB writes).
+  - Verified 100% pass rate across all 42 master regression suites (`scratch/run_all_tests.js`) and syntax validity across all 122 JS files.
+- Phase 31H-6: Destructive Action Security [COMPLETE]
+  - Conducted complete read-only forensic audit across Admin Dashboard, Quick Editor, Serverless APIs (`api/admin-delete-wish.js`, `api/admin-delete-media.js`, `api/auth.js`), Database, and Supabase Storage.
+  - Hardened client storage deletion by deprecating and removing legacy direct client-side storage deletion fallback (`client.storage.from(BUCKET_NAME).remove()`) in `js/storage.js`, enforcing `/api/admin-delete-media` as the single authoritative deletion channel with zero client bypass.
+  - Added hard server-side bulk batch limit (`MAX_BULK_LIMIT = 100`) to `api/admin-delete-wish.js` and `api/admin-delete-media.js` (`MAX_MEDIA_BULK_LIMIT = 100`) rejecting oversized requests with HTTP 400.
+  - Added sliding-window IP rate limiting (`MAX_DELETE_REQUESTS_PER_MINUTE = 30`) to privileged storage deletion endpoint in `api/admin-delete-media.js`.
+  - Added dedicated isolated in-memory test suite `scratch/test_phase31h6_destructive_hardening.js` (8/8 tests passing, 0 live DB writes).
+  - Verified 100% pass rate across all 43 master regression suites (`scratch/run_all_tests.js`).
+  - Preserved Password Authentication, Windows Hello / Platform Passkeys, Quick Editor, DAM, zero-egress `#t=0.001` preload, preview lifecycle cleanup, and public wish features.
+- Quick Editor: Section Order Alignment [COMPLETE]
+  - Surgically moved the existing Sender Info DOM section in `index.html` immediately after Basic Info, matching Admin Wish Studio layout.
+  - Final Quick Editor accordion order: Basic Info (1) ➔ Sender Info (2) ➔ Relationship Preset Style (3) ➔ Birthday Letter & Font Style (4) ➔ Special Memory (5) ➔ Reasons (6) ➔ Wishes (7) ➔ Gallery (8) ➔ Timeline (9) ➔ Gift (10) ➔ Music (11) ➔ Video Wish (12) ➔ Secret Security Keyword (13).
+  - Preserved all IDs (`#input-from`), data attributes (`data-reset="sender"`), and event bindings with 0 JavaScript and 0 CSS changes.
+- Phase 31H-7: Supabase Security Audit [COMPLETE]
+  - Conducted complete read-only forensic audit across Supabase Database, Storage, and Serverless API trust boundaries.
+  - Verified 0 exposure of `SUPABASE_SERVICE_ROLE_KEY` across all public bundles, HTML, and client JavaScript.
+  - Verified serverless authorization gating for privileged database and storage operations.
+  - Verified PBKDF2 cryptographic hashing of passwords, recovery codes, and OTPs, and WebAuthn COSE public key isolation.
+  - Verified all 43 test suites execute in-memory with zero live database mutations.
+- Phase 31H-8: Secrets Audit [COMPLETE]
+  - Conducted complete read-only forensic audit across environment variables, client bundles, Git tracking, logging, and test fixtures.
+  - Verified zero exposure of `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_SESSION_SECRET`, or `RESEND_API_KEY` in frontend bundles or Git.
+  - Verified PBKDF2-SHA256 salted hashing for passwords, recovery codes, and OTPs.
+  - Verified hardware-enclave isolation of WebAuthn private signing keys.
+  - Verified `scratch/test_phase31h3p_live_roundtrip.js` is 100% in-memory mocked and completely safe.
+- Phase 31H-9: Final Security Verification [COMPLETE]
+  - Completed master security sign-off across Authentication, Authorization, Destructive Actions, Supabase, Secrets, WebAuthn, XSS, DAM, Quick Editor, Admin Dashboard, and Public Wish rendering.
+  - Verified 100% pass rate across all 43 master regression suites with 0 live database writes.
+- Phase 31I: Final Admin Functional UAT & Admin Share Parity [COMPLETE]
+  - Phase 31I Supplement: Backup + Logs + Settings Full Verification [COMPLETE]
+    - Verified Backup export (`exportBackup`), metadata header (`v2.5`), credential scrubbing (`FORBIDDEN_CRED_KEYS`), and structural validation (`validateBackupPayload`).
+    - Verified system-row `00000000-0000-0000-0000-000000000001` protection from export/restore injection.
+    - Verified two-step restore confirmation modal.
+    - Marked live destructive DB overwrite as "NOT DESTRUCTIVELY TESTED — SAFETY LIMIT" to protect production database.
+    - Verified persistent audit logs (`bw_admin_audit_logs`), 12-hour timestamps (`formatLogTimestamp`), categories (`WISH`, `MEDIA`, `ADMIN`, `SYSTEM`), real-time search, category filtering, CSV/JSON export, and sensitive data sanitization (`sanitizeLogText`).
+    - Verified global settings persistence (`bw_admin_global_settings`), default fallback normalization, and reset isolation.
+    - Verified Theme Ownership Invariant: `ThemeRegistry` / `bw_admin_default_theme` remains the authoritative theme-default source.
+    - Verified 18/18 Phase 31G test suite passed and 43/43 master regression suites passed.
+  - Phase 31I Forensic Audit: Canonical Share Parity & Locked WhatsApp Contract [COMPLETE]
+    - Verified single canonical WhatsApp message contract across Quick Editor, Public Page, and Admin Studio.
+    - Verified single canonical UUID URL destination (`/?w=${uuid}`).
+    - Confirmed Bulk Copy Links as authoritative multi-item share mechanism (1 URL per line).
+    - Verified zero security or credential leakage in share payloads.
+  - Phase 31I Implementation: Admin Share Parity in Wishes Manager [COMPLETE]
+    - Exported canonical pure helpers in `js/share.js`: `ShareModule.buildWhatsAppMessage(url, name)`, `ShareModule.buildWhatsAppUrl(url, name)`, `ShareModule.buildNativeSharePayload(url, name)` with 100% byte-for-byte fidelity to the locked WhatsApp contract.
+    - Added `#btn-quick-view-whatsapp-share` and `#btn-quick-view-native-share` buttons alongside existing `#btn-quick-view-copy-link` in Admin Wishes Quick View modal (`js/admin/admin-wishes.js`).
+    - Verified safe Web Share API fallback (Copy Link + Toast) and graceful user-cancel handling without false errors.
+    - Verified bulk selection retains 1 URL/line via `#btn-wishes-bulk-copy-links` without multi-URL WhatsApp spoofing.
+    - Verified 18/18 dedicated Phase 31I tests passed (100% Green) and 43/43 master suites passed (100% Green).
+  - Phase 31I Supplement: Native Share Message Polish [COMPLETE]
+    - Polished canonical Native Share payload in `ShareModule.buildNativeSharePayload` to use structured Title `🎁 Birthday Surprise for {recipientName}` and heartfelt Hinglish copy with emoji accents (`🎂✨ 🎁💖`, `… 💝`, `👇 🥰`).
+    - Synchronized Quick Editor (`customizer.js`), Public Wish Page (`app.js`), and Admin Dashboard (`admin-wishes.js`) to consume the exact same canonical `ShareModule.buildNativeSharePayload` helper.
+    - Preserved locked WhatsApp share message contract 100% byte-for-byte untouched across all three sharing surfaces.
+- Phase 31J: Dashboard Responsive Master Pass (Desktop / Tablet / Mobile) [COMPLETE]
+  - Phase 31J Forensic Audit: Comprehensive Viewport & Component Inspection [COMPLETE]
+    - Audited 11 admin views, 11 CSS files, all modals (Quick View, Asset Inspector, Unused Media, Theme Customizer, Theme Preview).
+    - Identified and isolated 7 concrete responsive defects across Desktop (1920×1080, 1536×864, 1366×768), Tablet (1024×1366, 768×1024), and Mobile (430×932, 390×844, 375×667).
+  - Phase 31J Implementation: Surgical CSS Master Responsive Pass [COMPLETE]
+    - Fix 1: Dashboard Overview Grids — Added `.dash-overview-subgrid` in `admin.html` and responsive collapse for `.dash-analytics-grid` and `.dash-overview-subgrid` at `<= 960px`.
+    - Fix 2: Admin Wish Studio — Collapsed `.admin-editor-layout` to 1 column and set `.admin-editor-summary-col` static at `<= 1024px`; collapsed `.form-grid-2` to 1 column at `<= 640px`.
+    - Fix 3: Settings, Themes, Security & Backup Grids — Collapsed `.settings-grid` and `.themes-catalog-grid` to 1 column at `<= 768px`, eliminating horizontal overflow on 375px/390px screens.
+    - Fix 4: DAM Asset Inspector & Unused Media Modals — Collapsed `.inspector-modal-body`, `.inspector-meta-grid`, and `.unused-modal-stats` to 1 column at `<= 768px`.
+    - Fix 5: Mobile Navbar — Scaled `.status-indicator` and `.public-site-link` with compact labels at `<= 480px`.
+- Phase 31J: Dashboard Responsive Master Pass (Desktop / Tablet / Mobile) [COMPLETE]
+  - Phase 31J Forensic Audit: Comprehensive Viewport & Component Inspection [COMPLETE]
+    - Audited 11 admin views, 11 CSS files, all modals (Quick View, Asset Inspector, Unused Media, Theme Customizer, Theme Preview).
+    - Identified and isolated 7 concrete responsive defects across Desktop (1920×1080, 1536×864, 1366×768), Tablet (1024×1366, 768×1024), and Mobile (430×932, 390×844, 375×667).
+  - Phase 31J Implementation: Surgical CSS Master Responsive Pass [COMPLETE]
+    - Fix 1: Dashboard Overview Grids — Added `.dash-overview-subgrid` in `admin.html` and responsive collapse for `.dash-analytics-grid` and `.dash-overview-subgrid` at `<= 960px`.
+    - Fix 2: Admin Wish Studio — Collapsed `.admin-editor-layout` to 1 column and set `.admin-editor-summary-col` static at `<= 1024px`; collapsed `.form-grid-2` to 1 column at `<= 640px`.
+    - Fix 3: Settings, Themes, Security & Backup Grids — Collapsed `.settings-grid` and `.themes-catalog-grid` to 1 column at `<= 768px`, eliminating horizontal overflow on 375px/390px screens.
+    - Fix 4: DAM Asset Inspector & Unused Media Modals — Collapsed `.inspector-modal-body`, `.inspector-meta-grid`, and `.unused-modal-stats` to 1 column at `<= 768px`.
+    - Fix 5: Mobile Navbar — Scaled `.status-indicator` and `.public-site-link` with compact labels at `<= 480px`.
+    - Fix 6: Wishes Toolbar & Selection Badges — Expanded `.table-search` to 100% width and wrapped `.table-filter-group` at `<= 768px`; stacked pagination and wrapped selection badges at `<= 640px`.
+    - Fix 7: Quick View Modal — Adjusted `.wishes-quick-view-overlay` padding (10px) and `.quick-view-card` max-height at `<= 480px`, retaining smooth horizontal scroll on action buttons without page-level scroll.
+    - Verified 14/14 dedicated Phase 31J tests passed (100% Green) and 45/45 master regression suites passed (100% Green).
+- Phase 31J-1: Responsive UAT Polish + Customer Tab [COMPLETE]
+  - Security — Regenerate Emergency Code Confirmation Modal: Converted right-aligned/off-screen confirm box to a centered `.admin-modal-overlay` with backdrop blur, full responsiveness across viewports, and ESC/backdrop click closing.
+  - Dashboard Mobile Actions: Wrapped header action buttons in `.dash-header-actions` with full width vertical stacking at `<= 480px`, eliminating cramped text and horizontal overflow.
+  - Mobile Top Navbar: Wrapped status text in `.status-text` with refined responsive padding at `<= 480px` and `<= 375px` for zero overlap with menu button and public site link.
+  - Wishes & Logs Contained Table Scrolling: Enclosed `admin-table` and `logs-table` in `.table-responsive-wrapper` with smooth horizontal scrolling inside the container while search, filters, count badge, and pagination remain full width.
+  - DAM Mobile Filter Chips: Configured single touch-friendly horizontal scroll strip (`overflow-x: auto; flex-wrap: nowrap;`) for filter chips at `<= 640px` and `<= 480px`.
+  - Security Recovery Detail Cards: Normalized card widths, padding, and form input styling across recovery email and emergency code cards.
+  - Audit Logs Result Count: Styled `.logs-toolbar` and `.logs-filter-group` to stack cleanly at `<= 768px` with count badge sitting naturally below filters.
+  - Coupons Removal: Cleanly removed Coupons from sidebar navigation with 0 orphaned broken references.
+  - Customers Section & Canonical Profile Analytics: Created `js/admin/admin-customers.js` and `view-customers` in `admin.html`. Derives unique creator profiles from canonical wishes database without inventing fake database tables or schemas. Provides 4 KPI cards, real-time search, sorting, and responsive table.
+  - Verified 12/12 dedicated Phase 31J-1 tests passed (100% Green) and 46/46 master regression suites passed (100% Green).
+- Phase 31J Defect Fix Pass #1: Media Filters + Passkey Actions + Backup Button [COMPLETE]
+  - 1. Media Library Mobile Filter Chips: Ensured all 8 categories are 100% contained with zero page horizontal overflow.
+  - 2. Security Passkey Action Buttons: Wrapped `#btn-register-passkey` and `#btn-remove-passkey` in `.passkey-actions-row` with balanced `42px` height and distinct styling.
+  - 3. Backup Select File Button: Changed `#btn-select-backup-file` to `.btn-secondary.btn-select-backup` dark purple theme styling with high-contrast folder icon `📁`.
+- Phase 31J Defect Fix Pass #2: Mobile Dashboard + Media Grid + Security Actions [COMPLETE]
+  - 1. Security Remove Passkey Button: Assigned `min-height: 42px !important; height: 42px !important;` and full-width `100%` vertical stacking on mobile (`<= 640px`), eliminating thin-pill collapsed appearance.
+  - 2. Dashboard Actions: Structured `.dash-header-actions` on mobile into Row 1 (`[ 📋 Copy Summary ]` left + `[ 📤 Export Report ▾ ]` right with balanced `calc(50% - 4px)` split) and Row 2 (`[ 🔄 Refresh Analytics ]` full-width `100%` below).
+  - 3. Dashboard Overview Containment: Wrapped Recent Wishes table inside `.table-responsive-wrapper`, collapsed Storage Overview to 1 column at `<= 480px`, and ensured natural word-wrapping for System Activity list.
+  - 4. Media Library 3-Column Mobile Grid: Replaced horizontal scroller with a responsive 3-column multi-row grid (`display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));`) displaying all 8 categories cleanly without scrolling.
+  - 5. Dashboard Overview Mobile Card Containment & Right Header Actions: Resolved root grid item width blowout by applying `min-width: 0; width: 100%; max-width: 100%; box-sizing: border-box;` across `.dash-overview-subgrid`, `.dash-overview-right-col`, `.table-panel`, and `.dash-panel-header`. Aligned section titles to LEFT and header action buttons (`[ View All Wishes → ]`, `[ Manage Media → ]`, `[ View Logs → ]`) compactly to the RIGHT (`margin-left: auto; width: auto; max-width: max-content; flex: 0 0 auto;`).
+  - 6. Audit Logs Mobile Action Buttons Layout: Structured `.logs-actions-group` at `<= 768px` into Row 1 (`[ 📥 Export CSV ]` left + `[ 📥 Export JSON ]` right with balanced `calc(50% - 4px)` split) and Row 2 (`[ 🗑 Clear Logs ]` full-width `100%` below).
+- Phase 31K: Dashboard Content Mix Data Accuracy Fix + Customers Tab Coming Soon Placeholder [COMPLETE]
+  - Part A — Content Mix Data Accuracy (`js/admin/admin-dashboard-analytics.js`, `js/admin/admin-dashboard.js`):
+    - Denominator base: strictly uses total active wishes (`safeWishes.length`), calculating exact integer percentages (`(count / totalWishes) * 100`).
+    - Canonical field validation:
+      1. Photos / Gallery: Inspects canonical `gallery_json` (and `gallery`/`photos`), parses JSON safely, and checks for non-empty string URLs or object items with `src`/`url`/`file`. Empty arrays `[]`, `{}` and whitespace return 0.
+      2. Video Memories: Inspects canonical `video_url` (and `videoWish.url`), validating non-empty string after `.trim()`.
+      3. Voice / Audio: Inspects canonical `music_url` (and `music.file`), validating non-empty string after `.trim()`.
+      4. Birthday Letters: Inspects canonical `letter_lines` (and `letter_body`/`message`), safely verifying non-empty string lines.
+      5. Passcode Protection: Inspects canonical `pass_code` (and `passcode.code`/`passcode`), validating non-empty string or numeric code after `.trim()`.
+  - Part B — Customers Tab Temporary Coming Soon Placeholder (`admin.html`, `js/admin/admin-customers.js`):
+    - Compact Plans-Style Presentation: Replaced oversized card with standard `.glass-panel.coming-soon-banner` matching Plans & Coupons tabs.
+    - Copy: Title `Customer Management`, Subtitle `👥 Customer Dashboard Architecture`, Description `Customer accounts, profiles, wish ownership, and customer features will be introduced in a future release.`, Badge `Phase 32 — Coming Soon`.
+    - Preserved `👥 Customers` sidebar item with clean placeholder module.
+  - Part C — Line Chart Visual Exact Restoration from Phase 31J-1 & Branding (`js/admin/admin-dashboard-analytics.js`, `admin.html`):
+    - Line Chart Visual: Restored the exact Phase 31J-1 `renderTrendChart` implementation (`svgWidth = 600`, `svgHeight = 200`, `height: 220px`, `padLeft = 40`, `padRight = 20`, `padTop = 20`, `padBottom = 35`, straight line segments `M ... L ...`, `linearGradient id="dashTrendGrad"` with `rgba(168, 85, 247, 0.45)` to `0.0`, `stroke="var(--gold, #ffd700)"`, `r="4.5"`, dashed gridlines, and bottom summary footer with `Total created in period:` and `Peak daily volume:`).
+    - Branding Update: Changed visible sidebar Admin branding from `Wish Studio v2.5` to `Wish Studio v2.0`.
+  - Verification: 10/10 dedicated Phase 31K tests passed (100% Green) and 47/47 master regression suites passed (100% Green).
+- 🔒 ADMIN DASHBOARD STABLE RELEASE (v2.0) [NEXT]
+
+FUTURE BUSINESS & CUSTOMER PLATFORM (PHASE 32+):
+- Phase 32: Customer Dashboard (My Wishes, Customer Wish Studio, Share, Account, Profile)
+- Phase 33: Customer Acquisition Funnel & Plans (Free ₹0 Tier vs Premium Paid Tier)
+- Phase 34: Business Analytics & Monetization (Conversion Funnel, Wish Views, Engagement Analytics, Payment Gateway Integration [Razorpay/Stripe], Coupons & Discounts, Billing & Invoices)
+
+============================================================
+69. CURRENT STATUS SUMMARY
+============================================================
+- COMMITTED = NO (Awaiting user manual verification as instructed)
+- PUSHED = NO
+- DEPLOYED = NO
+- Automated Regression Baseline: 47/47 Suites PASS (100% Green)
+- Dedicated Phase 31K Final UI Polish & Content Mix Test: 10/10 PASS (100% Green)
+- Dedicated Phase 31J Defect Fixes Test: 9/9 PASS (100% Green)
+- Dedicated Phase 31J-1 Responsive UAT & Customer Test: 12/12 PASS (100% Green)
+- Dedicated Phase 31J Responsive Test: 14/14 PASS (100% Green)
+- Dedicated Phase 31I Admin Share Parity Test: 18/18 PASS (100% Green)
+- Dedicated Phase 31G Backup + Logs + Settings Test: 18/18 PASS (100% Green)
+- Dedicated Phase 31H-6 Destructive Hardening Test: 8/8 PASS (100% Green, 0 DB Writes)
+- Dedicated Phase 31H-5 XSS Test: 11/11 PASS (100% Green, 0 DB Writes)
+- Dedicated Phase 31H-3 Auth Test: 12/12 PASS (100% Green)
+- Dedicated WebAuthn Isolated Roundtrip: 8/8 PASS (100% Green, 0 DB Writes)
+- JS Syntax: 130/130 files valid (node --check)
+- Secret Leaks: 0 (No plaintext passwords, secret answers, or recovery codes persisted in permanent storage/logs)
+- Single Canonical Recovery Authority: Fully enforced via Supabase PBKDF2 hash across Admin Dashboard & Quick Editor
+- Modularity & File Size Invariant: All JS modules strictly < 35 KB:
+  - `api/auth.js`: 32.8 KB (33,654 bytes)
+  - `api/send-otp.js`: 24.28 KB (24,858 bytes)
+  - `api/admin-delete-wish.js`: 10.74 KB (10,996 bytes)
+  - `api/admin-delete-media.js`: 8.75 KB (8,960 bytes)
+  - `js/admin/admin-backup.js`: 10.94 KB (11,200 bytes)
+  - `js/admin/admin-logs.js`: 18.02 KB (18,453 bytes)
+  - `js/admin/admin-settings.js`: 11.65 KB (11,925 bytes)
+  - `js/admin/admin-security.js`: 34.62 KB (35,450 bytes)
+  - `js/admin/admin-dashboard-analytics.js`: 34.66 KB (35,491 bytes)
+  - `js/admin/admin-customers.js`: 0.70 KB (715 bytes)
+  - `js/database.js`: 34.76 KB (35,597 bytes)
+  - `js/modules/admin-security.js`: 34.94 KB (35,782 bytes)
+  - `js/admin/admin-passkey.js`: 11.33 KB (11,600 bytes)
+  - `css/admin/admin-security.css`: 6.32 KB (6,470 bytes)
+  - `css/admin/admin-dashboard.css`: 5.62 KB (5,750 bytes)
+  - `css/admin/admin-settings-suite.css`: 5.48 KB (5,612 bytes)
+  - `css/admin/admin-responsive.css`: 9.25 KB (9,470 bytes)
+- State: Phase 31K exact Phase 31J-1 trend chart visual restoration complete. Ready for manual UAT verification. (DO NOT COMMIT OR PUSH).

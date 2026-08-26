@@ -2658,7 +2658,14 @@
    * @returns {string} Theme identifier or "default"
    */
   function resolveWishTheme(w) {
-    if (!w || typeof w !== "object") return "default";
+    if (!w) return "default";
+    if (window.ThemeRegistry && typeof window.ThemeRegistry.resolveTheme === "function") {
+      return window.ThemeRegistry.resolveTheme(w);
+    }
+    if (typeof w !== "object") {
+      const s = String(w).trim().toLowerCase();
+      return s || "default";
+    }
     const candidates = [
       w.letter_theme,
       w.letterTheme,
@@ -2669,7 +2676,7 @@
     ];
     for (const val of candidates) {
       if (typeof val === "string" && val.trim()) {
-        return val.trim();
+        return val.trim().toLowerCase();
       }
     }
     return "default";
@@ -2936,12 +2943,17 @@
     }
 
     const recipientName = escapeHtml(wish.recipient_name || "Friend");
+    const rawRecipientName = (wish.recipient_name || "").trim();
     const senderName = escapeHtml(wish.sender_name || "Friend");
     const fullUrl = `${window.location.origin}/?w=${encodeURIComponent(wish.id || "")}`;
     const formattedCreatedDate = formatIndianDateTime(wish.created_at);
     const birthDateText = formatBirthDateDisplay(wish);
     const rawId = escapeHtml(wish.id || "");
-    const themeName = escapeHtml(resolveWishTheme(wish));
+    const resolvedThemeId = resolveWishTheme(wish);
+    const themeDisplayName = (window.ThemeRegistry && typeof window.ThemeRegistry.getDisplayName === "function")
+      ? window.ThemeRegistry.getDisplayName(resolvedThemeId)
+      : resolvedThemeId;
+    const themeName = escapeHtml(themeDisplayName);
     const fontName = escapeHtml(resolveWishFont(wish));
     const cakeFlavor = escapeHtml(resolveWishCake(wish));
 
@@ -3319,7 +3331,7 @@
               <span style="font-size:0.75rem;color:var(--text-dim, #94a3b8);">Created by: <strong style="color:var(--text-main, #e2e8f0);">${senderName}</strong></span>
             </div>
           </div>
-          <button type="button" id="btn-quick-view-close" class="btn-icon" style="background:transparent;border:none;color:var(--text-dim, #94a3b8);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px;flex-shrink:0;" title="Close Quick View (Esc)" aria-label="Close">✕</button>
+          <button type="button" id="btn-quick-view-close" class="btn-modal-close" title="Close Quick View (Esc)" aria-label="Close">✕</button>
         </div>
 
         <!-- Body Content (Overview or Detail) -->
@@ -3333,6 +3345,8 @@
             <button type="button" class="btn-primary" id="btn-quick-view-edit" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;">✏️ Edit</button>
             <button type="button" class="btn-sm" id="btn-quick-view-duplicate" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;">📋 Duplicate</button>
             <button type="button" class="btn-sm" id="btn-quick-view-copy-link" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;">🔗 Copy Link</button>
+            <button type="button" class="btn-sm" id="btn-quick-view-whatsapp-share" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;background:rgba(37,211,102,0.15);border-color:rgba(37,211,102,0.4);color:#25D366;">💬 WhatsApp</button>
+            <button type="button" class="btn-sm" id="btn-quick-view-native-share" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;">📤 Share</button>
             <button type="button" class="btn-sm danger" id="btn-quick-view-delete" data-id="${rawId}" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px;padding:0 12px;font-size:0.8rem;white-space:nowrap;">🗑️ Delete</button>
           </div>
           <button type="button" class="btn-sm" id="btn-quick-view-close-footer" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 14px;font-size:0.8rem;white-space:nowrap;">Close</button>
@@ -3349,6 +3363,8 @@
     const editBtn = document.getElementById("btn-quick-view-edit");
     const dupBtn = document.getElementById("btn-quick-view-duplicate");
     const copyLinkBtn = document.getElementById("btn-quick-view-copy-link");
+    const waShareBtn = document.getElementById("btn-quick-view-whatsapp-share");
+    const nativeShareBtn = document.getElementById("btn-quick-view-native-share");
     const copyUuidBtn = document.getElementById("btn-quick-view-copy-uuid");
     const delBtn = document.getElementById("btn-quick-view-delete");
     const backBtn = document.getElementById("btn-quick-view-back");
@@ -3417,6 +3433,55 @@
       };
     }
 
+    if (waShareBtn) {
+      waShareBtn.onclick = () => {
+        let waUrl = "";
+        if (window.ShareModule && typeof window.ShareModule.buildWhatsAppUrl === "function") {
+          waUrl = window.ShareModule.buildWhatsAppUrl(fullUrl, rawRecipientName);
+        } else {
+          const EMOJI_CAKE = "\u{1F382}";
+          const EMOJI_SPARKLES = "\u{2728}";
+          const EMOJI_GIFT = "\u{1F381}";
+          const EMOJI_HEART = "\u{1F496}";
+          const greetingHeader = (rawRecipientName && rawRecipientName !== "Friend")
+            ? `Hey ${rawRecipientName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}`
+            : `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
+          const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${fullUrl}`;
+          waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+        }
+        const win = window.open(waUrl, "_blank");
+        if (!win) window.location.href = waUrl;
+      };
+    }
+
+    if (nativeShareBtn) {
+      nativeShareBtn.onclick = async () => {
+        const nav = window.navigator || (typeof navigator !== "undefined" ? navigator : null);
+        if (nav && typeof nav.share === "function") {
+          const payload = (window.ShareModule && typeof window.ShareModule.buildNativeSharePayload === "function")
+            ? window.ShareModule.buildNativeSharePayload(fullUrl, rawRecipientName)
+            : {
+                title: rawRecipientName ? `🎁 Birthday Surprise for ${rawRecipientName}` : "🎁 Birthday Surprise!",
+                text: `🎂✨ Maine tumhare liye ek special Birthday Surprise banaya hai! 🎁💖\n\nEk chhota sa surprise tumhara wait kar raha hai… 💝\n\n👇 Link open karke dekho — I hope tumhe ye pasand aayega! 🥰`,
+                url: fullUrl
+              };
+          try {
+            await nav.share(payload);
+          } catch (err) {
+            // User cancelled share sheet or aborted -> safe no-op
+          }
+        } else {
+          // Desktop / unsupported browser fallback -> Copy link + Toast
+          if (window.AdminCore && typeof window.AdminCore.copyWishUrl === "function") {
+            window.AdminCore.copyWishUrl(fullUrl);
+          } else if (nav && nav.clipboard && typeof nav.clipboard.writeText === "function") {
+            await nav.clipboard.writeText(fullUrl);
+          }
+          showQuickViewToast("📋 Link copied! (Native share unavailable on this device)");
+        }
+      };
+    }
+
     if (copyUuidBtn) {
       copyUuidBtn.onclick = async () => {
         const nav = window.navigator || (typeof navigator !== "undefined" ? navigator : null);
@@ -3437,22 +3502,50 @@
   }
 
   /**
-   * Opens Quick View modal for a given wish UUID.
+   * Opens Quick View modal for a given wish UUID with live state synchronization.
+   * Renders in-memory snapshot immediately for zero UI latency, then verifies/hydrates
+   * from live database to guarantee freshness across external edits (e.g. Quick Editor).
    * @param {string} wishId - Wish UUID to inspect.
    */
-  function openQuickView(wishId) {
+  async function openQuickView(wishId) {
     if (!wishId) return;
-    const wish = wishesState.find(w => w && w.id && w.id.trim() === String(wishId).trim());
-    if (!wish) {
+    const cleanId = String(wishId).trim();
+    let wish = wishesState.find(w => w && w.id && w.id.trim() === cleanId);
+
+    if (wish) {
+      activeQuickViewWishId = wish.id;
+      activeQuickViewSection = null; // Always open in overview mode
+      renderQuickViewModal();
+    }
+
+    // Live query to fetch freshest record from Supabase DB to eliminate stale state
+    try {
+      if (window.SupabaseModule) {
+        const client = window.SupabaseModule.getClient();
+        if (client) {
+          const { data, error } = await client.from("wishes").select("*").eq("id", cleanId).single();
+          if (!error && data && data.id) {
+            const idx = wishesState.findIndex(w => w && w.id && w.id.trim() === cleanId);
+            if (idx !== -1) {
+              wishesState[idx] = data;
+            } else {
+              wishesState.unshift(data);
+            }
+            if (activeQuickViewWishId === cleanId) {
+              renderQuickViewModal();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("⚠️ AdminWishes: Quick View live fetch notice:", e);
+    }
+
+    if (!wish && !activeQuickViewWishId) {
       if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
         window.AdminCore.showToast("Wish record not found ⚠️");
       }
-      return;
     }
-
-    activeQuickViewWishId = wish.id;
-    activeQuickViewSection = null; // Always open in overview mode
-    renderQuickViewModal();
   }
 
   /**

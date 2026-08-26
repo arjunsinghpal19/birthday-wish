@@ -30,6 +30,19 @@
       window.location.href = "index.html";
       return false;
     }
+
+    // UX Expiration check (24 hours max session duration)
+    const authTimestamp = parseInt(sessionStorage.getItem("admin_auth_timestamp"), 10);
+    const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
+    if (!isNaN(authTimestamp) && (Date.now() - authTimestamp > MAX_SESSION_AGE_MS)) {
+      console.warn("🔒 Admin session expired after 24h. Redirecting...");
+      sessionStorage.removeItem("admin_authenticated");
+      sessionStorage.removeItem("admin_session_token");
+      sessionStorage.removeItem("admin_auth_timestamp");
+      window.location.href = "index.html";
+      return false;
+    }
+
     return true;
   }
 
@@ -38,8 +51,9 @@
      ============================================================ */
   /**
    * Initializes sidebar tab switching, active view toggling, and mobile sidebar drawer.
+   * @param {Function} [onTabSwitchCallback] - Optional callback triggered when an active tab view changes.
    */
-  function initTabNavigation() {
+  function initTabNavigation(onTabSwitchCallback) {
     const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
     const views = document.querySelectorAll(".tab-view");
 
@@ -62,6 +76,14 @@
         // Close mobile drawer on item select
         const sidebar = document.getElementById("admin-sidebar");
         if (sidebar) sidebar.classList.remove("open");
+
+        if (typeof onTabSwitchCallback === "function") {
+          try {
+            onTabSwitchCallback(targetTab);
+          } catch (err) {
+            console.warn("⚠️ Navigation tab switch callback notice:", err);
+          }
+        }
       });
     });
 
@@ -94,10 +116,21 @@
    */
   function initLogout() {
     const logoutBtn = document.getElementById("admin-logout-btn");
-    if (logoutBtn) {
+    if (logoutBtn && !logoutBtn.__logoutBound) {
+      logoutBtn.__logoutBound = true;
       logoutBtn.addEventListener("click", () => {
         sessionStorage.removeItem("admin_authenticated");
         sessionStorage.removeItem("admin_session_token");
+        sessionStorage.removeItem("admin_auth_timestamp");
+
+        try {
+          localStorage.setItem("bw_admin_auth_sync", JSON.stringify({ action: "logout", time: Date.now() }));
+        } catch (e) {}
+
+        if (window.AdminLogs && typeof window.AdminLogs.log === "function") {
+          window.AdminLogs.log("ADMIN_LOGOUT", "Admin logged out from dashboard session", "SUCCESS");
+        }
+
         if (window.AdminCore && typeof window.AdminCore.showToast === "function") {
           window.AdminCore.showToast("Logged out successfully 🚪");
         }
@@ -106,6 +139,54 @@
         }, 300);
       });
     }
+
+    // Cross-tab logout synchronization listener
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function" && !window.__authSyncBound) {
+      window.__authSyncBound = true;
+      window.addEventListener("storage", (e) => {
+        if (e.key === "bw_admin_auth_sync") {
+          try {
+            const payload = JSON.parse(e.newValue);
+            if (payload && payload.action === "logout") {
+              sessionStorage.removeItem("admin_authenticated");
+              sessionStorage.removeItem("admin_session_token");
+              sessionStorage.removeItem("admin_auth_timestamp");
+              window.location.href = "index.html";
+            }
+          } catch (err) {}
+        }
+      });
+    }
+  }
+
+  /**
+   * Programmatically switches the active sidebar tab and main viewport view.
+   * @param {string} tabName - Target tab identifier (e.g. 'wishes', 'media', 'dashboard', 'logs').
+   */
+  function switchTab(tabName) {
+    if (!tabName || typeof document === "undefined") return;
+
+    const navItems = document.querySelectorAll(".sidebar-nav .nav-item");
+    const views = document.querySelectorAll(".tab-view");
+
+    navItems.forEach(item => {
+      if (item.dataset && item.dataset.tab === tabName) {
+        item.classList.add("active");
+      } else {
+        item.classList.remove("active");
+      }
+    });
+
+    views.forEach(v => {
+      if (v.id === `view-${tabName}`) {
+        v.classList.add("active");
+      } else {
+        v.classList.remove("active");
+      }
+    });
+
+    const sidebar = document.getElementById("admin-sidebar");
+    if (sidebar) sidebar.classList.remove("open");
   }
 
   /* ============================================================
@@ -114,6 +195,7 @@
   window.AdminNavigation = Object.freeze({
     checkAdminAccessGate,
     initTabNavigation,
+    switchTab,
     initLogout
   });
 

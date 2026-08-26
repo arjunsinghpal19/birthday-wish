@@ -94,9 +94,15 @@
     container.innerHTML = "";
     const cfg = getConfig();
     const gallery = Array.isArray(cfg.gallery) ? cfg.gallery : [];
+    const esc = (root.escapeHtml && typeof root.escapeHtml === "function")
+      ? root.escapeHtml
+      : (typeof escapeHtml === "function" ? escapeHtml : (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")));
+
     gallery.forEach((g, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
+      const safeImage = esc(g.image || "");
+      const safeUrlVal = esc(g.image && g.image.startsWith('http') ? g.image : '');
       group.innerHTML = `
         <div class="item-header">
           <span class="item-label">Photo Tile ${i + 1}</span>
@@ -107,7 +113,7 @@
           <div class="gallery-photo-row" style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
             ${g.image ? `
               <div style="position:relative;width:50px;height:50px;border-radius:8px;overflow:hidden;border:1px solid rgba(255,215,0,0.6);flex-shrink:0;">
-                <img src="${g.image}" style="width:100%;height:100%;object-fit:cover;">
+                <img src="${safeImage}" style="width:100%;height:100%;object-fit:cover;">
               </div>
               <button type="button" class="btn-remove-gallery-photo" data-index="${i}" style="background:rgba(255,0,80,0.2);border:1px solid rgba(255,0,80,0.4);color:#ff6b9d;padding:6px 12px;border-radius:6px;font-size:0.75rem;cursor:pointer;">✕ Remove Photo</button>
             ` : `
@@ -116,7 +122,7 @@
                 <input type="file" class="gallery-file-input" accept="image/*" data-index="${i}" style="display:none;">
               </label>
               <span style="font-size:0.75rem;opacity:0.6;">or</span>
-              <input type="url" class="gallery-url-input" placeholder="Paste Image Link (https://...)" value="${g.image && g.image.startsWith('http') ? g.image : ''}" data-index="${i}" style="flex:1;min-width:180px;font-size:0.8rem;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.2);color:#fff;">
+              <input type="url" class="gallery-url-input" placeholder="Paste Image Link (https://...)" value="${safeUrlVal}" data-index="${i}" style="flex:1;min-width:180px;font-size:0.8rem;padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.2);color:#fff;">
             `}
           </div>
         </div>
@@ -124,17 +130,17 @@
           <div class="emoji-text-row">
             <div>
               <label>Emoji Icon</label>
-              <input type="text" class="emoji-input gallery-emoji" value="${g.emoji || '🎈'}" data-index="${i}" maxlength="4">
+              <input type="text" class="emoji-input gallery-emoji" value="${esc(g.emoji || '🎈')}" data-index="${i}" maxlength="4">
             </div>
             <div class="text-input">
               <label>Caption</label>
-              <input type="text" class="gallery-cap" value="${g.cap || ''}" data-index="${i}">
+              <input type="text" class="gallery-cap" value="${esc(g.cap || '')}" data-index="${i}">
             </div>
           </div>
         </div>
         <div class="form-group">
           <label>Secret Note (back of card)</label>
-          <input type="text" class="gallery-note" value="${g.secretNote || ""}" data-index="${i}">
+          <input type="text" class="gallery-note" value="${esc(g.secretNote || '')}" data-index="${i}">
         </div>
       `;
       container.appendChild(group);

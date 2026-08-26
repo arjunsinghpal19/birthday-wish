@@ -45,6 +45,10 @@
     container.innerHTML = "";
     const cfg = getConfig();
     const reasons = Array.isArray(cfg.reasons) ? cfg.reasons : [];
+    const esc = (root.escapeHtml && typeof root.escapeHtml === "function")
+      ? root.escapeHtml
+      : (typeof escapeHtml === "function" ? escapeHtml : (s) => (s === null || s === undefined ? "" : String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")));
+
     reasons.forEach((r, i) => {
       const group = document.createElement("div");
       group.className = "editor-item-group";
@@ -57,17 +61,17 @@
           <div class="emoji-text-row">
             <div>
               <label>Icon</label>
-              <input type="text" class="emoji-input reason-icon" value="${r.icon}" data-index="${i}" maxlength="4">
+              <input type="text" class="emoji-input reason-icon" value="${esc(r.icon || '✨')}" data-index="${i}" maxlength="4">
             </div>
             <div class="text-input">
               <label>Title</label>
-              <input type="text" class="reason-title" value="${r.title}" data-index="${i}">
+              <input type="text" class="reason-title" value="${esc(r.title || '')}" data-index="${i}">
             </div>
           </div>
         </div>
         <div class="form-group">
           <label>Description</label>
-          <input type="text" class="reason-text" value="${r.text}" data-index="${i}">
+          <input type="text" class="reason-text" value="${esc(r.text || '')}" data-index="${i}">
         </div>
       `;
       container.appendChild(group);

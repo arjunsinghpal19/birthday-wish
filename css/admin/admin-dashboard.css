@@ -76,3 +76,227 @@
   color: #2ecc71;
   font-weight: 600;
 }
+
+/* Dashboard Media Content Badges */
+.dash-media-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.dash-media-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  color: #fff;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.dash-media-badge:hover {
+  transform: scale(1.15);
+  background: rgba(168, 85, 247, 0.25);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+/* Dashboard Storage Overview Widget */
+.dash-storage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.dash-storage-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dash-storage-label {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dash-storage-val {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
+.dash-storage-sub {
+  font-weight: normal;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.dash-cleanup-banner {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #fca5a5;
+}
+
+.dash-empty-container {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+}
+
+/* Analytics Period Selector */
+.btn-dash-period {
+  background: transparent;
+  border: none;
+  color: var(--text-dim, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-dash-period:hover {
+  color: #fff;
+}
+
+.btn-dash-period.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(126, 34, 206, 0.6));
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Chart Hover Effects */
+.dash-chart-node:hover {
+  transform: scale(1.6);
+  fill: #fff !important;
+  stroke: var(--purple-accent, #a855f7) !important;
+}
+
+.dash-insight-card {
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.dash-insight-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 215, 0, 0.4) !important;
+}
+
+/* Dashboard Overview Subgrid Layout & Panel Containment */
+.dash-overview-subgrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dash-overview-subgrid > div,
+.dash-overview-subgrid .table-panel,
+.dash-overview-right-col {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dash-overview-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Dashboard Panel Headers & Action Buttons */
+.dash-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.dash-panel-title {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  margin: 0;
+  color: #ffffff;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dashboard Action Buttons Family (Header & Insight Action Buttons) */
+.btn-dash-header-action,
+.btn-dash-insight-action {
+  white-space: nowrap;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.btn-dash-header-action {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #cbd5e1);
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: max-content;
+}
+
+.btn-dash-header-action:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-dash-insight-action {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  margin-left: auto;
+}
+
+.btn-dash-insight-action:hover {
+  background: rgba(255, 215, 0, 0.18);
+  border-color: rgba(255, 215, 0, 0.45);
+  color: #ffd700;
+  transform: translateY(-1px);
+}

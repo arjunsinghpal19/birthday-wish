@@ -28,6 +28,30 @@ function generateSalt() {
   return crypto.randomBytes(16).toString("hex");
 }
 
+async function parseRequestBody(req) {
+  if (req.body) {
+    if (typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
+      return req.body;
+    }
+    if (Buffer.isBuffer(req.body)) {
+      try { return JSON.parse(req.body.toString("utf8")); } catch (e) { return {}; }
+    }
+    if (typeof req.body === "string" && req.body.trim()) {
+      try { return JSON.parse(req.body); } catch (e) { return {}; }
+    }
+  }
+  return new Promise((resolve) => {
+    let raw = "";
+    req.on("data", (chunk) => {
+      raw += (Buffer.isBuffer(chunk) ? chunk.toString("utf8") : chunk);
+    });
+    req.on("end", () => {
+      try { resolve(JSON.parse(raw || "{}")); } catch (e) { resolve({}); }
+    });
+    req.on("error", () => resolve({}));
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -48,7 +72,13 @@ export default async function handler(req, res) {
   const resendApiKey = (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) || "";
 
   try {
-    const { action, email, otpCode, newPassword, purpose } = req.body || {};
+    const body = await parseRequestBody(req);
+    const rawAction = body.action || body.type || (req.query && req.query.action) || "";
+    const action = String(rawAction).trim().toLowerCase().replace(/_/g, "-");
+    const email = body.email;
+    const otpCode = body.otpCode;
+    const newPassword = body.newPassword;
+    const purpose = body.purpose;
 
     // Fetch current security state from Supabase reserved row 00000000-0000-0000-0000-000000000001
     let fetchRes = await fetch(
@@ -395,9 +425,11 @@ export default async function handler(req, res) {
         payload.admin_recovery_email = cleanEmail;
         payload.recovery_email_verified = true;
         delete payload.temp_otp_hash;
+        delete payload.temp_otp_salt;
+        delete payload.temp_otp_expiry;
         payload.updated_at = now.toISOString();
 
-        await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+        let updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
           method: "PATCH",
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -405,10 +437,28 @@ export default async function handler(req, res) {
             recovery_email_verified: true,
             otp_attempts: 0,
             otp_hash: null,
+            otp_salt: null,
+            otp_expiry: null,
             memory_text: JSON.stringify(payload),
             updated_at: now.toISOString()
           })
         });
+
+        // Pre-migration fallback (memory_text only)
+        if (!updateRes.ok) {
+          updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+            method: "PATCH",
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              memory_text: JSON.stringify(payload),
+              updated_at: now.toISOString()
+            })
+          });
+        }
+
+        if (!updateRes.ok) {
+          return res.status(500).json({ error: "Failed to persist verified recovery email" });
+        }
 
         return res.status(200).json({ success: true, message: "Recovery email verified and saved!" });
       }
@@ -427,11 +477,15 @@ export default async function handler(req, res) {
         if (secRow.memory_text) {
           try { payload = JSON.parse(secRow.memory_text); } catch (e) {}
         }
-        payload.admin_master_password = cleanNewPass;
+        delete payload.admin_master_password;
+        payload.admin_password_hash = passHash;
+        payload.admin_password_salt = passSalt;
         delete payload.temp_otp_hash;
+        delete payload.temp_otp_salt;
+        delete payload.temp_otp_expiry;
         payload.updated_at = now.toISOString();
 
-        await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+        let updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
           method: "PATCH",
           headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -440,10 +494,29 @@ export default async function handler(req, res) {
             pass_code: cleanNewPass,
             otp_attempts: 0,
             otp_hash: null,
+            otp_salt: null,
+            otp_expiry: null,
             memory_text: JSON.stringify(payload),
             updated_at: now.toISOString()
           })
         });
+
+        // Pre-migration fallback (memory_text only)
+        if (!updateRes.ok) {
+          updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+            method: "PATCH",
+            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              pass_code: cleanNewPass,
+              memory_text: JSON.stringify(payload),
+              updated_at: now.toISOString()
+            })
+          });
+        }
+
+        if (!updateRes.ok) {
+          return res.status(500).json({ error: "Failed to update password" });
+        }
 
         const token = createAdminSessionToken({
           ...secRow,

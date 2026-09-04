@@ -145,6 +145,34 @@
 
   async function fetchWishes() {
     try {
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-wishes")
+        : "/api/admin-wishes";
+
+      // 1. Primary Privileged Read Path (/api/admin-wishes via Service Role)
+      try {
+        const res = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : "",
+            "x-admin-token": token
+          }
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.success && Array.isArray(result.data)) {
+            updateConnectionStatus(true);
+            return { success: true, data: result.data };
+          }
+        }
+      } catch (apiErr) {
+        console.warn("⚠️ AdminDashboard: Privileged API fetch notice:", apiErr.message || apiErr);
+      }
+
+      // 2. Safe Fallback Path (during transitional mocks / offline client fallback)
       if (window.SupabaseModule) {
         const client = window.SupabaseModule.getClient();
         if (client) {
@@ -171,7 +199,7 @@
       return { success: false, error: e.message, data: [] };
     }
     updateConnectionStatus(false);
-    return { success: false, error: "Supabase client unavailable", data: [] };
+    return { success: false, error: "Admin wishes API unavailable", data: [] };
   }
 
   async function fetchStorage() {

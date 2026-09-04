@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard | Birthday Wish</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/customer.css">
+</head>
+<body class="customer-body">
+
+  <!-- ==================== AUTH GATE (UNAUTHENTICATED VIEW) ==================== -->
+  <main class="customer-auth-gate-wrapper" id="customer-auth-gate">
+    <!-- Ambient Lighting Glows -->
+    <div class="auth-ambient-glow orb-1" aria-hidden="true"></div>
+    <div class="auth-ambient-glow orb-2" aria-hidden="true"></div>
+
+    <div class="auth-gate-card">
+      <div class="auth-gate-header">
+        <div class="auth-logo-badge">
+          <span class="auth-logo-icon">🎂</span>
+        </div>
+        <h2>Customer Portal</h2>
+        <p>Sign in to manage, customize, and craft unforgettable birthday celebrations</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="btn-tab-signin">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="btn-tab-signup">Create Account</button>
+      </div>
+
+      <!-- Status / Information Banner Box -->
+      <div class="auth-status-box" id="auth-status-box" style="display: none;"></div>
+
+      <!-- Error Notification Box -->
+      <div class="auth-error-box" id="auth-error-box" style="display: none;"></div>
+
+      <!-- Sign In Form -->
+      <form id="form-customer-signin">
+        <div class="auth-form-group">
+          <label for="signin-email">Email Address</label>
+          <div class="auth-input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="signin-email" class="auth-input has-icon" placeholder="you@example.com" required autocomplete="email">
+          </div>
+        </div>
+        <div class="auth-form-group">
+          <label for="signin-password">Password</label>
+          <div class="auth-input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="signin-password" class="auth-input has-icon has-toggle" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" class="btn-pwd-toggle" data-target="signin-password" title="Show password" aria-label="Show password">
+              <svg class="pwd-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit" id="btn-signin-submit">
+          Sign In
+        </button>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="form-customer-signup" style="display: none;">
+        <div class="auth-form-group">
+          <label for="signup-fullname">Full Name</label>
+          <div class="auth-input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="signup-fullname" class="auth-input has-icon" placeholder="Alex Johnson" required autocomplete="name">
+          </div>
+        </div>
+        <div class="auth-form-group">
+          <label for="signup-email">Email Address</label>
+          <div class="auth-input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="signup-email" class="auth-input has-icon" placeholder="you@example.com" required autocomplete="email">
+          </div>
+        </div>
+        <div class="auth-form-group">
+          <label for="signup-password">Password (min 6 characters)</label>
+          <div class="auth-input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="signup-password" class="auth-input has-icon has-toggle" placeholder="••••••••" required autocomplete="new-password" minlength="6">
+            <button type="button" class="btn-pwd-toggle" data-target="signup-password" title="Show password" aria-label="Show password">
+              <svg class="pwd-eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit" id="btn-signup-submit">
+          Create Free Account
+        </button>
+      </form>
+
+      <div class="auth-footer-links">
+        <a href="/" class="auth-back-link">← Return to Celebration Studio</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== AUTHENTICATED APP CONTAINER ==================== -->
+  <div id="customer-app" style="display: none;">
+
+    <!-- ==================== LEFT SIDEBAR ==================== -->
+    <aside class="customer-sidebar" id="customer-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">🎂</div>
+        <div class="sidebar-brand">
+          <h1>Birthday Wish</h1>
+          <span>Customer Portal</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">MAIN</div>
+        <button type="button" class="nav-item active" id="nav-tab-overview" data-tab="overview">
+          <span class="icon">🏠</span> Overview
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-wishes" data-tab="wishes">
+          <span class="icon">✨</span> My Wishes
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-create" data-tab="create">
+          <span class="icon">🎨</span> Create Wish
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-media" data-tab="media">
+          <span class="icon">🖼️</span> My Media
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-themes" data-tab="themes">
+          <span class="icon">🎭</span> Themes
+        </button>
+
+        <div class="nav-section-title" style="margin-top: 16px;">ACCOUNT</div>
+        <button type="button" class="nav-item" id="nav-tab-plan" data-tab="plan">
+          <span class="icon">💎</span> Plan & Usage
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-profile" data-tab="profile">
+          <span class="icon">👤</span> Profile
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-settings" data-tab="settings">
+          <span class="icon">⚙️</span> Settings
+        </button>
+        <button type="button" class="nav-item" id="nav-tab-security" data-tab="security">
+          <span class="icon">🔐</span> Security
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button type="button" class="nav-item logout-btn" id="customer-logout-btn">
+          <span class="icon">🚪</span> Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Drawer Overlay Backdrop -->
+    <div class="customer-sidebar-backdrop" id="customer-sidebar-backdrop"></div>
+
+    <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+    <main class="customer-main" id="customer-dashboard-shell">
+
+      <!-- TOP NAVBAR -->
+      <header class="customer-topbar" id="customer-topbar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button type="button" class="mobile-toggle" id="mobile-sidebar-toggle" aria-label="Toggle navigation menu">☰</button>
+          <div class="status-indicator" id="customer-supabase-indicator">
+            <span class="status-dot"></span> <span class="status-text">Active Session</span>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <a href="index.html" class="public-site-link" target="_blank" rel="noopener noreferrer">
+            <span>✨ Public Wish Page</span> ↗
+          </a>
+
+          <!-- Profile Menu Dropdown -->
+          <div class="profile-dropdown-container" id="customer-profile-container">
+            <button type="button" class="profile-pill-btn" id="customer-profile-dropdown-btn">
+              <div class="profile-avatar-circle" id="profile-avatar-initials">U</div>
+              <span class="profile-pill-name" id="profile-pill-name">Customer</span>
+              <span class="profile-pill-chevron">▼</span>
+            </button>
+
+            <div class="profile-dropdown-menu" id="customer-profile-dropdown-menu">
+              <div class="profile-menu-header">
+                <div class="profile-menu-email" id="profile-menu-email">customer@example.com</div>
+                <div class="badge-plan-tier" id="profile-menu-plan">Free Tier</div>
+              </div>
+              <button type="button" class="profile-menu-item" id="menu-action-profile">
+                <span>👤</span> Profile
+              </button>
+              <button type="button" class="profile-menu-item" id="menu-action-plan">
+                <span>💎</span> Plan & Usage
+              </button>
+              <button type="button" class="profile-menu-item" id="menu-action-settings">
+                <span>⚙️</span> Settings
+              </button>
+              <button type="button" class="profile-menu-item signout-item" id="menu-action-signout">
+                <span>🚪</span> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- VIEWPORT (Dynamic Views) -->
+      <div class="customer-viewport">
+
+        <!-- ==================== VIEW 1: OVERVIEW ==================== -->
+        <section class="customer-tab-view active" id="view-overview">
+          <!-- Welcome Banner -->
+          <div class="customer-welcome-banner">
+            <div class="welcome-text-group">
+              <div class="welcome-badge">✨ Customer Dashboard</div>
+              <h2 id="welcome-heading">Welcome back 👋</h2>
+              <p>Craft unforgettable birthday experiences, track active celebrations, and manage custom gifts from one central hub.</p>
+            </div>
+            <button type="button" class="btn-primary btn-gold" id="btn-banner-create">
+              <span class="btn-icon" style="font-size:1.1rem;font-weight:900;line-height:1;margin-right:2px;">➕</span> Create New Celebration
+            </button>
+          </div>
+
+          <!-- KPI Grid -->
+          <div class="customer-kpi-grid">
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Created Wishes</span>
+                <div class="kpi-icon-badge violet">💌</div>
+              </div>
+              <div class="kpi-value" id="kpi-total-wishes">0</div>
+              <div class="kpi-subtitle">Celebrations crafted by your account</div>
+            </div>
+
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Active Celebrations</span>
+                <div class="kpi-icon-badge gold">🎉</div>
+              </div>
+              <div class="kpi-value" id="kpi-active-wishes">0</div>
+              <div class="kpi-subtitle">Live interactive celebration links</div>
+            </div>
+
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Storage Quota</span>
+                <div class="kpi-icon-badge emerald">💾</div>
+              </div>
+              <div class="kpi-value" id="kpi-storage-quota">0 MB / 25 MB</div>
+              <div class="quota-progress-wrapper">
+                <div class="quota-progress-bar">
+                  <div class="quota-progress-fill" id="quota-progress-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+              <div class="kpi-subtitle" style="margin-top: 8px;">Free Tier Storage Allocation</div>
+            </div>
+          </div>
+
+          <!-- Quick Actions Bar -->
+          <div class="customer-quick-actions">
+            <button type="button" class="btn-primary btn-gold" id="btn-quick-create">
+              <span class="btn-icon" style="font-size:1.1rem;font-weight:900;line-height:1;margin-right:2px;">➕</span> Create New Celebration
+            </button>
+            <button type="button" class="btn-secondary" id="btn-quick-manage">
+              <span>📋</span> Manage Wishes
+            </button>
+          </div>
+
+          <!-- Recent Celebrations Container -->
+          <div class="customer-panel">
+            <div class="panel-header">
+              <h3>Recent Celebrations</h3>
+            </div>
+            <div id="customer-wishes-list-container">
+              <!-- Rendered dynamically by CustomerWishes -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 2: MY WISHES HUB ==================== -->
+        <section class="customer-tab-view" id="view-wishes">
+          <div class="wishes-hub-header">
+            <div>
+              <h3 class="wishes-hub-title">✨ My Wishes</h3>
+              <p class="wishes-hub-subtitle">Manage, view, edit, and share all celebrations created under your account.</p>
+            </div>
+            <button type="button" class="btn-primary btn-gold" id="btn-hub-create-wish">
+              <span class="btn-icon" style="font-size:1.1rem;font-weight:900;line-height:1;margin-right:2px;">➕</span> Create Celebration
+            </button>
+          </div>
+
+          <!-- Wishes Hub Toolbar -->
+          <div class="wishes-toolbar">
+            <div class="search-input-wrapper">
+              <span class="search-icon">🔍</span>
+              <input type="text" class="wishes-search-input" id="wishes-search-input" placeholder="Search by recipient, sender, or UUID...">
+              <button type="button" class="btn-search-clear" id="wishes-search-clear" aria-label="Clear Search" style="display: none;">×</button>
+            </div>
+
+            <div class="wishes-filter-group">
+              <button type="button" class="filter-pill active" data-filter="all">All</button>
+              <button type="button" class="filter-pill" data-filter="media">Media</button>
+              <button type="button" class="filter-pill" data-filter="music">🎵 Music</button>
+              <button type="button" class="filter-pill" data-filter="photos">📸 Photos</button>
+            </div>
+
+            <div class="wishes-toolbar-right">
+              <div class="sort-wrapper">
+                <span class="sort-label">Sort:</span>
+                <select class="wishes-sort-select" id="wishes-sort-select">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="name-asc">Recipient (A-Z)</option>
+                  <option value="name-desc">Recipient (Z-A)</option>
+                </select>
+              </div>
+              <span class="wishes-results-count" id="wishes-results-count">0 celebrations</span>
+            </div>
+          </div>
+
+          <!-- Celebrations Grid Container -->
+          <div class="customer-wishes-grid" id="customer-wishes-grid">
+            <!-- Dynamically rendered by CustomerWishes -->
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 3: CREATE / EDIT WISH STUDIO ==================== -->
+        <section class="customer-tab-view" id="view-create">
+          <div class="view-header" style="flex-wrap:wrap;gap:12px;">
+            <div class="view-title">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <button type="button" class="editor-btn-secondary" id="btn-cust-editor-back">← Back to Wishes</button>
+                <h2 id="cust-editor-title">Create New Wish</h2>
+              </div>
+              <p id="cust-editor-subtitle">Craft and customize a full celebration experience</p>
+            </div>
+            <div class="editor-header-actions-group" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button type="button" class="editor-btn-preview" id="btn-cust-editor-preview">👁️ Preview Wish</button>
+              <button type="button" class="editor-btn-secondary" id="btn-cust-editor-cancel">Cancel</button>
+              <button type="button" class="btn-primary" id="btn-cust-editor-save">💾 Save Wish</button>
+              <button type="button" class="btn-primary btn-gold" id="btn-cust-editor-save-share">🚀 Save & Share</button>
+            </div>
+          </div>
+
+          <!-- Two Column Editor Layout -->
+          <div class="customer-editor-layout">
+            <!-- LEFT COLUMN: Forms -->
+            <div class="customer-editor-form-col">
+
+              <!-- 1. BASIC INFO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">01</span> Basic Info</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-basic">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="cust-input-name">Recipient Name *</label>
+                    <input type="text" id="cust-input-name" class="form-control" placeholder="e.g. Shivam" required>
+                  </div>
+                  <div class="form-group">
+                    <label for="cust-input-birthdate-display">Birth Date (DD/MM/YYYY) *</label>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <input type="text" id="cust-input-birthdate-display" class="form-control" placeholder="01/01/2001" style="flex:1;" maxlength="10" required>
+                      <input type="hidden" id="cust-input-birthdate" value="2001-01-01">
+                      <button type="button" class="editor-btn-secondary" id="cust-btn-datepicker" title="Open Calendar" style="padding:8px 12px;font-size:1.1rem;cursor:pointer;">📅</button>
+                    </div>
+                    <small style="color:var(--customer-text-muted);font-size:0.75rem;">Type DD/MM/YYYY or click 📅 for calendar.</small>
+                  </div>
+                </div>
+                <div class="form-grid-2" style="margin-top:12px;">
+                  <div class="form-group">
+                    <label for="cust-input-cake">🎂 Cake Flavor / Theme</label>
+                    <select id="cust-input-cake" class="form-control">
+                      <option value="default">💖 Classic Pink & Gold</option>
+                      <option value="strawberry">🍓 Pink Strawberry Gold</option>
+                      <option value="chocolate">🍫 Dark Chocolate Velvet</option>
+                      <option value="vanilla">✨ Royal Golden Vanilla</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="cust-input-passcode">🔑 Secret Birthday Passcode (4 Digits)</label>
+                    <input type="text" id="cust-input-passcode" class="form-control" placeholder="1234" maxlength="4" value="1234">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. SENDER INFO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">02</span> Sender Info</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-sender">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="cust-input-from">From (Sender Name)</label>
+                  <input type="text" id="cust-input-from" class="form-control" placeholder="e.g. Arjun">
+                </div>
+              </div>
+
+              <!-- RELATIONSHIP PRESET TEMPLATES -->
+              <div class="glass-card editor-card" style="border:1px solid rgba(255,215,0,0.3);background:linear-gradient(135deg,rgba(30,15,45,0.85),rgba(45,20,65,0.75));">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge" style="background:rgba(168,85,247,0.25);border-color:rgba(168,85,247,0.5);color:#e9d5ff;">✨</span> Who is this birthday wish for?</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-relationship">↺ Reset Style</button>
+                  </div>
+                </div>
+                <p style="color:var(--customer-text-muted);font-size:0.8rem;margin:0 0 12px 0;">Select a relationship to load curated wording for letter, memory, reasons, 5 wishes, timeline, and gift.</p>
+                <div class="form-grid-2" style="margin-bottom:12px;">
+                  <div class="form-group">
+                    <label for="cust-select-relationship-lang">Language / Tone</label>
+                    <select id="cust-select-relationship-lang" class="form-control">
+                      <option value="en">English (Original & Touching)</option>
+                      <option value="hi_en">Hinglish (Desi, Warm & Fun)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="cust-select-relationship">Relationship Template</label>
+                    <select id="cust-select-relationship" class="form-control">
+                      <option value="">-- Choose Relationship Template (Optional) --</option>
+                      <option value="friend">Friend 🤝</option>
+                      <option value="best_friend">Best Friend (Close & Funny) 💖</option>
+                      <option value="boyfriend">Boyfriend 💙</option>
+                      <option value="girlfriend">Girlfriend 🌸</option>
+                      <option value="husband">Husband 👑</option>
+                      <option value="wife">Wife 💍</option>
+                      <option value="father">Father / Dad 👔</option>
+                      <option value="mother">Mother / Mom 🌷</option>
+                      <option value="brother">Brother 🤜🤛</option>
+                      <option value="sister">Sister 🎀</option>
+                      <option value="colleague">Colleague / Workmate 💼</option>
+                      <option value="teacher">Teacher / Mentor 📚</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <button type="button" class="editor-btn-add" id="cust-btn-apply-relationship" style="width:100%;padding:10px 16px;font-size:0.85rem;cursor:pointer;justify-content:center;">
+                    ✨ Use This Relationship Style
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3. BIRTHDAY LETTER -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">03</span> Birthday Letter & Typography</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-letter">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="cust-btn-add-letter-line">+ Add Paragraph</button>
+                  </div>
+                </div>
+                <div class="form-grid-2" style="margin-bottom:12px;">
+                  <div class="form-group">
+                    <label for="cust-input-letter-theme">Letter Theme</label>
+                    <select id="cust-input-letter-theme" class="form-control">
+                      <option value="default">✨ Default Golden Luxe</option>
+                      <option value="royalgold">👑 Vintage Royal Gold</option>
+                      <option value="galaxy">🌌 Midnight Galaxy Glow</option>
+                      <option value="rosegold">🌸 Rose Gold Pastel</option>
+                      <option value="sapphire">💎 Sapphire Aurora</option>
+                      <option value="emerald-luxe">🌿 Emerald Luxe</option>
+                    </select>
+                    <div id="cust-theme-live-preview" class="theme-live-preview-pill" style="margin-top:6px;font-size:0.75rem;display:flex;align-items:center;gap:6px;"></div>
+                  </div>
+                  <div class="form-group">
+                    <label for="cust-input-letter-font">Letter Font Style</label>
+                    <select id="cust-input-letter-font" class="form-control">
+                      <option value="default">✨ Default Cursive (Sacramento)</option>
+                      <option value="cursive">✍️ Romantic Cursive</option>
+                      <option value="serif">📜 Classic Royal Serif</option>
+                      <option value="script">🎨 Playful Script</option>
+                      <option value="poppins">✨ Clean & Modern (Poppins)</option>
+                      <option value="nunito">🌸 Soft & Friendly (Nunito Sans)</option>
+                      <option value="sans">⚡ Modern Sleek (Outfit)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Letter Paragraphs</label>
+                  <div id="cust-letter-lines-container"></div>
+                </div>
+              </div>
+
+              <!-- 4. SPECIAL MEMORY -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">04</span> Special Memory</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-memory">↺ Reset</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="cust-input-memory">A Cherished Memory</label>
+                  <textarea id="cust-input-memory" class="form-control" rows="3" placeholder="Share a touching memory..."></textarea>
+                </div>
+              </div>
+
+              <!-- 5. REASONS YOU'RE SPECIAL -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">05</span> Reasons You're Special</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-reasons">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="cust-btn-add-reason">+ Add Reason</button>
+                  </div>
+                </div>
+                <div id="cust-reasons-container"></div>
+              </div>
+
+              <!-- 6. BIRTHDAY WISHES -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">06</span> Birthday Wishes Quotes</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-wishes">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="cust-btn-add-wish">+ Add Wish</button>
+                  </div>
+                </div>
+                <div id="cust-wishes-container"></div>
+              </div>
+
+              <!-- 7. PHOTO GALLERY -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">07</span> Photo Gallery</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-gallery">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="cust-btn-add-gallery">+ Add Polaroid</button>
+                  </div>
+                </div>
+                <div id="cust-gallery-container"></div>
+              </div>
+
+              <!-- 8. TIMELINE MILESTONES -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">08</span> Timeline Milestones</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-timeline">↺ Defaults</button>
+                    <button type="button" class="editor-btn-add" id="cust-btn-add-timeline">+ Add Milestone</button>
+                  </div>
+                </div>
+                <div id="cust-timeline-container"></div>
+              </div>
+
+              <!-- 9. SURPRISE GIFT -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">09</span> Surprise Gift Voucher</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-reset-gift">↺ Defaults</button>
+                  </div>
+                </div>
+                <div class="form-grid-2">
+                  <div class="form-group">
+                    <label for="cust-input-gift-message">Gift Message / Headline</label>
+                    <input type="text" id="cust-input-gift-message" class="form-control" placeholder="A special treat just for you!">
+                  </div>
+                  <div class="form-group">
+                    <label for="cust-input-gift-coupon">Coupon / Pass Code</label>
+                    <input type="text" id="cust-input-gift-coupon" class="form-control" placeholder="VIP-BIRTHDAY-TREAT">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 10. MUSIC & AUDIO -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">10</span> Background Music & Audio</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-remove-audio">↺ Reset to Default Song</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label>Audio Source Selection</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                    <input type="file" id="cust-audio-file-input" accept="audio/*" style="display:none;">
+                    <button type="button" class="editor-btn-preview" id="cust-btn-upload-audio">🎙️ Upload Audio / Voice Note</button>
+                  </div>
+                  <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="cust-input-music-url" style="font-size:0.75rem;">Direct Audio URL (HTTPS Link)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="cust-input-music-url" class="form-control" placeholder="https://.../song.mp3 or assets/music/...">
+                        <button type="button" class="editor-btn-secondary" id="cust-btn-clear-direct-audio" title="Clear Direct Audio" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="cust-input-music-yt-url" style="font-size:0.75rem;">YouTube Song Link (watch / shorts / youtu.be)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="cust-input-music-yt-url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                        <button type="button" class="editor-btn-secondary" id="cust-btn-clear-yt-audio" title="Clear YouTube Song" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                  </div>
+                  <small style="color:var(--customer-text-muted);font-size:0.75rem;">Upload custom audio from device, paste direct audio link, or paste a YouTube song link.</small>
+                </div>
+
+                <!-- Live Audio Player Preview -->
+                <div id="cust-audio-preview-box" class="editor-preview-box">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:0.85rem;color:var(--customer-gold);font-weight:600;">🎧 Audio Player Preview</span>
+                    <span id="cust-audio-dur-display" class="status-badge" style="font-size:0.75rem;">Default Track</span>
+                  </div>
+                  <audio id="cust-audio-player" controls style="width:100%;height:36px;border-radius:8px;"></audio>
+                  <div id="cust-audio-yt-preview" class="editor-yt-preview-box" style="display:none;margin-top:8px;">
+                    <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.05);padding:10px;border-radius:10px;border:1px solid rgba(255,215,0,0.3);">
+                      <span style="font-size:1.8rem;">🎵</span>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.85rem;color:var(--customer-gold);font-weight:700;">YouTube Audio Track Attached</div>
+                        <div id="cust-audio-yt-id" style="font-size:0.75rem;color:var(--customer-text-muted);word-break:break-all;"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Start Time Seekbar -->
+                <div class="form-group" style="margin-top:12px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label style="margin:0;">Start Time Offset</label>
+                    <span style="font-size:0.8rem;color:var(--customer-text-muted);">
+                      Selected Start: <strong id="cust-audio-cur-time" style="color:var(--customer-gold);">00:00</strong> / <span id="cust-audio-dur-time">00:00</span>
+                    </span>
+                  </div>
+                  <input type="range" id="cust-audio-seekbar" class="form-range" min="0" max="100" value="0" style="width:100%;accent-color:var(--customer-purple-accent);cursor:pointer;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                    <label for="cust-input-music-time" style="margin:0;font-size:0.8rem;color:var(--customer-text-muted);">Start Time (MM:SS or sec):</label>
+                    <input type="text" id="cust-input-music-time" class="form-control" value="00:00" placeholder="00:00" style="max-width:110px;">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 11. VIDEO WISH -->
+              <div class="glass-card editor-card">
+                <div class="editor-card-header">
+                  <h3><span class="section-num-badge">11</span> Video Wish</h3>
+                  <div class="editor-header-actions">
+                    <button type="button" class="editor-btn-reset" id="cust-btn-remove-video">🗑️ Remove Video</button>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                  <label>Video Source Selection</label>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                    <input type="file" id="cust-video-file-input" accept="video/*" style="display:none;">
+                    <button type="button" class="editor-btn-preview" id="cust-btn-upload-video">📹 Upload MP4 from Device</button>
+                  </div>
+                  <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="cust-input-video-url" style="font-size:0.75rem;">Direct Video URL (HTTPS MP4 / WebM)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="cust-input-video-url" class="form-control" placeholder="https://.../video.mp4">
+                        <button type="button" class="editor-btn-secondary" id="cust-btn-clear-direct-video" title="Clear Direct Video" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:6px;">
+                      <label for="cust-input-video-yt-url" style="font-size:0.75rem;">YouTube Video Link (watch / shorts / youtu.be)</label>
+                      <div style="display:flex;gap:6px;">
+                        <input type="text" id="cust-input-video-yt-url" class="form-control" placeholder="https://youtube.com/watch?v=...">
+                        <button type="button" class="editor-btn-secondary" id="cust-btn-clear-yt-video" title="Clear YouTube Video" style="padding:4px 8px;font-size:0.8rem;cursor:pointer;">✕</button>
+                      </div>
+                    </div>
+                  </div>
+                  <small style="color:var(--customer-text-muted);font-size:0.75rem;">Upload MP4 from your device, paste direct MP4 link, or paste a YouTube / Shorts link.</small>
+                </div>
+
+                <!-- Live Video Player Preview -->
+                <div id="cust-video-preview-box" class="editor-preview-box">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:0.85rem;color:var(--customer-gold);font-weight:600;">🎬 Video Player Preview</span>
+                    <span id="cust-video-dur-display" class="status-badge" style="font-size:0.75rem;">No Video</span>
+                  </div>
+                  <video id="cust-video-player" controls playsinline style="width:100%;max-height:220px;background:#000;border-radius:8px;display:none;"></video>
+                  <div id="cust-video-yt-preview" class="editor-yt-preview-box" style="display:none;width:100%;border-radius:8px;overflow:hidden;"></div>
+                  <div id="cust-video-empty-preview" class="editor-empty-preview">
+                    No custom video selected (Optional surprise element)
+                  </div>
+                </div>
+
+                <!-- Start Time Seekbar -->
+                <div class="form-group" style="margin-top:12px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <label style="margin:0;">Video Start Time Offset</label>
+                    <span style="font-size:0.8rem;color:var(--customer-text-muted);">
+                      Selected Start: <strong id="cust-video-cur-time" style="color:var(--customer-gold);">00:00</strong> / <span id="cust-video-dur-time">00:00</span>
+                    </span>
+                  </div>
+                  <input type="range" id="cust-video-seekbar" class="form-range" min="0" max="100" value="0" style="width:100%;accent-color:var(--customer-purple-accent);cursor:pointer;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                    <label for="cust-input-video-time" style="margin:0;font-size:0.8rem;color:var(--customer-text-muted);">Start Time (MM:SS or sec):</label>
+                    <input type="text" id="cust-input-video-time" class="form-control" value="00:00" placeholder="00:00" style="max-width:110px;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Sticky Live Summary -->
+            <div class="customer-editor-summary-col">
+              <div class="glass-card summary-sticky-card">
+                <div class="summary-card-header">
+                  <h4>📊 Live Wish Summary</h4>
+                  <div class="summary-card-badges" style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                    <span class="status-badge gold" id="cust-editor-mode-badge" style="white-space:nowrap;">NEW WISH</span>
+                    <span class="status-badge ready" id="cust-sum-status-badge" style="white-space:nowrap;">Synced</span>
+                  </div>
+                </div>
+                <div class="summary-details-list">
+                  <div class="summary-row"><span class="lbl">Recipient:</span><span class="val" id="cust-sum-name">-</span></div>
+                  <div class="summary-row"><span class="lbl">From:</span><span class="val" id="cust-sum-from">-</span></div>
+                  <div class="summary-row"><span class="lbl">Birth Date:</span><span class="val" id="cust-sum-date">-</span></div>
+                  <div class="summary-row"><span class="lbl">Passcode:</span><span class="val" id="cust-sum-passcode">1234</span></div>
+                  <div class="summary-row"><span class="lbl">Cake Flavor:</span><span class="val" id="cust-sum-cake">Classic</span></div>
+                  <div class="summary-row"><span class="lbl">Letter Theme:</span><span class="val" id="cust-sum-theme">Original</span></div>
+                  <div class="summary-row"><span class="lbl">Letter Font:</span><span class="val" id="cust-sum-font">Sacramento</span></div>
+                  <div class="summary-row"><span class="lbl">Letter Paragraphs:</span><span class="val" id="cust-sum-lines">2 paras</span></div>
+                  <div class="summary-row"><span class="lbl">Memory:</span><span class="val" id="cust-sum-memory">Set</span></div>
+                  <div class="summary-row"><span class="lbl">Reasons:</span><span class="val" id="cust-sum-reasons">2 items</span></div>
+                  <div class="summary-row"><span class="lbl">Wishes:</span><span class="val" id="cust-sum-wishes">2 quotes</span></div>
+                  <div class="summary-row"><span class="lbl">Gallery Photos:</span><span class="val" id="cust-sum-photos">0 uploaded</span></div>
+                  <div class="summary-row"><span class="lbl">Timeline:</span><span class="val" id="cust-sum-timeline">2 events</span></div>
+                  <div class="summary-row"><span class="lbl">Gift Voucher:</span><span class="val" id="cust-sum-gift">Attached</span></div>
+                  <div class="summary-row"><span class="lbl">Background Music:</span><span class="val" id="cust-sum-music">Default Track</span></div>
+                  <div class="summary-row"><span class="lbl">Video Wish:</span><span class="val" id="cust-sum-video">None</span></div>
+                  <div class="summary-row"><span class="lbl">Target UUID:</span><span class="val uuid-text" id="cust-sum-uuid">New Wish</span></div>
+                </div>
+
+                <div class="summary-actions" style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+                  <button type="button" class="btn-primary btn-gold" id="btn-sum-save-share" style="width:100%;">🚀 Save & Copy Share Link</button>
+                  <button type="button" class="btn-primary" id="btn-sum-save" style="width:100%;">💾 Save Changes</button>
+                  <button type="button" class="editor-btn-preview" id="btn-sum-preview" style="width:100%;">👁 Live Public Preview</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: MY MEDIA LIBRARY ==================== -->
+        <section class="customer-tab-view" id="view-media">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>📁 My Media Library</h2>
+              <p>Photos, background songs, and videos attached to your celebrations</p>
+            </div>
+          </div>
+
+          <!-- Media KPI Grid -->
+          <div class="customer-kpi-grid" style="margin-bottom: 24px;">
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Photos</span>
+                <div class="kpi-icon-badge violet">📸</div>
+              </div>
+              <div class="kpi-value" id="cust-media-kpi-photos">0</div>
+              <div class="kpi-subtitle">Polaroid images attached</div>
+            </div>
+
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Audio Tracks</span>
+                <div class="kpi-icon-badge gold">🎵</div>
+              </div>
+              <div class="kpi-value" id="cust-media-kpi-audio">0</div>
+              <div class="kpi-subtitle">Celebration music links</div>
+            </div>
+
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Video Clips</span>
+                <div class="kpi-icon-badge emerald">🎥</div>
+              </div>
+              <div class="kpi-value" id="cust-media-kpi-video">0</div>
+              <div class="kpi-subtitle">Personal video wishes</div>
+            </div>
+
+            <div class="customer-kpi-card">
+              <div class="kpi-card-header">
+                <span class="kpi-title">Total Assets</span>
+                <div class="kpi-icon-badge ruby">💾</div>
+              </div>
+              <div class="kpi-value" id="cust-media-kpi-total">0</div>
+              <div class="kpi-subtitle">Media elements indexed</div>
+            </div>
+          </div>
+
+          <!-- Media Filter & Search Toolbar -->
+          <div class="wishes-toolbar" style="margin-bottom: 20px;">
+            <div class="wishes-toolbar-left" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:1;">
+              <div class="wishes-search-box" style="min-width:240px;flex:1;max-width:360px;">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="cust-media-search-input" class="wishes-search-input" placeholder="Search media by caption, recipient...">
+              </div>
+              <div class="wishes-filter-group">
+                <button type="button" class="filter-pill media-filter-pill active" data-filter="all">All Media</button>
+                <button type="button" class="filter-pill media-filter-pill" data-filter="photos">📸 Photos</button>
+                <button type="button" class="filter-pill media-filter-pill" data-filter="audio">🎵 Audio</button>
+                <button type="button" class="filter-pill media-filter-pill" data-filter="video">🎥 Video</button>
+              </div>
+            </div>
+
+            <div class="wishes-toolbar-right" style="display:flex;align-items:center;gap:12px;">
+              <div class="sort-wrapper">
+                <span class="sort-label">Sort:</span>
+                <select class="wishes-sort-select" id="cust-media-sort-select">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="name-asc">Recipient (A-Z)</option>
+                  <option value="type">Type (Photo/Audio/Video)</option>
+                </select>
+              </div>
+              <span class="wishes-results-count" id="cust-media-results-count">0 items</span>
+            </div>
+          </div>
+
+          <!-- Media Grid -->
+          <div class="customer-media-grid" id="customer-media-grid">
+            <!-- Rendered dynamically by CustomerMedia -->
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: THEMES GALLERY ==================== -->
+        <section class="customer-tab-view" id="view-themes">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>🎭 Celebration Themes</h2>
+              <p>Explore handcrafted atmospheric themes and color palettes for your birthday wishes</p>
+            </div>
+          </div>
+
+          <div class="customer-themes-grid" id="customer-themes-grid">
+            <!-- Rendered dynamically by CustomerThemes -->
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 6: PLAN & USAGE ==================== -->
+        <section class="customer-tab-view" id="view-plan">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>💎 Plan & Usage</h2>
+              <p>Subscription tier, cloud storage allocations & account entitlements</p>
+            </div>
+          </div>
+
+          <!-- Plan Hero Card -->
+          <div class="plan-hero-card">
+            <div class="plan-hero-top">
+              <div>
+                <span class="plan-tier-badge" id="view-plan-hero-tier">🎁 Free Tier</span>
+                <h4 class="plan-hero-title">Standard Customer Plan</h4>
+              </div>
+              <div class="plan-hero-price">
+                <span class="price-amount">₹0</span>
+                <span class="price-cycle">/ forever</span>
+              </div>
+            </div>
+            <p class="plan-hero-desc">
+              Create unlimited birthday celebrations, customize interactive visual effects, and store up to 25 MB of photos and celebration audio.
+            </p>
+          </div>
+
+          <!-- Usage Metrics Grid -->
+          <div class="plan-metrics-grid" style="margin-bottom: 24px;">
+            <div class="plan-metric-box">
+              <div class="metric-box-header">
+                <span class="metric-box-title">Media Storage</span>
+                <span class="metric-box-val" id="view-plan-storage-text">0.00 / 25 MB</span>
+              </div>
+              <div class="quota-progress-bar">
+                <div class="quota-progress-fill" id="view-plan-storage-fill" style="width: 0%;"></div>
+              </div>
+              <span class="metric-box-subtitle" id="view-plan-storage-percent">0% utilized of 25 MB allocation</span>
+            </div>
+
+            <div class="plan-metric-box">
+              <div class="metric-box-header">
+                <span class="metric-box-title">Celebrations Created</span>
+                <span class="metric-box-val highlight-gold" id="view-plan-wishes-count">0 Wishes</span>
+              </div>
+              <span class="metric-box-subtitle">Unlimited celebration studio creations</span>
+            </div>
+
+            <div class="plan-metric-box">
+              <div class="metric-box-header">
+                <span class="metric-box-title">Celebration Links</span>
+                <span class="metric-box-val highlight-emerald">Permanent</span>
+              </div>
+              <span class="metric-box-subtitle">Zero expiration on public recipient links</span>
+            </div>
+          </div>
+
+          <!-- Features Checklist -->
+          <div class="plan-features-list">
+            <div class="feature-item"><span class="feat-check">✓</span> Unlimited Birthday Wishes & Themes</div>
+            <div class="feature-item"><span class="feat-check">✓</span> 25 MB High-Speed Cloud Storage</div>
+            <div class="feature-item"><span class="feat-check">✓</span> Interactive 12-Section Customizer</div>
+            <div class="feature-item"><span class="feat-check">✓</span> QR Code & Instant Link Generator</div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 7: PROFILE ==================== -->
+        <section class="customer-tab-view" id="view-profile">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>👤 Customer Profile</h2>
+              <p>Account identity and personal details</p>
+            </div>
+          </div>
+
+          <div class="customer-panel" style="max-width: 650px;">
+            <div class="modal-profile-header-card" style="margin-bottom: 20px;">
+              <div class="profile-avatar-large" id="view-profile-avatar">U</div>
+              <div class="profile-info-block">
+                <h4 id="view-profile-display-name">Customer</h4>
+                <span id="view-profile-display-email">customer@example.com</span>
+                <div class="profile-badge-row">
+                  <span class="status-badge emerald">● Active</span>
+                  <span class="status-badge gold">✨ Free Tier</span>
+                </div>
+              </div>
+            </div>
+
+            <form id="form-view-update-profile">
+              <div class="auth-form-group">
+                <label for="view-profile-name-input">Full Name</label>
+                <div class="auth-input-wrapper">
+                  <span class="input-icon">👤</span>
+                  <input type="text" class="auth-input has-icon" id="view-profile-name-input" placeholder="Your Full Name" required autocomplete="name">
+                </div>
+              </div>
+
+              <div class="auth-form-group">
+                <label for="view-profile-email-input">Email Address</label>
+                <div class="auth-input-wrapper">
+                  <span class="input-icon">✉️</span>
+                  <input type="email" class="auth-input has-icon input-readonly" id="view-profile-email-input" readonly autocomplete="email">
+                </div>
+              </div>
+
+              <div class="profile-meta-grid">
+                <div class="meta-item">
+                  <span class="meta-label">Member Since</span>
+                  <span class="meta-value" id="view-profile-joined">—</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Account ID</span>
+                  <span class="meta-value meta-code" id="view-profile-id">—</span>
+                </div>
+              </div>
+
+              <div style="margin-top: 20px;">
+                <button type="submit" class="btn-primary" id="btn-view-save-profile">
+                  Save Profile Changes
+                </button>
+              </div>
+            </form>
+
+            <div class="danger-zone-wrapper" style="margin-top: 30px;">
+              <div class="danger-zone-header">
+                <span class="danger-icon">⚠️</span>
+                <div>
+                  <span class="danger-title">Danger Zone</span>
+                  <p class="danger-desc">Permanently remove your account and login credentials.</p>
+                </div>
+              </div>
+              <button type="button" class="btn-danger-outline" id="btn-view-open-delete">
+                🗑️ Delete Account
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 8: SETTINGS ==================== -->
+        <section class="customer-tab-view" id="view-settings">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>⚙️ Account Settings</h2>
+              <p>Studio preferences and personalization controls</p>
+            </div>
+          </div>
+
+          <div class="customer-panel" style="max-width: 650px;">
+            <div class="settings-section">
+              <h4 class="settings-section-title">Celebration Studio Preferences</h4>
+              
+              <div class="settings-row">
+                <div class="settings-label-group">
+                  <span class="settings-label">Draft Auto-Save</span>
+                  <span class="settings-desc">Automatically persist in-progress celebration edits locally.</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="view-setting-autosave" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-group">
+                  <span class="settings-label">Audio Autoplay On Load</span>
+                  <span class="settings-desc">Attempt background music playback when opening celebration studio.</span>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="view-setting-autoplay" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h4 class="settings-section-title">Account Security & Credentials</h4>
+              
+              <div class="settings-row align-start">
+                <div class="settings-label-group">
+                  <span class="settings-label">Password Reset</span>
+                  <span class="settings-desc">Send a secure password reset link to your registered email.</span>
+                </div>
+                <button type="button" class="btn-settings-action" id="btn-view-password-reset">
+                  🔑 Reset Password
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-section danger-section">
+              <div class="settings-row align-start">
+                <div class="settings-label-group">
+                  <span class="settings-label danger-text">Delete Customer Account</span>
+                  <span class="settings-desc">Permanently remove your account and login credentials.</span>
+                </div>
+                <button type="button" class="btn-danger-sm" id="btn-view-settings-delete">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 9: SECURITY ==================== -->
+        <section class="customer-tab-view" id="view-security">
+          <div class="view-header">
+            <div class="view-title">
+              <h2>🔐 Security & Authentication</h2>
+              <p>Session encryption, GoTrue JWT tokens & security controls</p>
+            </div>
+          </div>
+
+          <div class="customer-panel" style="max-width: 650px;">
+            <div class="settings-section">
+              <h4 class="settings-section-title">Active Session Protection</h4>
+              <div class="settings-row align-start">
+                <div class="settings-label-group">
+                  <span class="settings-label">GoTrue JWT Auth</span>
+                  <span class="settings-desc">Secured via encrypted PostgreSQL tokens with automatic rotation.</span>
+                </div>
+                <span class="status-badge emerald">● Secure & Active</span>
+              </div>
+              <div class="settings-row align-start">
+                <div class="settings-label-group">
+                  <span class="settings-label">Tenant Isolation</span>
+                  <span class="settings-desc">PostgreSQL Row Level Security (RLS) restricts access strictly to your account.</span>
+                </div>
+                <span class="status-badge emerald">● RLS Enforced</span>
+              </div>
+            </div>
+
+            <div class="settings-section">
+              <h4 class="settings-section-title">Credentials & Access</h4>
+              <div class="settings-row align-start">
+                <div class="settings-label-group">
+                  <span class="settings-label">Reset Password</span>
+                  <span class="settings-desc">Send a password update link to your email address.</span>
+                </div>
+                <button type="button" class="btn-settings-action" id="btn-security-reset-pass">
+                  🔑 Reset Password
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODAL SHELLS (PROFILE / PLAN / SETTINGS / DELETE) ==================== -->
+  
+  <!-- Profile Modal Shell -->
+  <div class="customer-modal-overlay" id="modal-profile">
+    <div class="customer-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge violet">👤</div>
+          <div>
+            <h3>Customer Profile</h3>
+            <span class="modal-subtitle">Account identity & profile settings</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-profile" aria-label="Close Profile">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-profile-header-card">
+          <div class="profile-avatar-large" id="modal-profile-avatar">U</div>
+          <div class="profile-info-block">
+            <h4 id="modal-profile-display-name">Customer</h4>
+            <span id="modal-profile-display-email">customer@example.com</span>
+            <div class="profile-badge-row">
+              <span class="status-badge emerald" id="modal-profile-status-badge">● Active</span>
+              <span class="status-badge gold" id="modal-profile-plan-badge">✨ Free Tier</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="form-update-customer-profile">
+          <div class="auth-form-group">
+            <label for="modal-profile-name">Full Name</label>
+            <div class="auth-input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" class="auth-input has-icon" id="modal-profile-name" placeholder="Your Full Name" required autocomplete="name">
+            </div>
+          </div>
+          <div class="auth-form-group">
+            <label for="modal-profile-email">Email Address</label>
+            <div class="auth-input-wrapper">
+              <span class="input-icon">✉️</span>
+              <input type="email" class="auth-input has-icon input-readonly" id="modal-profile-email" readonly autocomplete="email">
+            </div>
+            <span class="input-hint">Email address is managed by Supabase authentication.</span>
+          </div>
+
+          <div class="profile-meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Member Since</span>
+              <span class="meta-value" id="modal-profile-joined">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Account ID</span>
+              <span class="meta-value meta-code" id="modal-profile-id">—</span>
+            </div>
+          </div>
+
+          <div class="modal-actions-row">
+            <button type="submit" class="btn-modal-primary" id="btn-save-profile">
+              Save Profile Changes
+            </button>
+          </div>
+        </form>
+
+        <!-- Danger Zone -->
+        <div class="danger-zone-wrapper">
+          <div class="danger-zone-header">
+            <span class="danger-icon">⚠️</span>
+            <div>
+              <span class="danger-title">Danger Zone</span>
+              <p class="danger-desc">Permanently remove your account and login credentials.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-danger-outline" id="btn-open-delete-account">
+            🗑️ Delete Account
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Account Confirmation Modal -->
+  <div class="customer-modal-overlay" id="modal-delete-confirm">
+    <div class="customer-modal-card" style="border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(239, 68, 68, 0.15);">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge ruby">⚠️</div>
+          <div>
+            <h3 style="color: #f87171;">Delete Account Permanently?</h3>
+            <span class="modal-subtitle">Irreversible action notice</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-delete-confirm" aria-label="Close Modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.9rem; color: var(--customer-text-muted); line-height: 1.6; margin-bottom: 20px;">
+          <p style="margin-bottom: 12px;">This action is <strong>permanent</strong> and cannot be undone:</p>
+          <ul style="padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+            <li>Your customer login account and profile will be permanently deleted.</li>
+            <li>Your created birthday wishes will <strong>NOT</strong> be deleted.</li>
+            <li>Existing public celebration links will remain live and accessible to recipients.</li>
+            <li>You will no longer be able to log in to this customer account.</li>
+          </ul>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" class="btn-quick-action secondary" id="btn-cancel-delete-account" data-close-modal="modal-delete-confirm">
+            Cancel
+          </button>
+          <button type="button" id="btn-confirm-delete-account" style="background: #dc2626; color: #fff; border: none; padding: 10px 18px; border-radius: var(--customer-radius-md); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+            Delete Account Permanently
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Celebration Confirmation Modal -->
+  <div class="customer-modal-overlay" id="modal-delete-wish-confirm">
+    <div class="customer-modal-card" style="border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(239, 68, 68, 0.15);">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge ruby">🗑️</div>
+          <div>
+            <h3 style="color: #f87171;">Delete Celebration?</h3>
+            <span class="modal-subtitle">Permanently delete this birthday wish</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-delete-wish-confirm" aria-label="Close Modal">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.9rem; color: var(--customer-text-muted); line-height: 1.6; margin-bottom: 20px;">
+          <p style="margin-bottom: 10px;">Are you sure you want to delete <strong id="delete-wish-recipient-name" style="color: #fff;">this celebration</strong>?</p>
+          <div style="background: rgba(10,5,18,0.5); padding: 10px 14px; border-radius: 8px; border: 1px solid var(--customer-border-glass); margin-bottom: 12px;">
+            <span style="font-size: 0.76rem; color: var(--customer-text-dim); display: block;">Celebration UUID:</span>
+            <code id="delete-wish-uuid" style="color: var(--customer-purple-light); font-size: 0.82rem; font-family: monospace;">—</code>
+          </div>
+          <p style="font-size: 0.84rem; color: #fca5a5;">⚠️ The recipient will no longer be able to access or view this celebration URL.</p>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button type="button" class="btn-quick-action secondary" id="btn-cancel-delete-wish" data-close-modal="modal-delete-wish-confirm">
+            Cancel
+          </button>
+          <button type="button" id="btn-confirm-delete-wish" style="background: #dc2626; color: #fff; border: none; padding: 10px 18px; border-radius: var(--customer-radius-md); font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+            Delete Celebration
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan & Usage Modal Shell -->
+  <div class="customer-modal-overlay" id="modal-plan">
+    <div class="customer-modal-card modal-card-wide">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge gold">⚡</div>
+          <div>
+            <h3>Plan & Usage</h3>
+            <span class="modal-subtitle">Subscription tier, media storage & quotas</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-plan" aria-label="Close Plan">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="plan-hero-card">
+          <div class="plan-hero-top">
+            <div>
+              <span class="plan-tier-badge" id="modal-plan-hero-tier">🎁 Free Tier</span>
+              <h4 class="plan-hero-title">Standard Customer Plan</h4>
+            </div>
+            <div class="plan-hero-price">
+              <span class="price-amount">₹0</span>
+              <span class="price-cycle">/ forever</span>
+            </div>
+          </div>
+          <p class="plan-hero-desc">
+            Create unlimited birthday celebrations, customize interactive visual effects, and store up to 25 MB of photos and celebration audio.
+          </p>
+        </div>
+
+        <div class="plan-metrics-grid">
+          <div class="plan-metric-box">
+            <div class="metric-box-header">
+              <span class="metric-box-title">Media Storage</span>
+              <span class="metric-box-val" id="modal-plan-storage-text">0.00 / 25 MB</span>
+            </div>
+            <div class="quota-progress-bar">
+              <div class="quota-progress-fill" id="modal-plan-storage-fill" style="width: 0%;"></div>
+            </div>
+            <span class="metric-box-subtitle" id="modal-plan-storage-percent">0% utilized of 25 MB allocation</span>
+          </div>
+
+          <div class="plan-metric-box">
+            <div class="metric-box-header">
+              <span class="metric-box-title">Celebrations Created</span>
+              <span class="metric-box-val highlight-gold" id="modal-plan-wishes-count">0 Wishes</span>
+            </div>
+            <span class="metric-box-subtitle">Unlimited celebration studio creations</span>
+          </div>
+
+          <div class="plan-metric-box">
+            <div class="metric-box-header">
+              <span class="metric-box-title">Celebration Links</span>
+              <span class="metric-box-val highlight-emerald">Permanent</span>
+            </div>
+            <span class="metric-box-subtitle">Zero expiration on public recipient links</span>
+          </div>
+        </div>
+
+        <div class="plan-features-list">
+          <div class="feature-item"><span class="feat-check">✓</span> Unlimited Birthday Wishes & Themes</div>
+          <div class="feature-item"><span class="feat-check">✓</span> 25 MB High-Speed Cloud Storage</div>
+          <div class="feature-item"><span class="feat-check">✓</span> Interactive 12-Section Customizer</div>
+          <div class="feature-item"><span class="feat-check">✓</span> QR Code & Instant Link Generator</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal Shell -->
+  <div class="customer-modal-overlay" id="modal-settings">
+    <div class="customer-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-icon-badge violet">⚙️</div>
+          <div>
+            <h3>Account Settings</h3>
+            <span class="modal-subtitle">Studio preferences & account security</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" data-close-modal="modal-settings" aria-label="Close Settings">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="settings-section">
+          <h4 class="settings-section-title">Celebration Studio Preferences</h4>
+          
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <span class="settings-label">Draft Auto-Save</span>
+              <span class="settings-desc">Automatically persist in-progress celebration edits locally.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setting-autosave" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="settings-row">
+            <div class="settings-label-group">
+              <span class="settings-label">Audio Autoplay On Load</span>
+              <span class="settings-desc">Attempt background music playback when opening celebration studio.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setting-autoplay" checked>
+              <span class="slider round"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h4 class="settings-section-title">Account Security</h4>
+          
+          <div class="settings-row align-start">
+            <div class="settings-label-group">
+              <span class="settings-label">Password Reset</span>
+              <span class="settings-desc">Send a secure password reset link to your registered email.</span>
+            </div>
+            <button type="button" class="btn-settings-action" id="btn-send-password-reset">
+              🔑 Reset Password
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section danger-section">
+          <div class="settings-row align-start">
+            <div class="settings-label-group">
+              <span class="settings-label danger-text">Delete Customer Account</span>
+              <span class="settings-desc">Permanently remove your account and login credentials.</span>
+            </div>
+            <button type="button" class="btn-danger-sm" id="btn-settings-delete-account">
+              🗑️ Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER ASSET PREVIEW LIGHTBOX MODAL -->
+  <div class="customer-modal" id="cust-media-preview-modal" style="display:none;">
+    <div class="customer-modal-backdrop" id="cust-media-preview-backdrop"></div>
+    <div class="customer-modal-card" style="max-width: 680px; width: 92%; z-index: 10000001;">
+      <div class="customer-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <h3 id="cust-preview-title" style="margin:0; font-size:1.1rem; color:#fff;">Media Asset Preview</h3>
+          <span id="cust-preview-type-badge" class="status-badge violet" style="font-size:0.75rem;">Asset</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-cust-preview-modal-x" aria-label="Close Preview">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding:16px;">
+        <!-- Media Viewer Slot -->
+        <div id="cust-preview-viewer" style="width:100%; min-height:220px; max-height:420px; background:#000; border-radius:12px; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+          <!-- Dynamically populated with img, audio player, or video player -->
+        </div>
+
+        <!-- Media Metadata Info Row -->
+        <div id="cust-preview-meta" style="background:rgba(255,255,255,0.04); border:1px solid var(--customer-border-glass); border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:0.82rem; color:var(--customer-text-muted); display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
+          <div><span style="display:block; color:var(--customer-text-dim); font-size:0.72rem; text-transform:uppercase;">Celebration</span><strong id="cust-preview-recipient" style="color:#fff;">—</strong></div>
+          <div><span style="display:block; color:var(--customer-text-dim); font-size:0.72rem; text-transform:uppercase;">Type</span><strong id="cust-preview-type" style="color:#fff;">—</strong></div>
+          <div><span style="display:block; color:var(--customer-text-dim); font-size:0.72rem; text-transform:uppercase;">Source</span><strong id="cust-preview-source" style="color:#fff;">Cloud Storage</strong></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn-secondary" id="btn-cust-preview-copy-url" style="padding:8px 14px; font-size:0.85rem;">
+              📋 Copy Link
+            </button>
+            <a href="#" id="btn-cust-preview-view-wish" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding:8px 14px; font-size:0.85rem; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
+              👁️ View Celebration ↗
+            </a>
+          </div>
+          <button type="button" class="btn-secondary" id="btn-close-cust-preview-modal" style="padding:8px 16px; font-size:0.85rem;">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER WISH STUDIO LUXURY POPUP CALENDAR MODAL -->
+  <div id="cust-date-picker-modal" class="customer-modal-overlay" style="display:none;position:fixed;inset:0;z-index:10000000;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);">
+    <div id="cust-material-dp-card" class="glass" style="max-width:350px;width:92%;margin:auto;padding:22px;border-radius:20px;background:#1B1530;border:1px solid rgba(247,201,74,0.4);box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 35px rgba(247,201,74,0.25);color:#fff;font-family:'Outfit', sans-serif;position:relative;">
+      
+      <!-- Top Navigation Header: Month & Year Controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        
+        <!-- Month Selector Group (< Month ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="cust-mdp-prev-month" aria-label="Previous Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+          <select id="cust-mdp-month-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:padding:4px 8px;border-radius:8px;outline:none;">
+            <option value="0" style="background:#1B1530;color:#fff;">Jan</option>
+            <option value="1" style="background:#1B1530;color:#fff;">Feb</option>
+            <option value="2" style="background:#1B1530;color:#fff;">Mar</option>
+            <option value="3" style="background:#1B1530;color:#fff;">Apr</option>
+            <option value="4" style="background:#1B1530;color:#fff;">May</option>
+            <option value="5" style="background:#1B1530;color:#fff;">Jun</option>
+            <option value="6" style="background:#1B1530;color:#fff;">Jul</option>
+            <option value="7" style="background:#1B1530;color:#fff;">Aug</option>
+            <option value="8" style="background:#1B1530;color:#fff;">Sep</option>
+            <option value="9" style="background:#1B1530;color:#fff;">Oct</option>
+            <option value="10" style="background:#1B1530;color:#fff;">Nov</option>
+            <option value="11" style="background:#1B1530;color:#fff;">Dec</option>
+          </select>
+          <button type="button" id="cust-mdp-next-month" aria-label="Next Month" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        </div>
+
+        <!-- Year Selector Group (< Year ▾ >) -->
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" id="cust-mdp-prev-year" aria-label="Previous Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+          <select id="cust-mdp-year-select" style="background:#251942;border:1px solid rgba(255,215,0,0.3);color:#ffd700;font-size:0.9rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;outline:none;">
+            <!-- Dynamic 1900 to 2100 -->
+          </select>
+          <button type="button" id="cust-mdp-next-year" aria-label="Next Year" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);color:#ffd700;cursor:pointer;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;transition:all 0.2s;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+        </div>
+
+      </div>
+
+      <!-- Days Header Row (S M T W T F S) -->
+      <div style="display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-size:0.8rem;font-weight:700;color:var(--customer-gold,#ffd700);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
+        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+      </div>
+
+      <!-- Calendar Days Grid -->
+      <div id="cust-mdp-days-grid" style="display:grid;grid-template-columns:repeat(7, 1fr);gap:5px;text-align:center;min-height:220px;">
+        <!-- Dynamic day buttons -->
+      </div>
+
+      <!-- Bottom Action Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+        <button type="button" id="cust-mdp-today-btn" style="background:rgba(247,201,74,0.15);border:1px solid rgba(247,201,74,0.3);color:#ffd700;font-size:0.8rem;font-weight:600;cursor:pointer;padding:6px 12px;border-radius:10px;transition:all 0.2s;">Today</button>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="cust-mdp-cancel-btn" style="background:rgba(255,255,255,0.08);border:none;color:#cbd5e1;font-size:0.85rem;font-weight:600;cursor:pointer;padding:6px 14px;border-radius:10px;transition:all 0.2s;">Cancel</button>
+          <button type="button" id="cust-mdp-ok-btn" style="background:linear-gradient(135deg,#a855f7,#7e22ce);border:1px solid rgba(247,201,74,0.4);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;padding:6px 16px;border-radius:10px;box-shadow:0 4px 12px rgba(168,85,247,0.3);transition:all 0.2s;">OK</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="customer-toast" id="customer-toast"></div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/core/wish-defaults.js"></script>
+  <script src="js/core/relationship-presets.js"></script>
+  <script src="js/services/media-service.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/customer/customer-auth.js"></script>
+  <script src="js/customer/customer-entitlements.js"></script>
+  <script src="js/customer/customer-editor-renderers.js"></script>
+  <script src="js/customer/customer-editor.js"></script>
+  <script src="js/customer/customer-media.js"></script>
+  <script src="js/customer/customer-themes.js"></script>
+  <script src="js/customer/customer-wishes.js"></script>
+  <script src="js/customer/customer-dashboard.js"></script>
+</body>
+</html>

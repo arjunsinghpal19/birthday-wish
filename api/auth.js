@@ -231,7 +231,15 @@ export default async function handler(req, res) {
   loadLocalEnv();
 
   const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
-  const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+  const supabaseKey =
+    (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim()) ||
+    (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) ||
+    "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+
+  const hasServiceRoleKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim());
+  if (!hasServiceRoleKey && process.env.NODE_ENV === "production") {
+    console.warn("⚠️ [Security Notice] SUPABASE_SERVICE_ROLE_KEY is not configured in production environment. Admin system row read may be blocked by RLS.");
+  }
 
   try {
     const body = await parseRequestBody(req);
@@ -830,6 +838,25 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true, message: "Passkey removed" });
+    }
+
+    if (action === "get-security-status" || action === "security-status") {
+      const recEmail = secRow.recovery_email || parsedMemory.admin_recovery_email || "";
+      const isVerified = secRow.recovery_email_verified ?? parsedMemory.recovery_email_verified ?? false;
+      const hasBackup = !!(secRow.backup_code_hash || parsedMemory.backup_code_hash);
+      const codeTime = parsedMemory.backup_code_updated_at || secRow.updated_at || parsedMemory.updated_at || null;
+      const passkeysList = parsedMemory.passkeys || [];
+      const hasPasskey = passkeysList.length > 0;
+
+      return res.status(200).json({
+        success: true,
+        admin_recovery_email: recEmail,
+        recovery_email_verified: isVerified,
+        has_recovery_code: hasBackup,
+        recovery_code_updated_at: codeTime,
+        has_passkey: hasPasskey,
+        passkeys_count: passkeysList.length
+      });
     }
 
     return res.status(400).json({ error: "Invalid action parameter" });

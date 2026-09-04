@@ -17,7 +17,6 @@ const SESSION_EXPIRY_SECONDS = 24 * 60 * 60; // 24 hours
  * No-op in production where process.env is injected by the hosting platform.
  */
 export function loadLocalEnv() {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return;
   try {
     const envPath = path.join(process.cwd(), ".env.local");
     if (fs.existsSync(envPath)) {
@@ -28,8 +27,11 @@ export function loadLocalEnv() {
         const eqIdx = trimmed.indexOf("=");
         if (eqIdx !== -1) {
           const key = trimmed.slice(0, eqIdx).trim();
-          const val = trimmed.slice(eqIdx + 1).trim();
-          if (key && !process.env[key]) {
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1).trim();
+          }
+          if (key && (!process.env[key] || process.env[key].startsWith("your_"))) {
             process.env[key] = val;
           }
         }
@@ -38,6 +40,22 @@ export function loadLocalEnv() {
   } catch (e) {
     // Ignore in production environments
   }
+}
+
+function resolveSecret(secRow) {
+  if (process.env.ADMIN_SESSION_SECRET && process.env.ADMIN_SESSION_SECRET.trim()) {
+    return process.env.ADMIN_SESSION_SECRET.trim();
+  }
+  let hash = secRow && secRow.admin_password_hash;
+  let code = secRow && secRow.pass_code;
+  if (!hash && !code && secRow && secRow.memory_text) {
+    try {
+      const p = JSON.parse(secRow.memory_text);
+      if (p.admin_password_hash) hash = p.admin_password_hash;
+      if (p.admin_master_password) code = p.admin_master_password;
+    } catch (e) {}
+  }
+  return hash || code || "birthday_wish_admin_session_secret_2026";
 }
 
 /**
@@ -53,11 +71,7 @@ export function createAdminSessionToken(secRow) {
     exp: Math.floor(Date.now() / 1000) + SESSION_EXPIRY_SECONDS
   })).toString("base64url");
 
-  const secret = (process.env.ADMIN_SESSION_SECRET && process.env.ADMIN_SESSION_SECRET.trim()) ||
-                 (secRow && secRow.admin_password_hash) ||
-                 (secRow && secRow.pass_code) ||
-                 "birthday_wish_admin_session_secret_2026";
-
+  const secret = resolveSecret(secRow);
   const signature = crypto.createHmac("sha256", secret).update(`${header}.${payload}`).digest("base64url");
   return `${header}.${payload}.${signature}`;
 }
@@ -74,12 +88,7 @@ export function verifyAdminSessionToken(token, secRow) {
   if (parts.length !== 3) return false;
 
   const [headerB64, payloadB64, signature] = parts;
-
-  const secret = (process.env.ADMIN_SESSION_SECRET && process.env.ADMIN_SESSION_SECRET.trim()) ||
-                 (secRow && secRow.admin_password_hash) ||
-                 (secRow && secRow.pass_code) ||
-                 "birthday_wish_admin_session_secret_2026";
-
+  const secret = resolveSecret(secRow);
   const expectedSignature = crypto.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
 
   try {

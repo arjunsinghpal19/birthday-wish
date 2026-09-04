@@ -32,31 +32,51 @@
   async function loadDashboardData() {
     let querySuccess = true;
 
-    // 1. Fetch live wishes from Supabase DB
-    if (typeof fetchWishes === "function") {
-      const res = await fetchWishes();
-      if (res && res.success) {
-        wishesList = res.data || [];
-      } else {
-        querySuccess = false;
-        wishesList = [];
-      }
+    // 1. Kick off Wishes fetch and Storage fetch concurrently with individual error boundaries
+    const wishesPromise = (typeof fetchWishes === "function")
+      ? fetchWishes().catch(err => {
+          console.warn("⚠️ fetchWishes exception:", err);
+          return { success: false, data: [] };
+        })
+      : Promise.resolve({ success: false, data: [] });
+
+    const storageFetchPromise = (window.StorageModule && typeof window.StorageModule.listAllMedia === "function")
+      ? window.StorageModule.listAllMedia().catch(err => {
+          console.warn("⚠️ Storage list exception:", err);
+          return [];
+        })
+      : (typeof fetchStorage === "function")
+        ? fetchStorage().then(r => (r && r.success) ? (r.data || []) : []).catch(() => [])
+        : Promise.resolve([]);
+
+    // 2. Concurrently resolve both network requests in parallel
+    const [wishesRes, rawStorageFiles] = await Promise.all([wishesPromise, storageFetchPromise]);
+
+    if (wishesRes && wishesRes.success) {
+      wishesList = wishesRes.data || [];
+    } else {
+      querySuccess = false;
+      wishesList = [];
     }
 
-    // 2. Fetch live storage media metadata before rendering KPIs
+    // 3. Process reference mapping on storage metadata with live wishesList
     let storageFiles = [];
-    if (typeof loadStorageMediaData === "function") {
-      storageFiles = await loadStorageMediaData(wishesList);
-    } else if (typeof fetchStorage === "function") {
-      const storageRes = await fetchStorage();
-      storageFiles = (storageRes && storageRes.success) ? (storageRes.data || []) : [];
-    } else if (typeof getStorageFiles === "function") {
-      storageFiles = getStorageFiles();
+    try {
+      if (typeof loadStorageMediaData === "function") {
+        storageFiles = await loadStorageMediaData(wishesList);
+      } else if (Array.isArray(rawStorageFiles)) {
+        storageFiles = rawStorageFiles;
+      } else if (typeof getStorageFiles === "function") {
+        storageFiles = getStorageFiles();
+      }
+    } catch (sErr) {
+      console.warn("⚠️ loadStorageMediaData notice:", sErr);
+      storageFiles = Array.isArray(rawStorageFiles) ? rawStorageFiles : [];
     }
 
     const activeLogs = typeof getLogs === "function" ? getLogs() : [];
 
-    // 3. Render all views with fully synchronized live data
+    // 4. Render all views with fully synchronized live data
     if (typeof setWishesState === "function") {
       setWishesState(wishesList, !querySuccess);
     }

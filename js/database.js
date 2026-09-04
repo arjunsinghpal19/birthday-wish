@@ -2,6 +2,19 @@
   "use strict";
 
   const TABLE_NAME = "wishes";
+  const SYSTEM_CONFIG_UUID = "00000000-0000-0000-0000-000000000001";
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  function generateWishUuid() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
 
   function encodeMediaUrlWithStart(url, startTime) {
     if (!url || typeof url !== "string") return null;
@@ -25,9 +38,36 @@
     return fn ? fn(url) : url.replace(/#bw-start=\d+/i, "").replace(/#+$/, "").trim();
   }
 
-  async function saveWishRecord(configObj) {
+  async function saveWishRecord(configObj, options = {}) {
     try {
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+      const isCustomerContext = (options && (options.context === "customer" || options.isCustomer === true))
+        || (configObj && (configObj._creatorContext === "customer" || configObj._isCustomer === true));
+
+      let client = null;
+      let ownerId = null;
+
+      if (isCustomerContext) {
+        // Explicit Customer creation flow: uses authenticated Supabase client and customer UUID
+        client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
+        if (options && options.ownerId && typeof options.ownerId === "string") {
+          ownerId = options.ownerId.trim();
+        } else if (configObj && configObj._ownerId && typeof configObj._ownerId === "string") {
+          ownerId = configObj._ownerId.trim();
+        } else if (window.CustomerAuth && typeof window.CustomerAuth.getCurrentUser === "function") {
+          try {
+            const u = await window.CustomerAuth.getCurrentUser();
+            if (u && u.id) ownerId = u.id;
+          } catch (authErr) {}
+        }
+      } else {
+        // Admin or Quick Editor / Anonymous creation: strictly unowned (owner_id = NULL)
+        // Uses pure anonymous client to guarantee no ambient customer JWT is attached
+        client = (window.SupabaseModule && typeof window.SupabaseModule.getAnonClient === "function")
+          ? window.SupabaseModule.getAnonClient()
+          : (window.SupabaseModule ? window.SupabaseModule.getClient() : null);
+        ownerId = null;
+      }
+
       if (!client) return null;
 
       const rawMusicFile = configObj.music?.file || null;
@@ -36,7 +76,13 @@
       const finalMusicUrl = encodeMediaUrlWithStart(rawMusicFile, configObj.music?.startTime);
       const finalVideoUrl = encodeMediaUrlWithStart(rawVideoUrl, configObj.videoWish?.startTime);
 
+      const targetUuid = (configObj._activeWishUuid && UUID_REGEX.test(configObj._activeWishUuid) && configObj._activeWishUuid !== SYSTEM_CONFIG_UUID)
+        ? configObj._activeWishUuid
+        : ((configObj.id && UUID_REGEX.test(configObj.id) && configObj.id !== SYSTEM_CONFIG_UUID) ? configObj.id : generateWishUuid());
+
       const record = {
+        id: targetUuid,
+        owner_id: ownerId,
         recipient_name: configObj.name || "",
         sender_name: configObj.from || "",
         pass_code: configObj.passcode?.code || "1234",
@@ -55,20 +101,18 @@
         letter_theme: configObj.letterTheme || "default"
       };
 
-      console.log("💾 Database INSERT record music_url:", record.music_url, "video_url:", record.video_url);
+      console.log("💾 Database INSERT record id:", record.id, "music_url:", record.music_url, "video_url:", record.video_url);
 
-      const { data, error } = await client
+      const { error } = await client
         .from(TABLE_NAME)
-        .insert([record])
-        .select("id")
-        .single();
+        .insert([record]);
 
       if (error) {
         console.warn("⚠️ Supabase DB Insert Error:", error.message);
         return null;
       }
 
-      return data ? data.id : null;
+      return targetUuid;
     } catch (e) {
       console.warn("⚠️ DB insert exception:", e);
       return null;
@@ -78,53 +122,47 @@
   async function updateWishRecord(uuid, configObj) {
     try {
       if (!uuid) return null;
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) return null;
 
-      const rawMusicFile = configObj.music?.file || null;
-      const rawVideoUrl = configObj.videoWish?.url || configObj.videoWish?.file || null;
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl(`/api/quick-update-wish?id=${encodeURIComponent(uuid)}`)
+        : `/api/quick-update-wish?id=${encodeURIComponent(uuid)}`;
 
-      const finalMusicUrl = encodeMediaUrlWithStart(rawMusicFile, configObj.music?.startTime);
-      const finalVideoUrl = encodeMediaUrlWithStart(rawVideoUrl, configObj.videoWish?.startTime);
+      const candidatePasscode = configObj.passcode?.code || configObj.pass_code || "1234";
 
-      const record = {
-        recipient_name: configObj.name || "",
-        sender_name: configObj.from || "",
-        pass_code: configObj.passcode?.code || "1234",
-        birth_date: configObj.birthDate || { year: 2001, month: 1, day: 1 },
-        letter_lines: configObj.letterLines || [],
-        memory_text: configObj.memory || "",
-        reasons_json: configObj.reasons || [],
-        wishes_json: configObj.wishes || [],
-        gallery_json: configObj.gallery || [],
-        timeline_json: configObj.timeline || [],
-        gift_json: configObj.gift || {},
-        music_url: finalMusicUrl,
-        video_url: finalVideoUrl,
-        cake_flavor: configObj.cakeFlavor || "default",
-        letter_font: configObj.letterFont || "default",
-        letter_theme: configObj.letterTheme || "default",
-        updated_at: new Date().toISOString()
-      };
+      console.log("💾 Quick Editor update request for id:", uuid, "recipient:", configObj.name);
 
-      console.log("💾 Database UPDATE record id:", uuid, "recipient:", record.recipient_name);
+      // Primary Secure Path: Serverless endpoint with Service Role execution & passcode verification
+      try {
+        const res = await fetch(apiUrl, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-wish-passcode": candidatePasscode
+          },
+          body: JSON.stringify({
+            config: configObj,
+            passcode: candidatePasscode
+          })
+        });
 
-      const { error, count } = await client
-        .from(TABLE_NAME)
-        .update(record, { count: "exact" })
-        .eq("id", uuid);
-
-      if (error) {
-        console.warn("⚠️ Supabase DB Update Error:", error.message);
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.success) {
+            console.log("💾 Quick Editor wish updated successfully:", uuid);
+            return result.id || uuid;
+          }
+        } else {
+          let errData = {};
+          try { errData = await res.json(); } catch (e) {}
+          console.warn("⚠️ Quick Editor update API rejected:", errData.error || `HTTP ${res.status}`);
+          return null;
+        }
+      } catch (apiEx) {
+        console.warn("⚠️ Quick Editor update API fetch notice:", apiEx.message || apiEx);
         return null;
       }
 
-      if (count === 0) {
-        console.warn("⚠️ Existing wish UUID was not updated (row not found):", uuid);
-        return null;
-      }
-
-      return uuid;
+      return null;
     } catch (e) {
       console.warn("⚠️ DB update exception:", e);
       return null;
@@ -137,15 +175,42 @@
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (!client) return null;
 
-      const { data, error } = await client
-        .from(TABLE_NAME)
-        .select("*")
-        .eq("id", uuid)
-        .single();
-
-      if (error || !data) {
-        console.warn("⚠️ Supabase DB Select Error:", error ? error.message : "Not found");
+      const cleanId = String(uuid).trim();
+      if (cleanId === SYSTEM_CONFIG_UUID) {
+        console.warn("⚠️ DatabaseModule: Attempted fetch of protected system configuration row blocked.");
         return null;
+      }
+
+      let data = null;
+
+      // 1. Primary Modern Path: Call public RPC (get_public_wish)
+      try {
+        const { data: rpcData, error: rpcError } = await client.rpc("get_public_wish", {
+          target_id: cleanId
+        });
+
+        if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+          data = rpcData[0];
+        } else if (!rpcError && rpcData && !Array.isArray(rpcData) && typeof rpcData === "object" && rpcData.id) {
+          data = rpcData;
+        }
+      } catch (rpcEx) {
+        console.warn("⚠️ DatabaseModule: RPC get_public_wish notice:", rpcEx.message || rpcEx);
+      }
+
+      // 2. Safe Fallback Path (during transition or test mocking)
+      if (!data) {
+        const { data: selectData, error: selectError } = await client
+          .from(TABLE_NAME)
+          .select("*")
+          .eq("id", cleanId)
+          .single();
+
+        if (selectError || !selectData) {
+          console.warn("⚠️ Supabase DB Select Error:", selectError ? selectError.message : "Not found");
+          return null;
+        }
+        data = selectData;
       }
 
       console.log("📥 Database SELECT record music_url:", data.music_url, "video_url:", data.video_url);
@@ -184,8 +249,6 @@
       return null;
     }
   }
-
-  const SYSTEM_CONFIG_UUID = "00000000-0000-0000-0000-000000000001";
 
   /**
    * Deletes a wish record exclusively via secure server-side Admin API (/api/admin-delete-wish).
@@ -234,20 +297,14 @@
         }
 
         if (res.status === 404) {
-          return {
-            success: false,
-            error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations."
-          };
+          return { success: false, error: "Secure Admin Delete API unavailable." };
         }
 
         const errData = await res.json().catch(() => ({}));
         return { success: false, error: errData.error || `Server returned HTTP ${res.status}` };
       } catch (apiErr) {
         console.warn("⚠️ Secure Admin Delete API unreachable:", apiErr);
-        return {
-          success: false,
-          error: "Secure Admin Delete API unavailable. Use the Vercel/local server runtime for Admin operations."
-        };
+        return { success: false, error: "Secure Admin Delete API unavailable." };
       }
     } catch (e) {
       console.warn("⚠️ DB delete exception:", e);
@@ -361,19 +418,10 @@
     }
   }
 
-  /**
-   * Helper to construct a clean duplicate wish record payload from existing data.
-   * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
-   * Appends '(Copy)' to recipient_name.
-   * @param {object} data - Source wish record from database.
-   * @returns {object} Payload ready for Supabase insert.
-   */
   function prepareDuplicatePayload(data) {
     const originalName = data.recipient_name || "Friend";
-    const duplicatedName = `${originalName} (Copy)`;
-
     return {
-      recipient_name: duplicatedName,
+      recipient_name: `${originalName} (Copy)`,
       sender_name: data.sender_name || "",
       pass_code: data.pass_code || "1234",
       birth_date: data.birth_date || { year: 2001, month: 1, day: 1 },
@@ -392,13 +440,6 @@
     };
   }
 
-  /**
-   * Duplicates an existing wish record in Supabase table 'public.wishes' with a real new UUID.
-   * Preserves all JSON structures and media URLs by reference without duplicating storage assets.
-   * Strictly rejects duplication of the system configuration row.
-   * @param {string} sourceUuid - UUID of the wish to duplicate.
-   * @returns {Promise<{success: boolean, newId?: string, error?: string}>}
-   */
   async function duplicateWishRecord(sourceUuid) {
     try {
       if (!sourceUuid || typeof sourceUuid !== "string") {
@@ -411,11 +452,8 @@
       }
 
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) {
-        return { success: false, error: "Database client unavailable" };
-      }
+      if (!client) return { success: false, error: "Database client unavailable" };
 
-      // Fetch the source wish record
       const { data, error: selectError } = await client
         .from(TABLE_NAME)
         .select("*")
@@ -439,6 +477,7 @@
         return { success: false, error: insertError ? insertError.message : "Failed to insert duplicate wish record" };
       }
 
+      console.log("📋 Duplicated wish record with new ID:", inserted.id);
       return { success: true, newId: inserted.id };
     } catch (e) {
       console.warn("⚠️ DB duplicate exception:", e);
@@ -446,13 +485,6 @@
     }
   }
 
-  /**
-   * Duplicates multiple existing wish records in Supabase table 'public.wishes'.
-   * Generates new UUIDs for each duplicate, preserving JSON structures and media URLs by reference.
-   * Strictly rejects duplication of the system configuration row.
-   * @param {string[]} sourceUuids - Array of wish UUIDs to duplicate.
-   * @returns {Promise<{success: boolean, createdCount: number, newWishes: Array<object>, failedIds: Array<any>, error?: string}>}
-   */
   async function duplicateWishesBulk(sourceUuids) {
     try {
       if (!Array.isArray(sourceUuids) || sourceUuids.length === 0) {
@@ -461,44 +493,33 @@
 
       const validSourceIds = [];
       const failedIds = [];
-
-      sourceUuids.forEach(id => {
-        if (!id || typeof id !== "string") {
-          failedIds.push({ id, error: "Invalid UUID format" });
-          return;
+      for (const rawId of sourceUuids) {
+        if (!rawId || typeof rawId !== "string") {
+          failedIds.push({ id: String(rawId || ""), error: "Invalid UUID format" });
+          continue;
         }
-        const cleanId = id.trim();
+        const cleanId = rawId.trim();
         if (cleanId === SYSTEM_CONFIG_UUID) {
-          console.warn("⚠️ DatabaseModule: Attempted bulk duplication of protected system configuration row blocked.");
+          console.warn("⚠️ DatabaseModule: Attempted duplication of protected system configuration row blocked.");
           failedIds.push({ id: cleanId, error: "Cannot duplicate protected system configuration record" });
-          return;
+          continue;
         }
-        validSourceIds.push(cleanId);
-      });
+        if (!validSourceIds.includes(cleanId)) validSourceIds.push(cleanId);
+      }
 
       if (validSourceIds.length === 0) {
-        return {
-          success: false,
-          error: "All provided wish UUIDs are invalid or protected",
-          createdCount: 0,
-          newWishes: [],
-          failedIds
-        };
+        return { success: false, error: "All provided wish UUIDs are invalid or protected", createdCount: 0, newWishes: [], failedIds };
       }
 
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) {
-        return { success: false, error: "Database client unavailable", createdCount: 0, newWishes: [], failedIds };
-      }
+      if (!client) return { success: false, error: "Database client unavailable", createdCount: 0, newWishes: [], failedIds };
 
-      // Fetch the source wish records
       const { data: sourceRecords, error: selectError } = await client
         .from(TABLE_NAME)
         .select("*")
         .in("id", validSourceIds);
 
       if (selectError || !Array.isArray(sourceRecords) || sourceRecords.length === 0) {
-        console.warn("⚠️ Supabase DB Bulk Duplicate: Source wishes not found:", selectError ? selectError.message : "No records found");
         return {
           success: false,
           error: selectError ? selectError.message : "No matching source wish records found to duplicate",
@@ -508,12 +529,9 @@
         };
       }
 
-      // Identify any IDs that were not found in database
       const foundIds = new Set(sourceRecords.map(r => r.id));
       validSourceIds.forEach(id => {
-        if (!foundIds.has(id)) {
-          failedIds.push({ id, error: "Source record not found in database" });
-        }
+        if (!foundIds.has(id)) failedIds.push({ id, error: "Source record not found in database" });
       });
 
       const duplicatePayloads = sourceRecords.map(r => prepareDuplicatePayload(r));
@@ -523,7 +541,6 @@
         .select("*");
 
       if (insertError || !Array.isArray(insertedRecords)) {
-        console.warn("⚠️ Supabase DB Bulk Duplicate Insert Error:", insertError ? insertError.message : "Failed batch insert");
         return {
           success: false,
           error: insertError ? insertError.message : "Failed to insert duplicate wish records",
@@ -533,36 +550,18 @@
         };
       }
 
-      return {
-        success: true,
-        createdCount: insertedRecords.length,
-        newWishes: insertedRecords,
-        failedIds
-      };
+      return { success: true, createdCount: insertedRecords.length, newWishes: insertedRecords, failedIds };
     } catch (e) {
       console.warn("⚠️ DB bulk duplicate exception:", e);
-      return {
-        success: false,
-        error: e.message || "Failed to duplicate wish records",
-        createdCount: 0,
-        newWishes: [],
-        failedIds: []
-      };
+      return { success: false, error: e.message || "Failed to duplicate wish records", createdCount: 0, newWishes: [], failedIds: [] };
     }
   }
 
-  // ============================================================================
-  // SINGLE PASSWORD SERVICE (Supabase Single Source of Truth)
-  // Stores password ONLY in JS memory during active session (_sessionPassword).
-  // NEVER stores passwords in localStorage keys.
-  // ============================================================================
   const PasswordService = {
     _sessionPassword: null,
 
     async getPassword(forceRefresh = false) {
-      if (!forceRefresh && this._sessionPassword) {
-        return this._sessionPassword;
-      }
+      if (!forceRefresh && this._sessionPassword) return this._sessionPassword;
       try {
         const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
         if (client) {
@@ -688,10 +687,14 @@
       // Try Serverless API password update (PBKDF2-HMAC-SHA256 + 16-byte salt)
       try {
         const apiUrl = window.getApiUrl ? window.getApiUrl("/api/auth") : "/api/auth";
+        const adminToken = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("admin_session_token") : null;
         const res = await fetch(apiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update", newPassword: cleanPass })
+          headers: {
+            "Content-Type": "application/json",
+            ...(adminToken ? { "x-admin-token": adminToken } : {})
+          },
+          body: JSON.stringify({ action: "update", newPassword: cleanPass, adminToken })
         });
         if (res.ok) {
           const data = await res.json();
@@ -774,7 +777,6 @@
         await PasswordService.updatePassword(secObj.admin_master_password);
       }
 
-      // Preserve all existing cryptographic hashes & salts from cloud memory_text
       let existingMemory = {};
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (client) {
@@ -796,7 +798,6 @@
         updated_at: new Date().toISOString()
       };
 
-      // Strip sensitive plaintext credentials from database memory_text and localStorage
       delete updated.admin_master_password;
       delete updated.admin_recovery_code;
 
@@ -809,7 +810,6 @@
             updated_at: new Date().toISOString()
           }).eq("id", "00000000-0000-0000-0000-000000000001");
 
-          // Pre-migration fallback if dedicated columns don't exist
           if (colErr) {
             await client.from("wishes").update({
               memory_text: JSON.stringify(updated),
@@ -834,13 +834,23 @@
     }
   }
 
-  /**
-   * Retrieves security configuration metadata from cloud DB or local storage fallbacks.
-   * @param {boolean} [forceRefresh=false] - If true, bypasses in-memory session cache.
-   * @returns {Promise<Object>} Resolved security configuration metadata object.
-   */
   async function getSecuritySettings(forceRefresh = false) {
     try {
+      try {
+        const apiUrl = window.getApiUrl ? window.getApiUrl("/api/auth") : "/api/auth";
+        const authRes = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get-security-status" })
+        });
+        if (authRes.ok) {
+          const authData = await authRes.json();
+          if (authData && authData.success) {
+            return authData;
+          }
+        }
+      } catch (apiErr) {}
+
       let cloudData = null;
       const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
       if (client) {

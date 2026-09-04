@@ -3518,23 +3518,54 @@
       renderQuickViewModal();
     }
 
-    // Live query to fetch freshest record from Supabase DB to eliminate stale state
+    // Live query to fetch freshest record from Privileged Admin API (/api/admin-wishes?id={UUID})
     try {
-      if (window.SupabaseModule) {
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl(`/api/admin-wishes?id=${encodeURIComponent(cleanId)}`)
+        : `/api/admin-wishes?id=${encodeURIComponent(cleanId)}`;
+
+      let freshData = null;
+
+      try {
+        const res = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : "",
+            "x-admin-token": token
+          }
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.success && result.data && result.data.id) {
+            freshData = result.data;
+          }
+        }
+      } catch (apiErr) {
+        console.warn("⚠️ AdminWishes: Quick View privileged API notice:", apiErr.message || apiErr);
+      }
+
+      // Fallback to client query if privileged API fails or in local offline mocks
+      if (!freshData && window.SupabaseModule) {
         const client = window.SupabaseModule.getClient();
         if (client) {
           const { data, error } = await client.from("wishes").select("*").eq("id", cleanId).single();
           if (!error && data && data.id) {
-            const idx = wishesState.findIndex(w => w && w.id && w.id.trim() === cleanId);
-            if (idx !== -1) {
-              wishesState[idx] = data;
-            } else {
-              wishesState.unshift(data);
-            }
-            if (activeQuickViewWishId === cleanId) {
-              renderQuickViewModal();
-            }
+            freshData = data;
           }
+        }
+      }
+
+      if (freshData && freshData.id) {
+        const idx = wishesState.findIndex(w => w && w.id && w.id.trim() === cleanId);
+        if (idx !== -1) {
+          wishesState[idx] = freshData;
+        } else {
+          wishesState.unshift(freshData);
+        }
+        if (activeQuickViewWishId === cleanId) {
+          renderQuickViewModal();
         }
       }
     } catch (e) {

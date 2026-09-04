@@ -75,6 +75,17 @@
     </a>
   </div>
 
+  <!-- ==================== CUSTOMER PORTAL RETURN BAR ==================== -->
+  <div id="customer-return-bar" class="customer-return-bar" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:rgba(15,7,26,0.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(168,85,247,0.35);padding:10px 20px;justify-content:space-between;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,0.6);">
+    <div style="display:flex;align-items:center;gap:8px;color:#fff;font-size:0.85rem;font-weight:600;">
+      <span style="font-size:1.1rem;">🎂</span>
+      <span>Celebration Studio • Customer Mode</span>
+    </div>
+    <a href="customer.html" id="btn-return-to-customer-bar" style="background:rgba(168,85,247,0.18);border:1px solid rgba(168,85,247,0.4);color:#c084fc;padding:6px 14px;border-radius:8px;font-size:0.8rem;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;">
+      ← Return to Customer Portal
+    </a>
+  </div>
+
   <!-- Custom cursor -->
   <div id="cursor-ring"></div>
   <div id="cursor-dot"></div>
@@ -1250,6 +1261,8 @@
   <script src="js/modules/editor/video.js"></script>
   <script src="js/modules/editor/customizer.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/customer/customer-auth.js"></script>
+  <script src="js/customer/customer-create.js"></script>
 </body>
 
 </html>

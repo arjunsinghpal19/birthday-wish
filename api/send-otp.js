@@ -28,6 +28,47 @@ function generateSalt() {
   return crypto.randomBytes(16).toString("hex");
 }
 
+// Robust Supabase security row updater with return=representation verification
+async function updateSecurityRow(supabaseUrl, supabaseKey, updateBody, fallbackBody = null) {
+  let res = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+    method: "PATCH",
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(updateBody)
+  });
+
+  if (!res.ok && fallbackBody) {
+    res = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
+      method: "PATCH",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify(fallbackBody)
+    });
+  }
+
+  if (!res.ok) {
+    return { ok: false, error: `Database update failed with HTTP status ${res.status}` };
+  }
+
+  try {
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { ok: false, error: "Database update affected 0 rows (RLS policy blocked update or row not found)" };
+    }
+    return { ok: true, rows };
+  } catch (err) {
+    return { ok: false, error: `Failed to parse database response: ${err.message}` };
+  }
+}
+
 async function parseRequestBody(req) {
   if (req.body) {
     if (typeof req.body === "object" && !Buffer.isBuffer(req.body)) {
@@ -68,8 +109,14 @@ export default async function handler(req, res) {
   loadLocalEnv();
 
   const supabaseUrl = (process.env.SUPABASE_URL && process.env.SUPABASE_URL.trim()) || "https://dvacxeooaqxwldszqpek.supabase.co";
-  const supabaseKey = (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) || "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
-  const resendApiKey = (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) || "";
+  const supabaseKey =
+    (process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY.trim()) ||
+    (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_ANON_KEY.trim()) ||
+    "sb_publishable_UZ1WSWZHyaij07xleBgSxw_YBn7-lAx";
+  let resendApiKey = (process.env.RESEND_API_KEY && process.env.RESEND_API_KEY.trim()) || "";
+  if ((resendApiKey.startsWith('"') && resendApiKey.endsWith('"')) || (resendApiKey.startsWith("'") && resendApiKey.endsWith("'"))) {
+    resendApiKey = resendApiKey.slice(1, -1).trim();
+  }
 
   try {
     const body = await parseRequestBody(req);
@@ -82,7 +129,7 @@ export default async function handler(req, res) {
 
     // Fetch current security state from Supabase reserved row 00000000-0000-0000-0000-000000000001
     let fetchRes = await fetch(
-      `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=recovery_email,otp_hash,otp_salt,otp_expiry,otp_attempts,otp_locked_until,memory_text`,
+      `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001&select=admin_password_hash,admin_password_salt,pass_code,recovery_email,otp_hash,otp_salt,otp_expiry,otp_attempts,otp_locked_until,memory_text`,
       {
         headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
       }
@@ -130,7 +177,10 @@ export default async function handler(req, res) {
     // ACTION 1: REQUEST / SEND OTP
     // ────────────────────────────────────────────────────────────────────────
     if (action === "request-otp") {
-      const targetEmail = (email || currentRecoveryEmail || "").trim().toLowerCase();
+      let targetEmail = (email || "").trim().toLowerCase();
+      if ((!targetEmail || targetEmail === "admin@example.com") && currentRecoveryEmail) {
+        targetEmail = currentRecoveryEmail.trim().toLowerCase();
+      }
       if (!targetEmail || !targetEmail.includes("@")) {
         return res.status(400).json({ error: "Valid email address is required" });
       }
@@ -166,48 +216,27 @@ export default async function handler(req, res) {
       payload.temp_otp_expiry = expiryTimestamp;
 
       // Update Supabase with new hashed OTP & expiry
-      let updateRes = await fetch(
-        `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
+      const updateResult = await updateSecurityRow(
+        supabaseUrl,
+        supabaseKey,
         {
-          method: "PATCH",
-          headers: {
-            apikey: supabaseKey,
-            Authorization: `Bearer ${supabaseKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            otp_hash: saltedHash,
-            otp_salt: otpSalt,
-            otp_expiry: expiryTimestamp,
-            otp_attempts: 0,
-            otp_locked_until: null,
-            memory_text: JSON.stringify(payload),
-            updated_at: now.toISOString()
-          })
+          otp_hash: saltedHash,
+          otp_salt: otpSalt,
+          otp_expiry: expiryTimestamp,
+          otp_attempts: 0,
+          otp_locked_until: null,
+          memory_text: JSON.stringify(payload),
+          updated_at: now.toISOString()
+        },
+        {
+          memory_text: JSON.stringify(payload),
+          updated_at: now.toISOString()
         }
       );
 
-      // Pre-migration fallback
-      if (!updateRes.ok) {
-        updateRes = await fetch(
-          `${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`,
-          {
-            method: "PATCH",
-            headers: {
-              apikey: supabaseKey,
-              Authorization: `Bearer ${supabaseKey}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              memory_text: JSON.stringify(payload),
-              updated_at: now.toISOString()
-            })
-          }
-        );
-      }
-
-      if (!updateRes.ok) {
-        return res.status(500).json({ error: "Failed to store OTP in security record" });
+      if (!updateResult.ok) {
+        console.error("❌ Failed to store OTP in security record:", updateResult.error);
+        return res.status(500).json({ error: "Failed to store OTP in security record: " + updateResult.error });
       }
 
       // Send Email via Resend API
@@ -429,10 +458,10 @@ export default async function handler(req, res) {
         delete payload.temp_otp_expiry;
         payload.updated_at = now.toISOString();
 
-        let updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
-          method: "PATCH",
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const updateResult = await updateSecurityRow(
+          supabaseUrl,
+          supabaseKey,
+          {
             recovery_email: cleanEmail,
             recovery_email_verified: true,
             otp_attempts: 0,
@@ -441,23 +470,15 @@ export default async function handler(req, res) {
             otp_expiry: null,
             memory_text: JSON.stringify(payload),
             updated_at: now.toISOString()
-          })
-        });
+          },
+          {
+            memory_text: JSON.stringify(payload),
+            updated_at: now.toISOString()
+          }
+        );
 
-        // Pre-migration fallback (memory_text only)
-        if (!updateRes.ok) {
-          updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
-            method: "PATCH",
-            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              memory_text: JSON.stringify(payload),
-              updated_at: now.toISOString()
-            })
-          });
-        }
-
-        if (!updateRes.ok) {
-          return res.status(500).json({ error: "Failed to persist verified recovery email" });
+        if (!updateResult.ok) {
+          return res.status(500).json({ error: "Failed to persist verified recovery email: " + updateResult.error });
         }
 
         return res.status(200).json({ success: true, message: "Recovery email verified and saved!" });
@@ -485,10 +506,10 @@ export default async function handler(req, res) {
         delete payload.temp_otp_expiry;
         payload.updated_at = now.toISOString();
 
-        let updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
-          method: "PATCH",
-          headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const updateResult = await updateSecurityRow(
+          supabaseUrl,
+          supabaseKey,
+          {
             admin_password_hash: passHash,
             admin_password_salt: passSalt,
             pass_code: cleanNewPass,
@@ -498,24 +519,16 @@ export default async function handler(req, res) {
             otp_expiry: null,
             memory_text: JSON.stringify(payload),
             updated_at: now.toISOString()
-          })
-        });
+          },
+          {
+            pass_code: cleanNewPass,
+            memory_text: JSON.stringify(payload),
+            updated_at: now.toISOString()
+          }
+        );
 
-        // Pre-migration fallback (memory_text only)
-        if (!updateRes.ok) {
-          updateRes = await fetch(`${supabaseUrl}/rest/v1/wishes?id=eq.00000000-0000-0000-0000-000000000001`, {
-            method: "PATCH",
-            headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              pass_code: cleanNewPass,
-              memory_text: JSON.stringify(payload),
-              updated_at: now.toISOString()
-            })
-          });
-        }
-
-        if (!updateRes.ok) {
-          return res.status(500).json({ error: "Failed to update password" });
+        if (!updateResult.ok) {
+          return res.status(500).json({ error: "Failed to update password: " + updateResult.error });
         }
 
         const token = createAdminSessionToken({

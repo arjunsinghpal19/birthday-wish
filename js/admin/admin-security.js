@@ -221,6 +221,11 @@
           });
           const data = await res.json();
           if (res.ok && (data.valid === true || data.valid === "true" || data.success === true)) {
+            if (data.token && typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem("admin_session_token", data.token);
+              sessionStorage.setItem("admin_authenticated", "true");
+              sessionStorage.setItem("admin_auth_timestamp", String(Date.now()));
+            }
             const otpBox = document.getElementById("sec-rec-email-otp-box");
             if (otpBox) otpBox.style.display = "none";
             const otpInp = document.getElementById("sec-rec-email-otp-input");
@@ -259,6 +264,11 @@
           });
           const data = await res.json();
           if (res.ok && (data.valid === true || data.valid === "true")) {
+            if (data.token && typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem("admin_session_token", data.token);
+              sessionStorage.setItem("admin_authenticated", "true");
+              sessionStorage.setItem("admin_auth_timestamp", String(Date.now()));
+            }
             const codeInp = document.getElementById("sec-rec-code-input");
             if (codeInp) codeInp.value = "";
             try {

@@ -58,6 +58,22 @@
       }
       return window._supabaseClientInstance;
     },
+    getAnonClient: function () {
+      if (!window._supabaseAnonClientInstance) {
+        const supabaseUrl = getEnvVariable("SUPABASE_URL");
+        const supabaseAnonKey = getEnvVariable("SUPABASE_ANON_KEY");
+        if (supabaseUrl && supabaseAnonKey && typeof window.supabase !== "undefined" && typeof window.supabase.createClient === "function") {
+          try {
+            window._supabaseAnonClientInstance = window.supabase.createClient(supabaseUrl, supabaseAnonKey, {
+              auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+            });
+          } catch (e) {
+            console.warn("⚠️ Error initializing anonymous Supabase client:", e);
+          }
+        }
+      }
+      return window._supabaseAnonClientInstance || this.getClient();
+    },
     isConfigured: function () {
       return !!this.getClient();
     }

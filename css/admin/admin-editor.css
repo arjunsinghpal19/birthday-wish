@@ -170,6 +170,7 @@ select.form-control option {
   margin-bottom: 8px;
   padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 8px;
 }
 
 .summary-card-header h4 {
@@ -178,6 +179,39 @@ select.form-control option {
   font-weight: 700;
   color: var(--gold, #ffd700);
   margin: 0;
+  white-space: normal;
+  line-height: 1.25;
+  min-width: 0;
+  flex: 1;
+}
+
+.summary-card-header .status-badge,
+.summary-card-header #adm-summary-mode,
+.summary-card-header #adm-sum-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.2 !important;
+  font-size: 0.72rem !important;
+  padding: 3px 9px !important;
+  border-radius: 20px !important;
+  font-weight: 700 !important;
+}
+
+.summary-card-header .status-badge.active,
+.summary-card-header #adm-summary-mode.active {
+  background: rgba(255, 215, 0, 0.15) !important;
+  color: var(--gold, #ffd700) !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+}
+
+.summary-card-header .status-badge.ready,
+.summary-card-header #adm-sum-status-badge {
+  background: rgba(46, 204, 113, 0.15) !important;
+  color: #2ecc71 !important;
+  border: 1px solid rgba(46, 204, 113, 0.35) !important;
 }
 
 .summary-details,
@@ -214,6 +248,55 @@ select.form-control option {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
   margin: 4px 0;
+}
+
+/* Datepicker Modal & Day Buttons */
+.mdp-day-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mdp-day-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 215, 0, 0.4);
+  color: #ffd700;
+}
+
+.mdp-day-btn.selected {
+  background: linear-gradient(135deg, #F7C94A, #e5b630) !important;
+  border: 1px solid #ffd700 !important;
+  color: #120D24 !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 15px rgba(247, 201, 74, 0.6) !important;
+  transform: scale(1.05);
+}
+
+.mdp-day-btn.today {
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(247, 201, 74, 0.6);
+  color: #ffd700;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.mdp-day-btn.prev-month,
+.mdp-day-btn.next-month {
+  background: none !important;
+  border: none !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
 }
 
 .summary-actions {

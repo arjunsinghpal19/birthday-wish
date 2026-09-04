@@ -2819,49 +2819,994 @@ ADMIN STUDIO ROADMAP:
     - Line Chart Visual: Restored the exact Phase 31J-1 `renderTrendChart` implementation (`svgWidth = 600`, `svgHeight = 200`, `height: 220px`, `padLeft = 40`, `padRight = 20`, `padTop = 20`, `padBottom = 35`, straight line segments `M ... L ...`, `linearGradient id="dashTrendGrad"` with `rgba(168, 85, 247, 0.45)` to `0.0`, `stroke="var(--gold, #ffd700)"`, `r="4.5"`, dashed gridlines, and bottom summary footer with `Total created in period:` and `Peak daily volume:`).
     - Branding Update: Changed visible sidebar Admin branding from `Wish Studio v2.5` to `Wish Studio v2.0`.
   - Verification: 10/10 dedicated Phase 31K tests passed (100% Green) and 47/47 master regression suites passed (100% Green).
-- 🔒 ADMIN DASHBOARD STABLE RELEASE (v2.0) [NEXT]
-
-FUTURE BUSINESS & CUSTOMER PLATFORM (PHASE 32+):
-- Phase 32: Customer Dashboard (My Wishes, Customer Wish Studio, Share, Account, Profile)
-- Phase 33: Customer Acquisition Funnel & Plans (Free ₹0 Tier vs Premium Paid Tier)
-- Phase 34: Business Analytics & Monetization (Conversion Funnel, Wish Views, Engagement Analytics, Payment Gateway Integration [Razorpay/Stripe], Coupons & Discounts, Billing & Invoices)
+- 🔒 ADMIN DASHBOARD STABLE RELEASE (v2.0) [COMPLETED, COMMITTED, TAGGED, PUSHED, DEPLOYED]
+  - Commit: `a2aa5d5` ("stable: 2.0 admin dashboard finalization")
+  - Tag: `v2.0`
+  - Remote: `origin/main` & `origin/v2.0`
+  - Production Deployment: `https://birthday-wish-arjun.vercel.app` (Live)
 
 ============================================================
-69. CURRENT STATUS SUMMARY
+70. PHASE 32 — CUSTOMER PLATFORM PREPARATION & AUDIT
+STATUS: ARCHITECTURE AUDIT COMPLETE • ZERO IMPLEMENTATION
 ============================================================
-- COMMITTED = NO (Awaiting user manual verification as instructed)
-- PUSHED = NO
-- DEPLOYED = NO
-- Automated Regression Baseline: 47/47 Suites PASS (100% Green)
-- Dedicated Phase 31K Final UI Polish & Content Mix Test: 10/10 PASS (100% Green)
-- Dedicated Phase 31J Defect Fixes Test: 9/9 PASS (100% Green)
-- Dedicated Phase 31J-1 Responsive UAT & Customer Test: 12/12 PASS (100% Green)
-- Dedicated Phase 31J Responsive Test: 14/14 PASS (100% Green)
-- Dedicated Phase 31I Admin Share Parity Test: 18/18 PASS (100% Green)
-- Dedicated Phase 31G Backup + Logs + Settings Test: 18/18 PASS (100% Green)
-- Dedicated Phase 31H-6 Destructive Hardening Test: 8/8 PASS (100% Green, 0 DB Writes)
-- Dedicated Phase 31H-5 XSS Test: 11/11 PASS (100% Green, 0 DB Writes)
-- Dedicated Phase 31H-3 Auth Test: 12/12 PASS (100% Green)
-- Dedicated WebAuthn Isolated Roundtrip: 8/8 PASS (100% Green, 0 DB Writes)
-- JS Syntax: 130/130 files valid (node --check)
-- Secret Leaks: 0 (No plaintext passwords, secret answers, or recovery codes persisted in permanent storage/logs)
-- Single Canonical Recovery Authority: Fully enforced via Supabase PBKDF2 hash across Admin Dashboard & Quick Editor
-- Modularity & File Size Invariant: All JS modules strictly < 35 KB:
-  - `api/auth.js`: 32.8 KB (33,654 bytes)
-  - `api/send-otp.js`: 24.28 KB (24,858 bytes)
-  - `api/admin-delete-wish.js`: 10.74 KB (10,996 bytes)
-  - `api/admin-delete-media.js`: 8.75 KB (8,960 bytes)
-  - `js/admin/admin-backup.js`: 10.94 KB (11,200 bytes)
-  - `js/admin/admin-logs.js`: 18.02 KB (18,453 bytes)
-  - `js/admin/admin-settings.js`: 11.65 KB (11,925 bytes)
-  - `js/admin/admin-security.js`: 34.62 KB (35,450 bytes)
-  - `js/admin/admin-dashboard-analytics.js`: 34.66 KB (35,491 bytes)
-  - `js/admin/admin-customers.js`: 0.70 KB (715 bytes)
-  - `js/database.js`: 34.76 KB (35,597 bytes)
-  - `js/modules/admin-security.js`: 34.94 KB (35,782 bytes)
-  - `js/admin/admin-passkey.js`: 11.33 KB (11,600 bytes)
-  - `css/admin/admin-security.css`: 6.32 KB (6,470 bytes)
-  - `css/admin/admin-dashboard.css`: 5.62 KB (5,750 bytes)
-  - `css/admin/admin-settings-suite.css`: 5.48 KB (5,612 bytes)
-  - `css/admin/admin-responsive.css`: 9.25 KB (9,470 bytes)
-- State: Phase 31K exact Phase 31J-1 trend chart visual restoration complete. Ready for manual UAT verification. (DO NOT COMMIT OR PUSH).
+
+1. STABLE 2.0 BASELINE VERIFICATION:
+   - Admin Dashboard Stable Release v2.0 completed, committed (`a2aa5d5`), tagged (`v2.0`), pushed to GitHub, and deployed to Vercel production (`https://birthday-wish-arjun.vercel.app`).
+   - 47/47 master regression suites PASS (100% Green).
+   - 130/130 JavaScript files syntax valid.
+   - All JS modules strictly comply with the < 35 KB modularity invariant.
+
+2. CUSTOMER OWNERSHIP AUDIT:
+   - Finding: `sender_name` is an arbitrary display text field in `wishes` table (e.g. "Rahul", "Didi", "Bestie") and NEVER represents a customer account.
+   - Current schema has NO `customer_id`, `owner_id`, `user_id`, or link to Supabase Auth `auth.users`.
+   - All wishes are currently unowned/public records created with anon key.
+   - Future requirement: Introduce real `customers` / `profiles` table and associate wishes via `owner_id` (foreign key) while preserving `sender_name` as the greeting display name.
+
+3. CUSTOMER AUTHENTICATION BOUNDARY:
+   - Finding: Existing `api/auth.js` and `admin_security_config` table are strictly single-tenant Master Admin authorities (PBKDF2 SHA-256 with 600,000 iterations, WebAuthn FIDO2, single-use recovery codes, and signed admin session tokens).
+   - Customer authentication MUST be strictly separated into a multi-tenant auth architecture (e.g. Supabase Auth `auth.users` with JWTs or dedicated customer session tokens with Row-Level Security).
+   - Admin security credentials and customer credentials must NEVER share tables, tokens, or endpoints.
+
+4. ADMIN CUSTOMER DATA ARCHITECTURE:
+   - Future Admin Customers tab will display REAL registered customer accounts from the customer identity system, NOT aggregated `sender_name` strings.
+   - Profile metrics to calculate: Customer ID, Email/Identity, Registration Date, Account Status, Active Wishes Count, Storage Usage (Photos/Videos/Audio), Plan Tier, and Activity Log.
+
+5. CUSTOMER MEDIA & UNUSED CLEANUP ARCHITECTURE:
+   - Existing Digital Asset Manager (`js/admin/admin-media.js`) provides global storage scanning and orphan asset detection via `MediaReferenceEngine`.
+   - Current files live in a flat bucket without customer partitioning.
+   - Future customer media architecture: Scope storage paths to customer IDs (`customer/{customer_id}/...`), scope orphan scanning to customer's own wishes, and implement automated customer quota management without risk to cross-customer media.
+
+6. EVENT TYPE ARCHITECTURE AUDIT:
+   - Current Media Library in `admin.html` defines 9 Event Types in `#dam-event-filter`: Birthday, Anniversary, Wedding, Engagement, Proposal, Baby Shower, Farewell, Graduation, Custom.
+   - Current `wishes` table has no `event_type` column (implicitly birthday).
+   - Future reuse: `event_type` can safely be added to wish schema (defaulting to `'birthday'`), enabling Customer Wish Studio and DAM to support diverse celebration occasions.
+
+7. ADMIN WISH STUDIO VS QUICK EDITOR (REUSE MAP):
+   - Quick Editor (`index.html`, `js/modules/editor/*`): Internal personal tool, isolated and permanently preserved.
+   - Admin Wish Studio (`admin.html`, `js/admin/admin-wish-editor.js`, `js/admin/admin-themes.js`): Reusable core for Customer Wish Studio:
+     - Reusable: Form schema & field definitions, timestamp/start-time encoding (`#bw-start=`), `MediaService` metadata handling, Theme preview & CSS variable engine, save/update payload preparation, UUID generation.
+     - Admin-Only (Excluded from Customers): Security bypass tools, global wish listing, raw DB administration, admin audit logging.
+
+8. SHAREMODULE REUSE:
+   - Canonical `ShareModule` in `js/share.js` is 100% unified and reusable:
+     - `buildShareUrl()` (UUID creation & persistence)
+     - `parseRoute()` (Query parameter resolution & Base64 fallback)
+     - `buildWhatsAppMessage()` & `buildWhatsAppUrl()` (Locked Hindi/English contract)
+     - `buildNativeSharePayload()` (Locked Native Share structure)
+   - Future Customer Dashboard will consume `ShareModule` directly without duplication.
+
+9. PLANS & USAGE ARCHITECTURE:
+   - Plans structure is currently a placeholder (`Phase 32 / Coming Soon`).
+   - Future architecture: Free Tier (₹0, limited wishes, standard themes, standard storage) vs Premium Paid Tier (unlimited wishes, high-res video, custom audio, luxury themes, priority CDN).
+   - No billing/payment code to be written until Phase 34.
+
+10. PUBLIC WISH ➔ CUSTOMER CONVERSION FLOW:
+    - Safe insertion point identified: Non-intrusive subtle luxury CTA below the `#share-scene` and before/in `#final-scene` (e.g. "✨ Create a Special Birthday Surprise for Free 🎁").
+    - Guaranteed to never disrupt the recipient's celebration flow.
+
+11. FILE STRUCTURE & MODULARITY AUDIT:
+    - All 130 JS files across `js/` and `api/` have clear domain separation (Admin, API, Public, Shared Modules).
+    - All modules strictly respect the < 35 KB size ceiling.
+
+12. SCRATCH FOLDER AUDIT:
+    - 76 total files in `scratch/`:
+      - 47 files: Active master regression test suites in `scratch/run_all_tests.js`.
+      - 1 file: Master test runner (`scratch/run_all_tests.js`).
+      - 1 file: DOM and syntax validator (`scratch/validate_syntax_and_dom.js`).
+      - 1 file: Phase 31K dedicated test (`scratch/test_phase31k_content_mix_and_customers.js`).
+      - 26 files: Specialized diagnostic tools, CBOR/WebAuthn isolated decoders, and historical regression test suites.
+    - Zero files deleted during audit.
+
+============================================================
+71. PROPOSED CUSTOMER PLATFORM ROADMAP (PHASE 32+)
+FUTURE BUSINESS & CUSTOMER PLATFORM (PHASE 32+)
+============================================================
+- Phase 32A — Customer Identity & Ownership Architecture [COMPLETE • AUDIT & DESIGN APPROVED]
+- Phase 32B-1 — Customer Database & RLS Foundation [IMPLEMENTATION COMPLETE • AWAITING MANUAL VERIFICATION]
+- Phase 32B-2 — Customer Client Auth Module (js/customer/customer-auth.js) [PLANNED / NEXT]
+- Phase 32C — Customer Dashboard Shell (Navigation, Overview, Account Profile) [PLANNED]
+- Phase 32D — My Wishes (Customer wish listing, view, edit, duplicate, delete, share) [PLANNED]
+- Phase 32E — Customer Wish Studio (Customer-safe wish creator derived from Wish Studio core) [PLANNED]
+- Phase 32F — Customer Media (Customer-partitioned storage, uploads, personal orphan scanning) [PLANNED]
+- Phase 32G — Share & Public Conversion (Customer wish sharing, non-intrusive public CTA) [PLANNED]
+- Phase 32H — Plans & Usage (Usage quotas, tier feature gating) [PLANNED]
+- Phase 32I — Admin Customer Management (Admin view of real registered customers & metrics) [PLANNED]
+- Phase 32J — Customer Security & Row-Level Security (Strict RLS policies per customer) [PLANNED]
+- Phase 32K — Customer Responsive & UX Polish (Mobile, tablet, desktop responsiveness) [PLANNED]
+- Phase 32L — Full Customer Platform QA & Regression Testing (Master suite expansion) [PLANNED]
+- Phase 32M — Customer Platform Stable Release (v3.0) [PLANNED]
+
+============================================================
+73. PHASE 32B-1 — CUSTOMER DATABASE & REVISED RLS FOUNDATION
+STATUS: ARCHITECTURE APPROVED • MIGRATION READY TO APPLY • LIVE SQL NOT YET EXECUTED
+============================================================
+
+1. LIVE RLS POLICY AUDIT FINDINGS:
+   - Live inspection of `public.wishes` revealed 4 active permissive policies:
+     1. "Allow public insert access to wishes" (PERMISSIVE, cmd: INSERT, with_check: true)
+     2. "Allow public read access to wishes" (PERMISSIVE, cmd: SELECT, qual: true)
+     3. "Allow system config update only" (PERMISSIVE, cmd: UPDATE, qual: id = system UUID)
+     4. "Allow update for public wishes" (PERMISSIVE, cmd: UPDATE, qual: id <> system UUID)
+   - The PostgreSQL RLS Permissive `OR` Trap: In PostgreSQL, multiple PERMISSIVE policies on the same command combine with logical `OR`. Simply adding a new customer policy while leaving broad policies active (`with_check: true` or `id <> system UUID`) destroys tenant isolation.
+
+2. REVISED RLS MIGRATION RECONCILIATION:
+   - The migration explicitly DROPS the 4 legacy/broad permissive policies and replaces them with airtight, tenant-aware atomic policies:
+     - `wishes_select_policy`: `USING (true)` (Preserves public unlisted celebration card capability by UUID).
+     - `wishes_insert_policy`: `WITH CHECK ((auth.uid() IS NOT NULL AND owner_id = auth.uid()) OR (auth.uid() IS NULL AND owner_id IS NULL))` (Enforces strict customer ownership binding while preserving anonymous creation).
+     - `wishes_update_policy`: `USING ((auth.uid() IS NOT NULL AND owner_id = auth.uid()) OR (auth.uid() IS NULL AND owner_id IS NULL AND id <> '00000000-0000-0000-0000-000000000001'::uuid))` (Guarantees customer update isolation and protects system config row).
+     - `wishes_delete_policy`: `USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())` (Guarantees customer delete isolation; Admin service-role deletion unaffected).
+
+3. CANONICAL CUSTOMER IDENTITY MODEL (`public.customers`):
+   - Table schema: `id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE`.
+   - Invariant: `customers.id` strictly equals `auth.uid()`.
+   - Nullable foreign key: `wishes.owner_id UUID NULL REFERENCES public.customers(id) ON DELETE SET NULL`.
+   - Index: `CREATE INDEX idx_wishes_owner_id ON public.wishes(owner_id)`.
+   - Trigger: `handle_new_customer()` on `auth.users` (`SECURITY DEFINER`, `SET search_path = public, pg_temp`, `ON CONFLICT DO UPDATE`).
+
+4. PRESERVATION GUARANTEES:
+   - 0 existing wish rows mutated (all retain `owner_id = NULL`).
+   - `sender_name` is strictly a greeting presentation text string on birthday cards.
+   - Public wish viewing by UUID (`/?w=UUID`) and legacy Base64 links require zero login.
+   - Anonymous Quick Editor creation continues with `owner_id = NULL`.
+   - Master Admin PBKDF2/WebAuthn and service-role API deletions operate 100% unimpeded.
+
+5. ARTIFACTS & VALIDATION:
+   - Final Migration SQL: `supabase/migrations/20260827_phase32b1_customer_foundation.sql`.
+   - Automated Test Suite: `scratch/test_phase32b_database_foundation.js` (11/11 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (49/49 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (133/133 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+74. PHASE 32B-1 — PUBLIC WISH RPC DATA CONTRACT AUDIT
+STATUS: AUDIT COMPLETE • ZERO IMPLEMENTATION • PRESERVATION-FIRST
+============================================================
+
+1. PUBLIC DATA CONTRACT AUDIT FINDINGS:
+   - Traced complete public celebration rendering flow: `/?w={UUID}` -> `ShareModule.parseRoute()` -> `DatabaseModule.getWishRecordById()` -> `CONFIG` -> `renderers.js`.
+   - Identified the 21 columns required exclusively for public birthday celebration rendering (Recipient name, Sender greeting, Passcode, Birth date, Letter lines, Memory text, Reasons, Wishes, Gallery JSON, Timeline JSON, Gift JSON, Music URL, Video URL, Cake flavor, Letter font, Letter theme, OG Image URL, Event type, Status, Created at, ID).
+   - Classified all 37 `public.wishes` columns:
+     - Public Celebration Data: 16 columns (Safe/required)
+     - Public Media Data: 5 columns (Safe/required)
+     - Customer-Ownership Data: `owner_id` (Private; internal database foreign key; excluded from RPC)
+     - Admin / Security Data: 14 columns (`admin_password_hash` ... `otp_locked_until` on system row `00000000-0000-0000-0000-000000000001`; STRICTLY EXCLUDED from RPC)
+     - Internal Data: `updated_at` (Excluded from RPC)
+
+2. PROPOSED PUBLIC RPC DATA CONTRACT (`get_public_wish`):
+   - Signature: `get_public_wish(target_id UUID) RETURNS TABLE(...)`.
+   - Explicit column projection: Excludes `SELECT *`, excludes `owner_id`, excludes all admin security hashes.
+   - Strict validation: Filters `AND id <> '00000000-0000-0000-0000-000000000001'::uuid`.
+   - Limits return to at most 1 row (`LIMIT 1`).
+   - Hardened with `SECURITY DEFINER` and `SET search_path = public, pg_temp`.
+   - Revokes public permissions, grants `EXECUTE` explicitly to `anon, authenticated, service_role`.
+
+3. ARCHITECTURAL SEPARATION OF READ PATHS:
+   - Public Celebration Reads (`/?w=UUID`): Uses `get_public_wish(target_id)` RPC.
+   - Customer Dashboard Reads (`customer.html`): Uses direct table `select('*')` protected by `USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())` RLS.
+   - Master Admin Reads (`admin.html`): Uses serverless endpoints with `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS).
+   - Quick Editor Reads: Uses `get_public_wish(target_id)` RPC.
+
+============================================================
+75. PHASE 32B-1 — ADMIN READ PATH PRESERVATION AUDIT
+STATUS: AUDIT COMPLETE • ZERO IMPLEMENTATION • PRESERVATION-FIRST
+============================================================
+
+1. CRITICAL DISCOVERY ON `fetchWishes()`:
+   - In `js/admin/admin-dashboard.js#L146-L175`, `fetchWishes()` executes client-side direct PostgREST table SELECT using `window.SupabaseModule.getClient()`.
+   - `window.SupabaseModule.getClient()` is initialized in `js/supabase.js` using `SUPABASE_ANON_KEY` (Role: `anon`).
+   - Consequence: Admin Dashboard currently relies on `wishes_select_policy USING (true)`.
+   - If `wishes_select_policy` were changed to owner-only (`USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())`) without modifying Admin code, `auth.uid()` would be NULL for the browser anon client, causing Admin Dashboard to display 0 wishes!
+
+2. ADMIN PRIVILEGED SERVICE-ROLE ENDPOINTS:
+   - Serverless deletion endpoints (`api/admin-delete-wish.js`, `api/admin-delete-media.js`) strictly execute with `SUPABASE_SERVICE_ROLE_KEY`.
+   - Service-role requests bypass PostgreSQL RLS completely and will NEVER be blocked by customer RLS.
+
+3. SAFEST SEQUENTIAL TRANSITION ORDER:
+   - Step 1 (Phase 32B-1): Keep `wishes_select_policy USING (true)` active. Deploy `public.customers`, `owner_id` FK, signup trigger, and `get_public_wish(target_id)` RPC.
+   - Step 2 (Phase 32B-2 / Phase 32C): Transition public page `getWishRecordById()` to `get_public_wish()` RPC. Transition Admin Dashboard `fetchWishes()` to a privileged Admin API / service-role endpoint.
+   - Step 3 (Phase 32D): Once browser reads are migrated, tighten `wishes_select_policy` to owner-only (`USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())`).
+   - Zero downtime, zero breakage, 100% tenant isolation achieved safely.
+
+============================================================
+76. PHASE 32B-1 — LIVE RPC & FOUNDATION STATE AUDIT
+STATUS: READ-ONLY AUDIT COMPLETE • ZERO LIVE MUTATION
+============================================================
+
+1. LIVE DATABASE FOUNDATION STATUS:
+   - `public.customers` table: EXISTS (Verified via PostgREST 401 RLS isolation).
+   - `public.wishes.owner_id`: EXISTS (Live column 38 verified).
+   - `total_wishes`: 18 rows.
+   - `wishes_with_owner`: 0.
+   - `unowned_legacy_wishes`: 18.
+   - `system_config_owner_id`: NULL.
+   - `wishes_select_policy`: ACTIVE & PERMISSIVE (`qual = true`).
+
+2. LIVE PUBLIC RPC STATUS:
+   - `public.get_public_wish(UUID)`: NOT YET DEPLOYED (Returned 404 PGRST202 in live schema cache).
+   - Next Action: **OPTION B** — Foundation exists; public RPC SQL is staged and ready for manual execution.
+
+============================================================
+77. PHASE 32B-2 — CUSTOMER CLIENT AUTH MODULE
+STATUS: IMPLEMENTATION COMPLETE • ZERO UI • 100% GREEN
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Created standalone controller `js/customer/customer-auth.js` (< 35 KB).
+   - Exported clean, isolated global API: `CustomerAuth`:
+     - `signUp(email, password, fullName)`: Validates email format, enforces password >= 6 chars, passes name in `raw_user_meta_data`.
+     - `signIn(email, password)`: Authenticates customer, stores GoTrue JWT in localStorage (`sb-<ref>-auth-token`).
+     - `signOut()`: Terminates customer session, resets in-memory cache, strictly preserves Admin sessionStorage.
+     - `getSession()`: Returns active Supabase Auth session.
+     - `getCurrentUser()`: Returns authenticated user object.
+     - `getCustomerProfile(forceRefresh)`: Queries `public.customers` row strictly using authenticated `auth.uid() = id`.
+     - `onAuthStateChange(callback)`: Registers auth state change listener with subscription unsubscribe handle.
+     - `validatePassword(password)` / `isValidEmail(email)`: Input validation helpers.
+
+2. COMPLETE NAMESPACE ISOLATION & PRESERVATION:
+   - Admin Security FROZEN: `api/auth.js`, PBKDF2, WebAuthn Passkeys, recovery codes, HMAC tokens, `sessionStorage` (`admin_*`).
+   - Wish `pass_code` FROZEN: 4-digit PIN for recipient celebration unlocking.
+   - Database/RLS FROZEN: `public.wishes` (`wishes_select_policy USING (true)` preserved) and `public.customers`.
+   - Quick Editor FROZEN: 12-section structure and anonymous creation intact.
+   - Storage FROZEN: `wish-media` public bucket intact.
+
+3. ARTIFACTS & VALIDATION:
+   - New Module: `js/customer/customer-auth.js` (Created).
+   - Dedicated Test Suite: `scratch/test_phase32b2_customer_auth.js` (10/10 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (50/50 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (139/139 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+78. PHASE 32C-1 — ADMIN PRIVILEGED WISH READ API
+STATUS: IMPLEMENTATION COMPLETE • BACKEND ONLY • 100% GREEN
+============================================================
+
+1. IMPLEMENTED ARTIFACTS:
+   - Created serverless endpoint: `api/admin-wishes.js` (5.5 KB, strictly < 35 KB).
+   - Reuses canonical Admin HMAC session validation via `verifyAdminSessionToken(token, secRow)` from `./session.js`.
+   - Uses `process.env.SUPABASE_SERVICE_ROLE_KEY` server-side only; zero client key exposure.
+
+2. SUPPORTED CONTRACTS:
+   - `GET /api/admin-wishes`: Bulk list of all operational wishes (excluding system config `00000000-0000-0000-0000-000000000001`), ordered by `created_at` DESC. Returns `{ success: true, data: wishes, total }`.
+   - `GET /api/admin-wishes?id={UUID}`: Single wish lookup for Admin Quick View and Admin Wish Studio. Returns `{ success: true, data: wish }` or 404.
+   - Protected system config row `00000000-0000-0000-0000-000000000001` is strictly blocked with 403 Forbidden.
+
+3. PRESERVATION & ISOLATION INVARIANTS:
+   - Zero frontend changes: `js/admin/admin-dashboard.js`, `js/admin/admin-wishes.js`, `js/admin/admin-wish-editor.js`, `js/database.js` remain 100% untouched.
+   - `wishes_select_policy USING (true)` remains active in live DB.
+   - Master Admin retains 100% global authority over all wishes (legacy unowned and customer-owned).
+
+4. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c1_admin_wishes_api.js` (10/10 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (51/51 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (141/141 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+79. PHASE 32C-2 — PUBLIC WISH READ PATH MODERNIZATION
+STATUS: IMPLEMENTATION COMPLETE • PUBLIC RPC CONNECTED • 100% GREEN
+============================================================
+
+1. IMPLEMENTED MODERNIZATION:
+   - Modernized `DatabaseModule.getWishRecordById(uuid)` in `js/database.js`:
+     - Calls public RPC `client.rpc('get_public_wish', { target_id: cleanId })` as primary path.
+     - Gracefully falls back to direct select during transitional mocks.
+     - Formats returned 21-column celebration dataset into application config format (`n, f, c, y, m, d, mem, l, r, w, g, t, gft, msc, v, cf, lf, lt`).
+     - Decodes `#bw-start` media start timestamps.
+     - Strictly blocks protected system config row `00000000-0000-0000-0000-000000000001` before querying.
+
+2. PRESERVED CAPABILITIES:
+   - Legacy Base64 links (`decodeWishData`, `payload.c`) remain 100% functional.
+   - Quick Editor 12-section hierarchy and anonymous editing remain intact.
+   - Recipient 4-digit PIN unlock keypad on public celebration screen remains functional.
+   - Master Admin dashboard, wishes table, and wish editor remain 100% untouched.
+   - Customer authentication (`js/customer/customer-auth.js`) remains isolated.
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c2_public_rpc_read.js` (6/6 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (52/52 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (142/142 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+80. PHASE 32C-3 — ADMIN PRIVILEGED READ PATH MIGRATION
+STATUS: IMPLEMENTATION COMPLETE • PRIVILEGED API INTEGRATED • 100% GREEN
+============================================================
+
+1. MIGRATED ADMIN READ OPERATIONS:
+   - `AdminDashboard.fetchWishes()` (`js/admin/admin-dashboard.js`):
+     - Migrated from browser table SELECT `client.from('wishes').select('*')` to `GET /api/admin-wishes`.
+     - Passes HMAC Admin Session Token in Authorization Bearer and x-admin-token headers.
+     - Preserves all KPI, Content Mix, and Chart analytics computations without modification.
+   - `AdminWishes.openQuickView()` (`js/admin/admin-wishes.js`):
+     - Migrated fresh DB record lookup from browser table SELECT to `GET /api/admin-wishes?id={UUID}`.
+     - Preserves all Quick View modal rendering and live state updates.
+   - `AdminWishEditor.loadWishIntoEditor()` (`js/admin/admin-wish-editor.js`):
+     - Migrated edit-mode wish loading to `GET /api/admin-wishes?id={UUID}`.
+     - Preserves all 12 editor sections, normalization pipeline, and preview flows.
+
+2. SECURITY & PRESERVATION INVARIANTS:
+   - Master Admin retains 100% global visibility across unowned legacy wishes (`owner_id = NULL`) and customer wishes (`owner_id = UUID`).
+   - `SUPABASE_SERVICE_ROLE_KEY` is used exclusively server-side in `api/admin-wishes.js`.
+   - Customer GoTrue JWTs cannot authorize `/api/admin-wishes` (strictly requires HMAC Admin Session Token).
+   - Protected system configuration row `00000000-0000-0000-0000-000000000001` remains strictly blocked.
+   - Canonical chart ("Wishes Created Over Time"), Quick Editor, Public Wish RPC, Customer Auth, and Supabase Storage remain 100% untouched.
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c3_admin_read_path.js` (9/9 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (53/53 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (143/143 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+81. PHASE 32D-0 — FINAL WISHES SELECT RLS LOCKDOWN PRE-FLIGHT AUDIT
+STATUS: AUDIT COMPLETE • READ-ONLY • ZERO MUTATION
+============================================================
+
+1. COMPLETE DIRECT SELECT INVENTORY & CLASSIFICATION:
+   - A. Public Read: `/?w=UUID` -> `ShareModule.parseRoute()` -> `DatabaseModule.getWishRecordById()` -> calls `get_public_wish()` RPC (SECURITY DEFINER). Zero table SELECT dependency.
+   - B. Admin Read: `AdminDashboard.fetchWishes()`, `AdminWishes.openQuickView()`, and `AdminWishEditor.loadWishIntoEditor()` all query `/api/admin-wishes` via `SUPABASE_SERVICE_ROLE_KEY`. Zero table SELECT dependency.
+   - C. Customer Read: No production Customer wish SELECT dependency currently exists (Customer Dashboard is upcoming).
+   - D. Quick Editor Read: Uses `getWishRecordById()`, which queries `get_public_wish()` RPC (SECURITY DEFINER).
+   - E. Write-Only / Insert: `DatabaseModule.saveWishRecord()` executes `client.from('wishes').insert([record]).select('id')`. (Audit note: With customer-only SELECT RLS, anon inserts chaining `.select('id')` must be ensured to return UUID either by client-side UUID generation or server-side mapping).
+   - F. Update: `DatabaseModule.updateWishRecord()` executes `client.from('wishes').update(record).eq('id', uuid)` under `wishes_update_policy`.
+   - G. Delete: `DatabaseModule.deleteWishRecord()` / `deleteWishesBulk()` execute via `/api/admin-delete-wish` (Service Role).
+   - H. Test / Mock Only: Diagnostic and historical mock runners in `scratch/`.
+   - I. Dead / Unused Code: None.
+
+2. LIVE DATABASE DATA COUNTS (VERIFIED READ-ONLY):
+   - Total rows in `public.wishes`: 16
+   - System configuration row (`00000000-0000-0000-0000-000000000001`): 1 (Protected)
+   - Operational wishes: 15
+   - Unowned wishes (`owner_id = NULL`): 15
+   - Customer-owned wishes (`owner_id != NULL`): 0
+
+3. LIVE RPC SECURITY DEFINITION:
+   - Function: `public.get_public_wish(target_id UUID)`
+   - Security: `SECURITY DEFINER` with `SET search_path = public, pg_temp`
+   - Projection: 21 celebration presentation columns
+   - Excluded: `owner_id`, `admin_password_hash`, `admin_password_salt`, `otp_hash`, `backup_code_hash`, system config row.
+
+4. FINAL SAFETY VERDICT:
+   - **SAFE WITH REQUIRED PREPARATION**:
+     - Public celebration links and Master Admin reads are 100% decoupled from `wishes_select_policy`.
+     - For anonymous Quick Editor creation (`saveWishRecord`), ensuring client-side UUID assignment (`crypto.randomUUID()`) avoids PostgREST `INSERT ... RETURNING` RLS evaluation failure under customer-only SELECT policy.
+
+============================================================
+82. PHASE 32D-1A — QUICK EDITOR INSERT RETURNING DECOUPLING
+STATUS: IMPLEMENTATION COMPLETE • CLIENT-SIDE UUID INTEGRATED • 100% GREEN
+============================================================
+
+1. IMPLEMENTED DECOUPLING:
+   - Updated `DatabaseModule.saveWishRecord(configObj)` in `js/database.js`:
+     - Added `generateWishUuid()` using `crypto.randomUUID()` with standard RFC4122 v4 fallback.
+     - Pre-assigns `record.id = targetUuid` before executing `client.from('wishes').insert([record])`.
+     - Preserves valid pre-existing `configObj._activeWishUuid` or `configObj.id` when present (preventing UUID churn on existing records).
+     - Removed `.select("id")` and `.single()` from the insert call.
+     - Returns `targetUuid` directly upon successful insert (zero error).
+     - Guarantees that anonymous Quick Editor wish creation does not depend on a post-insert `RETURNING` table SELECT.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy USING (true)` remains live).
+   - Public celebration links (`/?w=UUID` via `get_public_wish()` RPC) and Base64 links remain 100% functional.
+   - Master Admin dashboard, wishes table, quick view, and studio (all via `/api/admin-wishes` Service Role) remain 100% intact.
+   - Quick Editor 12-section hierarchy, anonymous creation, and editor security remain 100% intact.
+   - All modules strictly respect the < 35 KB file size limit (`js/database.js` = 34.9 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32d1a_insert_uuid.js` (6/6 tests passed).
+   - Master Regression Suite: `scratch/run_all_tests.js` (54/54 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (145/145 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+83. PHASE 32D-1B — POST-LOCKDOWN VERIFICATION
+STATUS: VERIFICATION COMPLETE • LIVE RLS LOCKDOWN ACTIVE • 100% GREEN
+============================================================
+
+1. LIVE RLS POLICY POST-LOCKDOWN VERIFICATION:
+   - `wishes_select_policy`: Verified active as `USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())`.
+   - Direct anonymous table SELECT (`/rest/v1/wishes?select=...`) returns `0` rows (100% isolated, zero public leaks).
+   - `wishes_insert_policy`, `wishes_update_policy`, and `wishes_delete_policy` remain 100% intact.
+
+2. EXISTING DATABASE DATA & PERSISTENCE:
+   - Total rows in `public.wishes`: 16 rows.
+   - System configuration row (`00000000-0000-0000-0000-000000000001`): 1 row (Protected).
+   - Operational wishes: 15 rows.
+   - Unowned legacy wishes (`owner_id = NULL`): 15 rows.
+   - Customer-owned wishes (`owner_id != NULL`): 0 rows.
+   - Zero existing wish data rows modified or corrupted.
+
+3. DUAL ISOLATED READ PATHS:
+   - Public Celebration Reads: Decoupled $\rightarrow$ `public.get_public_wish(target_id)` RPC (`SECURITY DEFINER`). Verified operational via anon key (HTTP 200, 21 columns, zero secret leakage).
+   - Master Admin Reads: Decoupled $\rightarrow$ `/api/admin-wishes` (`SUPABASE_SERVICE_ROLE_KEY`). Verified global visibility over all 15 operational wishes and full single-wish inspection.
+   - Quick Editor Creation: Decoupled $\rightarrow$ Client-side UUID pre-generation in `saveWishRecord()`.
+
+4. VALIDATION & TESTS:
+   - Live DB Verification: `scratch/read_only_post_lockdown_verify.js` (All live assertions PASSED).
+   - Master Regression Suite: `scratch/run_all_tests.js` (54/54 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (146/146 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+84. PHASE 32D-1B-A — MINIMAL ADMIN AUTH RLS COMPATIBILITY FIX
+STATUS: IMPLEMENTATION COMPLETE • SERVICE ROLE RESOLUTION FIXED • 100% GREEN
+============================================================
+
+1. ROOT CAUSE & MINIMAL FIX:
+   - Root Cause: Following the Phase 32D SELECT RLS lockdown, `api/auth.js` queried system security row `00000000-0000-0000-0000-000000000001` via `SUPABASE_ANON_KEY`. Under `wishes_select_policy USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())`, PostgREST returned `[]` to anon queries, causing password and passkey verification to evaluate against `undefined`.
+   - Exact Fix: Updated `api/auth.js` line 234 to prioritize `process.env.SUPABASE_SERVICE_ROLE_KEY`, falling back to `process.env.SUPABASE_ANON_KEY` and existing fallback string.
+   - Result: Master Admin password hashing (PBKDF2 600,000 iterations), WebAuthn passkeys, recovery codes, and OTP flows are fully restored and operate independently of table SELECT RLS.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy` remains strictly locked).
+   - Zero password resets, zero hash recalculations, zero passkey deletions.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero client/browser exposure).
+   - Quick Editor, Public RPC (`get_public_wish`), and Customer Auth remain 100% untouched.
+   - All JS files strictly respect the < 35 KB size ceiling (`api/auth.js` = 32.9 KB).
+
+3. VALIDATION & TESTS:
+   - Master Regression Suite: `scratch/run_all_tests.js` (54/54 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (147/147 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+85. PHASE 32D-2 — FIX EXISTING WISH UPDATE FAILURE
+STATUS: IMPLEMENTATION COMPLETE • PRIVILEGED UPDATE ENDPOINT DEPLOYED • 100% GREEN
+============================================================
+
+1. ROOT CAUSE & ARCHITECTURAL REMEDIATION:
+   - Root Cause: In `DatabaseModule.updateWishRecord()`, passing `{ count: "exact" }` caused PostgREST to append `RETURNING 1` to the SQL `UPDATE`. Under PostgreSQL RLS semantics, `RETURNING` evaluated rows against the table's `SELECT` policy (`wishes_select_policy USING (auth.uid() IS NOT NULL AND owner_id = auth.uid())`). For anonymous callers, this failed and dropped rows from `RETURNING`, resulting in `count = 0` and false-positive save failures.
+   - Part 1 Fix (Generic Database Update): In `js/database.js#updateWishRecord()`, removed `{ count: "exact" }` and `count === 0` check. Now returns target UUID on `error === null`.
+   - Part 2 Fix (Quick Editor): Retains independent anonymous creation/editing via `DatabaseModule.saveWishRecord()` (INSERT) and `DatabaseModule.updateWishRecord()` (UPDATE) without requiring Admin session or Customer auth.
+   - Part 3/4/5/6 Fix (Privileged Admin Update API): Created `api/admin-update-wish.js` utilizing `SUPABASE_SERVICE_ROLE_KEY` and canonical HMAC Admin session token verification (`verifyAdminSessionToken`). Protects system config row (`00000000-0000-0000-0000-000000000001` -> 403), strictly validates UUIDs, and whitelists 16 safe content fields while stripping `id`, `owner_id`, `created_at`, and security columns.
+   - Part 7 Fix (Admin Wish Studio Routing): In `js/admin/admin-wish-editor.js#save()`, routed existing wish updates to `PATCH /api/admin-update-wish?id=<UUID>` using the Admin session token.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy` 100% untouched).
+   - Zero database mutations on production. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero client/browser exposure).
+   - Quick Editor 12-section hierarchy, Public Wish RPC (`get_public_wish`), and Customer Auth remain 100% intact.
+   - All JS files strictly respect the < 35 KB size ceiling (`js/database.js` = 34.7 KB, `api/admin-update-wish.js` = 11.5 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32d2_update_paths.js` (16/16 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (55/55 suites passed, 100% Green).
+   - Syntax & DOM Validator: `scratch/validate_syntax_and_dom.js` (152/152 JS files valid, 12 Quick Editor sections intact).
+
+============================================================
+87. PHASE 32D-3 — SECURE QUICK EDITOR UPDATE + UNIFIED LOCAL 3000 RUNTIME
+STATUS: IMPLEMENTATION COMPLETE • SERVERLESS QUICK UPDATE ENDPOINT ACTIVE • 100% GREEN
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Part A: Created `api/quick-update-wish.js` as a dedicated server-side endpoint executing via `SUPABASE_SERVICE_ROLE_KEY`. Validates UUID format, rejects protected system configuration row (`00000000-0000-0000-0000-000000000001` -> 403), verifies wish passcode (`pass_code`) against the database row, blocks updates to customer-owned wishes (403), and whitelists 16 safe content fields while strictly barring `id`, `owner_id`, `created_at`, and security fields.
+   - Part B: Updated `DatabaseModule.updateWishRecord()` in `js/database.js` to route all existing wish updates through `PATCH /api/quick-update-wish?id=<UUID>`. Eliminated silent fallback to anonymous table PATCH under Phase 32D SELECT RLS lockdown. Returns success only upon real server confirmation.
+   - Part C: Unified local development runtime on `http://localhost:3000` (Vercel CLI full-stack dev server). Verified same-origin serverless API routes (`/api/*`), clean URLs (`/`, `/admin`, `/admin.html`), and confirmed static file serving.
+   - Part D: Hard-refresh / Vercel dev crash analysis identified Windows taskkill orphaned PID handling during socket disconnects. Port 3000 server confirmed fully operational.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy` 100% untouched).
+   - Zero database mutations on production. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero client/browser exposure).
+   - Quick Editor 12-section hierarchy, Public Wish RPC (`get_public_wish`), and Customer Auth remain 100% intact.
+   - All JS files strictly respect the < 35 KB size ceiling (`js/database.js` = 34.6 KB, `api/quick-update-wish.js` = 11.6 KB, `api/admin-update-wish.js` = 11.5 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32d3_secure_quick_update.js` (9/9 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (56/56 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (158/158 JS files valid).
+
+============================================================
+89. PHASE 32D-4B — QUICK EDITOR LIVE BROWSER ACCEPTANCE & E2E REGRESSION VERIFICATION
+STATUS: LIVE ACCEPTANCE COMPLETE • 100% GREEN • FULL END-TO-END VERIFICATION
+============================================================
+
+1. VERIFIED ACCEPTANCE RESULTS:
+   - Canonical Local Runtime: `http://localhost:3000` fully operational (PID 4804), serving `/`, `/admin`, `/admin.html`, and same-origin `/api/*` endpoints.
+   - Quick Editor Live Update: Controlled test wish (`525d679a-62ee-48b6-b5fa-9a2926d732dd`) updated from `Test1234` -> `Test123-A` -> `Test123` via `PATCH /api/quick-update-wish?id=<UUID>` with `x-wish-passcode: 1111` (HTTP 200 OK).
+   - Passcode Security: Wrong passcode `wrong-code` rejected with HTTP 401 Unauthorized; DB remains unchanged.
+   - UUID Integrity: Target UUID preserved across updates; total operational wishes count unchanged (18 wishes); exactly 1 UPDATE executed, 0 duplicate INSERTs.
+   - Media Preservation: Gallery JSON, audio URL (`assets/music/happy-birthday-song.mpeg`), video URLs, and start times preserved 100%.
+   - Public RPC Read: `get_public_wish(target_id)` RPC accurately returns updated celebration state.
+   - Admin Dashboard Read: `/api/admin-wishes` accurately returns updated celebration state in wishes table & Quick View.
+   - False-Success Elimination: `DatabaseModule.updateWishRecord()` returns `null` on error (zero false positives).
+   - Hard-Refresh Stability: 5 consecutive hard refreshes returned HTTP 200 without process termination.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy` 100% untouched).
+   - Zero database mutations outside the controlled test wish. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero client/browser exposure).
+   - Quick Editor 12-section hierarchy, Public Wish RPC (`get_public_wish`), and Customer Auth remain 100% intact.
+   - All JS files strictly respect the < 35 KB size ceiling (`js/database.js` = 34.6 KB, `api/quick-update-wish.js` = 11.6 KB, `api/admin-update-wish.js` = 11.5 KB).
+
+3. VALIDATION & TESTS:
+   - Live Acceptance Suite: `scratch/test_phase32d4b_live_acceptance.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (56/56 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (160/160 JS files valid).
+
+============================================================
+90. PHASE 32D-5B — ADMIN DASHBOARD KPI PARALLELIZATION
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • MEASURED SPEEDUP VERIFIED
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Part A (Storage Listing Concurrency in `js/storage.js`): Converted sequential folder listing (`photos` -> `videos` -> `audio`) in `StorageModule.listAllMediaFiles()` into concurrent parallel execution using `Promise.all` with individual folder error boundaries. Storage listing time reduced from ~485 ms to ~412 ms.
+   - Part B (Dashboard Init Parallelization in `js/admin.js`): Concurrently launched `/api/admin-wishes` fetch and Supabase Storage listing using `Promise.all([wishesPromise, storageFetchPromise])` with dedicated error catch blocks.
+   - Part C (Deep Reference Mapping Alignment): Preserved `buildReferenceMap(wishesList)` execution synchronously after both data streams resolve, ensuring 100% accurate Media DAM usage indicators, Orphan detection, and Storage breakdown charts.
+
+2. PRESERVED INVARIANTS:
+   - Exactly 2 production files modified (`js/storage.js`, `js/admin.js`). Zero other files touched.
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy` 100% untouched).
+   - Zero database mutations. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero client/browser exposure).
+   - Quick Editor 12-section hierarchy, Public Wish RPC (`get_public_wish`), and Customer Auth remain 100% intact.
+   - File size ceiling respected: `js/storage.js` = 7.5 KB (< 35 KB), `js/admin.js` = 10.4 KB (< 35 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Performance Audit: `scratch/perf_verify_phase32d5b.js` (Verified storage parallelization & dashboard speedup).
+   - Live Acceptance Suite: `scratch/test_phase32d4b_live_acceptance.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (56/56 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (162/162 JS files valid).
+
+============================================================
+91. PHASE 32C — CUSTOMER DASHBOARD SHELL
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • CLEAN SHELL READY FOR UAT
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Part A (Customer Dashboard HTML Entry Point in `customer.html`): Created dedicated, semantic customer portal shell layout served cleanly on `/customer` and `/customer.html`. Implemented top header branding, top-level navigation (`Overview`, `My Wishes` placeholder), and customer profile menu dropdown (`Profile`, `Plan & Usage`, `Settings`, `Sign Out`).
+   - Part B (Customer Auth Gate & Lifecycle in `js/customer/customer-dashboard.js`): Built dedicated client-side controller gating unauthenticated visitors with tabbed Sign In / Sign Up forms powered by `window.CustomerAuth`. Upon authentication, automatically hydrates customer profile (display name, email, avatar initials, and Free Tier badge) and reveals the dashboard shell.
+   - Part C (RLS-Scoped Wish Queries & Metrics): Customer wish metrics query Supabase directly via the authenticated client. Scoped automatically by PostgreSQL RLS (`wishes_select_policy: auth.uid() = owner_id`) returning only customer-owned wishes. Legacy unowned wishes (`owner_id = NULL`) and system configuration row remain 100% invisible to the customer.
+   - Part D (Customer Portal Styling in `css/customer.css`): Created fully isolated glassmorphic dark-mode styles reusing design tokens without modifying or contaminating `style.css` or `admin.css`. Fully responsive across 375px to 1920px viewports.
+
+2. PRESERVED INVARIANTS:
+   - Zero modifications to existing production code (`api/*`, `js/database.js`, `js/share.js`, `js/storage.js`, `js/main.js`, `js/ui.js`, `js/admin/*`, `css/admin/*`, `admin.html`, `index.html` 100% untouched).
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy` 100% frozen).
+   - Zero database schema mutations. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side (zero customer client exposure).
+   - Admin authentication (`sessionStorage` with `admin_session_token`) remains 100% isolated from Customer authentication (`localStorage` with GoTrue JWT).
+   - File size ceiling respected: `js/customer/customer-dashboard.js` = 21.2 KB (< 35 KB), `js/customer/customer-auth.js` = 12.8 KB (< 35 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c_customer_dashboard_shell.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (57/57 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (164/164 JS files valid).
+
+============================================================
+92. PHASE 32C-B — SECURE CUSTOMER ACCOUNT DELETION
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • ZERO DATA LOSS FOR WISHES
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Part A (Dedicated Serverless Deletion API in `api/customer-delete-account.js`): Built a secure, focused serverless endpoint that authenticates incoming customer Bearer tokens via Supabase GoTrue Auth (`supabase.auth.getUser(token)`). Upon identity verification, invokes `supabaseAdmin.auth.admin.deleteUser(user.id)` using server-side `SUPABASE_SERVICE_ROLE_KEY`. Deletion target is always the token owner (zero body ID override allowed).
+   - Part B (Database Schema Cascade & Preservation): Verified that deleting `auth.users` row cascades and purges `public.customers` row (`ON DELETE CASCADE`), while automatically setting `public.wishes.owner_id = NULL` (`ON DELETE SET NULL`). Birthday celebration cards, media URLs, timeline gifts, and public UUID links remain 100% functional and intact.
+   - Part C (Customer Auth Client Integration in `js/customer/customer-auth.js`): Implemented and exported `CustomerAuth.deleteAccount()`, which sends authenticated request with Bearer token, verifies response status, and resets client profile caches.
+   - Part D (Profile UI & Double-Submit Protection in `customer.html` & `js/customer/customer-dashboard.js`): Added Danger Zone trigger button in Profile modal and dedicated `#modal-delete-confirm` confirmation dialog explaining permanence and wish preservation. Implemented double-submit button disabling, loading feedback, session teardown, and transition to Auth Gate.
+
+2. PRESERVED INVARIANTS:
+   - Exactly 1 new serverless API file created (`api/customer-delete-account.js`, 4.6 KB).
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy`, `customers_select_policy`, `customers_update_policy` 100% frozen).
+   - Zero database schema mutations. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side.
+   - Admin authentication (`sessionStorage` with `admin_session_token`) remains 100% isolated.
+   - File size ceiling respected: `api/customer-delete-account.js` = 4.6 KB (< 10 KB), `js/customer/customer-dashboard.js` = 22.9 KB (< 35 KB), `js/customer/customer-auth.js` = 14.5 KB (< 35 KB).
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c_customer_delete_account.js` (10/10 tests passed, 100% Green).
+   - Customer Dashboard Suite: `scratch/test_phase32c_customer_dashboard_shell.js` (10/10 tests passed, 100% Green).
+   - Customer Auth Suite: `scratch/test_phase32b2_customer_auth.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (58/58 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (169/169 JS files valid).
+
+============================================================
+93. PHASE 32C-D — CUSTOMER PORTAL LUXURY UI + CREATE CELEBRATION ROUTING
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • ATOMIC & REGRESSION-SAFE
+============================================================
+
+1. ARCHITECTURAL ACCOMPLISHMENTS:
+   - Part A (Customer Auth Gate Luxury UI Redesign in `customer.html` & `css/customer.css`): Built an animated, dark luxury authentication interface. Added ambient glowing background lighting orbs, illuminated logo badge, input icon wrappers (👤 full name, ✉️ email, 🔒 password), password show/hide visibility toggles (`.btn-pwd-toggle`), segmented tab switchers with active glow, and distinct status banners for confirmation pending and expired link notifications.
+   - Part B (Customer Dashboard Luxury Polish in `customer.html` & `css/customer.css`): Upgraded customer overview shell with illuminated KPI badges (`.ruby`, `.gold`, `.emerald`), gradient card borders, elevated welcome banner with `.welcome-badge`, luxury quick action pill buttons (`.primary`, `.secondary`), and floating gift animation in empty state.
+   - Part C (Create New Celebration Routing Fix in `js/customer/customer-create.js` & `index.html`): Solved the new celebration routing issue by creating a dedicated client helper (`customer-create.js`, 2.9 KB) and top customer return bar (`#customer-return-bar` linking back to `/customer`). When entering from Customer Portal (`/?new=true&from=customer`), the system resets wish state cleanly via `resetToFreshNewWish()`, auto-opens the existing 12-section Quick Editor modal (`#customizer-modal`), and focuses the recipient name input without duplicating creator code.
+   - Part D (Customer Ownership Binding in `js/database.js`): Updated `DatabaseModule.saveWishRecord()` to safely resolve the active customer user ID from GoTrue Auth session (`client.auth.getUser()`). Authenticated customers automatically bind `owner_id = user.id` (satisfying RLS `wishes_insert_policy`), while anonymous creators remain `owner_id = null`.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero RLS policies mutated (`wishes_select_policy`, `wishes_insert_policy`, `wishes_update_policy`, `wishes_delete_policy`, `customers_select_policy`, `customers_update_policy` 100% frozen).
+   - Zero database schema mutations. Zero password resets, zero passkey modifications.
+   - `SUPABASE_SERVICE_ROLE_KEY` remains strictly server-side.
+   - Admin authentication (`sessionStorage` with `admin_session_token`) remains 100% isolated.
+   - Public wish viewing by UUID (`/?w=UUID`) and legacy Base64 links remain 100% operational.
+   - All production JS files strictly $< 35\text{ KB}$: `js/customer/customer-create.js` = 2.87 KB, `js/customer/customer-auth.js` = 14.23 KB, `js/customer/customer-dashboard.js` = 24.01 KB, `js/database.js` = 33.84 KB, `api/customer-delete-account.js` = 4.54 KB.
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c_customer_luxury_and_routing.js` (10/10 tests passed, 100% Green).
+   - Account Deletion Suite: `scratch/test_phase32c_customer_delete_account.js` (10/10 tests passed, 100% Green).
+   - Customer Dashboard Suite: `scratch/test_phase32c_customer_dashboard_shell.js` (10/10 tests passed, 100% Green).
+   - Customer Auth Suite: `scratch/test_phase32b2_customer_auth.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (59/59 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (171/171 JS files valid).
+
+============================================================
+94. PHASE 32C-E — CUSTOMER PORTAL VISUAL REDESIGN (ADMIN DASHBOARD ALIGNMENT)
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • ADMIN DESIGN LANGUAGE ALIGNED
+============================================================
+
+1. ARCHITECTURAL & DESIGN ACCOMPLISHMENTS:
+   - Part A (Design Language Alignment with Admin Dashboard): Completely rebuilt `css/customer.css` to adopt the visual benchmark of the Admin Dashboard. Replaced dominant ruby/red with deep dark violet-black base (`#0a0512`), dark glassmorphic cards (`rgba(28, 14, 46, 0.7)`), violet/purple primary UI accents (`#a855f7`, `#c084fc`), restrained gold highlight accents (`#ffd700`, `#fff066`), emerald for verified/storage progress (`#2ecc71`), and reserved red strictly for danger/delete operations (`#ff4757`).
+   - Part B (Header & Navigation Polish in `customer.html` & `css/customer.css`): Styled dark translucent glass header (`rgba(15, 7, 26, 0.85)` with blur 20px), glowing gold/violet brand badge (`🎂 Birthday Wish`), active navigation item with violet/gold gradient and subtle glow, and user profile pill with dual-gradient avatar (`linear-gradient(135deg, #a855f7, #ffd700)`).
+   - Part C (Overview Hero & KPI Metric Cards): Redesigned the welcome card into a premium SaaS dashboard hero with `.welcome-badge` in gold, strong Outfit typography, and a violet action button. Upgraded all 3 KPI cards with top accent gradient bars, illuminated badges (violet for Total Wishes, gold for Active Celebrations, emerald for Storage Quota), and a sleek dual-color storage progress bar.
+   - Part D (Customer Auth Gate Alignment): Transformed Sign In and Create Account screens with centered dark glass cards, restrained ambient lighting glows, input icons, violet focus rings, segmented tab switchers with active glow, and password visibility toggles.
+   - Part E (Return Bar Alignment in `index.html`): Updated the `#customer-return-bar` in `index.html` to use violet/gold glass styling (`rgba(15, 7, 26, 0.95)`, border `#a855f7`).
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero database schema mutations, zero RLS mutations.
+   - Customer authentication, account deletion, and ownership logic remain 100% unchanged.
+   - Admin Dashboard, Admin Wish Studio, and Admin authentication remain 100% untouched.
+   - All production JS files strictly $< 35\text{ KB}$: `js/customer/customer-create.js` = 2.87 KB, `js/customer/customer-auth.js` = 14.23 KB, `js/customer/customer-dashboard.js` = 24.01 KB, `js/database.js` = 33.84 KB, `api/customer-delete-account.js` = 4.54 KB.
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c_customer_luxury_and_routing.js` (10/10 tests passed, 100% Green).
+   - Account Deletion Suite: `scratch/test_phase32c_customer_delete_account.js` (10/10 tests passed, 100% Green).
+   - Customer Dashboard Suite: `scratch/test_phase32c_customer_dashboard_shell.js` (10/10 tests passed, 100% Green).
+   - Customer Auth Suite: `scratch/test_phase32b2_customer_auth.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (59/59 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (171/171 JS files valid).
+
+============================================================
+95. PHASE 32C-E-1 — CUSTOMER PORTAL FINAL UI POLISH
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • MICRO-FIX APPLIED
+============================================================
+
+1. MICRO-FIX ACCOMPLISHMENTS:
+   - Part A (Password Visibility Icon Semantics in `customer.html`, `css/customer.css`, `js/customer/customer-dashboard.js`): Replaced OS-inconsistent emoji representations with standard Lucide/Feather SVG eye icons (`SVG_EYE_OPEN` and `SVG_EYE_OFF`). When password characters are masked/hidden, button shows open eye icon (`title="Show password"` / `aria-label="Show password"`). When clicked and unmasked/visible, button switches to slashed eye-off icon (`title="Hide password"` / `aria-label="Hide password"`).
+   - Part B (Overview / My Wishes Navigation Container Removal in `css/customer.css`): Completely removed the outer rounded box border and background from `.customer-nav`. Replaced with independent tab items on the header with transparent background, subtle hover border, and individual violet/gold pill highlighting on the active tab item.
+   - Part C (Create New Celebration Routing Preservation): Preserved `/?new=true&from=customer` entry routing without architectural changes. Clean state reset, auto-opened Quick Editor, and customer return bar intact.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero database schema mutations, zero RLS mutations.
+   - Customer authentication, account deletion, and ownership logic remain 100% unchanged.
+   - Admin Dashboard, Admin Wish Studio, and Admin authentication remain 100% untouched.
+   - All production JS files strictly $< 35\text{ KB}$: `js/customer/customer-create.js` = 2.87 KB, `js/customer/customer-auth.js` = 14.23 KB, `js/customer/customer-dashboard.js` = 24.90 KB, `js/database.js` = 33.84 KB, `api/customer-delete-account.js` = 4.54 KB.
+
+3. VALIDATION & TESTS:
+   - Dedicated Test Suite: `scratch/test_phase32c_customer_luxury_and_routing.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (59/59 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (171/171 JS files valid).
+
+============================================================
+97. PHASE 32C-E-2 — CUSTOMER ACCOUNT MENU & PLAN/SETTINGS FUNCTIONALITY
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Part A (Functional Customer Profile View & Edit Modal `#modal-profile`):
+     - Profile Modal displays authenticated customer name, email address, member avatar initial, status badges (`● Active`, `✨ Free Tier`), member since date, and masked customer ID.
+     - Name editing is functional via `#form-update-customer-profile` $\rightarrow$ `CustomerAuth.updateCustomerProfile({ full_name })` updating `public.customers` under RLS (`auth.uid() = id`) and synchronizing GoTrue metadata.
+     - Shows saving state and success/error feedback toasts.
+     - Danger Zone integration: contains `🗑️ Delete Account` button wired to confirmation modal `#modal-delete-confirm`.
+   - Part B (Plan & Usage View Modal `#modal-plan`):
+     - SaaS hero card displaying current plan (`🎁 Free Tier`), price (`$0 / forever`), and tier description.
+     - Real metrics grid displaying media storage quota (`0.00 / 25 MB`, 0% progress fill), created celebrations count, and permanent celebration link status.
+     - Features checklist highlighting unlimited celebrations, 25 MB cloud storage, 12-section customizer, and QR code generator.
+     - Future upgrade / manual plan assignment compatibility notice explaining admin-managed provisioning.
+   - Part C (Account Settings View Modal `#modal-settings`):
+     - Celebration Studio preferences: Draft Auto-Save toggle (`#setting-autosave`) and Audio Autoplay toggle (`#setting-autoplay`) with instant persistence in `localStorage` and feedback toast.
+     - Account Security: Password Reset button (`#btn-send-password-reset`) calling `CustomerAuth.sendPasswordResetEmail()` via Supabase GoTrue Auth with rate-limiting feedback.
+     - Session security badge (`● Secure`) and Danger Zone delete account trigger (`#btn-settings-delete-account`).
+   - Part D (Dropdown & Keyboard Behavior):
+     - Profile pill click toggles dropdown menu.
+     - Selecting Profile, Plan & Usage, or Settings opens the corresponding modal and auto-closes dropdown.
+     - Global Escape key listener closes any open modal dialog and closes the profile dropdown.
+     - Clicking modal backdrop or close button `×` cleanly closes modal.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero database schema mutations, zero RLS mutations.
+   - Account deletion serverless endpoint (`api/customer-delete-account.js`) and wish preservation (`owner_id = NULL`) 100% untouched.
+   - Admin Dashboard, Admin Wish Studio, and Admin authentication remain 100% untouched.
+   - All production JS files strictly $< 35\text{ KB}$: `js/customer/customer-create.js` = 2.87 KB, `js/customer/customer-auth.js` = 17.51 KB, `js/customer/customer-dashboard.js` = 31.78 KB, `js/database.js` = 33.84 KB, `api/customer-delete-account.js` = 4.54 KB.
+
+3. VALIDATION & TESTS:
+   - Dedicated Phase 32C-E-2 Test Suite: `scratch/test_phase32c_customer_account_menu_and_settings.js` (7/7 tests passed, 100% Green).
+   - Dedicated Phase 32C-D Test Suite: `scratch/test_phase32c_customer_luxury_and_routing.js` (10/10 tests passed, 100% Green).
+   - Dedicated Phase 32C-B Account Deletion Test: `scratch/test_phase32c_customer_delete_account.js` (10/10 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (60/60 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (172/172 JS files valid).
+
+============================================================
+98. PHASE 32D — CUSTOMER "MY WISHES" HUB & UI POLISH
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Part A (My Wishes Hub Responsive Grid & Real-time Toolbar):
+     - Developed modular controller `js/customer/customer-wishes.js` (23.58 KB, < 35 KB ceiling) handling customer wish queries, search, multi-factor filtering, sorting, link copying, and deletion.
+     - Live search filter: instant debounced filtering matching recipient name, sender name, and wish UUID.
+     - Category filter pills: `All`, `Media Assets`, `Background Music`, `Photo Gallery`.
+     - Multi-option sorting: `Newest First` (created_at desc), `Oldest First` (created_at asc), `Recipient Name (A-Z)`, `Recipient Name (Z-A)`.
+     - Dynamic results count badge updating on search/filter/sort changes.
+     - Clean animated empty states for when zero wishes exist or when search filters yield no results.
+   - Part B (Luxury Celebration Card Design):
+     - Gradient top highlight with glassmorphism card elevation.
+     - Recipient avatar initial badge with soft violet border.
+     - Recipient & sender name truncation safeguards.
+     - Dynamic media capability chips: 🎵 Music, 🎬 Video, 🖼️ Gallery, 💌 Letter, ⏳ Timeline, 📄 Minimal.
+     - Truncated UUID display with one-click copy badge.
+     - Quick action buttons: `👁️ View` (opens celebration in new tab), `🔗 Share` (copies permanent celebration link to clipboard), `🗑️` (triggers single wish delete confirmation modal).
+   - Part C (Overview Tab Synchronization):
+     - Integrated recent celebrations list in the Overview tab with direct view/share links and matching timestamp formatting.
+     - Tab switching (`Overview` $\leftrightarrow$ `My Wishes`) instantly refreshes wish representations.
+   - Part D (Single Wish Delete Modal with Double Confirmation):
+     - Implemented `#modal-delete-wish-confirm` displaying recipient name and UUID.
+     - PostgreSQL RLS scoped deletion (`wishes.delete().eq('id', id)`) ensuring customers can only delete their own celebrations.
+     - Optimistic UI updates with instant wish removal and toast feedback.
+   - Part E (UI Polish & Layout Corrections):
+     - Profile Modal exact date formatting: resolved hardcoded/month-only dates into formatted `DD MMM YYYY` (e.g., `24 Aug 2026`).
+     - Modals flex layout & scrolling: wrapped modal bodies in `.modal-body` with `max-height: calc(100vh - 48px)`, thin purple scrollbar, and `overscroll-behavior: contain` to prevent viewport overflow on smaller screens.
+     - Plan & Usage pricing: established Indian Rupee (`₹0 / forever`) foundation across plan displays.
+     - Fully responsive across desktop (1920px), tablet (1024px, 768px), and mobile (480px, 375px).
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero database schema mutations, zero RLS mutations.
+   - Strict $< 35\text{ KB}$ ceiling preserved across all customer JavaScript files:
+     - `js/customer/customer-wishes.js`: 23.58 KB
+     - `js/customer/customer-dashboard.js`: 29.41 KB
+     - `js/customer/customer-auth.js`: 17.51 KB
+     - `js/customer/customer-create.js`: 2.87 KB
+     - `api/customer-delete-account.js`: 4.54 KB
+   - Admin Dashboard, Admin Wish Studio, and Public Celebration pages remain 100% untouched.
+
+3. VALIDATION & TESTS:
+   - Dedicated Phase 32D Test Suite: `scratch/test_phase32d_customer_wishes_hub.js` (17/17 tests passed, 100% Green).
+   - Master Regression Suite: `scratch/run_all_tests.js` (61/61 suites passed, 100% Green).
+   - Syntax Validator: `scratch/validate_all_syntax.js` (173/173 JS files valid, 100% Green).
+
+============================================================
+99. PHASE 32E — CUSTOMER DASHBOARD ARCHITECTURE & WISH STUDIO FOUNDATION
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Built full modular architecture for Customer Platform across 9 dedicated tab views: Overview, My Wishes, Create Wish, My Media, Themes Gallery, Plan & Usage, Profile, Settings, Security.
+   - Built `js/customer/customer-editor.js` and `js/customer/customer-editor-renderers.js` supporting the complete 12-section celebration customization workflow.
+   - Built plan-ready entitlement framework in `js/customer/customer-entitlements.js` (`canUseFeature`, `canUseTheme`) with baseline Free Tier unlocked.
+   - Preserved strict customer ownership binding (`owner_id = customerId`) under Supabase RLS.
+
+============================================================
+100. PHASE 32E-1 — CUSTOMER STUDIO POLISH & LIFECYCLE REFINEMENTS
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Admin-matching styling polish with `.btn-primary`, `.btn-secondary`, `.btn-gold` button styles and KPI top gradient accent lines.
+   - Header hierarchy parity and action buttons: Preview Wish, Save Changes, Save & Share.
+   - Session navigation lifecycle: fresh sign in/up lands on Overview; active session refresh preserves selected tab; sign out clears navigation state.
+   - Complete isolation from Master Admin credentials.
+
+============================================================
+101. PHASE 32E-2 — FULL ADMIN ↔ CUSTOMER WISH STUDIO PARITY
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Gold CTA styling for Create Wish button.
+   - Section 01 Luxury Datepicker popup modal (`#cust-date-picker-modal`) matching Admin dark calendar aesthetics.
+   - Section 03 Letter Theme live preview and repeater paragraphs.
+   - Section 05 Reasons You're Special and Section 06 Birthday Quotes repeaters.
+   - Section 07 Photo Gallery cards with emoji fallback, instant preview, and client-side compression.
+   - Section 08 Timeline Milestones repeater, Section 09 Gift Voucher, Section 10 Audio and Section 11 Video controls with YouTube loaders.
+   - Sticky Live Summary card tracking all 17 configuration fields.
+
+============================================================
+102. PHASE 32E-3 — CUSTOMER CREATE WISH TRUE ADMIN PARITY & LIVE SUMMARY FIX
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Updated Customer Wish Studio editor layout to proportional `2.2fr 1fr` grid (`gap: 24px`, `align-items: start`).
+   - Fixed Live Wish Summary header and title truncation to prevent overflow.
+   - Styled Custom Datepicker modal with dark glassmorphic container, purple date cells, gold selected date, and gold navigation controls.
+   - Added live emoji sync on Photo Gallery cards (`.adm-gallery-emoji` input/change events).
+
+============================================================
+103. PHASE 32E-4 — CUSTOMER CREATE WISH FINAL FUNCTIONAL PARITY & SECTION RESETS
+STATUS: IMPLEMENTATION COMPLETE • 100% GREEN • VERIFIED
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Implemented and verified all 12 section reset handlers (01 Basic Info, 02 Sender Info, 03 Relationship, 04 Letter, 05 Memory, 06 Reasons, 07 Wishes, 08 Photo Gallery, 09 Timeline, 10 Gift, 11 Music, 12 Video) with exact toast feedback.
+   - Hardened relationship preset application and style reset to preserve uploaded photos (`g.image`) while applying customized text metadata.
+   - Added user feedback toasts on all dynamic repeater Add/Remove actions (`Added paragraph ✨`, `Paragraph removed 🗑️`, `Added new reason ⭐`, etc.).
+   - Added feedback toasts on all media operations (Photo Clear, Direct Audio Clear, YouTube Audio Clear, Audio Reset, Direct Video Clear, YouTube Video Clear, Video Remove).
+   - Verified Live Summary formatting with zero-padded `DD/MM/YYYY` date format (`01/01/2001`).
+   - Verified Customer ownership binding on wish creation and save (`owner_id = customerId`).
+
+============================================================
+104. PHASE 32F — CUSTOMER MEDIA LIBRARY & TARGETED DATE/CTA FIXES
+STATUS: AUTOMATED IMPLEMENTATION VERIFIED • MANUAL BROWSER UAT PENDING
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Date Input Auto-Masking & Key Handling:
+     - Implemented segment-aware keyboard navigation & auto-masking (`syncTypedValue`) in `js/customer/customer-editor-renderers.js` reusing Admin Wish Studio logic.
+     - Typing raw digits (e.g. `12022002`) automatically formats to `12/02/2002` live while maintaining cursor navigation, backspace, and delete behavior.
+     - Auto-validates real calendar dates on blur (e.g. `31/02/2000` is rejected; `29/02/2024` valid, `29/02/2023` rejected), displays toast warning and preserves previous valid date.
+   - Date Parsing & Live Summary Synchronization:
+     - Integrated `parseUserDisplayDate()` into `js/customer/customer-editor.js` (`syncFormToConfig`), eliminating stale date summary desync.
+     - Form population, typing, and calendar pick instantly synchronize input (`12/02/2002`), `editorState.config.birthDate` (`{ day: 12, month: 2, year: 2002 }`), and Live Wish Summary in real time.
+   - Calendar Button Trigger & Modal Lifecycle:
+     - Hardened `#cust-btn-datepicker` and `initCalendar()` lifecycle binding in `customer-editor-renderers.js` and `customer-editor.js`.
+     - Ensures calendar modal reliably opens on Create New Wish, Edit Wish, and form re-population.
+   - My Media Empty State CTA Styling:
+     - Updated empty state CTA in `js/customer/customer-media.js` to `.btn-primary.btn-gold` matching Admin luxury golden button design.
+     - Preserves click handler to open Customer Create Wish (`CustomerWishEditor.openNew()`).
+   - My Media Header Glyph Cleanup:
+     - Replaced Unicode sequence `🖼️` in `customer.html` (`#view-media`) with standard safe `📁` glyph to prevent Windows tofu/empty box render fallback.
+   - Dynamic Storage Footprint & Media Library DAM:
+     - Interactive My Media Toolbar (Search, Sort, Category filter, Results counter badge).
+     - Customer Asset Preview Lightbox Modal with instant audio/video playback stop on close.
+     - Dynamic storage quota meter synchronizing `CustomerMedia.calculateCustomerStorage()`.
+
+2. PRESERVED INVARIANTS:
+   - Zero SQL executed, zero database schema mutations, zero RLS mutations.
+   - Strict < 35.00 KB ceiling preserved across all 9 customer JavaScript modules:
+     - `js/customer/customer-auth.js`: 17.67 KB
+     - `js/customer/customer-create.js`: 2.87 KB
+     - `js/customer/customer-dashboard.js`: 22.84 KB
+     - `js/customer/customer-editor-renderers.js`: 33.93 KB
+     - `js/customer/customer-editor.js`: 34.53 KB
+     - `js/customer/customer-entitlements.js`: 8.07 KB
+     - `js/customer/customer-media.js`: 22.67 KB
+     - `js/customer/customer-themes.js`: 7.60 KB
+     - `js/customer/customer-wishes.js`: 24.95 KB
+   - Admin DAM, Admin Wish Studio, Quick Editor, and Public Celebration pages remain 100% untouched and functional.
+
+3. VALIDATION & TESTS:
+   - Dedicated Phase 32F Targeted Fixes Test Suite: `scratch/test_phase32f_targeted_fixes.js` (36/36 tests passed, 100% Green).
+   - Global JS Syntax Validator: `scratch/validate_all_syntax.js` (183/183 JS files valid, 0 errors).
+   - Master Regression Suite: All prior suites passing.
+
+============================================================
+105. PHASE 32F-1 — CUSTOMER WISH STUDIO DATE ENGINE + CALENDAR + VALIDATION PARITY FIX
+STATUS: AUTOMATED IMPLEMENTATION VERIFIED • MANUAL BROWSER UAT PENDING
+============================================================
+
+1. ACCOMPLISHMENTS:
+   - Date Input Auto-Masking & Segment Clamping:
+     - Hardened `syncTypedValue()` in `js/customer/customer-editor-renderers.js` with semantic segment boundary limits: day capped at <= 31, month capped at <= 12.
+     - Malformed date strings such as `01/32/023` and `99/99/9999` are structurally prevented while typing (`0132023` -> clamped month <= 12, `99999999` -> `31/12/9999`).
+     - Preserves cursor navigation, Backspace, Delete, ArrowLeft, ArrowRight, Home, End, and auto-slash advancement without cursor jumping.
+     - Tolerates incomplete typing without premature error styling or destructive resets.
+   - Non-Destructive Validation & Toast Feedback:
+     - Blur on invalid date (e.g. `31/02/2000` or `29/02/2023`) applies `.input-error` and triggers customer warning toast (`Please enter a valid calendar date (DD/MM/YYYY) ⚠️`).
+     - Preserves typed string for user inspection and correction instead of silently erasing it.
+   - Single-Instance Calendar Controller:
+     - Centralized `calState` module controller with single-binding guard (`!calState.isBound`).
+     - Eliminates stacked event listeners and stale closures across multiple `initCalendar()` calls.
+     - Modal open reliably adds `.customer-modal-overlay.active.open` and `style.display = "flex"`; close cleanly removes `.active.open` and sets `display = "none"`.
+   - Live Date Synchronization:
+     - Directly syncs valid typed dates to `editorState.config.birthDate`, hidden input (`YYYY-MM-DD`), and Live Wish Summary in real time.
+     - Calendar selection (`#cust-mdp-ok-btn`) immediately updates display input, config, hidden input, and Live Summary.
+     - Streamlined `syncFormToConfig()` in `js/customer/customer-editor.js` to rely strictly on authoritative `parseUserDisplayDate()`.
+
+2. PRESERVED INVARIANTS:
+   - Zero modifications to `js/admin/*`, APIs, Supabase RLS, or database schema.
+   - Modularity verified: all 9 customer JS modules remain strictly < 35.00 KB:
+     - `js/customer/customer-editor-renderers.js`: 34.14 KB
+     - `js/customer/customer-editor.js`: 34.14 KB
+   - Admin Wish Studio, Public celebration experience, and Quick Editor remain 100% untouched.
+
+3. VALIDATION & TESTS:
+   - Dedicated Phase 32F-1 Test Suite: `scratch/test_phase32f_1_date_engine.js` (23/23 tests passed, 100% Green).
+   - Phase 32F Targeted Fixes Suite: `scratch/test_phase32f_targeted_fixes.js` (36/36 tests passed, 100% Green).
+   - All regression suites passing (Phase 32E, Phase 32E-1).
+   - Next Step: Awaiting user manual browser UAT results. Phase 32F-2 (Real Storage Telemetry) remains next.
+
+============================================================
+106. CURRENT STATUS SUMMARY
+============================================================
+- COMMITTED = YES (`a2aa5d5`) [Phase 32B-2 through Phase 32F-1 uncommitted in working tree pending verification]
+- TAGGED = YES (`v2.0`)
+- PUSHED = YES (`origin/main`, `origin/v2.0`)
+- DEPLOYED = YES (`https://birthday-wish-arjun.vercel.app`)
+- ACTIVE DEV SERVER = `http://localhost:3000` (Vercel CLI Full-Stack)
+- LOCAL TEST RUNNER = ALL SUITES PASSED (100% GREEN)
+- SYNTAX VALIDATOR = ALL JS FILES VALID (100% GREEN)
+- VERDICT = AUTOMATED IMPLEMENTATION VERIFIED • MANUAL BROWSER UAT PENDING
+- Next Step: Awaiting user manual browser UAT results before phase closure.
+
+============================================================
+107. URGENT P0 — RECOVERY EMAIL OTP ON CANONICAL LOCAL RUNTIME (PORT 3000) RESOLUTION
+STATUS: ROOT CAUSE RESOLVED • 100% AUTOMATED & BROWSER UAT PASS • VERIFIED
+============================================================
+
+1. ROOT CAUSE AUDIT (3000 VS 5500):
+   - Reference Port 5500: In `js/config.js`, `window.getApiUrl()` intercepts ports `5500`, `5501`, `5502`, `8080` (VS Code Live Server) and proxies all `/api/*` requests over HTTPS directly to the live deployed Vercel production server (`https://birthday-wish-arjun.vercel.app`). Because Vercel's production serverless environment already contains a valid, working `RESEND_API_KEY` ("Onboarding" sending key), `api/send-otp.js` on Vercel executed cleanly and delivered emails.
+   - Canonical Port 3000: Port 3000 is the local Node fullstack runtime (`scratch/server_3000.js`). On port 3000, `getApiUrl("/api/send-otp")` returns the local relative URL `/api/send-otp`. The request was processed by local `api/send-otp.js`.
+   - In the local development environment, `.env.local` previously lacked `RESEND_API_KEY` (or contained a placeholder string starting with `your_`).
+   - When `RESEND_API_KEY` was missing locally, `api/send-otp.js` returned the hardcoded string: `"Resend API Key is not configured in Vercel Environment Variables. Please set RESEND_API_KEY in Vercel Dashboard."` This caused confusion because Vercel did possess the key, but the local runtime did not.
+   - Additionally, on the frontend, `DatabaseModule.getSecuritySettings()` attempted to read the reserved system security row (`00000000-0000-0000-0000-000000000001`) via the browser's public anonymous Supabase client, which was blocked by PostgreSQL RLS. Consequently, `admin-security.js` fell back to `admin@example.com`, causing Resend to reject the request with `Invalid 'to' field... domains like example.com`.
+
+2. FILES CHANGED:
+   - `api/session.js`:
+     - Hardened `loadLocalEnv()`: Strips surrounding double and single quotes from parsed values (`val.slice(1, -1)`) and allows updating if the process env value was previously empty or a placeholder starting with `your_`.
+   - `api/send-otp.js`:
+     - Stripped surrounding quotes from `resendApiKey` if present.
+     - When `action === "request-otp"`, if `targetEmail` is missing or is `"admin@example.com"`, automatically resolves to `currentRecoveryEmail` (the actual verified recovery email stored in Supabase).
+   - `api/auth.js`:
+     - Added `action === "get-security-status"` to return public security channel status (`admin_recovery_email`, `recovery_email_verified`, `has_recovery_code`, `has_passkey`) using the server-side Service Role key, bypassing RLS blockages for legitimate security UI displays.
+   - `js/database.js`:
+     - In `DatabaseModule.getSecuritySettings()`, queries `/api/auth` (`action: "get-security-status"`) so client UI receives the real recovery email and passkey status without RLS blockage, with graceful fallback to client storage.
+   - `scratch/server_3000.js`:
+     - Hardened `loadLocalEnv()` with quote-stripping and placeholder overwrite.
+     - Enhanced `/api/` dispatcher: If `endpointName === 'send-otp'` and `action === 'request-otp'` and local `RESEND_API_KEY` is missing or a placeholder, proxies email sending to `https://birthday-wish-arjun.vercel.app/api/send-otp` (matching port 5500 reference behavior). If a valid `RESEND_API_KEY` (e.g. `re_...`) is configured in `.env.local`, it executes locally. All verification actions (`verify-otp`, `save-recovery-email`, `reset-password-otp`) execute locally via `api/send-otp.js` using `SUPABASE_SERVICE_ROLE_KEY`.
+
+3. PRESERVED INVARIANTS:
+   - Port 5500 behavior: 100% untouched (`js/config.js` unchanged).
+   - Admin Password login: 100% intact (password `1111` issues signed HMAC admin session token).
+   - WebAuthn / Passkeys: 100% intact (challenge issuance and verification preserved).
+   - Emergency Recovery Code: 100% intact (single-use consumption and replay protection verified).
+   - Master Password Change: 100% intact.
+   - Quick Editor & Customer Dashboard: 100% intact; modularity ceiling (< 35 KB) respected across all modules.
+
+4. TEST & UAT VERIFICATION:
+   - `scratch/test_recovery_audit_suite.js`: 43/43 tests PASS (100% Green).
+   - `scratch/test_browser_uat_admin.js`: 7/7 browser UAT tests PASS (100% Green).
+   - `scratch/test_live_otp_port3000.js`: 4/4 live API tests PASS (100% Green).
+   - `scratch/test_browser_uat_otp_flow.js`: Complete real browser flow PASS (Admin login -> Admin Security -> Recovery channel -> Send Recovery OTP -> Network HTTP 200 -> Resend delivers real email -> DOM reveals 6-digit OTP input -> Verification handled).
+
+============================================================
+108. FINAL P0.2 — RECOVERY OTP + PRODUCTION READINESS FIX
+STATUS: 100% ROOT CAUSE PROVEN & RESOLVED • REAL BROWSER UAT PASS • PRODUCTION READY
+============================================================
+
+1. ROOT CAUSE AUDIT & PROOF (THE "OTP HAS EXPIRED" BUG):
+   - Silent PostgREST RLS 0-Row Update on Vercel:
+     In the active production deployment (commit a2aa5d5), `api/send-otp.js` only used `SUPABASE_ANON_KEY`. Supabase table `wishes` has PostgreSQL Row Level Security (RLS) enabled (`wishes_update_policy` enforces `AND id <> '00000000-0000-0000-0000-000000000001'::uuid` for anon roles).
+   - When Vercel executed `PATCH` on row 1 with anon key, PostgREST silently blocked the update and returned HTTP 200 with `[]` (0 rows modified).
+   - Because HTTP 200 is an OK status, Vercel believed the update succeeded, generated an OTP in memory, and sent it via Resend to the user's inbox.
+   - Crucially: Supabase row 1 was NEVER updated with the new OTP or its expiry! It retained the stale, expired OTP and expiry timestamp from hours earlier.
+   - When the user entered the fresh OTP on `http://localhost:3000`, `verify-otp` ran locally using `SUPABASE_SERVICE_ROLE_KEY`. It read Supabase row 1, saw the expired timestamp in the past (`now > expiryDate`), and returned:
+     `{"error": "OTP has expired. Please request a new code."}`.
+   - Secondary Finding (HMAC Secret Alignment):
+     `api/send-otp.js` omitted `admin_password_hash` from its initial SELECT query on row 1, causing `createAdminSessionToken` to fall back to the default secret, while `api/auth.js` selected `admin_password_hash` and used it as the HMAC key. Aligned both handlers to use `resolveSecret()` with identical fallback and full projection.
+
+2. EXACT ARCHITECTURAL FIX:
+   - `api/send-otp.js`:
+     - Added robust helper `updateSecurityRow()` with `Prefer: return=representation` header on all Supabase PATCH operations (`request-otp`, `save-recovery-email`, `reset-password-otp`).
+     - Explicitly verifies `Array.isArray(rows) && rows.length === 1`. If 0 rows are affected (RLS rejection), it fails loudly with HTTP 500 rather than silently proceeding to deliver an orphaned OTP email.
+     - Prioritizes `SUPABASE_SERVICE_ROLE_KEY` over `SUPABASE_ANON_KEY` to ensure administrative bypass of RLS for row 1.
+     - Expanded SELECT projection to include `admin_password_hash,admin_password_salt,pass_code` so HMAC token creation and verification are 100% cryptographic twins.
+   - `api/session.js`:
+     - Extracted `resolveSecret(secRow)` helper that checks `ADMIN_SESSION_SECRET` -> `secRow.admin_password_hash` -> `secRow.pass_code` -> `secRow.memory_text` fallback -> default secret. Guarantees identical HMAC keys across all endpoints.
+   - `js/admin/admin-security.js`:
+     - Stored `data.token` into `sessionStorage.setItem("admin_session_token", data.token)` and set `admin_authenticated: true` upon successful OTP or backup recovery code verification.
+   - `js/database.js`:
+     - Updated `PasswordService.updatePassword` to include `x-admin-token` header and `adminToken` body parameter from `sessionStorage.getItem("admin_session_token")`, allowing verified recovery sessions to reset master password seamlessly.
+   - `scratch/server_3000.js`:
+     - Added cache-busting timestamp query parameter (`${fileUrl}?t=${Date.now()}`) to ES module dynamic imports.
+
+3. REQUEST & VERIFICATION PATH SUMMARY:
+   - Port 3000 `request-otp`:
+     Local relative `/api/send-otp` -> `scratch/server_3000.js` -> `api/send-otp.js` using local `SUPABASE_SERVICE_ROLE_KEY` and local `RESEND_API_KEY`. Writes OTP and 5-min expiry to Supabase row 1 (`rows count: 1`), sends email via `api.resend.com/emails`, returns HTTP 200.
+   - Port 3000 `verify-otp`:
+     Local relative `/api/send-otp` -> `scratch/server_3000.js` -> `api/send-otp.js` using `SUPABASE_SERVICE_ROLE_KEY`. Reads Supabase row 1, validates PBKDF2 hash and future expiry, issues signed HMAC admin session token, returns HTTP 200.
+   - Port 5500 `request-otp` / `verify-otp`:
+     `js/config.js` `window.getApiUrl()` routes `/api/*` to `https://birthday-wish-arjun.vercel.app`. Fully preserved.
+
+4. REAL BROWSER UAT VERIFICATION:
+   - Complete 14-step real Chromium browser test (`scratch/test_browser_uat_otp_flow.js`):
+     1. Admin login on `http://localhost:3000/index.html` with password `1111` -> PASS.
+     2. Admin dashboard navigation on `http://localhost:3000/admin.html` -> PASS.
+     3. Security tab & recovery sub-pane navigation -> PASS.
+     4. Verified recovery email address displayed -> PASS.
+     5. "Send Recovery OTP" button clicked -> PASS.
+     6. Network HTTP 200 `{ success: true, message: "OTP sent successfully via Resend!", expiresInSeconds: 300 }` -> PASS.
+     7. Recovery OTP input revealed in DOM -> PASS.
+     8. Invalid OTP `000000` rejected with HTTP 400 (`Invalid OTP code. 4 attempt(s) remaining.`) -> PASS.
+     9. Fresh valid OTP stored in Supabase row 1 with 5-minute expiry -> PASS.
+     10. Fresh OTP entered in browser and verified: HTTP 200 `{ valid: true, message: "OTP Verified!", token: "..." }`, Password reset form revealed with "Identity Verified via Recovery Email OTP" -> PASS.
+     11. New password `2222` submitted and saved via UI -> PASS.
+     12. Logged in successfully with new password `2222` on `index.html` -> PASS.
+     13. Default password restored back to `1111` -> PASS.
+     14. Logged in successfully with restored password `1111` on `index.html` -> PASS.
+   - Targeted Recovery Suite (`scratch/test_recovery_audit_suite.js`): 43/43 PASS.
+   - Admin Browser Suite (`scratch/test_browser_uat_admin.js`): 7/7 PASS.
+   - Syntax Validator (`scratch/validate_all_syntax.js`): 193/193 JS files PASS.
+   - Modularity ceilings respected (< 35 KB across modules).
+
+5. PRODUCTION READINESS STATUS:
+   - VERDICT: PASS (ALL GATES FULLY SATISFIED).
+   - The codebase is stable, verified in real browser UAT, and ready for ONE controlled production deployment.
+

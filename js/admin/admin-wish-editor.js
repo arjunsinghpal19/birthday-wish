@@ -652,6 +652,35 @@
       inp.addEventListener("change", updatePreview);
     });
 
+    // Bind Instant Fallback Emoji Input preview
+    container.querySelectorAll(".adm-gallery-emoji").forEach(inp => {
+      const updateEmoji = () => {
+        const idx = parseInt(inp.dataset.index, 10);
+        if (isNaN(idx) || !editorState.config?.gallery?.[idx]) return;
+        const val = inp.value || "🎈";
+        editorState.config.gallery[idx].emoji = val;
+        editorState.isDirty = true;
+
+        const thumbWrap = container.querySelector(`.gallery-thumb-box[data-index="${idx}"] .gallery-thumb-preview-wrap`);
+        const currentImg = editorState.config.gallery[idx].image;
+
+        if (thumbWrap) {
+          if (currentImg) {
+            const imgEl = thumbWrap.querySelector('.gallery-thumb-img');
+            if (imgEl) {
+              imgEl.setAttribute("onerror", `this.style.display='none'; this.parentElement.innerHTML='<div class=\\'gallery-emoji-tile\\'>${escapeHtml(val)}</div>';`);
+            }
+          } else {
+            thumbWrap.innerHTML = `<div class="gallery-emoji-tile" data-index="${idx}">${escapeHtml(val)}</div>`;
+          }
+        }
+        updateSummaryPanel();
+      };
+
+      inp.addEventListener("input", updateEmoji);
+      inp.addEventListener("change", updateEmoji);
+    });
+
     // Bind Gallery upload & clear buttons
     container.querySelectorAll(".adm-gallery-upload-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -1461,8 +1490,33 @@
     try {
       let record = null;
 
-      // 1. Live Fetch from DB first (guarantees freshest data if edited externally via Quick Editor)
-      if (window.DatabaseModule && typeof window.DatabaseModule.getWishRecordById === "function") {
+      // 1. Primary Privileged Read Path (/api/admin-wishes?id={UUID} via Service Role)
+      try {
+        const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+        const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+          ? window.getApiUrl(`/api/admin-wishes?id=${encodeURIComponent(wishId)}`)
+          : `/api/admin-wishes?id=${encodeURIComponent(wishId)}`;
+
+        const res = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token ? `Bearer ${token}` : "",
+            "x-admin-token": token
+          }
+        });
+        if (res.ok) {
+          const result = await res.json();
+          if (result && result.success && result.data) {
+            record = result.data;
+          }
+        }
+      } catch (apiErr) {
+        console.warn("⚠️ AdminWishEditor: Privileged API fetch notice:", apiErr.message || apiErr);
+      }
+
+      // 2. Fallback to DatabaseModule / client query if privileged API fails or in local offline mocks
+      if (!record && window.DatabaseModule && typeof window.DatabaseModule.getWishRecordById === "function") {
         record = await window.DatabaseModule.getWishRecordById(wishId);
       }
 
@@ -1474,7 +1528,7 @@
         }
       }
 
-      // 2. In-memory cache fallback if DB fetch is unavailable/offline
+      // 3. In-memory cache fallback if DB fetch is unavailable/offline
       if (!record && window.AdminWishes && typeof window.AdminWishes.getWishes === "function") {
         const wishes = window.AdminWishes.getWishes();
         record = wishes.find(w => w.id === wishId);
@@ -1575,16 +1629,49 @@
       let savedId = null;
 
       if (editorState.mode === "new" || !editorState.activeWishUuid) {
-        // Single atomic INSERT
-        savedId = await window.DatabaseModule.saveWish(cfg);
+        // Single atomic INSERT in Admin context (strictly unowned: owner_id = null)
+        savedId = await window.DatabaseModule.saveWish(cfg, { context: "admin", ownerId: null });
         if (!savedId) throw new Error("Failed to insert new wish record into database");
 
         editorState.activeWishUuid = savedId;
         editorState.mode = "edit";
       } else {
-        // Single atomic UPDATE
-        savedId = await window.DatabaseModule.updateWish(editorState.activeWishUuid, cfg);
-        if (!savedId) throw new Error(`Failed to update wish record UUID: ${editorState.activeWishUuid}`);
+        // Privileged Server-Side UPDATE via /api/admin-update-wish (Service Role + Admin Token)
+        const targetId = editorState.activeWishUuid;
+        const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+        const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+          ? window.getApiUrl(`/api/admin-update-wish?id=${encodeURIComponent(targetId)}`)
+          : `/api/admin-update-wish?id=${encodeURIComponent(targetId)}`;
+
+        let apiSuccess = false;
+        try {
+          const res = await fetch(apiUrl, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": token ? `Bearer ${token}` : "",
+              "x-admin-token": token
+            },
+            body: JSON.stringify({ config: cfg })
+          });
+
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData && resData.success) {
+              savedId = resData.id || targetId;
+              apiSuccess = true;
+            }
+          }
+        } catch (apiErr) {
+          console.warn("⚠️ AdminWishEditor: Privileged update API notice:", apiErr.message || apiErr);
+        }
+
+        // Fallback for transitional offline mocks if API is unreachable
+        if (!apiSuccess) {
+          savedId = await window.DatabaseModule.updateWish(targetId, cfg);
+        }
+
+        if (!savedId) throw new Error(`Failed to update wish record UUID: ${targetId}`);
       }
 
       editorState.isDirty = false;

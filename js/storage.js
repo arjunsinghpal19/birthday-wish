@@ -65,35 +65,44 @@
       if (!client) return [];
 
       const folders = ["photos", "videos", "audio"];
-      const allFiles = [];
 
-      for (const folder of folders) {
-        const { data, error } = await client.storage
-          .from(BUCKET_NAME)
-          .list(folder, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+      // Concurrently query all three storage folders in parallel
+      const folderResults = await Promise.all(
+        folders.map(async (folder) => {
+          try {
+            const { data, error } = await client.storage
+              .from(BUCKET_NAME)
+              .list(folder, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-        if (!error && data) {
-          data.forEach(item => {
-            if (item.name && item.name !== ".emptyFolderPlaceholder") {
-              const fullPath = `${folder}/${item.name}`;
-              const { data: pubData } = client.storage.from(BUCKET_NAME).getPublicUrl(fullPath);
-              allFiles.push({
-                id: item.id || `${folder}_${item.name}`,
-                name: item.name,
-                folder: folder,
-                path: fullPath,
-                size: item.metadata?.size || item.size || 0,
-                created_at: item.created_at || item.updated_at || new Date().toISOString(),
-                updated_at: item.updated_at || item.created_at || new Date().toISOString(),
-                mimetype: item.metadata?.mimetype || (folder === "photos" ? "image/jpeg" : folder === "videos" ? "video/mp4" : "audio/mpeg"),
-                publicUrl: pubData ? pubData.publicUrl : null
-              });
-            }
-          });
-        }
-      }
+            if (error || !Array.isArray(data)) return [];
 
-      return allFiles;
+            const files = [];
+            data.forEach(item => {
+              if (item.name && item.name !== ".emptyFolderPlaceholder") {
+                const fullPath = `${folder}/${item.name}`;
+                const { data: pubData } = client.storage.from(BUCKET_NAME).getPublicUrl(fullPath);
+                files.push({
+                  id: item.id || `${folder}_${item.name}`,
+                  name: item.name,
+                  folder: folder,
+                  path: fullPath,
+                  size: item.metadata?.size || item.size || 0,
+                  created_at: item.created_at || item.updated_at || new Date().toISOString(),
+                  updated_at: item.updated_at || item.created_at || new Date().toISOString(),
+                  mimetype: item.metadata?.mimetype || (folder === "photos" ? "image/jpeg" : folder === "videos" ? "video/mp4" : "audio/mpeg"),
+                  publicUrl: pubData ? pubData.publicUrl : null
+                });
+              }
+            });
+            return files;
+          } catch (folderErr) {
+            console.warn(`⚠️ Storage folder list exception (${folder}):`, folderErr);
+            return [];
+          }
+        })
+      );
+
+      return folderResults.flat();
     } catch (e) {
       console.warn("⚠️ Storage list exception:", e);
       return [];
@@ -171,6 +180,7 @@
 
   window.StorageModule = {
     uploadMedia: uploadMediaFile,
+    uploadMediaFile: uploadMediaFile,
     listAllMedia: listAllMediaFiles,
     deleteMedia: deleteMediaFile,
     deleteMultipleMedia: deleteMultipleMediaFiles

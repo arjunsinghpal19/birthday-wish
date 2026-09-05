@@ -1212,12 +1212,15 @@
           await root.updateShareSection();
         }
 
+        const activeUuid = cfg._activeWishUuid || (root.CONFIG && root.CONFIG._activeWishUuid) || null;
         const buildUrlFn = root.buildRecipientShareUrl || (typeof buildRecipientShareUrl === "function" ? buildRecipientShareUrl : async () => window.location.href);
-        const customUrl = await buildUrlFn(values.nameVal, { persist: true });
+        // For an existing UUID wish: do NOT perform an unnecessary database UPDATE.
+        // For a brand new unpersisted wish (no activeUuid): allow initial insert to create permanent UUID.
+        const customUrl = await buildUrlFn(values.nameVal, { persist: !activeUuid });
         const toastFn = root.showToast || ((m) => console.log(m));
 
         if (!customUrl) {
-          toastFn("⚠️ Unable to sync wish to cloud. Please check connection and try again.");
+          toastFn("⚠️ Unable to generate wish link. Please try again.");
           return;
         }
 
@@ -1262,9 +1265,9 @@
           const waBtn = document.getElementById("share-whatsapp-btn");
           if (waBtn) {
             waBtn.onclick = async () => {
-              const currentUrl = await buildUrlFn(values.nameVal, { persist: true });
+              const currentUrl = customUrl || (await buildUrlFn(values.nameVal, { persist: !activeUuid }));
               if (!currentUrl) {
-                toastFn("⚠️ Unable to sync wish to cloud. Please try again.");
+                toastFn("⚠️ Unable to generate wish link. Please try again.");
                 return;
               }
               const EMOJI_CAKE = "\u{1F382}";
@@ -1279,7 +1282,9 @@
               }
 
               const msg = `${greetingHeader}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${currentUrl}`;
-              const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+              const waUrl = (window.ShareModule && typeof window.ShareModule.buildWhatsAppUrl === "function")
+                ? window.ShareModule.buildWhatsAppUrl(currentUrl, trimmedName)
+                : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
               const win = window.open(waUrl, "_blank");
               if (!win) window.location.href = waUrl;
             };
@@ -1289,9 +1294,9 @@
           const nativeBtn = document.getElementById("share-native-btn");
           if (nativeBtn) {
             nativeBtn.onclick = async () => {
-              const currentUrl = await buildUrlFn(values.nameVal, { persist: true });
+              const currentUrl = customUrl || (await buildUrlFn(values.nameVal, { persist: !activeUuid }));
               if (!currentUrl) {
-                toastFn("⚠️ Unable to sync wish to cloud. Please try again.");
+                toastFn("⚠️ Unable to generate wish link. Please try again.");
                 return;
               }
               if (navigator.share) {
@@ -1304,9 +1309,24 @@
                         url: currentUrl
                       };
                   await navigator.share(payload);
-                } catch(e) {}
+                } catch(e) {
+                  if (e && (e.name === "AbortError" || e.code === 20)) {
+                    return;
+                  }
+                  try {
+                    await navigator.clipboard.writeText(currentUrl);
+                    toastFn("📋 Wish Link copied to clipboard!");
+                  } catch(err) {
+                    toastFn("📋 Link copied! Paste anywhere to share.");
+                  }
+                }
               } else {
-                toastFn("📋 Link copied! Paste anywhere to share.");
+                try {
+                  await navigator.clipboard.writeText(currentUrl);
+                  toastFn("📋 Wish Link copied to clipboard!");
+                } catch (err) {
+                  toastFn("📋 Link copied! Paste anywhere to share.");
+                }
               }
             };
           }

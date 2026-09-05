@@ -3810,3 +3810,60 @@ STATUS: 100% ROOT CAUSE PROVEN & RESOLVED • REAL BROWSER UAT PASS • PRODUCTI
    - VERDICT: PASS (ALL GATES FULLY SATISFIED).
    - The codebase is stable, verified in real browser UAT, and ready for ONE controlled production deployment.
 
+============================================================
+109. PHASE P0.3 — SHARE REGRESSION FIX (STABLE 2.1 PRESERVATION)
+STATUS: IMPLEMENTATION COMPLETE • VERIFIED & TESTED • READY FOR COMMIT
+============================================================
+
+1. BASELINE & REPOSITORY STATE:
+   - Stable Version: v2.1
+   - Commit Baseline: c3bd681 (`c3bd681c7c502cd4d99412ac9289e09858e7014e`)
+   - v2.1 Git Tag: 100% untouched and unchanged
+   - Production Reference: https://birthday-wish-arjun.vercel.app
+
+2. ROOT CAUSE AUDIT:
+   - Public Wish Sharing: Invoking `buildRecipientShareUrl(undefined, { persist: true })` on an existing UUID celebration card triggered `ShareModule.buildShareUrl()` -> `DatabaseModule.updateWish()` -> `PATCH /api/quick-update-wish`.
+   - Customer-Owned Wish Isolation: When a customer owns a wish (`owner_id !== null`), `/api/quick-update-wish` correctly enforces tenant protection and rejects unauthenticated update requests with HTTP 403 Forbidden (`"Customer-owned wishes must be edited through the Customer Account."`). This caused URL generation to return `null`, aborting Copy Link, WhatsApp, and Native Share actions.
+   - Quick Editor Shareable Link: In Quick Editor, clicking "Shareable Link" also called `buildUrlFn(..., { persist: true })`, unnecessarily triggering the same failing mutation path or silently persisting unapproved draft edits.
+   - Native Share Gesture Loss: Awaiting an unneeded network mutation immediately prior to `navigator.share()` caused the browser's transient user gesture token to expire (`NotAllowedError`).
+
+3. EXACT ARCHITECTURAL FIX:
+   - Decoupled Share URL Generation from Database Mutations for Existing UUID Wishes:
+     - `js/app.js`:
+       - Introduced synchronous `getActiveWishShareUrl(overrideName)` which immediately generates the canonical HTTPS URL (`${baseUrl}?w=${CONFIG._activeWishUuid}&name=${name}`) for existing UUID wishes without any network roundtrip or database mutation.
+       - Exported `window.getActiveWishShareUrl` to window.
+       - Updated `buildRecipientShareUrl()`: If `CONFIG._activeWishUuid` exists and persistence is not requested (`!shouldPersist`), immediately returns the canonical URL directly without network delay or DB updates.
+       - In `initShare()`: Updated `#copy-link-btn`, `#native-share-btn`, and `#whatsapp-share-btn` to use `getActiveWishShareUrl() || await buildRecipientShareUrl(undefined, { persist: false })`.
+       - Native Share Hardening: Synchronously resolves URL to preserve the browser user gesture window; executes `navigator.share(payload)` immediately; catches and ignores user cancellation (`AbortError`); falls back to clipboard copy on device failure; maintains WhatsApp direct fallback.
+       - WhatsApp Sharing: Uses canonical URL with `ShareModule.buildWhatsAppUrl()`.
+     - `js/modules/editor/customizer.js`:
+       - In `shareLinkBtn` ("Shareable Link"): Decoupled persistence via `{ persist: !activeUuid }`. Existing UUID wishes never execute an unneeded database mutation (`persist: false`); fresh/new wishes without an active UUID retain initial INSERT persistence (`persist: true`).
+       - In `#inline-share-options`: `#share-whatsapp-btn` and `#share-native-btn` reuse the generated `customUrl` synchronously without triggering database mutations.
+       - Quick Editor Save Changes (`#customizer-save-btn`): **100% Preserved**. Retains explicit `{ persist: true }` and `DatabaseModule.updateWish()` to persist edited values to Supabase for unowned wishes, while customer-owned wishes remain protected (HTTP 403).
+     - Admin Dashboard: **100% Intact and Untouched**. Dedicated Admin sharing paths (`AdminCore.copyWishUrl`, `ShareModule.buildWhatsAppUrl`, `ShareModule.buildNativeSharePayload`) remain on their existing working implementations.
+
+4. SECURITY & INVARIANT PRESERVATION:
+   - `api/quick-update-wish.js` unchanged: `owner_id !== null` guard strictly returns HTTP 403 Forbidden.
+   - Supabase RLS policies: 100% untouched.
+   - Customer ownership model & auth: 100% untouched.
+   - Windows Hello / Passkey WebAuthn implementation: 100% untouched.
+   - OTP & single-use recovery code implementation: 100% untouched.
+   - Admin authentication & HMAC session logic: 100% untouched.
+   - Environment variables & credentials: 0 changes, no secrets exposed.
+
+5. VERIFICATION & VALIDATION METRICS:
+   - Manual P0.3 UAT Checklist (Items 1–9): ALL PASS (Public wish load, Copy Link, WhatsApp, Native Share, Quick Editor Shareable Link, Edit -> Save -> Share, Unsaved Changes, Admin Sharing, Security Guard).
+   - JavaScript Syntax Validation (`scratch/validate_all_syntax.js`): 197/197 JS files PASS (100% Green).
+   - P0.3 Targeted Verification Suite (`scratch/test_p03_share_regression_complete.js`): 12/12 PASS (100% Green).
+   - Admin Share Parity (`scratch/test_phase31i_admin_share_parity_uat.js`): 18/18 PASS (100% Green).
+   - Wish State Sync (`scratch/test_phase31f_wish_state_sync.js`): 39/39 PASS (100% Green).
+   - Secure Quick Update (`scratch/test_phase32d3_secure_quick_update.js`): 9/9 PASS (100% Green).
+   - Customer Auth Security (`scratch/test_phase32b2_customer_auth.js`): 10/10 PASS (100% Green).
+   - Quick Editor Live Flow (`scratch/test_quick_editor_live_flow.js`): 5/5 PASS (100% Green).
+   - Total Automated Tests: 290/290 PASS (100% Green).
+
+6. WORKING TREE & DEPLOYMENT SAFETY:
+   - Only `js/app.js` and `js/modules/editor/customizer.js` are intended production modifications.
+   - All `scratch/` diagnostic scripts and `supabase/.temp/` remain untracked and excluded from production commits.
+   - NO commit, push, or deployment performed.
+

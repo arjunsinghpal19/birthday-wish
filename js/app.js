@@ -292,16 +292,34 @@ function isHostedOnline() {
 }
 
 /**
- * Generates a clean, publish-safe, shareable public wish URL.
+ * Returns the canonical share URL directly from active wish UUID synchronously.
+ * Avoids unnecessary database mutations and avoids breaking browser user gesture tokens.
+ * @param {string} [overrideName]
+ * @returns {string|null} Canonical URL or null if no active UUID exists.
+ */
+function getActiveWishShareUrl(overrideName) {
+  if (!CONFIG._activeWishUuid) return null;
+  const nameVal = (overrideName !== undefined ? overrideName : (CONFIG.name || "")).trim();
+  let baseUrl = location.origin + location.pathname;
+  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+    baseUrl = location.href.split("?")[0];
+  }
+  let shareUrl = `${baseUrl}?w=${CONFIG._activeWishUuid}`;
+  if (nameVal) shareUrl += `&name=${encodeURIComponent(nameVal)}`;
+  return shareUrl;
+}
+window.getActiveWishShareUrl = getActiveWishShareUrl;
+
+/**
+ * Asynchronously generates the canonical share URL for the current active configuration.
  *
- * Architecture & Protection Rules:
- *   - Builds a sanitized payload via `buildPublishConfig()` without mutating the local draft `CONFIG`.
+ * Architecture & Routing Strategy:
  *   - Attempts persistent Supabase UUID generation via `ShareModule.buildShareUrl()`.
  *   - Falls back to compact Base64 token serialization (`encodeWishData()`) if offline or unpersisted.
  *   - Strict Media Sanitization: Strips temporary client-only `blob:` and `data:` URLs to prevent broken media links.
  *
  * @param {string} [overrideName] - Optional custom name override.
- * @param {Object} [options] - Persistence options (e.g. `{ persist: true }` on explicit share button click).
+ * @param {Object} [options] - Persistence options (e.g. `{ persist: true }` on explicit save button click).
  * @returns {Promise<string>} Canonical HTTPS share URL.
  */
 async function buildRecipientShareUrl(overrideName, options = { persist: false }) {
@@ -320,6 +338,14 @@ async function buildRecipientShareUrl(overrideName, options = { persist: false }
     publishConfig._activeWishUuid = CONFIG._activeWishUuid;
   }
 
+  // If active UUID is already known and persistence is not requested, return canonical URL directly without network delay
+  const shouldPersist = typeof options === "boolean" ? options : !!(options && options.persist);
+  if (!shouldPersist && CONFIG._activeWishUuid) {
+    let url = `${baseUrl}?w=${CONFIG._activeWishUuid}`;
+    if (nameVal) url += `&name=${encodeURIComponent(nameVal)}`;
+    return url;
+  }
+
   // Try generating / updating short UUID link via ShareModule
   if (window.ShareModule) {
     const uuidUrl = await window.ShareModule.buildShareUrl(publishConfig, nameVal, options);
@@ -330,7 +356,6 @@ async function buildRecipientShareUrl(overrideName, options = { persist: false }
       return uuidUrl;
     }
     // If persistence was explicitly requested but failed, do NOT fallback to a misleading unpersisted URL
-    const shouldPersist = typeof options === "boolean" ? options : !!(options && options.persist);
     if (shouldPersist) {
       return null;
     }
@@ -452,9 +477,12 @@ function initShare() {
   const copyBtn = document.getElementById("copy-link-btn");
   if (copyBtn) {
     copyBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      let shareUrl = getActiveWishShareUrl();
       if (!shareUrl) {
-        showToast("⚠️ Could not update share link. Please try again.");
+        shareUrl = await buildRecipientShareUrl(undefined, { persist: false });
+      }
+      if (!shareUrl) {
+        showToast("⚠️ Could not generate share link. Please try again.");
         return;
       }
       const nameVal = (CONFIG.name || "").trim();
@@ -492,9 +520,13 @@ function initShare() {
   const shareBtn = document.getElementById("native-share-btn");
   if (shareBtn) {
     shareBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      // Synchronous URL retrieval for active UUID wish to keep user gesture activation valid
+      let shareUrl = getActiveWishShareUrl();
       if (!shareUrl) {
-        showToast("⚠️ Could not update share link. Please try again.");
+        shareUrl = await buildRecipientShareUrl(undefined, { persist: false });
+      }
+      if (!shareUrl) {
+        showToast("⚠️ Could not generate share link. Please try again.");
         return;
       }
       const nameVal = (CONFIG.name || "").trim();
@@ -514,12 +546,25 @@ function initShare() {
           await navigator.share(payload);
           return;
         } catch (e) {
-          return;
+          // Distinguish user cancellation (AbortError) from failures
+          if (e && (e.name === "AbortError" || e.code === 20)) {
+            return;
+          }
+          // Non-abort failure fallback: Copy link to clipboard
+          try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+              await navigator.clipboard.writeText(shareUrl);
+              showToast(displayName ? `Wish link copied for ${displayName}! 🔗` : "Wish link copied! 🔗");
+              return;
+            }
+          } catch (clipErr) {}
         }
       }
 
       // WhatsApp direct fallback
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
+      const waUrl = (window.ShareModule && typeof window.ShareModule.buildWhatsAppUrl === "function")
+        ? window.ShareModule.buildWhatsAppUrl(shareUrl, displayName)
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMsg)}`;
       const win = window.open(waUrl, "_blank");
       if (!win) location.href = waUrl;
     });
@@ -529,16 +574,21 @@ function initShare() {
   const waBtn = document.getElementById("whatsapp-share-btn");
   if (waBtn) {
     waBtn.addEventListener("click", async () => {
-      const shareUrl = await buildRecipientShareUrl(undefined, { persist: true });
+      let shareUrl = getActiveWishShareUrl();
       if (!shareUrl) {
-        showToast("⚠️ Could not update share link. Please try again.");
+        shareUrl = await buildRecipientShareUrl(undefined, { persist: false });
+      }
+      if (!shareUrl) {
+        showToast("⚠️ Could not generate share link. Please try again.");
         return;
       }
       const nameVal = (CONFIG.name || "").trim();
       const displayName = nameVal ? formatName(nameVal) : "";
       const greeting = displayName ? `Hey ${displayName}! ${EMOJI_CAKE}${EMOJI_SPARKLES}` : `Hey! ${EMOJI_CAKE}${EMOJI_SPARKLES}`;
       const waText = `${greeting}\n\nMaine tumhare liye ek special Birthday Surprise banaya hai! ${EMOJI_GIFT}${EMOJI_HEART}\n\nKhol kar dekho ${EMOJI_GIFT}:\n${shareUrl}`;
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
+      const waUrl = (window.ShareModule && typeof window.ShareModule.buildWhatsAppUrl === "function")
+        ? window.ShareModule.buildWhatsAppUrl(shareUrl, displayName)
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(waText)}`;
       const win = window.open(waUrl, "_blank");
       if (!win) location.href = waUrl;
     });

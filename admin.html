@@ -316,6 +316,11 @@
                 <button type="button" id="btn-wishes-search-clear" class="btn-search-clear" title="Clear search" aria-label="Clear search" style="display: none;">✕</button>
               </div>
               <div class="table-filter-group">
+                <select class="filter-select" id="wishes-filter-ownership" title="Filter by wish ownership">
+                  <option value="all">All Wishes</option>
+                  <option value="admin">👑 Admin / Unowned</option>
+                  <option value="customer_all">👥 All Customer Wishes</option>
+                </select>
                 <select class="filter-select" id="wishes-filter-media" title="Filter by media type">
                   <option value="all">All Media Types</option>
                   <option value="music">🎵 Has Music</option>
@@ -453,19 +458,72 @@
           </div>
         </section>
 
-        <!-- 2.5 👥 CUSTOMERS (COMING SOON) -->
+        <!-- 2.5 👥 CUSTOMERS -->
         <section id="view-customers" class="tab-view">
           <div class="view-header">
             <div class="view-title">
               <h2>Customer Management</h2>
-              <p>Customer accounts, profiles & user ownership management</p>
+              <p>Customer accounts, profiles & wish ownership metrics</p>
+            </div>
+            <div class="dash-header-actions" style="display:flex;gap:8px;align-items:center;">
+              <button type="button" class="btn-primary" id="btn-refresh-customers">🔄 Refresh Customers</button>
             </div>
           </div>
 
-          <div class="glass-panel coming-soon-banner">
-            <h3>👥 Customer Dashboard Architecture</h3>
-            <p style="color:var(--text-muted);max-width:520px;margin:0 auto 16px auto;">Customer accounts, profiles, wish ownership, and customer features will be introduced in a future release.</p>
-            <span class="nav-badge soon" style="font-size:0.9rem;padding:6px 16px;">Phase 32 — Coming Soon</span>
+          <div class="glass-panel table-panel">
+            <div class="table-toolbar">
+              <div class="table-search">
+                <span class="icon">🔍</span>
+                <input type="text" id="customers-search-input" placeholder="Search by customer name, email or ID...">
+                <button type="button" id="btn-customers-search-clear" class="btn-search-clear" title="Clear search" aria-label="Clear search" style="display: none;">✕</button>
+              </div>
+              <div class="table-filter-group">
+                <select class="filter-select" id="customers-filter-status" title="Filter by account status">
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <select class="filter-select" id="customers-filter-plan" title="Filter by plan tier">
+                  <option value="all">All Plans</option>
+                </select>
+                <select class="filter-select" id="customers-filter-wishes" title="Filter by total wishes">
+                  <option value="all">All Wishes</option>
+                  <option value="0">0 Wishes</option>
+                  <option value="1-5">1–5 Wishes</option>
+                  <option value="6-10">6–10 Wishes</option>
+                  <option value="10+">10+ Wishes</option>
+                </select>
+                <select class="filter-select" id="customers-sort-select" title="Sort customers">
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="most_wishes">Most Wishes</option>
+                  <option value="least_wishes">Least Wishes</option>
+                  <option value="last_active">Last Active</option>
+                </select>
+                <button type="button" class="btn-reset-view" id="btn-customers-reset-filters" title="Reset all customer filters and search" aria-label="Reset customer filters">↺ Reset Filters</button>
+                <div class="table-count-badge" id="customers-count-badge">Showing 0 of 0 customers</div>
+              </div>
+            </div>
+
+            <div class="table-responsive-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th class="th-cust-name" style="min-width: 180px;">Customer Name</th>
+                    <th class="th-cust-email" style="white-space: nowrap;">Email</th>
+                    <th class="th-cust-status" style="white-space: nowrap;">Status</th>
+                    <th class="th-cust-plan" style="white-space: nowrap;">Plan</th>
+                    <th class="th-cust-date" style="white-space: nowrap;">Created Date</th>
+                    <th class="th-cust-date" style="white-space: nowrap;">Last Active</th>
+                    <th class="th-cust-wishes" style="white-space: nowrap;">Total Wishes</th>
+                    <th class="th-cust-actions" style="text-align: right; white-space: nowrap; min-width: 150px; width: 1%;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="customers-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 

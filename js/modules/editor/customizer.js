@@ -844,10 +844,17 @@
     populateEditorFields();
 
     // 5. Re-render main application DOM sections
+    const displayName = cfg.name ? formatFn(cfg.name) : "";
     if (renderSecFn) {
-      const displayName = cfg.name ? formatFn(cfg.name) : "";
       const allKeys = root.ALL_SECTION_KEYS || ["name", "date", "passcode", "sender", "letter", "memory", "reasons", "wishes", "gallery", "timeline", "gift", "music", "video", "cake", "share"];
       renderSecFn(allKeys, displayName);
+    } else if (typeof root.updateNameSlots === "function") {
+      root.updateNameSlots(displayName);
+    }
+
+    const pcTitle = document.querySelector(".pc-title");
+    if (pcTitle) {
+      pcTitle.textContent = "Secret Birthday Code";
     }
 
     toastFn("Started a brand new birthday wish! ✨");

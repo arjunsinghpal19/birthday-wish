@@ -451,34 +451,37 @@
         return { success: false, error: "Cannot duplicate protected system configuration record." };
       }
 
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) return { success: false, error: "Database client unavailable" };
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-duplicate-wish")
+        : "/api/admin-duplicate-wish";
 
-      const { data, error: selectError } = await client
-        .from(TABLE_NAME)
-        .select("*")
-        .eq("id", cleanSourceId)
-        .single();
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": token,
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ uuid: cleanSourceId, adminToken: token })
+        });
 
-      if (selectError || !data) {
-        console.warn("⚠️ Supabase DB Duplicate: Source wish not found:", selectError ? selectError.message : "No data");
-        return { success: false, error: selectError ? selectError.message : "Source wish record not found" };
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.newId) {
+            console.log("📋 Duplicated wish record with new ID:", data.newId);
+            return { success: true, newId: data.newId };
+          }
+          return { success: false, error: data.error || "Failed to duplicate wish record" };
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        return { success: false, error: errData.error || `Server returned HTTP ${res.status}` };
+      } catch (apiErr) {
+        console.warn("⚠️ Secure Admin Duplicate API unreachable:", apiErr);
+        return { success: false, error: "Secure Admin Duplicate API unavailable." };
       }
-
-      const record = prepareDuplicatePayload(data);
-      const { data: inserted, error: insertError } = await client
-        .from(TABLE_NAME)
-        .insert([record])
-        .select("id")
-        .single();
-
-      if (insertError || !inserted) {
-        console.warn("⚠️ Supabase DB Duplicate Insert Error:", insertError ? insertError.message : "Failed insert");
-        return { success: false, error: insertError ? insertError.message : "Failed to insert duplicate wish record" };
-      }
-
-      console.log("📋 Duplicated wish record with new ID:", inserted.id);
-      return { success: true, newId: inserted.id };
     } catch (e) {
       console.warn("⚠️ DB duplicate exception:", e);
       return { success: false, error: e.message || "Failed to duplicate wish record" };
@@ -511,46 +514,50 @@
         return { success: false, error: "All provided wish UUIDs are invalid or protected", createdCount: 0, newWishes: [], failedIds };
       }
 
-      const client = window.SupabaseModule ? window.SupabaseModule.getClient() : null;
-      if (!client) return { success: false, error: "Database client unavailable", createdCount: 0, newWishes: [], failedIds };
+      const token = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
+      const apiUrl = (typeof window !== "undefined" && typeof window.getApiUrl === "function")
+        ? window.getApiUrl("/api/admin-duplicate-wish")
+        : "/api/admin-duplicate-wish";
 
-      const { data: sourceRecords, error: selectError } = await client
-        .from(TABLE_NAME)
-        .select("*")
-        .in("id", validSourceIds);
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": token,
+            "Authorization": token ? `Bearer ${token}` : ""
+          },
+          body: JSON.stringify({ uuids: validSourceIds, adminToken: token })
+        });
 
-      if (selectError || !Array.isArray(sourceRecords) || sourceRecords.length === 0) {
+        if (res.ok) {
+          const data = await res.json();
+          return {
+            success: !!data.success,
+            createdCount: data.createdCount || (data.newWishes ? data.newWishes.length : 0),
+            newWishes: data.newWishes || [],
+            failedIds: (data.failedIds || []).concat(failedIds)
+          };
+        }
+
+        const errData = await res.json().catch(() => ({}));
         return {
           success: false,
-          error: selectError ? selectError.message : "No matching source wish records found to duplicate",
+          error: errData.error || `Server returned HTTP ${res.status}`,
           createdCount: 0,
           newWishes: [],
-          failedIds: validSourceIds.map(id => ({ id, error: "Source record not found" }))
+          failedIds: validSourceIds.map(id => ({ id, error: errData.error || `HTTP ${res.status}` })).concat(failedIds)
         };
-      }
-
-      const foundIds = new Set(sourceRecords.map(r => r.id));
-      validSourceIds.forEach(id => {
-        if (!foundIds.has(id)) failedIds.push({ id, error: "Source record not found in database" });
-      });
-
-      const duplicatePayloads = sourceRecords.map(r => prepareDuplicatePayload(r));
-      const { data: insertedRecords, error: insertError } = await client
-        .from(TABLE_NAME)
-        .insert(duplicatePayloads)
-        .select("*");
-
-      if (insertError || !Array.isArray(insertedRecords)) {
+      } catch (apiErr) {
+        console.warn("⚠️ Secure Admin Duplicate API unreachable:", apiErr);
         return {
           success: false,
-          error: insertError ? insertError.message : "Failed to insert duplicate wish records",
+          error: "Secure Admin Duplicate API unavailable.",
           createdCount: 0,
           newWishes: [],
-          failedIds: validSourceIds.map(id => ({ id, error: insertError ? insertError.message : "Batch insert failed" }))
+          failedIds: validSourceIds.map(id => ({ id, error: "Network error" })).concat(failedIds)
         };
       }
-
-      return { success: true, createdCount: insertedRecords.length, newWishes: insertedRecords, failedIds };
     } catch (e) {
       console.warn("⚠️ DB bulk duplicate exception:", e);
       return { success: false, error: e.message || "Failed to duplicate wish records", createdCount: 0, newWishes: [], failedIds: [] };

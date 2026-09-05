@@ -379,6 +379,11 @@
 
     const peekEl = document.getElementById("letter-peek-text");
     if (peekEl) peekEl.textContent = name ? `For ${name} ❤️` : "For You ❤️";
+
+    const pcTitle = document.querySelector(".pc-title");
+    if (pcTitle) {
+      pcTitle.textContent = name ? `Secret Code for ${name}` : "Secret Birthday Code";
+    }
   }
 
   function updateSenderSlots() {

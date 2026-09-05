@@ -156,7 +156,7 @@ export default async function handler(req, res) {
     if (targetUuid) {
       // 4A. Single Wish Read (Quick View / Wish Studio)
       const singleRes = await fetch(
-        `${supabaseUrl}/rest/v1/wishes?id=eq.${encodeURIComponent(targetUuid)}&select=*`,
+        `${supabaseUrl}/rest/v1/wishes?id=eq.${encodeURIComponent(targetUuid)}&select=*,customers:owner_id(id,email,full_name)`,
         {
           headers: {
             apikey: serviceRoleKey,
@@ -188,7 +188,7 @@ export default async function handler(req, res) {
     } else {
       // 4B. Bulk Wishes Read (Admin Overview / Wishes Table)
       const bulkRes = await fetch(
-        `${supabaseUrl}/rest/v1/wishes?id=neq.${SYSTEM_CONFIG_UUID}&select=*&order=created_at.desc`,
+        `${supabaseUrl}/rest/v1/wishes?id=neq.${SYSTEM_CONFIG_UUID}&select=*,customers:owner_id(id,email,full_name)&order=created_at.desc`,
         {
           headers: {
             apikey: serviceRoleKey,

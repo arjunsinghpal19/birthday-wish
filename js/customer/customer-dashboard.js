@@ -92,9 +92,11 @@
     closeMobileSidebar();
 
     if (activeTab === "overview") {
+      revalidateCustomerWishes();
       root.CustomerWishes?.renderRecentOverviewList?.();
       root.CustomerMedia?.updateStorageUsage?.(customerWishes, currentProfile?.storage_quota_mb || 25);
     } else if (activeTab === "wishes") {
+      revalidateCustomerWishes();
       root.CustomerWishes?.renderMyWishesHub?.();
     } else if (activeTab === "create") {
       if (!root.CustomerWishEditor?.getState?.().config) {
@@ -180,12 +182,54 @@
     root.CustomerMedia?.updateStorageUsage?.(customerWishes, quotaMb);
   }
 
+  const REVALIDATION_THROTTLE_MS = 5000;
+  let lastRevalidateTime = 0;
+  let isRevalidating = false;
+
   async function loadCustomerWishes() {
     if (root.CustomerWishes?.loadWishes) {
       customerWishes = await root.CustomerWishes.loadWishes(true);
+      lastRevalidateTime = Date.now();
       root.CustomerWishes.renderRecentOverviewList?.();
       root.CustomerWishes.renderMyWishesHub?.();
       root.CustomerMedia?.updateStorageUsage?.(customerWishes, currentProfile?.storage_quota_mb || 25);
+    }
+  }
+
+  /**
+   * Background throttled revalidation of customer wishes.
+   * Purges externally deleted wishes and refreshes UI if throttled interval (>=5s) has passed.
+   * Prevents concurrent fetches via isRevalidating lock.
+   */
+  async function revalidateCustomerWishes() {
+    if (!currentUser) {
+      if (root.CustomerAuth?.getCurrentUser) {
+        try {
+          const u = await root.CustomerAuth.getCurrentUser();
+          if (u && u.id) currentUser = u;
+        } catch (_) {}
+      }
+      if (!currentUser) return;
+    }
+
+    const now = Date.now();
+    if (now - lastRevalidateTime < REVALIDATION_THROTTLE_MS || isRevalidating) {
+      return;
+    }
+
+    isRevalidating = true;
+    lastRevalidateTime = now;
+
+    try {
+      await loadCustomerWishes();
+      const modalPlan = el("modal-plan-wishes-count");
+      if (modalPlan) modalPlan.textContent = `${customerWishes.length} Wishes`;
+      const viewPlan = el("view-plan-wishes-count");
+      if (viewPlan) viewPlan.textContent = `${customerWishes.length} Wishes`;
+    } catch (err) {
+      console.warn("⚠️ CustomerDashboard: Background revalidation error:", err);
+    } finally {
+      isRevalidating = false;
     }
   }
 
@@ -555,6 +599,17 @@
         });
       }
     });
+
+    // 16. Window focus & Visibility change background revalidation
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        revalidateCustomerWishes();
+      }
+    });
+
+    window.addEventListener("focus", () => {
+      revalidateCustomerWishes();
+    });
   }
 
   async function initCustomerPortal() {
@@ -600,6 +655,7 @@
     init: initCustomerPortal,
     renderCustomerProfile,
     loadCustomerWishes,
+    revalidateCustomerWishes,
     switchTab,
     showAuthenticatedDashboard,
     showUnauthenticatedGate,

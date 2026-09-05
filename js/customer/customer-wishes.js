@@ -379,24 +379,32 @@
         btnConfirm.textContent = "Deleting...";
       }
 
-      const client = (root.SupabaseModule && typeof root.SupabaseModule.getClient === "function")
-        ? root.SupabaseModule.getClient()
+      const sessionData = (root.CustomerAuth && typeof root.CustomerAuth.getSession === "function")
+        ? await root.CustomerAuth.getSession()
         : null;
 
-      if (!client) {
-        throw new Error("Supabase client unavailable.");
+      const accessToken = (sessionData && sessionData.session) ? sessionData.session.access_token : null;
+      if (!accessToken) {
+        throw new Error("No active customer session found.");
       }
 
       const targetId = targetDeleteWish.id;
+      const apiUrl = (typeof root.getApiUrl === "function")
+        ? root.getApiUrl("/api/customer-delete-wish")
+        : "/api/customer-delete-wish";
 
-      // Execute RLS-scoped delete (PostgreSQL RLS ensures auth.uid() = owner_id)
-      const { error } = await client
-        .from("wishes")
-        .delete()
-        .eq("id", targetId);
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ uuid: targetId })
+      });
 
-      if (error) {
-        throw new Error(error.message || "Failed to delete celebration record.");
+      const resData = await res.json().catch(() => ({}));
+      if (!res.ok || !resData.success) {
+        throw new Error(resData.error || `Failed to delete celebration record (HTTP ${res.status}).`);
       }
 
       // Remove locally from state

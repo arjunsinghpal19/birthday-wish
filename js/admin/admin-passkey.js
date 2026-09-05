@@ -109,12 +109,18 @@
       const attestationObject = bufferToBase64Url(credential.response.attestationObject);
 
       safeToast("⏳ Persisting public credential to server...");
+      const adminToken = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
       const apiUrl = root.getApiUrl ? root.getApiUrl("/api/auth") : "/api/auth";
+      const headers = { "Content-Type": "application/json" };
+      if (adminToken) {
+        headers["x-admin-token"] = adminToken;
+      }
       const saveRes = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           action: "passkey-register",
+          adminToken,
           credential: { id: credId, rawId, type: credential.type, clientDataJSON, attestationObject }
         })
       });
@@ -225,11 +231,19 @@
   async function removePasskey() {
     try {
       safeToast("⏳ Removing registered passkeys from server...");
+      const adminToken = (typeof sessionStorage !== "undefined" && sessionStorage.getItem("admin_session_token")) || "";
       const apiUrl = root.getApiUrl ? root.getApiUrl("/api/auth") : "/api/auth";
+      const headers = { "Content-Type": "application/json" };
+      if (adminToken) {
+        headers["x-admin-token"] = adminToken;
+      }
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "passkey-remove" })
+        headers,
+        body: JSON.stringify({
+          action: "passkey-remove",
+          adminToken
+        })
       });
       const data = await res.json();
       if (res.ok && data.success) {

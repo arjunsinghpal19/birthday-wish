@@ -26,8 +26,14 @@
     const isCreate = params.get("create") === "true";
     const fromCustomer = params.get("from") === "customer";
 
-    // Only activate when explicitly entering the new celebration flow from Customer Portal
-    if (!isNew && !isCreate && !fromCustomer) {
+    // Obsolete/transitional customer-origin routes redirect directly to customer.html
+    if (fromCustomer) {
+      window.location.replace("customer.html");
+      return;
+    }
+
+    // Only activate when explicitly entering the new celebration flow for Quick Editor
+    if (!isNew && !isCreate) {
       return;
     }
 

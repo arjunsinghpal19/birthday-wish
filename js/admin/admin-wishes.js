@@ -20,6 +20,7 @@
     searchInput: "wishes-search-input",
     searchClearBtn: "btn-wishes-search-clear",
     sortSelect: "wishes-sort-select",
+    filterOwnership: "wishes-filter-ownership",
     filterMedia: "wishes-filter-media",
     filterDate: "wishes-filter-date",
     countBadge: "wishes-count-badge",
@@ -1110,17 +1111,70 @@
      9. SEARCH, SORT & FILTERING PIPELINE
      ============================================================ */
   /**
-   * Filters and sorts the wishes list based on toolbar search term, media filter, date filter, and sort selection.
-   * Does NOT slice by pagination (returns full matching array).
+   * Dynamically populates the ownership filter dropdown with live counts for:
+   * 1. All Wishes (total)
+   * 2. Admin / Unowned wishes (owner_id = null)
+   * 3. Customer Wishes (owner_id != null)
+   * 4. Each individual customer who owns wishes
+   */
+  function updateOwnershipFilterOptions() {
+    const select = document.getElementById(SELECTORS.filterOwnership);
+    if (!select) return;
+    const currentVal = select.value || "all";
+
+    const totalCount = wishesState.length;
+    const adminCount = wishesState.filter(w => !w.owner_id).length;
+    const customerCount = wishesState.filter(w => !!w.owner_id).length;
+
+    const customerMap = new Map();
+    wishesState.forEach(w => {
+      if (w.owner_id) {
+        const cName = (w.customers && (w.customers.full_name || w.customers.email)) || `Customer (${w.owner_id.substring(0, 8)})`;
+        const existing = customerMap.get(w.owner_id);
+        if (existing) {
+          existing.count++;
+        } else {
+          customerMap.set(w.owner_id, { name: cName, count: 1 });
+        }
+      }
+    });
+
+    let optionsHtml = `
+      <option value="all">All Wishes (${totalCount})</option>
+      <option value="admin">👑 Admin / Unowned (${adminCount})</option>
+      <option value="customer_all">👥 All Customer Wishes (${customerCount})</option>
+    `;
+
+    customerMap.forEach((info, custId) => {
+      optionsHtml += `<option value="cust_${escapeHtml(custId)}">👤 ${escapeHtml(info.name)} (${info.count})</option>`;
+    });
+
+    if (select.__lastHtml !== optionsHtml) {
+      select.__lastHtml = optionsHtml;
+      select.innerHTML = optionsHtml;
+      if (Array.from(select.options).some(o => o.value === currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = "all";
+      }
+    }
+  }
+
+  /**
+   * Filters and sorts the wishes in memory based on current search input, ownership,
+   * media presence, date filters, and active column sorting.
+   *
    * @returns {Array} Full filtered and sorted wishes array.
    */
   function getFilteredAndSortedWishes() {
     const searchInput = document.getElementById(SELECTORS.searchInput);
     const sortSelect = document.getElementById(SELECTORS.sortSelect);
+    const ownershipSelect = document.getElementById(SELECTORS.filterOwnership);
     const mediaSelect = document.getElementById(SELECTORS.filterMedia);
     const dateSelect = document.getElementById(SELECTORS.filterDate);
 
     const searchTerm = (searchInput?.value || "").toLowerCase().trim();
+    const ownershipVal = ownershipSelect?.value || "all";
     const mediaVal = mediaSelect?.value || "all";
     const dateVal = dateSelect?.value || "all";
 
@@ -1151,6 +1205,16 @@
         memory.includes(token)
       );
     });
+
+    // 1b. Ownership filter (Admin / All Customer / Specific Customer)
+    if (ownershipVal === "admin") {
+      filtered = filtered.filter(w => !w.owner_id);
+    } else if (ownershipVal === "customer_all") {
+      filtered = filtered.filter(w => !!w.owner_id);
+    } else if (ownershipVal && ownershipVal.startsWith("cust_")) {
+      const targetCustId = ownershipVal.replace("cust_", "");
+      filtered = filtered.filter(w => w.owner_id === targetCustId);
+    }
 
     // 2. Media presence filter
     if (mediaVal === "music") {
@@ -1278,6 +1342,9 @@
       });
     }
 
+    // Keep ownership options synchronized with counts
+    updateOwnershipFilterOptions();
+
     const allFiltered = getFilteredAndSortedWishes();
     const paginated = getProcessedWishes();
 
@@ -1290,6 +1357,7 @@
     if (allFiltered.length === 0) {
       const isSearchingOrFiltering = Boolean(
         (searchInput?.value?.trim()) ||
+        (document.getElementById(SELECTORS.filterOwnership)?.value && document.getElementById(SELECTORS.filterOwnership)?.value !== "all") ||
         (document.getElementById(SELECTORS.filterMedia)?.value && document.getElementById(SELECTORS.filterMedia)?.value !== "all") ||
         (document.getElementById(SELECTORS.filterDate)?.value && document.getElementById(SELECTORS.filterDate)?.value !== "all")
       );
@@ -1326,6 +1394,15 @@
       const contentBadgesHtml = renderContentBadges(w);
       const isSelected = selectedWishIds.has(rawId);
 
+      // Ownership badge
+      let ownershipBadgeHtml = "";
+      if (!w.owner_id) {
+        ownershipBadgeHtml = `<span class="ownership-badge admin-badge" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;background:rgba(212,175,55,0.15);color:#d4af37;border:1px solid rgba(212,175,55,0.3);display:inline-block;" title="Admin / Unowned Wish">👑 Admin</span>`;
+      } else {
+        const custName = (w.customers && (w.customers.full_name || w.customers.email)) || "Customer";
+        ownershipBadgeHtml = `<span class="ownership-badge customer-badge" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);display:inline-block;" title="Customer: ${escapeHtml(custName)}">👤 ${escapeHtml(custName)}</span>`;
+      }
+
       if (isSelected) {
         tr.classList.add("selected-row");
       }
@@ -1352,7 +1429,10 @@
           <div class="user-cell">
             <div class="user-avatar">${avatarInitial}</div>
             <div class="user-name-wrap" title="${recipientName}">
-              <strong class="user-name-text">${recipientName}</strong>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <strong class="user-name-text">${recipientName}</strong>
+                ${ownershipBadgeHtml}
+              </div>
               <div class="user-id-subtext" style="font-size:0.75rem;color:var(--text-dim);">ID: ${escapeHtml(shortId)}</div>
             </div>
           </div>
@@ -2208,6 +2288,16 @@
       });
     }
 
+    // Ownership Filter Dropdown Listener (resets to page 1)
+    const ownershipFilter = document.getElementById(SELECTORS.filterOwnership);
+    if (ownershipFilter && !ownershipFilter.__wishesBound) {
+      ownershipFilter.__wishesBound = true;
+      ownershipFilter.addEventListener("change", () => {
+        paginationState.currentPage = 1;
+        render();
+      });
+    }
+
     // Media Filter Dropdown Listener (resets to page 1)
     const mediaFilter = document.getElementById(SELECTORS.filterMedia);
     if (mediaFilter && !mediaFilter.__wishesBound) {
@@ -2458,13 +2548,37 @@
    */
   function resetFilters() {
     const searchInput = document.getElementById(SELECTORS.searchInput);
+    const ownershipSelect = document.getElementById(SELECTORS.filterOwnership);
     const mediaSelect = document.getElementById(SELECTORS.filterMedia);
     const dateSelect = document.getElementById(SELECTORS.filterDate);
     if (searchInput) searchInput.value = "";
+    if (ownershipSelect) ownershipSelect.value = "all";
     if (mediaSelect) mediaSelect.value = "all";
     if (dateSelect) dateSelect.value = "all";
     paginationState.currentPage = 1;
     render();
+  }
+
+  /**
+   * Sets the ownership filter programmatically (e.g. from Admin Customers "View Wishes" drill-down).
+   * @param {string} val - Ownership filter value ("all", "admin", "customer_all", or "cust_<UUID>")
+   */
+  function setOwnershipFilter(val) {
+    const ownershipSelect = document.getElementById(SELECTORS.filterOwnership);
+    if (ownershipSelect) {
+      ownershipSelect.value = val;
+    }
+    paginationState.currentPage = 1;
+    render();
+  }
+
+  /**
+   * Gets current ownership filter value.
+   * @returns {string}
+   */
+  function getOwnershipFilter() {
+    const ownershipSelect = document.getElementById(SELECTORS.filterOwnership);
+    return ownershipSelect?.value || "all";
   }
 
   /* ============================================================
@@ -3663,6 +3777,8 @@
     getColumnVisibility,
     setColumnVisibility,
     resetView,
+    setOwnershipFilter,
+    getOwnershipFilter,
     getViewPreferences,
     loadViewPreferences,
     saveViewPreferences,

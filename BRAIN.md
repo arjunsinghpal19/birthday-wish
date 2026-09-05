@@ -3867,3 +3867,212 @@ STATUS: IMPLEMENTATION COMPLETE • VERIFIED & TESTED • READY FOR COMMIT
    - All `scratch/` diagnostic scripts and `supabase/.temp/` remain untracked and excluded from production commits.
    - NO commit, push, or deployment performed.
 
+============================================================
+110. PHASE P1 — QUICK EDITOR SECRET CODE TITLE SYNCHRONIZATION
+STATUS: IMPLEMENTATION COMPLETE • MANUAL UAT PASS • SAFETY CHECK PASS (AWAITING COMMIT APPROVAL)
+============================================================
+
+1. BASELINE & REPOSITORY STATE:
+   - Stable Baseline: v2.1 (commit `c3bd681`)
+   - Production / Active Head Commit: 330fecf35dc84d05aa1a376c61a10188f5dc80ae (Phase P0.3)
+   - Production URL: https://birthday-wish-arjun.vercel.app
+   - Working Tree State: P1 implementation complete; NO commit, push, or deployment performed for P1.
+
+2. PROBLEM & ROOT CAUSE:
+   - In Quick Editor (`index.html`), the passkey/secret code card heading (`.pc-title`) is styled in CSS to display uppercase ("SECRET BIRTHDAY CODE").
+   - When loading an existing wish with a recipient name (e.g. "TEST12"), the title dynamically renders as "Secret Code for TEST12" (visually "SECRET CODE FOR TEST12").
+   - However, clicking "+ New Wish" (`#customizer-new-btn`) from an existing wish reset other inputs but left `.pc-title` displaying the stale recipient name until a manual page refresh.
+   - In addition, typing into or clearing the recipient name input field dynamically updated other name slots via `updateNameSlots()`, but did not synchronize `.pc-title`.
+
+3. EXACT ARCHITECTURAL FIX:
+   - Dynamic Heading Synchronization in `js/modules/renderers.js`:
+     - Updated `updateNameSlots(displayName)`:
+       - Checks for the presence of `.pc-title` elements.
+       - When `displayName` is non-empty, dynamically updates `.pc-title` text to `Secret Code for ${displayName}`.
+       - When `displayName` is empty/cleared, reverts `.pc-title` text to canonical `Secret Birthday Code`.
+       - Null-safe with zero impact on other DOM elements.
+   - State Reset Synchronization in `js/modules/editor/customizer.js`:
+     - Updated `resetToFreshNewWish()`:
+       - Dispatches empty recipient name to `updateNameSlots("")`.
+       - Explicitly resets all `.pc-title` elements to `"Secret Birthday Code"`.
+       - Ensures immediate visual title reset upon clicking "+ New Wish" without requiring a browser refresh.
+   - String Formatting Invariant Strictly Enforced:
+     - Preserves existing system conventions: `"Secret Birthday Code"` (when empty) and `"Secret Code for <name>"` (when present).
+     - Does NOT introduce `"Secret Code for You"`.
+
+4. VERIFICATION & UAT RESULTS:
+   - Manual P1 UAT: ALL CHECKS PASS.
+     - Fresh/default state shows "Secret Birthday Code".
+     - Existing recipient state shows "Secret Code for <name>" (e.g. "Secret Code for TEST12", "Secret Code for Jeni").
+     - Clearing recipient returns to "Secret Birthday Code".
+     - + New Wish resets the title correctly to "Secret Birthday Code" without browser refresh.
+     - Typing new recipient name updates heading to "Secret Code for <recipient name>".
+   - Automated Targeted Verification:
+     - `scratch/test_phase_p1_secret_code_title.js`: 8/8 tests PASS (100%).
+     - JavaScript Syntax Validator (`scratch/validate_all_syntax.js`): All 197 JS files syntactically valid (PASS).
+     - P0.3 Share Regression Suite: 12/12 PASS.
+     - Wish State Sync Suite: 39/39 PASS.
+     - Production Recovery Suite: 43/43 PASS.
+   - Post-Implementation Safety Check: PASS.
+     - Actual P1 semantic/code changes strictly limited to:
+       - `js/modules/renderers.js`
+       - `js/modules/editor/customizer.js`
+     - No unrelated production/source files modified by P1.
+     - Zero line-ending/CRLF changes in unrelated files.
+
+5. LIFECYCLE & DEPLOYMENT STATUS:
+   - Commit: NOT committed.
+   - Push: NOT pushed.
+   - Deploy: NOT deployed.
+   - Production Release: NOT released (awaiting user approval).
+   - Supabase / RLS / Auth / Security / Passkeys / Admin: 100% untouched.
+
+============================================================
+111. PHASE P4 — ADMIN CUSTOMER MANAGEMENT + OWNERSHIP + SECURE DUPLICATE/DELETE
+STATUS: IMPLEMENTATION COMPLETE • AUTOMATED TESTS PASS • MANUAL UAT PASS • DOCUMENTED • AWAITING COMMIT
+============================================================
+
+1. BASELINE & REPOSITORY STATE:
+   - Stable Baseline: v2.1 (commit `c3bd681`)
+   - Production / Active Head Commit: `330fecf35dc84d05aa1a376c61a10188f5dc80ae` (Phase P0.3)
+   - Production URL: https://birthday-wish-arjun.vercel.app
+   - Working Tree State: Phases P1, P2/P3, and Phase P4 implementation complete in working tree; uncommitted; awaiting commit approval.
+   - Preserved History: All prior phase histories (P0.3, P1, P2, P3) remain 100% intact without deletions or rewrites.
+   - Release Status: NO commit yet, NO push yet, NO deployment yet. Do not assign an unreleased commit hash, git tag, deployment ID, or stable version number to P4 until explicitly committed and deployed.
+
+2. PROBLEM & ARCHITECTURAL OBJECTIVES:
+   - Admin Bulk Duplicate RLS Violation: Admin Dashboard wish selection -> "Duplicate Selected" failed with PostgreSQL RLS violation ("new row violates row-level security policy for table wishes") because client-side JS attempted direct Supabase INSERT using the anonymous public client key.
+   - Admin Wishes Ownership Blindness: Admin Wishes table lacked visibility and filtering for wish creators/owners, rendering customer-created vs admin-created wishes indistinguishable.
+   - Missing Admin Customer Management: Admin Dashboard lacked a dedicated management interface to view registered customer accounts, membership dates, plan tiers, activity status, and associated wish counts.
+   - Customer Wish Deletion Failure: Customer Dashboard wish deletion (`deleteWish`) failed due to restrictive RLS policies preventing direct browser-side client deletion.
+   - Tenant Isolation & System Security: Customer wish deletion and admin operations required strict isolation without weakening PostgreSQL RLS or granting excessive client-side privileges.
+
+3. P4A — ADMIN BULK DUPLICATE (SERVER-SIDE SECURE PATH):
+   - Secure Serverless API: Extended `POST /api/admin-duplicate-wish` to accept `{ uuids: [...] }` alongside single `{ uuid }`.
+   - Single Session Authentication: Validates admin HMAC session token (`x-admin-token` or cookie) once per bulk operation.
+   - Batch Processing & Limits:
+     - Enforces `MAX_BULK_LIMIT = 100` to prevent payload abuse or execution timeouts.
+     - Protected System Config: Explicitly validates every candidate UUID against `SYSTEM_CONFIG_UUID` (`00000000-0000-0000-0000-000000000001`), returning HTTP 400 if targeted.
+   - Sanitized Duplication Logic:
+     - Fetches source records and strips primary keys (`id`).
+     - Generates brand new UUIDs (`crypto.randomUUID()`).
+     - Strictly enforces `owner_id = NULL` (all admin-duplicated wishes are unowned system assets).
+     - Appends standard `"(Copy)"` suffix to recipient names.
+     - Resets timestamps (`created_at = new Date().toISOString()`).
+   - Server-Side Execution: Executes insert using Supabase service-role client strictly on the server; public client RLS remains intact.
+   - Client Integration: Updated `js/database.js` (`duplicateWishBulk`) to invoke `/api/admin-duplicate-wish` with `{ uuids }`.
+   - Backward Compatibility: Single-wish duplication (`POST /api/admin-duplicate-wish` with `{ uuid }`) preserved 100% identically.
+   - Database Invariant: RLS was not weakened; zero migration or grant changes required.
+
+4. P4B — ADMIN WISHES OWNERSHIP FILTER & EMBEDDED CUSTOMER DATA:
+   - Enriched Data Pipeline: Updated `GET /api/admin-wishes` to embed customer relationship:
+     `owner:customer_accounts(id, full_name, email, account_status, plan_tier)`.
+   - Ownership Badges: Added clear visual ownership indicators in the Admin Wishes table:
+     - `👑 Admin`: Unowned system wishes (`owner_id === null`).
+     - `👤 <Customer Name>`: Customer-owned wishes with tooltip showing full customer email and status.
+   - Dynamic Filter Controls: Added Ownership dropdown (`#wishes-filter-ownership`) in Admin toolbar:
+     - `All Wishes` (`all`)
+     - `👑 Admin / Unowned` (`admin`: `owner_id === null`)
+     - `👥 All Customer Wishes` (`customer_all`: `owner_id !== null`)
+     - Customer-specific options (`cust_<uuid>`) dynamically populated from distinct customer accounts in loaded data.
+   - Live Count Badges: Ownership filter options display dynamic counts matching current loaded dataset.
+
+5. P4C — ADMIN CUSTOMER MANAGEMENT & FILTER SUITE:
+   - Dedicated View & Controller: Created Admin Dashboard view (`#view-customers`) and modular controller `js/admin/admin-customers.js`.
+   - Serverless Metrics Endpoint: Created `GET /api/admin-customers` protected by admin HMAC session verification.
+     - Queries `customer_accounts` table using service-role client.
+     - Computes wish counts per customer via relational aggregation.
+     - Returns customer profiles: `id`, `full_name`, `email`, `account_status`, `plan_tier`, `created_at`, `last_login`, `total_wishes`.
+   - Comprehensive Filter Suite:
+     - Status Filter: All Status, Active, Inactive.
+     - Plan Filter: Dynamically populated from distinct `plan_tier` values present in real data (e.g. "All Plans", "FREE").
+     - Wishes Count Filter: All Wishes, 0 Wishes, 1–5 Wishes, 6–10 Wishes, 10+ Wishes.
+     - Search Bar: Live case-insensitive search across customer names and email addresses.
+     - Sort Controls: Newest First, Oldest First, Most Wishes, Least Wishes, Last Active.
+     - Reset Action: `↺ Reset Filters` button restores all filters and search input to default states.
+     - Live Counter: Dynamic badge displaying `Showing X of Y customers`.
+     - Empty State: User-friendly empty state with quick reset link when zero customers match criteria.
+   - View Wishes Drill-Down:
+     - "View Wishes (N)" action button in customer table rows switches active Admin view to `Wishes` and automatically applies the customer-specific ownership filter (`cust_<customerId>`).
+   - Premium Visual Polish:
+     - View Wishes Button: Styled with rich indigo/violet gradient (`#4f46e5` to `#7c3aed`), subtle violet shadow glow, compact 32px height, and `white-space: nowrap` single-line text layout.
+     - Customer Avatar Parity: Circular (50%) avatar with gold/purple gradient background, subtle border glow, and centered initials, matching Wishes table recipient avatars.
+     - Scrollbar Fix: Removed internal vertical scrollbars on table wrapper (`overflow-y: hidden; overflow-x: auto;` on `.table-responsive-wrapper`), allowing natural card expansion and seamless horizontal scrolling on constrained viewports.
+     - Responsive Layout: Fully verified and functional across desktop (1440x900, 1366x768, 1200x800, 1024x768) and tablet (768x1024) viewports.
+
+6. P4D — CUSTOMER WISH DELETION & TENANT ISOLATION:
+   - Dedicated Authenticated Endpoint: Created `POST /api/customer-delete-wish`.
+   - Strict JWT Verification: Extracts `Bearer <jwt>` from `Authorization` header and verifies session with Supabase Auth (`supabaseServer.auth.getUser(jwt)`).
+   - Strict Tenant Isolation:
+     - Fetches target wish from database by `uuid`.
+     - Validates `wish.owner_id === user.id`. Rejects unauthorized deletion with HTTP 403 Forbidden (`"You do not have permission to delete this wish"`).
+     - Customer A cannot delete Customer B's wishes.
+     - Customer cannot delete unowned/Admin wishes (`owner_id === null` -> HTTP 403 Forbidden).
+   - System Record Guard: Rejects deletion of `SYSTEM_CONFIG_UUID` (`00000000-0000-0000-0000-000000000001`) with HTTP 400 Bad Request.
+   - Client Integration: Updated `js/customer/customer-wishes.js` (`deleteWish`) to invoke `/api/customer-delete-wish` with bearer token, replacing failed direct client-side delete attempts.
+   - Database Integrity: Zero changes made to Supabase RLS policies; public client remains restricted while authenticated endpoint enforces strict row ownership.
+
+7. SECURITY INVARIANTS & INTEGRITY ASSURANCE:
+   - Database Migrations: ZERO migrations run.
+   - RLS Policies: ZERO RLS policies modified, disabled, or weakened.
+   - Privilege Scope: Service-role credentials restricted 100% to serverless endpoints behind HMAC/JWT authentication; no broad permissions granted to anon clients.
+   - Multi-Tenant Isolation: Enforced server-side for all customer mutations.
+   - Quick Editor Independence: Quick Editor (`index.html`) remains anonymous and unowned; edits on unowned wishes persist normally while customer-owned wishes remain protected (HTTP 403).
+   - Customer Wish Studio: Serves as the dedicated engine for customer-created wishes with `owner_id` assignment.
+   - Secret Keyboard Shortcuts: Quick Access shortcut (`Ctrl+Shift+E`) and passkey shortcuts remain intact.
+   - Prior Invariants Preserved: All Phase P0.3 (Share URL decoupling), Phase P1 (Secret Code title sync), and Phase P2 (WebAuthn passkeys, OTP, recovery codes) behavior preserved without regression.
+
+8. VERIFICATION & VALIDATION RESULTS:
+   - Manual Browser UAT: ALL 8 CATEGORIES PASSED (Verified by user):
+     1. P4A Admin Bulk Duplicate — PASS
+     2. P4B Admin Wishes Ownership Filter — PASS
+     3. P4C Admin Customers — PASS
+     4. P4C Customer Filters — PASS
+     5. P4C View Wishes Drill-Down — PASS
+     6. P4D Customer Dashboard Delete — PASS
+     7. Security / Quick Access regression — PASS
+     8. Customer Create / Ownership regression — PASS
+   - Automated Targeted Test Suites:
+     - Phase P4 Test Suite (`scratch/test_phase_p4_suite.js`): 13/13 PASS (100%).
+     - Phase P2 + P3 Integration Suite (`scratch/test_phase_p2_p3_suite.js`): 24/24 PASS (100%).
+     - Phase P1 Secret Code Title Suite (`scratch/test_phase_p1_secret_code_title.js`): 8/8 PASS (100%).
+     - Quick Editor Live Flow Suite (`scratch/test_quick_editor_live_flow.js`): 6/6 PASS (100%).
+     - Customer Filters & Visual Parity Suite (`scratch/test_customer_filters_and_visual.js`): 8/8 PASS (100%).
+     - Multi-Viewport Desktop Suite (`scratch/test_viewports.js`): 4/4 PASS (1440x900, 1366x768, 1200x800, 1024x768).
+     - Tablet Viewport Suite (`scratch/test_tablet_viewport.js`): PASS (768x1024).
+     - JavaScript Syntax Validator (`scratch/validate_all_syntax.js`): 197/197 JS files syntactically valid (PASS).
+
+9. EXACT PRODUCTION FILES INVENTORY:
+   - Phase P4 Files:
+     - `api/admin-duplicate-wish.js` [NEW] — Serverless endpoint supporting single & bulk wish duplication under admin HMAC auth.
+     - `api/admin-wishes.js` [MODIFIED] — Admin wishes endpoint embedding customer profile relation.
+     - `api/admin-customers.js` [NEW] — Privileged customer metrics & aggregation endpoint.
+     - `api/customer-delete-wish.js` [NEW] — Authenticated customer wish deletion endpoint with owner_id verification.
+     - `admin.html` [MODIFIED] — Added `#view-customers` section, customer filter toolbar, table headers, and ownership filter select in wishes tab.
+     - `js/admin/admin-wishes.js` [MODIFIED] — Added ownership filter handling and customer ownership badges.
+     - `js/admin/admin-customers.js` [NEW / MODIFIED] — Customer management view controller with client-side search, filtering, sorting, and drill-down navigation.
+     - `js/customer/customer-wishes.js` [MODIFIED] — Routes wish deletion through `/api/customer-delete-wish` with auth JWT.
+     - `js/database.js` [MODIFIED] — Routes admin bulk duplication through `/api/admin-duplicate-wish`.
+     - `css/admin/admin-components.css` [MODIFIED] — Added styles for customer management table, avatar badges, View Wishes gradient buttons, and scrollbar rules.
+     - `css/admin/admin-responsive.css` [MODIFIED] — Responsive table styles with `overflow-y: hidden; overflow-x: auto;`.
+   - Pre-Existing Working Tree Files (P1 / P2 / P3):
+     - `js/modules/renderers.js` [P1 MODIFIED] — Dynamic Secret Code title updates in Quick Editor.
+     - `js/modules/editor/customizer.js` [P1 MODIFIED] — Title reset on "+ New Wish".
+     - `js/admin/admin-passkey.js` [P2 MODIFIED] — Admin WebAuthn passkey management.
+     - `js/customer/customer-create.js` [P3 MODIFIED] — Customer Wish Studio creation flow.
+     - `js/customer/customer-dashboard.js` [P3 MODIFIED] — Customer Dashboard navigation and state.
+
+10. LIFECYCLE & DEPLOYMENT STATUS:
+    - Working Tree: All P4 changes implemented and tested; currently uncommitted.
+    - Commit: NOT committed.
+    - Push: NOT pushed.
+    - Deployment: NOT deployed.
+    - Production Head: `330fecf35dc84d05aa1a376c61a10188f5dc80ae` (v2.1 + P0.3).
+    - Status: Awaiting explicit user commit approval.
+
+11. FUTURE ROADMAP (PLANNED EXPANSIONS):
+    - Admin Customer Management Analytics: Customer KPIs (LTV, wish creation rates, active engagement trends).
+    - Tier & Usage Limits: Subscription plans (Free / Pro / Premium), wish creation quota enforcement, and premium feature lockouts.
+    - Billing & Payment Integration: Razorpay / Stripe / UPI payment tracking, invoice generation, and renewal status.
+    - Customer Account Lifecycle: Admin-initiated account suspend/reactivate, password reset triggers, and audit logs.
+    - Note: None of the above roadmap features are implemented in Phase P4; all customer management in P4 is read-only inspection, search/filter/drill-down, and secure wish ownership management.

@@ -18,7 +18,7 @@
  * ============================================================================
  */
 
-import { loadLocalEnv } from "./session.js";
+import { loadLocalEnv } from "./_session.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

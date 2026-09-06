@@ -1,4 +1,4 @@
-import { loadLocalEnv } from "../api/session.js";
+import { loadLocalEnv } from "../api/_session.js";
 
 loadLocalEnv();
 

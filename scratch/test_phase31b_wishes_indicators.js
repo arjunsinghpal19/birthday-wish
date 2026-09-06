@@ -499,7 +499,7 @@ test("21. Invariants: Protected files exist and remain untampered", () => {
     "js/app.js",
     "css/style.css",
     "api/admin-delete-wish.js",
-    "api/session.js",
+    fs.existsSync(path.join(__dirname, "..", "api", "_session.js")) ? "api/_session.js" : "api/session.js",
     "js/database.js"
   ];
   for (const rel of protectedFiles) {

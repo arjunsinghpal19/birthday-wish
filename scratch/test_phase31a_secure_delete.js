@@ -80,7 +80,7 @@ async function asyncTest(name, fn) {
   // ------------------------------------------------------------
   // 1. Session Token Engine (api/session.js)
   // ------------------------------------------------------------
-  const sessionModule = await import("../api/session.js");
+  const sessionModule = await import("../api/_session.js");
   assert(sessionModule.createAdminSessionToken, "createAdminSessionToken must be exported");
   assert(sessionModule.verifyAdminSessionToken, "verifyAdminSessionToken must be exported");
 

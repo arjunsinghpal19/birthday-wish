@@ -16,7 +16,7 @@
 import assert from "assert";
 import crypto from "crypto";
 import authHandler from "../api/auth.js";
-import { createAdminSessionToken } from "../api/session.js";
+import { createAdminSessionToken } from "../api/_session.js";
 
 async function runTest(name, fn) {
   try {

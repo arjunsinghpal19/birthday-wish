@@ -8,7 +8,7 @@
  */
 
 import crypto from "crypto";
-import { createAdminSessionToken, loadLocalEnv } from "./session.js";
+import { createAdminSessionToken, loadLocalEnv } from "./_session.js";
 
 const OTP_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 const RESEND_COOLDOWN_MS = 60 * 1000; // 60 seconds

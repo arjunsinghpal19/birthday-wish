@@ -295,7 +295,7 @@ const mockWishes = [
   // SECTION 4: BACKEND /api/admin-delete-wish BULK SUPPORT
   // ------------------------------------------------------------
   const deleteApiModule = await import("../api/admin-delete-wish.js");
-  const sessionModule = await import("../api/session.js");
+  const sessionModule = await import("../api/_session.js");
   const mockSecRow = {
     admin_password_hash: "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
     pass_code: "1234"

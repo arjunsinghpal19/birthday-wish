@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { createAdminSessionToken, verifyAdminSessionToken, loadLocalEnv } from "./session.js";
+import { createAdminSessionToken, verifyAdminSessionToken, loadLocalEnv } from "./_session.js";
 
 function extractToken(req, body) {
   const cookieHeader = req.headers && req.headers.cookie;

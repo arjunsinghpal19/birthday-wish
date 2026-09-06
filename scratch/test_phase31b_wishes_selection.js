@@ -535,7 +535,7 @@ async function runAllTests() {
       "js/app.js",
       "css/style.css",
       "api/admin-delete-wish.js",
-      "api/session.js",
+      fs.existsSync(path.join(__dirname, "..", "api", "_session.js")) ? "api/_session.js" : "api/session.js",
       "js/database.js",
       "js/storage.js",
       "js/services/media-service.js"

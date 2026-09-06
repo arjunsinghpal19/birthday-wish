@@ -1,4 +1,4 @@
-import { verifyAdminSessionToken, loadLocalEnv, createAdminSessionToken } from "../api/session.js";
+import { verifyAdminSessionToken, loadLocalEnv, createAdminSessionToken } from "../api/_session.js";
 
 loadLocalEnv();
 

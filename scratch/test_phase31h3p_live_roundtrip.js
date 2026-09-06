@@ -57,7 +57,7 @@ async function getHandler() {
   if (!authHandler) {
     const authMod = await import("../api/auth.js");
     authHandler = authMod.default;
-    const sessionMod = await import("../api/session.js");
+    const sessionMod = await import("../api/_session.js");
     createAdminSessionToken = sessionMod.createAdminSessionToken;
   }
   return { authHandler, createAdminSessionToken };

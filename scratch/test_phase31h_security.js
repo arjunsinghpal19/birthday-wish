@@ -214,7 +214,8 @@ async function runAllPhase31HTests() {
 
   // 16. Serverless api/session.js provides HMAC-SHA256 token verification
   await runTest("16. Serverless api/session.js provides HMAC-SHA256 token verification with 24h expiry", () => {
-    const sessionJs = fs.readFileSync(path.join(ROOT_DIR, "api", "session.js"), "utf8");
+    const sessionPath = path.join(ROOT_DIR, "api", fs.existsSync(path.join(ROOT_DIR, "api", "_session.js")) ? "_session.js" : "session.js");
+    const sessionJs = fs.readFileSync(sessionPath, "utf8");
     assert(sessionJs.includes("createAdminSessionToken"), "Must provide createAdminSessionToken");
     assert(sessionJs.includes("verifyAdminSessionToken"), "Must provide verifyAdminSessionToken");
     assert(sessionJs.includes("SESSION_EXPIRY_SECONDS = 24 * 60 * 60"), "Must enforce 24h server expiration");
